@@ -92,8 +92,16 @@ def isWidgetAlive(widget):
     
     elif platform.wxFlavour == WX_PYTHON:
         try:
-            widget.IsEnabled()
+            # GetId seems to be available on all wx
+            # objects, despite not being documented.
+            # 
+            # I was originally calling IsEnabled,
+            # but this causes segfaults if called
+            # on a wx.MenuItem from within an
+            # event handler on that menu item!
+            widget.GetId()
             return True
+        
         except wx.PyDeadObjectError:
             return False
 

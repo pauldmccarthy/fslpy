@@ -411,7 +411,7 @@ class LabelAtlas(Atlas):
         
     def label(self, worldLoc):
         """Looks up and returns the label of the region at the given world
-        location, or ``np.nan`` if the location is out of bounds.
+        location, or ``None`` if the location is out of bounds.
         """
 
         voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
@@ -423,7 +423,7 @@ class LabelAtlas(Atlas):
            voxelLoc[0] >= self.shape[0] or \
            voxelLoc[1] >= self.shape[1] or \
            voxelLoc[2] >= self.shape[2]:
-            return np.nan        
+            return None
         
         val = self[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
 
