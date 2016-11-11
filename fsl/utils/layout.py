@@ -197,8 +197,8 @@ def padBitmap(bitmap, width, height, vert, bgColour):
     
     if vert:
         if iwidth < width:
-            lpad   = np.floor((width - iwidth) / 2.0)
-            rpad   = np.ceil( (width - iwidth) / 2.0)
+            lpad   = int(np.floor((width - iwidth) / 2.0))
+            rpad   = int(np.ceil( (width - iwidth) / 2.0))
             lpad   = np.zeros((iheight, lpad, 4), dtype=np.uint8)
             rpad   = np.zeros((iheight, rpad, 4), dtype=np.uint8)
             lpad[:] = bgColour
@@ -206,8 +206,8 @@ def padBitmap(bitmap, width, height, vert, bgColour):
             bitmap = np.hstack((lpad, bitmap, rpad))
     else:
         if iheight < height:
-            tpad   = np.floor((height - iheight) / 2.0)
-            bpad   = np.ceil(( height - iheight) / 2.0)
+            tpad   = int(np.floor((height - iheight) / 2.0))
+            bpad   = int(np.ceil(( height - iheight) / 2.0))
             tpad   = np.zeros((tpad, iwidth, 4), dtype=np.uint8)
             bpad   = np.zeros((bpad, iwidth, 4), dtype=np.uint8)
             tpad[:] = bgColour
