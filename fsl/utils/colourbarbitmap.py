@@ -22,7 +22,8 @@ def colourBarBitmap(cmap,
                     alpha=1.0,
                     fontsize=10,
                     bgColour=None,
-                    textColour='#ffffff'):
+                    textColour='#ffffff',
+                    cmapResolution=256):
     """Plots a colour bar using :mod:`matplotlib`.
 
     
@@ -92,7 +93,7 @@ def colourBarBitmap(cmap,
         if labelside == 'left': labelside = 'top'
         else:                   labelside = 'bottom'
 
-    ncols         = 256
+    ncols         = cmapResolution
     dpi           = 96.0
     cmap          = cm.get_cmap(cmap)
     data          = np.linspace(0.0, 1.0, ncols)
@@ -114,7 +115,7 @@ def colourBarBitmap(cmap,
     ax.imshow(data,
               aspect='auto',
               origin='lower',
-              interpolation='bilinear')
+              interpolation='nearest')
 
     ax.set_xlim((0, ncols - 1))
         
