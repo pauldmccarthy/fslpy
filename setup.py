@@ -59,4 +59,9 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-runner'],
     test_suite='tests',
+
+    scripts=[
+        op.join('bin', 'imcp'),
+        op.join('bin', 'immv'),
+    ]
 )

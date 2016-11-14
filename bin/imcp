@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+#
+# immv.py - Copy image files.
+#
+# Author: Paul McCarthy <paulmc@fmrib.ox.ac.uk>
+#
+
+
+from __future__ import print_function
+
+import os.path        as op
+import                   sys
+import fsl.utils.path as fslpath
+
+
+SUPPORTED_EXTENSIONS = [
+    '.nii', '.nii.gz',
+    '.hdr', '.hdr.gz',
+    '.img', '.img.gz',
+    '.mnc', '.mnc.gz'
+]
+
+
+FILE_GROUPS = [
+    ('.img',    '.hdr'),
+    ('.img.gz', '.hdr.gz')
+]
+
+
+usage = """Usage:
+  imcp <file1> <file2>
+  imcp <file1> <directory>
+  imcp <file1> <file2> ... <fileN> <directory>
+
+Copy images from <file1> to <file2>, or copy all <file>s to <directory>
+
+NB: filenames can be basenames or include an extension.
+
+Recognised file extensions: {}
+""".format(', '.join(SUPPORTED_EXTENSIONS))
+
+
+def main():
+    """Parses CLI arguments (see the usage string), and calls the
+    fsl.utils.path.imcp function on each input.
+    """
+
+    if len(sys.argv) < 2:
+        print(usage)
+        sys.exit(1)
+
+    srcs = sys.argv[1:-1]
+    dest = sys.argv[  -1]
+
+    if len(srcs) > 1 and not op.isdir(dest):
+        print(usage)
+        sys.exit(1)
+
+    for src in srcs:
+        try:
+            fslpath.imcp(src,
+                         dest,
+                         allowedExts=SUPPORTED_EXTENSIONS,
+                         fileGroups=FILE_GROUPS) 
+            
+        except Exception as e:
+            print(e)
+            break
+
+
+if __name__ == '__main__':
+    main()
