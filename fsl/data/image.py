@@ -751,8 +751,9 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-REPLACEMENTS = {'.hdr' : ['.img'], '.hdr.gz' : ['.img.gz']}
-"""Suffix replacements used by :func:`addExt` to resolve file path
+FILE_GROUPS = [('.img',    '.hdr'),
+               ('.img.gz', '.hdr.gz')]
+"""File suffix groups used by :func:`addExt` to resolve file path
 ambiguities - see :func:`fsl.utils.path.addExt`.
 """
 
@@ -809,7 +810,7 @@ def addExt(prefix, mustExist=True):
                           ALLOWED_EXTENSIONS,
                           mustExist,
                           DEFAULT_EXTENSION,
-                          replace=REPLACEMENTS)
+                          fileGroups=FILE_GROUPS)
 
 
 def loadIndexedImageFile(filename):
