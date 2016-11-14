@@ -327,6 +327,85 @@ def test_shallowest():
         assert fslpath.shallowest(path, suffixes) == output
 
 
+def test_removeDuplicates():
+
+    allowedExts = fslimage.ALLOWED_EXTENSIONS
+    groups      = fslimage.FILE_GROUPS 
+
+    # [(files_to_create,
+    #    [([paths], [expected]),
+    #     ...
+    #    ]),
+    #  ...
+    # ]
+    allTests = [
+        (['file.hdr', 'file.img'], [
+            (['file'],                 ['file']),
+            (['file.hdr'],             ['file.hdr']),
+            (['file.img'],             ['file.img']),
+            (['file.hdr', 'file.img'], ['file.hdr']),
+            (['file.img', 'file.hdr'], ['file.img']),
+        ]),
+
+        (['file.hdr', 'file.img', 'file.blob'], [
+            (['file'],                 ['file']),
+            (['file.hdr'],             ['file.hdr']),
+            (['file.img'],             ['file.img']),
+            (['file.hdr', 'file.img'], ['file.hdr']),
+            (['file.img', 'file.hdr'], ['file.img']),
+        ]),
+
+
+        (['file.hdr', 'file.img', 'file.nii'], [
+            (['file'],                 ['file']),
+            (['file.hdr'],             ['file.hdr']),
+            (['file.img'],             ['file.img']),
+            (['file.hdr', 'file.img'], ['file.hdr']),
+            (['file.img', 'file.hdr'], ['file.img']), 
+        ]),        
+                
+
+        (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'], [
+            (['001', '002', '003'],
+             ['001', '002', '003']), 
+            
+            (['001.hdr', '002.hdr', '003.hdr'],
+             ['001.hdr', '002.hdr', '003.hdr']),
+            (['001.img', '002.img', '003.img'],
+             ['001.img', '002.img', '003.img']),
+
+            (['001.hdr', '001.img', '002.hdr', '002.img', '003.img'],
+             ['001.hdr', '002.hdr', '003.img']), 
+            (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'],
+             ['001.hdr', '002.hdr', '003.hdr']),
+            (['001.img', '001.hdr', '002.img', '002.hdr', '003.img', '003.hdr'],
+             ['001.img', '002.img', '003.img']), 
+        ])
+    ]
+
+    workdir = tempfile.mkdtemp()
+
+    try:
+        for files_to_create, tests in allTests:
+            for fn in files_to_create:
+                with open(op.join(workdir, fn), 'wt') as f:
+                    f.write('{}\n'.format(fn))
+
+            for paths, expected in tests:
+
+                paths  = [op.join(workdir, p) for p in paths]
+                result = fslpath.removeDuplicates(paths, allowedExts, groups)
+
+                assert result == [op.join(workdir, e) for e in expected]
+
+            for f in files_to_create:
+                os.remove(op.join(workdir, f))
+                    
+    finally:
+        shutil.rmtree(workdir)
+
+
+
 def test_getFileGroup():
 
     allowedExts = fslimage.ALLOWED_EXTENSIONS
@@ -571,8 +650,8 @@ def test_imcp_shouldPass(move=False):
 
                     src = op.join(indir, src)
                     
-                    if move: fslpath.immv(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups)
-                    else:    fslpath.imcp(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups)
+                    if move: fslpath.immv(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups, overwrite=True)
+                    else:    fslpath.imcp(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups, overwrite=True)
 
                 copied = os.listdir(outdir)
                 copied = [f for f in copied if op.isfile(op.join(outdir, f))]
