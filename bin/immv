@@ -57,6 +57,10 @@ def main():
         print(usage)
         sys.exit(1)
 
+    srcs = fslpath.removeDuplicates(srcs,
+                                    allowedExts=SUPPORTED_EXTENSIONS,
+                                    fileGroups=FILE_GROUPS) 
+
     for src in srcs:
         try:
             fslpath.immv(src,

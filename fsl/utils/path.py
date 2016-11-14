@@ -221,6 +221,53 @@ def splitExt(filename, allowedExts=None):
     return filename[:-extLen], filename[-extLen:]
 
 
+def removeDuplicates(paths, allowedExts=None, fileGroups=None):
+    """Reduces the list of ``paths`` down to those which are unique with 
+    respect to the specified ``fileGroups``.
+
+    For example, if you have a directory containing::
+    
+        001.hdr
+        001.img
+        002.hdr
+        002.img
+        003.img
+        003.img
+
+    And you call ``removeDuplicates`` like so::
+
+         paths        = ['001.img', '001.hdr',
+                         '002.img', '002.hdr',
+                         '003.img', '003.hdr']
+    
+         allowedExts = ['.img', '.hdr']
+         fileGroups  = [('.img',    '.hdr')]
+
+         removeDuplicates(paths, allowedExts, fileGroups)
+
+    The returned list will be::
+
+         ['001.img', '003.img', '003.img']
+
+    :arg paths:       List of paths to reduce.
+
+    :arg allowedExts: Allowed/recognised file extensions.
+
+    :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
+    """
+
+    unique = []
+
+    for path in paths:
+
+        groupFiles = getFileGroup(path, allowedExts, fileGroups)
+
+        if not any([g in unique for g in groupFiles]):
+            unique.append(path)
+
+    return unique
+
+
 def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
     """If the given ``path`` is part of a ``fileGroup``, returns a list 
     containing the paths to all other files in the group (including the
@@ -386,15 +433,16 @@ def imcp(src,
         # to re-combine the source paths
         copySrcs[i] = base + ext
 
-        if destIsDir: copyDests.append(dest)
+        basename = op.basename(base)
+
+        if destIsDir: copyDests.append(op.join(dest, basename + ext))
         else:         copyDests.append(dest + ext)
 
     # Fail if any of the destination 
     # paths already exist
-    if not overwrite:
-        if not destIsDir and any([op.exists(d) for d in copyDests]):
-            raise PathError('imcp error - a destination path already '
-                            'exists ({})'.format(', '.join(copyDests)))
+    if not overwrite and any([op.exists(d) for d in copyDests]):
+        raise PathError('imcp error - a destination path already '
+                        'exists ({})'.format(', '.join(copyDests)))
  
     # Do the copy/move
     for src, dest in zip(copySrcs, copyDests):
