@@ -16,6 +16,7 @@ fsl.data package
    fsl.data.melodiclabels
    fsl.data.model
    fsl.data.dtifit
+   fsl.data.vest
 
 .. automodule:: fsl.data
     :members:
