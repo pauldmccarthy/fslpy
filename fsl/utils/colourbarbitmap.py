@@ -12,18 +12,21 @@ and returned as an RGBA bitmap.
 
 
 def colourBarBitmap(cmap,
-                    vmin,
-                    vmax,
                     width,
                     height,
+                    cmapResolution=256,
+                    negCmap=None,
+                    invert=False,
+                    ticks=None,
+                    ticklabels=None,
+                    tickalign=None,
                     label=None,
                     orientation='vertical',
                     labelside='top',
                     alpha=1.0,
                     fontsize=10,
                     bgColour=None,
-                    textColour='#ffffff',
-                    cmapResolution=256):
+                    textColour='#ffffff'):
     """Plots a colour bar using :mod:`matplotlib`.
 
     
@@ -40,15 +43,22 @@ def colourBarBitmap(cmap,
     
     
     :arg cmap:         Name of a registered :mod:`matplotlib` colour map.
-    
-    :arg vmin:         Data minimum.
-    
-    :arg vmax:         Data minimum.
-    
+
     :arg width:        Colour bar width in pixels.
     
     :arg height:       Colour bar height in pixels.
-    
+
+    :arg negCmap:      If provided, two colour maps are drawn, centered at 0.
+
+    :arg invert:       If ``True``, the colour map is inverted.
+
+    :arg ticks:        Locations of tick labels. 
+
+    :arg ticklabels:   Tick labels.
+
+    :arg tickalign:    Tick alignment (one for each tick, either ``'left'`` or
+                       ``'right'``).
+
     :arg label:        Text label to show next to the colour bar.
     
     :arg orientation:  Either ``vertical`` or ``horizontal``.
@@ -74,7 +84,6 @@ def colourBarBitmap(cmap,
     import numpy                           as np
     import matplotlib.backends.backend_agg as mplagg
     import matplotlib.figure               as mplfig
-    import matplotlib.cm                   as cm
 
     if orientation not in ['vertical', 'horizontal']:
         raise ValueError('orientation must be vertical or horizontal')
@@ -93,14 +102,14 @@ def colourBarBitmap(cmap,
         if labelside == 'left': labelside = 'top'
         else:                   labelside = 'bottom'
 
-    ncols         = cmapResolution
-    dpi           = 96.0
-    cmap          = cm.get_cmap(cmap)
-    data          = np.linspace(0.0, 1.0, ncols)
-    data          = np.repeat(data.reshape(ncols, 1), 2, axis=1)
-    data          = data.transpose()
-    data          = cmap(data)
-    data[:, :, 3] = alpha
+    dpi   = 96.0
+    ncols = cmapResolution
+    data  = genColours(cmap, ncols, invert, alpha)
+
+    if negCmap is not None:
+        ndata  = genColours(negCmap, ncols, not invert, alpha)
+        data   = np.concatenate((ndata, data), axis=1)
+        ncols *= 2
 
     fig    = mplfig.Figure(figsize=(width / dpi, height / dpi), dpi=dpi)
     canvas = mplagg.FigureCanvasAgg(fig)
@@ -118,34 +127,59 @@ def colourBarBitmap(cmap,
               interpolation='nearest')
 
     ax.set_xlim((0, ncols - 1))
-        
-    ax.set_yticks([])
-    ax.set_xticks((0, ncols - 1))
-    ax.set_xticklabels(('{:0.2f}'.format(vmin), '{:0.2f}'.format(vmax)))
-    ax.tick_params(colors=textColour, labelsize=fontsize)
 
+    ax.set_yticks([])
+    ax.tick_params(colors=textColour, labelsize=fontsize, length=0)
+    
     if labelside == 'top':
         ax.xaxis.tick_top()
         ax.xaxis.set_label_position('top')
         va = 'top'
     else:
         ax.xaxis.tick_bottom()
-        ax.xaxis.set_label_position('bottom') 
+        ax.xaxis.set_label_position('bottom')
         va = 'bottom'
 
-    minlbl, maxlbl = ax.get_xticklabels()
-
-    minlbl.set_horizontalalignment('left')
-    maxlbl.set_horizontalalignment('right')
-    
     if label is not None:
         ax.set_xlabel(label,
                       fontsize=fontsize,
                       color=textColour,
                       va=va)
+        label = ax.xaxis.get_label()
 
-    try:    fig.tight_layout()
-    except: pass
+    if ticks is None or ticklabels is None:
+        ax.set_xticks([])
+    else:
+        
+        ax.set_xticks(np.array(ticks) * ncols)
+        ax.set_xticklabels(ticklabels)
+        ticklabels = ax.xaxis.get_ticklabels()
+
+    try:
+        fig.tight_layout()
+    except:
+        pass
+
+    # Adjust the x label after tight_layout,
+    # otherwise it will overlap with the tick
+    # labels. I don't understand why, but I
+    # have to set va to the opposite of what
+    # I would have thought.
+    if label is not None and ticklabels is not None:
+        if labelside == 'top':
+            label.set_va('bottom')
+            label.set_position((0.5, 0.97))
+        else:
+            label.set_va('top')
+            label.set_position((0.5, 0.03))
+
+    # This must be done *after* calling
+    # tick_top/tick_bottom, as I think
+    # the label bjects get recreated.
+    if ticklabels is not None and tickalign is not None:
+        for l, a in zip(ticklabels, tickalign):
+            l.set_horizontalalignment(a)
+    
     canvas.draw()
 
     buf = canvas.tostring_argb()
@@ -165,3 +199,26 @@ def colourBarBitmap(cmap,
         bitmap = np.rot90(bitmap, 2)
 
     return bitmap
+
+
+def genColours(cmap, cmapResolution, invert, alpha):
+    """Generate an array containing ``cmapResolution`` colours from the given
+    colour map object/function.
+    """
+
+    import numpy         as np
+    import matplotlib.cm as cm
+    
+    ncols         = cmapResolution
+    cmap          = cm.get_cmap(cmap)
+    data          = np.linspace(0.0, 1.0, ncols)
+    
+    if invert:
+        data = data[::-1]
+    
+    data          = np.repeat(data.reshape(ncols, 1), 2, axis=1)
+    data          = data.transpose()
+    data          = cmap(data)
+    data[:, :, 3] = alpha
+
+    return data
