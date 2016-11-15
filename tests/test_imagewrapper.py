@@ -18,6 +18,13 @@ import fsl.data.image        as image
 import fsl.data.imagewrapper as imagewrap
 
 
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('fsl').setLevel(logging.WARNING)
+log = logging.getLogger()
+
+
 real_print = print
 
 def print(*args, **kwargs):
@@ -36,9 +43,6 @@ def random_coverage(shape, vol_limit=None):
     
     ndims = len(shape) - 1
     nvols = shape[-1]
-
-    print('{}D (shape: {}, {} vectors/slices/volumes)'.format(
-        ndims, shape, nvols))
 
     # Generate a random coverage. 
     # We use the same coverage for
@@ -520,7 +524,7 @@ def test_calcExpansion(niters):
             _test_expansion(coverage, slices, vols, exps)
 
 
-def test_ImageWrapper_read(niters):
+def test_ImageWrapper_read(niters, seed):
 
     for _ in range(niters):
 
@@ -577,9 +581,12 @@ def test_ImageWrapper_read(niters):
                 if j < nvols - 1: assert not wrapper.covered
                 else:             assert     wrapper.covered
 
-                
-def test_ImageWrapper_write_out(niters):
+
+def test_ImageWrapper_write_out(niters, seed):
     # This is HORRIBLE
+
+    loop = 0
+
  
     # Generate a bunch of random coverages
     for _ in range(niters):
@@ -602,12 +609,13 @@ def test_ImageWrapper_write_out(niters):
         # Generate a random coverage
         cov = random_coverage(shape, vol_limit=1)
 
-        print('This is the coverage: {}'.format(cov))
-
         img     = nib.Nifti1Image(data, np.eye(4))
         wrapper = imagewrap.ImageWrapper(img)
         applyCoverage(wrapper, cov)
         clo, chi = wrapper.dataRange
+
+        log.debug('{:3d} / {:3d}'.format(loop, niters))
+        loop += 1
 
         # Now, we'll simulate some writes
         # outside of the coverage area.
@@ -616,13 +624,13 @@ def test_ImageWrapper_write_out(niters):
             # Generate some slices outside
             # of the coverage area, making
             # sure that the slice covers
-            # at least two elements
+            # at least one element
             while True:
                 slices     = random_slices(cov, shape, 'out')
                 slices[-1] = [0, 1]
                 sliceshape = [hi - lo for lo, hi in slices]
 
-                if np.prod(sliceshape) == 1:
+                if np.prod(sliceshape) == 0:
                     continue
 
                 sliceobjs = imagewrap.sliceTupleToSliceObj(slices)
@@ -630,8 +638,8 @@ def test_ImageWrapper_write_out(niters):
                 sliceshape = sliceshape[:-1]
                 break
 
-            print('---------------')
-            print('Slice {}'.format(slices))
+            # print('---------------')
+            # print('Slice {}'.format(slices))
 
             # Expected wrapper coverage after the write
             expCov = imagewrap.adjustCoverage(cov[..., 0], slices)
@@ -669,9 +677,9 @@ def test_ImageWrapper_write_out(niters):
                 wrapper = imagewrap.ImageWrapper(img)
                 applyCoverage(wrapper, cov)
 
-                print('ndims', ndims)
-                print('sliceshape', sliceshape)
-                print('sliceobjs', sliceobjs)
+                # print('ndims', ndims)
+                # print('sliceshape', sliceshape)
+                # print('sliceobjs', sliceobjs)
 
                 newData = np.linspace(rlo, rhi, np.prod(sliceshape))
                 newData = newData.reshape(sliceshape)
@@ -679,7 +687,7 @@ def test_ImageWrapper_write_out(niters):
                 # Make sure that the expected low/high values
                 # are present in the data being written
 
-                print('Writing data (shape: {})'.format(newData.shape))
+                # print('Writing data (shape: {})'.format(newData.shape))
 
                 oldCov = wrapper.coverage(0)
 
@@ -688,26 +696,26 @@ def test_ImageWrapper_write_out(niters):
                 expLo, expHi = coverageDataRange(img.get_data(), cov, slices)
                 newLo, newHi = wrapper.dataRange
 
-                print('Old    range: {} - {}'.format(clo,   chi))
-                print('Sim    range: {} - {}'.format(rlo,   rhi))
-                print('Exp    range: {} - {}'.format(expLo, expHi))
-                print('NewDat range: {} - {}'.format(newData.min(), newData.max()))
-                print('Data   range: {} - {}'.format(data.min(),   data.max()))
-                print('Expand range: {} - {}'.format(elo, ehi))
-                print('New    range: {} - {}'.format(newLo, newHi))
+                # print('Old    range: {} - {}'.format(clo,   chi))
+                # print('Sim    range: {} - {}'.format(rlo,   rhi))
+                # print('Exp    range: {} - {}'.format(expLo, expHi))
+                # print('NewDat range: {} - {}'.format(newData.min(), newData.max()))
+                # print('Data   range: {} - {}'.format(data.min(),   data.max()))
+                # print('Expand range: {} - {}'.format(elo, ehi))
+                # print('New    range: {} - {}'.format(newLo, newHi))
 
                 newCov = wrapper.coverage(0)
-                print('Old coverage:      {}'.format(oldCov))
-                print('New coverage:      {}'.format(newCov))
-                print('Expected coverage: {}'.format(expCov))
-                print()
-                print()
+                # print('Old coverage:      {}'.format(oldCov))
+                # print('New coverage:      {}'.format(newCov))
+                # print('Expected coverage: {}'.format(expCov))
+                # print()
+                # print()
 
                 assert np.all(newCov == expCov)
 
                 assert np.isclose(newLo, expLo)
                 assert np.isclose(newHi, expHi)
-            print('--------------')
+            # print('--------------')
 
             
 def test_ImageWrapper_write_in_overlap(niters):
@@ -741,13 +749,13 @@ def test_ImageWrapper_write_in_overlap(niters):
             # Generate some slices outside
             # of the coverage area, making
             # sure that the slice covers
-            # at least two elements
+            # at least one element
             while True:
                 slices     = random_slices(cov, shape, random.choice(('in', 'overlap')))
                 slices[-1] = [0, 1]
                 sliceshape = [hi - lo for lo, hi in slices]
 
-                if np.prod(sliceshape) == 1:
+                if np.prod(sliceshape) == 0:
                     continue
 
                 sliceobjs = imagewrap.sliceTupleToSliceObj(slices)
@@ -867,7 +875,7 @@ def test_ImageWrapper_write_different_volume(niters):
                 
                 sliceshape = [hi - lo for lo, hi in slices]
 
-                if np.prod(sliceshape) == 1:
+                if np.prod(sliceshape) == 0:
                     continue
 
                 sliceobjs = imagewrap.sliceTupleToSliceObj(slices)
