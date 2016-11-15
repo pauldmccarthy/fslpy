@@ -61,7 +61,7 @@ setup(
     test_suite='tests',
 
     scripts=[
-        op.join('bin', 'imcp'),
-        op.join('bin', 'immv'),
+        op.join('bin', 'fslpy_imcp'),
+        op.join('bin', 'fslpy_immv'),
     ]
 )

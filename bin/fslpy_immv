@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# immv.py - Copy image files.
+# immv - Move image files.
 #
 # Author: Paul McCarthy <paulmc@fmrib.ox.ac.uk>
 #
@@ -21,6 +21,7 @@ SUPPORTED_EXTENSIONS = [
 ]
 
 
+
 FILE_GROUPS = [
     ('.img',    '.hdr'),
     ('.img.gz', '.hdr.gz')
@@ -28,11 +29,11 @@ FILE_GROUPS = [
 
 
 usage = """Usage:
-  imcp <file1> <file2>
-  imcp <file1> <directory>
-  imcp <file1> <file2> ... <fileN> <directory>
+  immv <file1> <file2>
+  immv <file1> <directory>
+  immv <file1> <file2> ... <fileN> <directory>
 
-Copy images from <file1> to <file2>, or copy all <file>s to <directory>
+Moves images from <file1> to <file2>, or move all <file>s to <directory>
 
 NB: filenames can be basenames or include an extension.
 
@@ -42,8 +43,8 @@ Recognised file extensions: {}
 
 def main():
     """Parses CLI arguments (see the usage string), and calls the
-    fsl.utils.path.imcp function on each input.
-    """
+    fsl.utils.path.immv function on each input.
+    """ 
 
     if len(sys.argv) < 2:
         print(usage)
@@ -58,14 +59,14 @@ def main():
 
     srcs = fslpath.removeDuplicates(srcs,
                                     allowedExts=SUPPORTED_EXTENSIONS,
-                                    fileGroups=FILE_GROUPS)
+                                    fileGroups=FILE_GROUPS) 
 
     for src in srcs:
         try:
-            fslpath.imcp(src,
+            fslpath.immv(src,
                          dest,
                          allowedExts=SUPPORTED_EXTENSIONS,
-                         fileGroups=FILE_GROUPS) 
+                         fileGroups=FILE_GROUPS)
             
         except Exception as e:
             print(e)
