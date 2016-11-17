@@ -18,13 +18,10 @@ paths.
    getExt
    splitExt
    getFileGroup
-   imcp
-   immv
 """
 
 
 import os.path as op
-import            shutil
 
 
 class PathError(Exception):
@@ -231,23 +228,23 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
         001.img
         002.hdr
         002.img
-        003.img
+        003.hdr
         003.img
 
     And you call ``removeDuplicates`` like so::
 
-         paths        = ['001.img', '001.hdr',
-                         '002.img', '002.hdr',
-                         '003.img', '003.hdr']
+         paths       = ['001.img', '001.hdr',
+                        '002.img', '002.hdr',
+                        '003.img', '003.hdr']
     
-         allowedExts = ['.img', '.hdr']
-         fileGroups  = [('.img',    '.hdr')]
+         allowedExts = ['.img',  '.hdr']
+         fileGroups  = [('.img', '.hdr')]
 
          removeDuplicates(paths, allowedExts, fileGroups)
 
     The returned list will be::
 
-         ['001.img', '003.img', '003.img']
+         ['001.img', '002.img', '003.img']
 
     :arg paths:       List of paths to reduce.
 
@@ -290,16 +287,17 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
     return ``file.img`` (i.e. the file which matches the first extension in
     the group).
 
-    Similarly, if you call the :func:`imcp` or :func:`immv` functions with the
-    above parameters, both ``file.img`` and ``file.hdr`` will be moved.
+    Similarly, if you call the :func:`.imcp.imcp` or :func:`.imcp.immv`
+    functions with the above parameters, both ``file.img`` and ``file.hdr``
+    will be moved.
 
     .. note:: The primary use-case of file groups is to resolve ambiguity with
               respect to NIFTI and ANALYSE75 image pairs. By specifying
               ``fileGroups=[('.img', '.hdr'), ('.img.gz', '.hdr.gz')]``, the
-              :func:`addExt`, :func:`immv` and :func:`imcp` functions are able
-              to figure out what you mean when you specify ``file``, and both
-              ``file.hdr`` and ``file.img`` (or ``file.hdr.gz`` and
-              ``file.img.gz``) exist.
+              :func:`addExt`, :func:`.imcp.immv` and :func:`.imcp.imcp`
+              functions are able to figure out what you mean when you specify
+              ``file``, and both ``file.hdr`` and ``file.img`` (or
+              ``file.hdr.gz`` and ``file.img.gz``) exist.
     
     :arg path:        Path to the file. Must contain the file extension.
     
@@ -342,116 +340,3 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
     else:
         if fullPaths: return matchedGroupFiles[0]
         else:         return matchedGroups[    0]
-
-
-def imcp(src,
-         dest,
-         allowedExts=None,
-         fileGroups=None,
-         overwrite=False,
-         move=False):
-    """Copy the given ``src`` file to destination ``dest``.
-
-    :arg src:         Path to copy. If ``allowedExts`` is provided,
-                      the file extension can be omitted.
-    
-    :arg dest:        Destination path. Can be an incomplete file
-                      specification (i.e. without the extension), or a 
-                      directory. 
-    
-    :arg allowedExts: Allowed/recognised file extensions.
-    
-    :arg fileGroups:  Recognised file groups - see the :func:`getFileGroup`
-                      documentation.
-
-    :arg overwrite:   If ``True`` this function will overwrite files that 
-                      already exist. Defaults to ``False``.
-    
-    :arg move:        If ``True``, the files are moved, instead of being
-                      copied.
-    """
-
-    base, ext = splitExt(src, allowedExts)
-    destIsDir = op.isdir(dest)
-
-    # If dest has been specified 
-    # as a file name, we don't 
-    # care about its extension.
-    if not destIsDir:
-        dest = removeExt(dest, allowedExts)
-
-    # src was specified without an
-    # extension, or the specitifed
-    # src does not have an allowed
-    # extension. 
-    if ext == '':
-
-        # Try to resolve the specified src
-        # path - if src does not exist, or
-        # does not have an allowed extension,
-        # addExt will raise an error
-        src = addExt(src,
-                     allowedExts,
-                     mustExist=True,
-                     fileGroups=fileGroups)
-
-        # We've resolved src to a 
-        # full filename - split it 
-        # again to get its extension
-        base, ext = splitExt(src, allowedExts)
-
-    # If the source is part of a file group,
-    # e.g. src.img/src.hdr, we want to copy
-    # the whole set of files. So here we
-    # build a list of source files that need
-    # to be copied/moved. The getFileGroup
-    # function returns all other files that
-    # are associated with this file (i.e.
-    # part of the same group).
-    #
-    # We store the sources as separate
-    # (base, ext) tuples, so we don't
-    # have to re-split when creating
-    # destination paths.
-    copySrcs = getFileGroup(src, allowedExts, fileGroups, fullPaths=False)
-    copySrcs = [(base, e) for e in copySrcs]
-
-    # Note that these additional files 
-    # do not have to exist, e.g.
-    # imcp('blah.img', ...)  will still
-    # work if there is no blah.hdr
-    copySrcs = [(b, e) for (b, e) in copySrcs if op.exists(b + e)]
-
-    # Build a list of destinations for each
-    # copy source - we build this list in
-    # advance, so we can fail if any of the
-    # destinations already exist.
-    copyDests = []
-    for i, (base, ext) in enumerate(copySrcs):
-
-        # We'll also take this opportunity 
-        # to re-combine the source paths
-        copySrcs[i] = base + ext
-
-        basename = op.basename(base)
-
-        if destIsDir: copyDests.append(op.join(dest, basename + ext))
-        else:         copyDests.append(dest + ext)
-
-    # Fail if any of the destination 
-    # paths already exist
-    if not overwrite and any([op.exists(d) for d in copyDests]):
-        raise PathError('imcp error - a destination path already '
-                        'exists ({})'.format(', '.join(copyDests)))
- 
-    # Do the copy/move
-    for src, dest in zip(copySrcs, copyDests):
-
-        if move: shutil.move(src, dest)
-        else:    shutil.copy(src, dest)
-
-
-def immv(src, dest, allowedExts=None, fileGroups=None, overwrite=False):
-    """Move the specified ``src`` to the specified ``dest``. See :func:`imcp`.
-    """
-    imcp(src, dest, allowedExts, fileGroups, overwrite, move=True)

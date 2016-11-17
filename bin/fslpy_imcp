@@ -11,20 +11,8 @@ from __future__ import print_function
 import os.path        as op
 import                   sys
 import fsl.utils.path as fslpath
-
-
-SUPPORTED_EXTENSIONS = [
-    '.nii', '.nii.gz',
-    '.hdr', '.hdr.gz',
-    '.img', '.img.gz',
-    '.mnc', '.mnc.gz'
-]
-
-
-FILE_GROUPS = [
-    ('.img',    '.hdr'),
-    ('.img.gz', '.hdr.gz')
-]
+import fsl.utils.imcp as imcp
+import fsl.data.image as fslimage
 
 
 usage = """Usage:
@@ -37,35 +25,32 @@ Copy images from <file1> to <file2>, or copy all <file>s to <directory>
 NB: filenames can be basenames or include an extension.
 
 Recognised file extensions: {}
-""".format(', '.join(SUPPORTED_EXTENSIONS))
+""".format(', '.join(fslimage.ALLOWED_EXTENSIONS))
 
 
-def main():
+def main(argv=None):
     """Parses CLI arguments (see the usage string), and calls the
-    fsl.utils.path.imcp function on each input.
+    :func:`fsl.utils.imcp.imcp` function on each input.
     """
 
-    if len(sys.argv) < 2:
+    if len(argv) < 2:
         print(usage)
         sys.exit(1)
 
-    srcs = sys.argv[1:-1]
-    dest = sys.argv[  -1]
+    srcs = argv[:-1]
+    dest = argv[ -1]
 
     if len(srcs) > 1 and not op.isdir(dest):
         print(usage)
         sys.exit(1)
 
     srcs = fslpath.removeDuplicates(srcs,
-                                    allowedExts=SUPPORTED_EXTENSIONS,
-                                    fileGroups=FILE_GROUPS)
+                                    allowedExts=fslimage.ALLOWED_EXTENSIONS,
+                                    fileGroups=fslimage.FILE_GROUPS)
 
     for src in srcs:
         try:
-            fslpath.imcp(src,
-                         dest,
-                         allowedExts=SUPPORTED_EXTENSIONS,
-                         fileGroups=FILE_GROUPS) 
+            imcp.imcp(src, dest, useDefaultExt=True) 
             
         except Exception as e:
             print(e)

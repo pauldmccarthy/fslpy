@@ -25,9 +25,10 @@ and file names:
    :nosignatures:
 
    looksLikeImage
-   removeExt
+   addExt 
    splitExt
-   addExt
+   getExt
+   removeExt
    defaultExt
    loadIndexedImageFile
 """
@@ -789,36 +790,36 @@ def looksLikeImage(filename, allowedExts=None):
     return any([filename.endswith(ext) for ext in allowedExts])
 
 
-def removeExt(filename):
-    """Removes the extension from the given file name. Returns the filename
-    unmodified if it does not have a supported extension.
-
-    See :func:`~fsl.utils.path.removeExt`.
-
-    :arg filename: The file name to strip.
-    """
-    return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
-
-
-def splitExt(filename):
-    """Splits the base name and extension for the given ``filename``.
-
-    See :func:`~fsl.utils.path.splitExt`.
-    """
-
-    return fslpath.splitExt(filename, ALLOWED_EXTENSIONS)
-
-
 def addExt(prefix, mustExist=True):
-    """Adds a file extension to the given file ``prefix``.
-
-    See :func:`~fsl.utils.path.addExt`.
+    """Adds a file extension to the given file ``prefix``.  See
+    :func:`~fsl.utils.path.addExt`.
     """
     return fslpath.addExt(prefix,
                           ALLOWED_EXTENSIONS,
                           mustExist,
                           defaultExt(),
                           fileGroups=FILE_GROUPS)
+
+
+def splitExt(filename):
+    """Splits the base name and extension for the given ``filename``.  See
+    :func:`~fsl.utils.path.splitExt`.
+    """
+    return fslpath.splitExt(filename, ALLOWED_EXTENSIONS)
+
+
+def getExt(filename):
+    """Gets the extension for the given file name.  See
+    :func:`~fsl.utils.path.getExt`.
+    """
+    return fslpath.getExt(filename, ALLOWED_EXTENSIONS)
+
+
+def removeExt(filename):
+    """Removes the extension from the given file name. See
+    :func:`~fsl.utils.path.removeExt`.
+    """
+    return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
 
 
 def defaultExt():
