@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 #
-# immv - Move image files.
+# immv.py - Move image files.
 #
 # Author: Paul McCarthy <paulmc@fmrib.ox.ac.uk>
 #
+
+"""This module defines the ``immv`` application, for moving NIFTI image
+files.
+
+The :func:`main` function is essentially a wrapper around the
+:func:`fsl.utils.imcp.immv` function - see its documentation for more details.
+"""
 
 
 from __future__ import print_function
@@ -53,7 +60,7 @@ def main(argv=None):
 
     for src in srcs:
         try:
-            imcp.immv(src, dest, useDefaultExt=True, move=True)
+            imcp.immv(src, dest, useDefaultExt=True)
             
         except Exception as e:
             print(e)

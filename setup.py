@@ -60,8 +60,10 @@ setup(
     tests_require=['pytest', 'pytest-runner'],
     test_suite='tests',
 
-    scripts=[
-        op.join('bin', 'fslpy_imcp'),
-        op.join('bin', 'fslpy_immv'),
-    ]
+    entry_points={
+        'console_scripts' : [
+            'fslpy_imcp = fsl.scripts.imcp:main',
+            'fslpy_immv = fsl.scripts.immv:main'
+        ]
+    }
 )

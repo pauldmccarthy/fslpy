@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 #
-# imcp - Copy image files.
+# imcp.py - Copy image files.
 #
 # Author: Paul McCarthy <paulmc@fmrib.ox.ac.uk>
 #
+"""This module defines the ``imcp`` application, for copying NIFTI image
+files. 
+
+The :func:`main` function is essentially a wrapper around the
+:func:`fsl.utils.imcp.imcp` function - see its documentation for more details.
+"""
 
 
 from __future__ import print_function
@@ -32,6 +38,9 @@ def main(argv=None):
     """Parses CLI arguments (see the usage string), and calls the
     :func:`fsl.utils.imcp.imcp` function on each input.
     """
+
+    if argv is None:
+        argv = sys.argv[1:]
 
     if len(argv) < 2:
         print(usage)
