@@ -6,13 +6,14 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """The :mod:`fsl` package is a library which contains convenience classes
-and functions for use by FSL python tools. It is broadly split into two
-sub-packages:
+and functions for use by FSL python tools. It is broadly split into the 
+following sub-packages:
 
 .. autosummary::
 
    fsl.data
    fsl.utils
+   fsl.scripts
 
 .. note:: The ``fslpy`` version number (currently |version|) is set in a
           single place - the :mod:`fsl.version` module.

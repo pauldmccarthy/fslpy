@@ -7,6 +7,7 @@ fsl package
    fsl.version
    fsl.utils
    fsl.data
+   fsl.scripts
 
 .. automodule:: fsl
     :members:
