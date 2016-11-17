@@ -327,7 +327,7 @@ def test_shallowest():
         assert fslpath.shallowest(path, suffixes) == output
 
 
-def test_removeDuplicates():
+def test_removeDuplicates_shouldPass():
 
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     groups      = fslimage.FILE_GROUPS 
@@ -340,44 +340,58 @@ def test_removeDuplicates():
     # ]
     allTests = [
         (['file.hdr', 'file.img'], [
-            (['file'],                 ['file']),
-            (['file.hdr'],             ['file.hdr']),
+            (['file'],                 ['file.img']),
+            (['file',     'file'],     ['file.img']),
+            (['file',     'file.hdr'], ['file.img']),
+            (['file',     'file.img'], ['file.img']),
+            (['file.hdr', 'file'],     ['file.img']),
+            (['file.hdr', 'file.hdr'], ['file.img']),
+            (['file.hdr', 'file.img'], ['file.img']),
+            (['file.img', 'file'],     ['file.img']),
+            (['file.img', 'file.hdr'], ['file.img']),
+            (['file.img', 'file.img'], ['file.img']), 
+            (['file.hdr'],             ['file.img']),
             (['file.img'],             ['file.img']),
-            (['file.hdr', 'file.img'], ['file.hdr']),
+            (['file.hdr', 'file.img'], ['file.img']),
             (['file.img', 'file.hdr'], ['file.img']),
         ]),
 
         (['file.hdr', 'file.img', 'file.blob'], [
-            (['file'],                 ['file']),
-            (['file.hdr'],             ['file.hdr']),
+            (['file'],                 ['file.img']),
+            (['file.hdr'],             ['file.img']),
             (['file.img'],             ['file.img']),
-            (['file.hdr', 'file.img'], ['file.hdr']),
+            (['file.hdr', 'file.img'], ['file.img']),
             (['file.img', 'file.hdr'], ['file.img']),
         ]),
 
 
         (['file.hdr', 'file.img', 'file.nii'], [
-            (['file'],                 ['file']),
-            (['file.hdr'],             ['file.hdr']),
-            (['file.img'],             ['file.img']),
-            (['file.hdr', 'file.img'], ['file.hdr']),
-            (['file.img', 'file.hdr'], ['file.img']), 
+            (['file.hdr'],                         ['file.img']),
+            (['file.img'],                         ['file.img']),
+            (['file.hdr', 'file.nii'],             ['file.img', 'file.nii']),
+            (['file.img', 'file.nii'],             ['file.img', 'file.nii']), 
+            (['file.hdr', 'file.img'],             ['file.img']),
+            (['file.img', 'file.hdr'],             ['file.img']),
+            (['file.img', 'file.hdr'],             ['file.img']),
+            (['file.hdr', 'file.img', 'file.nii'], ['file.img', 'file.nii']),
+            (['file.img', 'file.hdr', 'file.nii'], ['file.img', 'file.nii']),
+            (['file.img', 'file.hdr', 'file.nii'], ['file.img', 'file.nii']), 
         ]),        
                 
 
         (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'], [
-            (['001', '002', '003'],
-             ['001', '002', '003']), 
+            (['001',     '002',     '003'],
+             ['001.img', '002.img', '003.img']), 
             
             (['001.hdr', '002.hdr', '003.hdr'],
-             ['001.hdr', '002.hdr', '003.hdr']),
+             ['001.img', '002.img', '003.img']),
             (['001.img', '002.img', '003.img'],
              ['001.img', '002.img', '003.img']),
 
             (['001.hdr', '001.img', '002.hdr', '002.img', '003.img'],
-             ['001.hdr', '002.hdr', '003.img']), 
+             ['001.img', '002.img', '003.img']), 
             (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'],
-             ['001.hdr', '002.hdr', '003.hdr']),
+             ['001.img', '002.img', '003.img']),
             (['001.img', '001.hdr', '002.img', '002.hdr', '003.img', '003.hdr'],
              ['001.img', '002.img', '003.img']), 
         ])
@@ -392,9 +406,16 @@ def test_removeDuplicates():
                     f.write('{}\n'.format(fn))
 
             for paths, expected in tests:
+                
+                print()
+                print('files_to_create: ', files_to_create)
+                print('paths:           ', paths)
+                print('expected:        ', expected)
 
                 paths  = [op.join(workdir, p) for p in paths]
                 result = fslpath.removeDuplicates(paths, allowedExts, groups)
+
+                print('result:   ', result)
 
                 assert result == [op.join(workdir, e) for e in expected]
 
@@ -404,6 +425,9 @@ def test_removeDuplicates():
     finally:
         shutil.rmtree(workdir)
 
+
+def test_removeDuplicates_shouldFail():
+    pass
 
 
 def test_getFileGroup():
@@ -420,10 +444,12 @@ def test_getFileGroup():
     # expected == 'all' is equivalent to expected == files_to_create
     allTests = [
         (['file.hdr', 'file.img'], [
+            ('file',     'all'),
             ('file.hdr', 'all'),
             ('file.img', 'all')]),
 
         (['file.hdr.gz', 'file.img.gz'], [
+            ('file',        'all'),
             ('file.hdr.gz', 'all'),
             ('file.img.gz', 'all')]), 
 
@@ -437,10 +463,12 @@ def test_getFileGroup():
 
 
         (['file.hdr'], [
+            ('file',     ['file']),
             ('file.hdr', ['file.hdr']),
             ('file.img', ['file.img'])]),
 
         (['file.img'], [
+            ('file',     ['file']),
             ('file.hdr', ['file.hdr']),
             ('file.img', ['file.img'])]), 
     ]
@@ -459,6 +487,10 @@ def test_getFileGroup():
                 if expected == 'all':
                     expected = list(files_to_create)
 
+                print()
+                print('files_to_create: ', files_to_create)
+                print('path:            ', path)
+                print('expected:        ', expected)
 
                 fullPaths = fslpath.getFileGroup(
                     op.join(workdir, path),
@@ -480,207 +512,3 @@ def test_getFileGroup():
 
     finally:
         shutil.rmtree(workdir)
-
-
-def test_imcp_shouldPass(move=False):
-
-    allowedExts = fslimage.ALLOWED_EXTENSIONS
-    groups      = fslimage.FILE_GROUPS
-    # 
-    # (files_to_create,
-    #    [( imcp_src,   imcp_dest,  files_which_should_exist),
-    #     ( imcp_src,   imcp_dest, [files_which_should_exist]),
-    #     ([imcp_srcs], imcp_dest,  files_which_should_exist),
-    #     ([imcp_srcs], imcp_dest, [files_which_should_exist]),
-    #     ...
-    #    ]
-    # )
-    #
-    # if icmp_dest == '', it means to copy to the directory
-    # files_which_should_exist == 'all' is equivalent to files_which_should_exist == files_to_create
-    shouldPass = [
-        (['file.hdr', 'file.img'], [
-            ('file',     'file',     'all'),
-            ('file',     'file.img', 'all'),
-            ('file',     'file.hdr', 'all'),
-            ('file',     '',         'all'),
-            ('file.img', 'file',     'all'),
-            ('file.img', 'file.img', 'all'),
-            ('file.img', 'file.hdr', 'all'),
-            ('file.img', '',         'all'),
-            ('file.hdr', 'file',     'all'),
-            ('file.hdr', 'file.img', 'all'),
-            ('file.hdr', 'file.hdr', 'all'),
-            ('file.hdr', '',         'all'),
-        ]),
-
-        (['file.hdr', 'file.img', 'file.blob'], [
-            ('file',     'file',     ['file.hdr', 'file.img']),
-            ('file',     'file.img', ['file.hdr', 'file.img']),
-            ('file',     'file.hdr', ['file.hdr', 'file.img']),
-            ('file',     '',         ['file.hdr', 'file.img']),
-            ('file.img', 'file',     ['file.hdr', 'file.img']),
-            ('file.img', 'file.img', ['file.hdr', 'file.img']),
-            ('file.img', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', '',         ['file.hdr', 'file.img']),
-            ('file.hdr', 'file',     ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.img', ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.hdr', '',         ['file.hdr', 'file.img']),
-        ]),
-
-
-        (['file.hdr', 'file.img', 'file.nii'], [
-            ('file.img', 'file',     ['file.hdr', 'file.img']),
-            ('file.img', 'file.img', ['file.hdr', 'file.img']),
-            ('file.img', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', '',         ['file.hdr', 'file.img']),
-            ('file.hdr', 'file',     ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.img', ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.hdr', '',         ['file.hdr', 'file.img']),
-            ('file.nii', 'file',     'file.nii'),
-            ('file.nii', 'file.nii', 'file.nii'),
-            ('file.nii', '',         'file.nii'),
-        ]),        
-                
-        
-        (['file.nii'], [
-            ('file',     'file',     'all'),
-            ('file',     'file.nii', 'all'),
-            ('file',     '',         'all'),
-            ('file.nii', 'file',     'all'),
-            ('file.nii', 'file.nii', 'all'),
-            ('file.nii', '',         'all'),
-        ]),
-
-        (['file.nii.gz'], [
-            ('file',        'file',        'all'),
-            ('file',        'file.nii.gz', 'all'),
-            ('file',        '',            'all'),
-            ('file.nii.gz', 'file',        'all'),
-            ('file.nii.gz', 'file.nii.gz', 'all'),
-            ('file.nii.gz', '',            'all'),
-        ]),
-
-        
-        (['file.nii', 'file.blob'], [
-            ('file',     'file',     'file.nii'),
-            ('file',     'file.nii', 'file.nii'),
-            ('file',     '',         'file.nii'),
-            ('file.nii', 'file',     'file.nii'),
-            ('file.nii', 'file.nii', 'file.nii'),
-            ('file.nii', '',         'file.nii'),
-        ]), 
-        
-
-        (['file.nii', 'file.nii.gz'], [
-            ('file.nii',    'file',        'file.nii'),
-            ('file.nii',    'file.nii',    'file.nii'),
-            ('file.nii',    '',            'file.nii'),
-            ('file.nii.gz', 'file',        'file.nii.gz'),
-            ('file.nii.gz', 'file.nii.gz', 'file.nii.gz'),
-            ('file.nii.gz', '',            'file.nii.gz'),
-        ]),
-
-        (['file.hdr', 'file.img', 'file.nii', 'file.nii.gz'], [
-            (['file.img', 'file.nii', 'file.nii.gz'], '', 'all'),
-            ('file.img',                              '', ['file.hdr', 'file.img']),
-            (['file.hdr', 'file.img'],                '', ['file.hdr', 'file.img']),
-
-            ('file.nii',                              '', 'file.nii'),
-            (['file.nii', 'file.nii.gz'],             '', ['file.nii', 'file.nii.gz']),
-        ]),
-
-
-        (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'], [
-            
-            (['001',     '002',     '003'],                                      '', 'all'),
-            (['001.img', '002.img', '003.img'],                                  '', 'all'),
-            (['001.hdr', '002.hdr', '003.hdr'],                                  '', 'all'),
-                                                                                    
-            (['001.img', '002',     '003'],                                      '', 'all'),
-            (['001.hdr', '002',     '003'],                                      '', 'all'),
-
-            (['001.img', '002.hdr', '003.img'],                                  '', 'all'),
-            (['001.hdr', '002.img', '003.hdr'],                                  '', 'all'),
-
-            (['001',     '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.img', '003.img'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003.hdr'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-                                                                         
-            (['001.img', '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-
-            (['001.img', '003.img'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003.hdr'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']), 
-
-            (['001.img', '001.hdr', '002.img', '002.hdr', '003.img', '003.hdr'], '', 'all'),
-        ]),  
-    ]
-
-
-    indir  = tempfile.mkdtemp()
-    outdir = tempfile.mkdtemp()
-
-    try:
-
-        for files_to_create, tests in shouldPass:
-            
-            if not isinstance(files_to_create, list):
-                files_to_create = [files_to_create]
-                
-            for imcp_src, imcp_dest, should_exist in tests:
-
-                if   not isinstance(imcp_src, list):     imcp_src     = [imcp_src]
-                if   should_exist == 'all':              should_exist = list(files_to_create)
-                elif not isinstance(should_exist, list): should_exist = [should_exist]
-
-                imcp_dest = op.join(outdir, imcp_dest)
-
-                # Each input file contains
-                # its name in plain text,
-                # so we can verify that the
-                # files were correctly copied
-                for fn in files_to_create:
-                    with open(op.join(indir, fn), 'wt') as f:
-                        f.write('{}\n'.format(fn))
-
-                for src in imcp_src:
-
-                    src = op.join(indir, src)
-                    
-                    if move: fslpath.immv(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups, overwrite=True)
-                    else:    fslpath.imcp(src, imcp_dest, allowedExts=allowedExts, fileGroups=groups, overwrite=True)
-
-                copied = os.listdir(outdir)
-                copied = [f for f in copied if op.isfile(op.join(outdir, f))]
-
-                assert sorted(copied) == sorted(should_exist)
-
-                # check file contents 
-                for fn in should_exist:
-                    with open(op.join(outdir, fn), 'rt') as f:
-                        assert f.read() == '{}\n'.format(fn)
-
-                # If move, check that
-                # input files are gone
-                if move:
-                    for f in should_exist:
-                         assert not op.exists(op.join(indir, f))
-                         
-                for f in files_to_create:
-                    try:    os.remove(op.join(indir,  f))
-                    except: pass
-                        
-                for f in should_exist:
-                    os.remove(op.join(outdir, f))
-        
-        
-    finally:
-        shutil.rmtree(indir)
-        shutil.rmtree(outdir)
-
-
-def test_immv_shouldPass():
-    test_imcp_shouldPass(move=True)
