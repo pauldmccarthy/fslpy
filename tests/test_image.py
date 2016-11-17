@@ -112,7 +112,7 @@ def test_looksLikeImage():
 
 def test_addExt(testdir):
 
-    default = fslimage.DEFAULT_EXTENSION
+    default = fslimage.defaultExt()
 
     # (file, mustExist, expected)
     tests = [
