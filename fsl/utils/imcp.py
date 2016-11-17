@@ -75,6 +75,10 @@ def imcp(src,
         # again to get its extension
         srcBase, srcExt = fslimage.splitExt(src)
 
+    if not op.exists(src):
+        raise fslpath.PathError('imcp error - source path '
+                                'does not exist: {}'.format(src))
+
     # Figure out the destination file
     # extension/type. If useDefaultExt
     # is True, we use the default
