@@ -246,7 +246,10 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
 
          ['001.img', '002.img', '003.img']
 
-    :arg paths:       List of paths to reduce.
+    A :exc:`PathError` is raised if any of the paths do not exist.
+
+    :arg paths:       List of paths to reduce. If ``allowedExts`` is not
+                      ``None``, may be incomplete.
 
     :arg allowedExts: Allowed/recognised file extensions.
 
@@ -257,10 +260,19 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
 
     for path in paths:
 
+        path = addExt(path,
+                      mustExist=True,
+                      allowedExts=allowedExts,
+                      fileGroups=fileGroups)
+
         groupFiles = getFileGroup(path, allowedExts, fileGroups)
 
-        if not any([g in unique for g in groupFiles]):
-            unique.append(path)
+        if len(groupFiles) == 0:
+            if path not in unique:
+                unique.append(path)
+                
+        elif not any([p in unique for p in groupFiles]):
+            unique.append(groupFiles[0])
 
     return unique
 
@@ -320,7 +332,7 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
 
     for group in fileGroups:
 
-        if ext not in group:
+        if ext != '' and ext not in group:
             continue
 
         groupFiles = [base + s for s in group]

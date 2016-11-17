@@ -59,13 +59,12 @@ def main(argv=None):
                                     fileGroups=fslimage.FILE_GROUPS) 
 
     for src in srcs:
-        try:
-            imcp.immv(src, dest, useDefaultExt=True)
-            
-        except Exception as e:
-            print(e)
-            break
+        imcp.immv(src, dest, useDefaultExt=True)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
