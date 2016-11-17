@@ -27,12 +27,14 @@ and file names:
    looksLikeImage
    removeExt
    addExt
+   defaultExt
    loadIndexedImageFile
 """
 
 
-import               logging
+import               os
 import os.path    as op
+import               logging
 
 import               six 
 import numpy      as np
@@ -758,10 +760,6 @@ ambiguities - see :func:`fsl.utils.path.addExt`.
 """
 
 
-DEFAULT_EXTENSION  = '.nii.gz'
-"""The default file extension (TODO read this from ``$FSLOUTPUTTYPE``)."""
-
-
 PathError = fslpath.PathError
 """Error raised by :mod:`fsl.utils.path` functions when an error occurs.
 Made available in this module for convenience.
@@ -809,8 +807,27 @@ def addExt(prefix, mustExist=True):
     return fslpath.addExt(prefix,
                           ALLOWED_EXTENSIONS,
                           mustExist,
-                          DEFAULT_EXTENSION,
+                          defaultExt(),
                           fileGroups=FILE_GROUPS)
+
+
+def defaultExt():
+    """Returns the default NIFTI file extension that should be used.
+
+    If the ``$FSLOUTPUTTYPE`` variable is set, its value is used.
+    Otherwise, ``.nii.gz`` is returned.
+    """
+
+    # TODO: Add analyze support.
+    options = {
+        'NIFTI'      : '.nii',
+        'NIFTI_PAIR' : '.img',
+        'NIFTI_GZ'   : '.nii.gz',
+    }
+    
+    outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')
+
+    return options.get(outputType, '.nii.gz')
 
 
 def loadIndexedImageFile(filename):
