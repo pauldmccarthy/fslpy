@@ -26,6 +26,7 @@ and file names:
 
    looksLikeImage
    removeExt
+   splitExt
    addExt
    defaultExt
    loadIndexedImageFile
@@ -797,6 +798,15 @@ def removeExt(filename):
     :arg filename: The file name to strip.
     """
     return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
+
+
+def splitExt(filename):
+    """Splits the base name and extension for the given ``filename``.
+
+    See :func:`~fsl.utils.path.splitExt`.
+    """
+
+    return fslpath.splitExt(filename, ALLOWED_EXTENSIONS)
 
 
 def addExt(prefix, mustExist=True):
