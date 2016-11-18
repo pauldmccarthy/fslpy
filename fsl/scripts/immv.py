@@ -59,7 +59,7 @@ def main(argv=None):
                                     fileGroups=fslimage.FILE_GROUPS) 
 
     for src in srcs:
-        imcp.immv(src, dest, useDefaultExt=True)
+        imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
 
 
 if __name__ == '__main__':

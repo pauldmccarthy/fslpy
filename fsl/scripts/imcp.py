@@ -58,7 +58,7 @@ def main(argv=None):
                                     fileGroups=fslimage.FILE_GROUPS)
 
     for src in srcs:
-        imcp.imcp(src, dest, useDefaultExt=True) 
+        imcp.imcp(src, dest, useDefaultExt=True, overwrite=True) 
 
 
 if __name__ == '__main__':

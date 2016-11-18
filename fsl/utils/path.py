@@ -18,6 +18,7 @@ paths.
    getExt
    splitExt
    getFileGroup
+   removeDuplicates
 """
 
 
@@ -75,7 +76,7 @@ def shallowest(path, suffixes):
 
 
 def addExt(prefix,
-           allowedExts,
+           allowedExts=None,
            mustExist=True,
            defaultExt=None,
            fileGroups=None):
@@ -108,8 +109,11 @@ def addExt(prefix,
     :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
     """
 
-    if fileGroups is None:
-        fileGroups = {}
+    if allowedExts is None: allowedExts = []
+    if fileGroups  is None: fileGroups  = {}
+
+    if defaultExt is not None and defaultExt not in allowedExts:
+        allowedExts.append(defaultExt)
 
     if not mustExist:
 
@@ -119,11 +123,15 @@ def addExt(prefix,
             return prefix
 
         if defaultExt is not None: return prefix + defaultExt
-        else:                      return None
+        else:                      return prefix
 
-    # If the provided prefix already ends with a
-    # supported extension , check to see that it exists
-    if any([prefix.endswith(ext) for ext in allowedExts]):
+    # If no allowed extensions were
+    # provided, or the provided prefix
+    # already ends with a supported
+    # extension, check to see that it
+    # exists.
+    if len(allowedExts) == 0 or \
+       any([prefix.endswith(ext) for ext in allowedExts]):
         allPaths = [prefix]
         
     # Otherwise, make a bunch of file names, one per
@@ -218,72 +226,17 @@ def splitExt(filename, allowedExts=None):
     return filename[:-extLen], filename[-extLen:]
 
 
-def removeDuplicates(paths, allowedExts=None, fileGroups=None):
-    """Reduces the list of ``paths`` down to those which are unique with 
-    respect to the specified ``fileGroups``.
-
-    For example, if you have a directory containing::
-    
-        001.hdr
-        001.img
-        002.hdr
-        002.img
-        003.hdr
-        003.img
-
-    And you call ``removeDuplicates`` like so::
-
-         paths       = ['001.img', '001.hdr',
-                        '002.img', '002.hdr',
-                        '003.img', '003.hdr']
-    
-         allowedExts = ['.img',  '.hdr']
-         fileGroups  = [('.img', '.hdr')]
-
-         removeDuplicates(paths, allowedExts, fileGroups)
-
-    The returned list will be::
-
-         ['001.img', '002.img', '003.img']
-
-    A :exc:`PathError` is raised if any of the paths do not exist.
-
-    :arg paths:       List of paths to reduce. If ``allowedExts`` is not
-                      ``None``, may be incomplete.
-
-    :arg allowedExts: Allowed/recognised file extensions.
-
-    :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
-    """
-
-    unique = []
-
-    for path in paths:
-
-        path = addExt(path,
-                      mustExist=True,
-                      allowedExts=allowedExts,
-                      fileGroups=fileGroups)
-
-        groupFiles = getFileGroup(path, allowedExts, fileGroups)
-
-        if len(groupFiles) == 0:
-            if path not in unique:
-                unique.append(path)
-                
-        elif not any([p in unique for p in groupFiles]):
-            unique.append(groupFiles[0])
-
-    return unique
-
-
 def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
     """If the given ``path`` is part of a ``fileGroup``, returns a list 
     containing the paths to all other files in the group (including the
     ``path`` itself).
 
-    If the ``path`` does not appear to be part of a file group, a list
-    containing only the ``path`` is returned.
+    If the ``path`` does not appear to be part of a file group, or appears to
+    be part of an incomplete file group, a list containing only the ``path``
+    is returned.
+
+    If the ``path`` does not exist, or appears to be part of more than one 
+    file group, a :exc:`PathError` is raised.
 
     File groups can be used to specify a collection of file suffixes which
     should always exist alongside each other. This can be used to resolve
@@ -322,10 +275,12 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
                       extensions in the group are returned.
     """
 
-    if fileGroups is None:
-        return [path]
-
+    path = addExt(path, allowedExts, mustExist=True, fileGroups=fileGroups)
     base, ext = splitExt(path, allowedExts)
+ 
+    if fileGroups is None:
+        if fullPaths: return [path]
+        else:         return [ext]
 
     matchedGroups     = []
     matchedGroupFiles = []
@@ -343,12 +298,75 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
         matchedGroups    .append(group)
         matchedGroupFiles.append(groupFiles)
 
+    if len(matchedGroupFiles) == 1:
+        if fullPaths: return matchedGroupFiles[0]
+        else:         return matchedGroups[    0]
+
+    # Path is not part of any group
+    elif len(matchedGroupFiles) == 0:
+        if fullPaths: return [path]
+        else:         return [ext]
+        
     # If the given path is part of more 
     # than one existing file group, we 
     # can't resolve this ambiguity.
-    if len(matchedGroupFiles) != 1:
-        if fullPaths: return [path]
-        else:         return [ext]
     else:
-        if fullPaths: return matchedGroupFiles[0]
-        else:         return matchedGroups[    0]
+        raise PathError('Path is part of multiple '
+                        'file groups: {}'.format(path))
+
+
+def removeDuplicates(paths, allowedExts=None, fileGroups=None):
+    """Reduces the list of ``paths`` down to those which are unique with 
+    respect to the specified ``fileGroups``.
+
+    For example, if you have a directory containing::
+    
+        001.hdr
+        001.img
+        002.hdr
+        002.img
+        003.hdr
+        003.img
+
+    And you call ``removeDuplicates`` like so::
+
+         paths       = ['001.img', '001.hdr',
+                        '002.img', '002.hdr',
+                        '003.img', '003.hdr']
+    
+         allowedExts = ['.img',  '.hdr']
+         fileGroups  = [('.img', '.hdr')]
+
+         removeDuplicates(paths, allowedExts, fileGroups)
+
+    The returned list will be::
+
+         ['001.img', '002.img', '003.img']
+
+    If you provide ``allowedExts``, you may specify incomplete ``paths`` (i.e.
+    without extensions), as long as there are no path ambiguities.
+
+    A :exc:`PathError` will be raised if any of the ``paths`` do not exist,
+    or if there are any ambiguities with respect to incomplete paths.
+    
+    :arg paths:       List of paths to reduce. 
+
+    :arg allowedExts: Allowed/recognised file extensions.
+
+    :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
+    """
+
+    unique = []
+
+    for path in paths:
+
+        groupFiles = getFileGroup(path, allowedExts, fileGroups)
+
+        if len(groupFiles) == 0:
+            if path not in unique:
+                unique.append(path)
+                
+        elif not any([p in unique for p in groupFiles]):
+            unique.append(groupFiles[0])
+
+    return unique

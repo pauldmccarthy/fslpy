@@ -44,7 +44,10 @@ def imcp(src,
     :arg useDefaultExt: Defaults to ``False``. If ``True``, the destination
                         file type will be set according to the default 
                         extension, specified by
-                        :func:`~fsl.data.image.defaultExt`.
+                        :func:`~fsl.data.image.defaultExt`. If the source
+                        file does not have the same type as the default
+                        extension, it will be converted. If ``False``, the
+                        source file type is not changed.
     
     :arg move:          If ``True``, the files are moved, instead of being
                         copied. See :func:`immv`.
@@ -187,7 +190,7 @@ def imcp(src,
 def immv(src,
          dest,
          overwrite=False,
-         useDefaultExt=True):
+         useDefaultExt=False):
     """Move the specified ``src`` to the specified ``dest``. See :func:`imcp`.
     """
     imcp(src,
