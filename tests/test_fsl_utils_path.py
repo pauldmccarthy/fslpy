@@ -18,7 +18,97 @@ import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
 
-def test_addExt_exists_shouldPass(testdir):
+def make_dummy_file(path):
+    with open(path, 'wt') as f:
+        f.write('{}\n'.format(op.basename(path))) 
+
+
+def make_dummy_image_file(path):
+
+    if   path.endswith('.nii'):    paths = [path]
+    elif path.endswith('.nii.gz'): paths = [path]
+    elif path.endswith('.img'):    paths = [path, path[:-4] + '.hdr']
+    elif path.endswith('.hdr'):    paths = [path, path[:-4] + '.img']
+    elif path.endswith('.img.gz'): paths = [path, path[:-7] + '.hdr.gz']
+    elif path.endswith('.hdr.gz'): paths = [path, path[:-7] + '.img.gz']
+    else: raise RuntimeError()
+
+    for path in paths:
+        make_dummy_file(path)
+
+
+def cleardir(dir):
+    for f in os.listdir(dir):
+        f = op.join(dir, f)
+        if op.isfile(f):
+            os.remove(f) 
+
+
+def test_deepest():
+
+    # path, suffixes, output
+    tests = [
+        
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],           '/blah.feat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'], '/blah.feat/foo.ica/fum.gfeat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],          '/blah.feat/foo.ica/fum.gfeat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],            '/blah.feat/foo.ica/fum.gfeat/moo.ica'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],            '/blah.feat/foo.ica'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.bob'],            '/blah.feat/foo.ica/fum.gfeat/moo.bob'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],            'blah.feat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'],  'blah.feat/foo.ica/fum.gfeat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],           'blah.feat/foo.ica/fum.gfeat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],             'blah.feat/foo.ica/fum.gfeat/moo.ica'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],             'blah.feat/foo.ica'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica/fum.gfeat/moo.bob'),
+        
+        ('/',   [],       None),
+        ('',    [],       None),
+        ('///', [],       None),
+        ('/',   ['blah'], None),
+        ('',    ['blah'], None),
+        ('///', ['blah'], None),
+    ]
+
+    for path, suffixes, output in tests:
+        assert fslpath.deepest(path, suffixes) == output
+
+
+def test_shallowest():
+    # path, suffixes, output
+    tests = [
+        
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],           '/blah.feat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'], '/blah.feat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],          '/blah.feat/foo.ica/fum.gfeat'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],            '/blah.feat/foo.ica'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],            '/blah.feat/foo.ica'),
+        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.bob'],            '/blah.feat/foo.ica/fum.gfeat/moo.bob'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],            'blah.feat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'],  'blah.feat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],           'blah.feat/foo.ica/fum.gfeat'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],             'blah.feat/foo.ica'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],             'blah.feat/foo.ica'),
+        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica'),
+        (' blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica'),
+        
+        ('/',   [],       None),
+        ('',    [],       None),
+        ('///', [],       None),
+        ('/',   ['blah'], None),
+        ('',    ['blah'], None),
+        ('///', ['blah'], None),
+    ]
+    
+    for path, suffixes, output in tests:
+        assert fslpath.shallowest(path, suffixes) == output
+
+
+def test_addExt_imageFiles_mustExist_shouldPass():
     """Tests the addExt function where the path exists, and the inputs
     are valid.
     """
@@ -26,119 +116,389 @@ def test_addExt_exists_shouldPass(testdir):
     groups       = fslimage.FILE_GROUPS
     allowedExts  = fslimage.ALLOWED_EXTENSIONS
 
+    # (files_to_create, path, expected)
     tests = [
-        ('compressed',                     'compressed.nii.gz'),
-        ('compressed.nii.gz',              'compressed.nii.gz'),
-        ('uncompressed',                   'uncompressed.nii'),
-        ('uncompressed.nii',               'uncompressed.nii'),
-        ('img_hdr_pair',                   'img_hdr_pair.img'),
-        ('img_hdr_pair.hdr',               'img_hdr_pair.hdr'),
-        ('img_hdr_pair.img',               'img_hdr_pair.img'),
-        ('compressed_img_hdr_pair',        'compressed_img_hdr_pair.img.gz'),
-        ('compressed_img_hdr_pair.hdr.gz', 'compressed_img_hdr_pair.hdr.gz'),
-        ('compressed_img_hdr_pair.img.gz', 'compressed_img_hdr_pair.img.gz'),
+
+        # Single files
+        ('file.nii',         'file',        'file.nii'),
+        ('file.nii',         'file.nii',    'file.nii'), 
+        ('file.nii.gz',      'file',        'file.nii.gz'),
+        ('file.nii.gz',      'file.nii.gz', 'file.nii.gz'),
+        ('file.img',         'file',        'file.img'),
+        ('file.img',         'file.hdr',    'file.hdr'),
+        ('file.img',         'file.img',    'file.img'),
+        ('file.img.gz',      'file',        'file.img.gz'),
+        ('file.img.gz',      'file.hdr.gz', 'file.hdr.gz'),
+        ('file.img.gz',      'file.img.gz', 'file.img.gz'),
+
+        # Multiple suffixes should be handled
+        ('file.blob.nii',    'file.blob',        'file.blob.nii'),
+        ('file.blob.nii',    'file.blob.nii',    'file.blob.nii'),
+        ('file.blob.nii.gz', 'file.blob',        'file.blob.nii.gz'),
+        ('file.blob.nii.gz', 'file.blob.nii.gz', 'file.blob.nii.gz'),
+        ('file.blob.img',    'file.blob',        'file.blob.img'),
+        ('file.blob.hdr',    'file.blob.hdr',    'file.blob.hdr'),
+        ('file.blob.img',    'file.blob.img',    'file.blob.img'),
+        ('file.blob.img.gz', 'file.blob',        'file.blob.img.gz'),
+        ('file.blob.hdr.gz', 'file.blob.hdr.gz', 'file.blob.hdr.gz'),
+        ('file.blob.img.gz', 'file.blob.img.gz', 'file.blob.img.gz'), 
+        
+        # Even if that suffix is a itself supported 
+        # suffix (as long as the path is unambiguous)
+        
+        ('file.img.nii',    'file.img.nii',    'file.img.nii'),
+        ('file.img.nii.gz', 'file.img.nii.gz', 'file.img.nii.gz'),
+        ('file.img.hdr',    'file.img.hdr',    'file.img.hdr'),
+        ('file.img.img',    'file.img.img',    'file.img.img'),
+        ('file.img.hdr.gz', 'file.img.hdr.gz', 'file.img.hdr.gz'),
+        ('file.img.img.gz', 'file.img.img.gz', 'file.img.img.gz'),
+
+        
+        # Multiple files exist, but prefix is unambiguous
+        ('file.nii     file.nii.gz',  'file.nii',     'file.nii'),
+        ('file.nii     file.nii.gz',  'file.nii.gz',  'file.nii.gz'),
+        
+        ('file1.nii    file2.nii.gz', 'file1',        'file1.nii'),
+        ('file1.nii    file2.nii.gz', 'file1.nii',    'file1.nii'),
+        ('file1.nii    file2.nii.gz', 'file2',        'file2.nii.gz'),
+        ('file1.nii    file2.nii.gz', 'file2.nii.gz', 'file2.nii.gz'),
+        
+        ('file.nii     file.img',     'file.nii',     'file.nii'),
+        ('file.nii     file.img',     'file.img',     'file.img'),
+        ('file.nii     file.img',     'file.hdr',     'file.hdr'),
+
+        ('file.img.gz  file.img',     'file.img',     'file.img'),
+        ('file.img.gz  file.img',     'file.hdr',     'file.hdr'),
+        ('file.img.gz  file.img',     'file.img.gz',  'file.img.gz'),
+        ('file.img.gz  file.img',     'file.hdr.gz',  'file.hdr.gz'),
+
+        ('file1.img.gz file2.img',    'file2',        'file2.img'),
+        ('file1.img.gz file2.img',    'file2.img',    'file2.img'),
+        ('file1.img.gz file2.img',    'file2.hdr',    'file2.hdr'),
+        ('file1.img.gz file2.img',    'file1',        'file1.img.gz'),
+        ('file1.img.gz file2.img',    'file1.img.gz', 'file1.img.gz'),
+        ('file1.img.gz file2.img',    'file1.hdr.gz', 'file1.hdr.gz'), 
+        
+        ('file1.nii    file2.img',    'file1',        'file1.nii'),
+        ('file1.nii    file2.img',    'file1.nii',    'file1.nii'),
+        ('file1.nii    file2.img',    'file2',        'file2.img'),
+        ('file1.nii    file2.img',    'file2.hdr',    'file2.hdr'),
+        ('file1.nii    file2.img',    'file2.img',    'file2.img'),
+        
+        ('file1.img    file2.img',    'file1',        'file1.img'),
+        ('file1.img    file2.img',    'file1.hdr',    'file1.hdr'),
+        ('file1.img    file2.img',    'file1.img',    'file1.img'),
+        ('file1.img    file2.img',    'file2',        'file2.img'),
+        ('file1.img    file2.img',    'file2.hdr',    'file2.hdr'),
+        ('file1.img    file2.img',    'file2.img',    'file2.img'), 
     ]
 
-    for test in tests:
-        prefix = op.join(testdir, 'nifti_formats', test[0])
-        output = op.join(testdir, 'nifti_formats', test[1]) 
+    workdir = tempfile.mkdtemp()
 
-        assert fslpath.addExt(prefix,
-                              allowedExts,
-                              mustExist=True,
-                              fileGroups=groups) == output
+    try:
+
+        for files_to_create, prefix, expected in tests:
+
+            files_to_create = files_to_create.split()
+            for f in files_to_create:
+                make_dummy_image_file(op.join(workdir, f))
+
+            print('files_to_create: ', files_to_create)
+            print('workdir:         ', os.listdir(workdir))
+            print('prefix:          ', prefix)
+            print('expected:        ', expected)
+
+            result =  fslpath.addExt(op.join(workdir, prefix),
+                                     allowedExts,
+                                     mustExist=True,
+                                     fileGroups=groups)
+
+            print('result:          ', result)
+
+            assert result == op.join(workdir, expected)
+
+            cleardir(workdir)
+            
+    finally:
+        shutil.rmtree(workdir)
+            
+
+def test_addExt_otherFiles_mustExist_shouldPass():
+
+    workdir = tempfile.mkdtemp()
 
 
-def test_addExt_exists_shouldFail(testdir):
+    # (files_to_create, path, allowedExts, filegroups, expected)
+    tests = [
+
+        # allowedExts is None, fileGroups is None
+        ('file.a',        'file.a', '', [], 'file.a'),
+        ('file.a file.b', 'file.a', '', [], 'file.a'),
+        ('file.a file.b', 'file.b', '', [], 'file.b'),
+
+        # fileGroups is None
+        ('file.a',        'file',   '.a', [], 'file.a'),
+        ('file.a',        'file.a', '.a', [], 'file.a'),
+
+
+        ('file.a file.b',   'file',     '.a',    [], 'file.a'),
+        ('file.a file.b',   'file.a',   '.a',    [], 'file.a'),
+        ('file.a file.b',   'file.b',   '.a .b', [], 'file.b'),
+
+        ('file1.a file2.b', 'file1',    '.a .b', [], 'file1.a'),
+        ('file1.a file2.b', 'file1.a',  '.a .b', [], 'file1.a'),
+        ('file1.a file2.b', 'file2.b',  '.a .b', [], 'file2.b'),
+        ('file1.a file2.b', 'file2.b',  '.a .b', [], 'file2.b'),
+
+        ('file.a file.b', 'file',   '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b', 'file',   '.a .b', ['.b .a'], 'file.b'),
+        ('file.a file.b', 'file.a', '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b', 'file.b', '.a .b', ['.a .b'], 'file.b'),
+        ('file.a file.b', 'file.a', '.a .b', ['.b .a'], 'file.a'),
+        ('file.a file.b', 'file.b', '.a .b', ['.b .a'], 'file.b'), 
+
+        ('file.a file.b file.c file.d', 'file',     '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b file.c file.d', 'file',     '.a .b', ['.b .a'], 'file.b'),
+        ('file.a file.b file.c file.d', 'file.a',   '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b file.c file.d', 'file.b',   '.a .b', ['.a .b'], 'file.b'),
+
+        ('file1.a file1.b file2.a file2.b', 'file1',   '.a .b', ['.a .b'], 'file1.a'),
+        ('file1.a file1.b file2.a file2.b', 'file1.a', '.a .b', ['.a .b'], 'file1.a'),
+        ('file1.a file1.b file2.a file2.b', 'file1.b', '.a .b', ['.a .b'], 'file1.b'),
+        ('file1.a file1.b file2.a file2.b', 'file2',   '.a .b', ['.a .b'], 'file2.a'),
+        ('file1.a file1.b file2.a file2.b', 'file2.a', '.a .b', ['.a .b'], 'file2.a'),
+        ('file1.a file1.b file2.a file2.b', 'file2.b', '.a .b', ['.a .b'], 'file2.b'),
+
+        ('file1.a file1.b file2.c file2.d', 'file1',   '.a .b .c .d', ['.a .b', '.c .d'], 'file1.a'),
+        ('file1.a file1.b file2.c file2.d', 'file1.a', '.a .b .c .d', ['.a .b', '.c .d'], 'file1.a'),
+        ('file1.a file1.b file2.c file2.d', 'file1.b', '.a .b .c .d', ['.a .b', '.c .d'], 'file1.b'),
+        ('file1.a file1.b file2.c file2.d', 'file2',   '.a .b .c .d', ['.a .b', '.c .d'], 'file2.c'),
+        ('file1.a file1.b file2.c file2.d', 'file2.c', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.c'),
+        ('file1.a file1.b file2.c file2.d', 'file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.d'), 
+    ]
+
+    try:
+
+        for files_to_create, prefix, allowedExts, fileGroups, expected in tests:
+
+            files_to_create = files_to_create.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
+ 
+            for f in files_to_create:
+                make_dummy_file(op.join(workdir, f))
+
+            print('files_to_create: ', files_to_create)
+            print('prefix:          ', prefix)
+            print('allowedExts:     ', allowedExts)
+            print('fileGroups:      ', fileGroups)
+            print('workdir:         ', os.listdir(workdir))
+            print('expected:        ', expected)
+
+            result =  fslpath.addExt(op.join(workdir, prefix),
+                                     allowedExts=allowedExts,
+                                     mustExist=True,
+                                     fileGroups=fileGroups)
+
+            print('result:          ', result)
+
+            assert result == op.join(workdir, expected)
+
+            cleardir(workdir)
+
+    finally:
+        shutil.rmtree(workdir)
+
+
+def test_addExt_imageFiles_mustExist_shouldFail():
     """Tests the addExt function with inputs that should cause it to raise an
     error.
     """
-    
-    groups      = fslimage.FILE_GROUPS
+
+    fileGroups  = fslimage.FILE_GROUPS
     allowedExts = fslimage.ALLOWED_EXTENSIONS
 
-    shouldFail = [
+    # All of these should raise an error
 
-        # For tests of length 1, allowedExts/replacements are set from above
-        #
-        # For tests of length 2, replacements is set from above, allowedExts
-        #   is set from the tuple (unless False)
-        #
-        # For tests of length 3, replacements and allowedExts are set
-        #   from the tuple (unless False)
-        ('compressed', []),
-        ('compressed', ['.badsuf']),
-        
-        ('img_hdr_pair'),
-        ('img_hdr_pair', []),
-        
-        ('ambiguous'),
-        ('ambiguous',  []),
-        ('ambiguous',  False,   {'.hdr' : ['.img']}),
-        ('ambiguous',  [],      {'.hdr' : ['.img']}),
-        ('ambiguous',  False,   {'.hdr' : ['.img.gz']}),
-        ('ambiguous',  [],      {'.hdr' : ['.img.gz']}),
-        ('ambiguous',  False,   {'.hdr' : ['.img', '.img.gz', '.nii']}),
-        ('ambiguous',  [],      {'.hdr' : ['.img', '.img.gz', '.nii']}),
-        
-        ('badpath'),
-        ('badpath.nii.gz'),
-    ]
-
-    for test in shouldFail:
-        prefix  = op.join(testdir, 'nifti_formats', test[0])
-        allowed = allowedExts
-        group   = groups
-
-        if len(test) >= 2:
-            if not (test[1] == False):
-                allowed = test[1]
-
-        if len(test) == 3:
-            if not (test[2] == False):
-                group = test[2]
-
-        with pytest.raises(fslpath.PathError):
-            
-            fslpath.addExt(prefix,
-                           allowed,
-                           mustExist=True,
-                           fileGroups=group)
-
-
-def test_addExt_noExist(testdir):
-
-    allowedExts  = fslimage.ALLOWED_EXTENSIONS 
-
-    # Prefix, output, defaultExt, allowedExts
+    # (files_to_create, path)
     tests = [
-        ('blah',        'blahblah',    'blah'),
-        ('blah',        'blah.blah',  '.blah'),
-        ('blah',         None,          None),
-        ('blah.nii',     None,          None,  ['blah']),
-        ('blah.nii',    'blah.nii',    'blah'),
-        ('blah',        'blah.nii',    '.nii'),
-        ('blah',        'blah.nii',    '.nii', []),
-        ('blah.nii.gz', 'blah.nii.gz', 'blah'),
-        ('blah',        'blah.nii',   '.nii'),
-        ('blah',        'blah.nii',   '.nii',  []),
+
+        # Invalid path
+        ('',                           'file.img'),
+        ('file.hdr    file.img',       'blob'),
+        ('file.hdr.gz file.img.gz',    'file.img'),
+        ('file.hdr    file.img',       'file1'),
+        ('file.hdr    file.img',       'file1.im'),
+        
+        ('file.hdr    file.img',       'filehdr'),
+        ('file.hdr    file.img',       'fileimg'),
+        ('filehdr     fileimg',        'file.hdr'),
+        ('filehdr     fileimg',        'file.img'),
+        ('file.hdr    fileimg',        'filehdr'),
+        ('file.hdr    fileimg',        'file.img'),
+        ('filehdr     file.img',       'fileimg'),
+        ('filehdr     file.img',       'file.hdr'), 
+
+        # Unsupported type/invalid path
+        ('file.blob', 'file'),
+        ('file.blob', 'file.img'),
+        ('file.blob', 'file.nii'),
+        ('file.blob', 'file.blob'),
+
+        # Ambiguous path
+        ('file.hdr file.img file.nii',                'file'),
+        ('file.hdr file.img file.hdr.gz file.img.gz', 'file'),
+
+        # Incomplete file pairs
+        ('file.hdr',             'file.img'),
+        ('file.img',             'file.hdr'),        
+        ('file1.hdr  file2.img', 'file1.img'), 
+        ('file1.hdr  file2.img', 'file2.hdr'),
+
+        # Stupid file names
+        ('file.img.nii.gz', 'file.img'),
+        ('file.img.nii',    'file.img'),
+        ('file.img.img',    'file.img'),
+        ('file.img.img.gz', 'file.img'),
     ]
 
-    for test in tests:
-        
-        prefix = test[0]
-        output = test[1]
-        
-        if len(test) >= 3: default = test[2]
-        else:              default = None
-        if len(test) >= 4: allowed = test[3]
-        else:              allowed = allowedExts
+    workdir = tempfile.mkdtemp()
 
-        assert fslpath.addExt(prefix,
-                              allowed,
-                              defaultExt=default,
-                              mustExist=False) == output
+    try:
+
+        for files_to_create, prefix in tests:
+
+            cleardir(workdir)
+
+            files_to_create = files_to_create.split()
+            for f in files_to_create:
+                make_dummy_file(op.join(workdir, f))
+
+            print('files_to_create: ', files_to_create)
+            print('prefix:          ', prefix)
+            print('workdir:         ', os.listdir(workdir))
             
+            with pytest.raises(fslpath.PathError):
+
+                result = fslpath.addExt(op.join(workdir, prefix),
+                                        allowedExts=allowedExts,
+                                        mustExist=True,
+                                        fileGroups=fileGroups)
+
+                print('result:          ', result)
+
+    finally:
+        shutil.rmtree(workdir)
+
+        
+def test_addExt_otherFiles_mustExist_shouldFail():
+
+    workdir = tempfile.mkdtemp()
+
+    # Invalid path
+    # Unsupported suffix
+
+    # (files_to_create, path, allowedExts, fileGroups)
+    tests = [
+
+        # Invalid path
+        ('',       'file.a', '',   []),
+        ('file.b', 'file.a', '.a', []),
+        ('file.b', 'file.a', '.a', []),
+
+        # No supported extensions/ambiguous
+        ('file.a',        'file',   '',      []),
+        ('file.a file.b', 'file',   '',      []),
+        ('file.a file.b', 'file',   '.a .b', []),
+
+        # Weird group
+        ('file.a file.b', 'file',   '.a .b', ['.a']),
+
+        # Multiple groups, ambiguous path
+        ('file.a file.b file.c file.d', 'file',  '.a .b .c .d', ['.a .b', '.c .d']),
+    ]
+    
+    try:
+        for files_to_create, prefix, allowedExts, fileGroups in tests:
+
+            cleardir(workdir)
+
+            files_to_create = files_to_create.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+            
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
+
+            for f in files_to_create:
+                make_dummy_file(op.join(workdir, f))
+
+            print('files_to_create: ', files_to_create)
+            print('prefix:          ', prefix)
+            print('workdir:         ', os.listdir(workdir)) 
+
+            with pytest.raises(fslpath.PathError):
+
+                result = fslpath.addExt(op.join(workdir, prefix),
+                                        allowedExts=allowedExts,
+                                        mustExist=True,
+                                        fileGroups=fileGroups)
+
+                print('result:          ', result)
+                                
+
+    finally:
+        shutil.rmtree(workdir)
+    pass
+        
+
+def test_addExt_noExist():
+
+    allowedExts  = fslimage.ALLOWED_EXTENSIONS
+
+    # When mustExist=False, the addExt 
+    # function does not consult fileGroups. 
+    # So we are not bothering with them
+    # here.
+
+    # Prefix, defaultExt, allowedExts, expected
+    tests = [
+
+        # If the prefix already has a supported extension,
+        # it should be returned unchanged.
+        ('file.img',       None,   allowedExts,  'file.img'),
+        ('file.hdr',       None,   allowedExts,  'file.hdr'),
+        ('file.nii',       None,   allowedExts,  'file.nii'),
+        ('file.nii.gz',    None,   allowedExts,  'file.nii.gz'),
+        ('file.img.gz',    None,   allowedExts,  'file.img.gz'),
+        ('file.hdr.gz',    None,   allowedExts,  'file.hdr.gz'),
+        ('file.blob.img',  '.img', allowedExts,  'file.blob.img'),
+        ('file.blob.img',  '.img', None,         'file.blob.img'),        
+ 
+        
+        # If the file does not have a prefix,
+        # it should be given the default prefix
+        ('file',         'img', allowedExts,  'fileimg'),
+        ('file',        '.img', allowedExts,  'file.img'),
+        ('file',         'img', None,         'fileimg'),
+        ('file',        '.img', None,         'file.img'), 
+
+        # Unrecognised prefixes should be ignored
+        ('file.blob',    'img', allowedExts,  'file.blobimg'),
+        ('file.blob',   '.img', allowedExts,  'file.blob.img'),
+        ('file.blob',    'img', None,         'file.blobimg'),
+        ('file.blob',   '.img', None,         'file.blob.img'),
+    ]
+
+    for prefix, defaultExt, allowedExts, expected in tests:
+        
+        assert fslpath.addExt(prefix,
+                              allowedExts,
+                              defaultExt=defaultExt,
+                              mustExist=False) == expected
 
 
 def test_removeExt():
@@ -263,137 +623,339 @@ def test_splitExt():
         assert fslpath.splitExt(filename, allowed) == (outbase, outext)
         
 
-def test_deepest():
+    
+def test_getFileGroup_imageFiles_shouldPass():
 
-    # path, suffixes, output
+    allowedExts = fslimage.ALLOWED_EXTENSIONS
+    groups      = fslimage.FILE_GROUPS
+
+    # [(files_to_create, path, files_to_expect),
+    #   ...
+    # ]
+    #
     tests = [
-        
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],           '/blah.feat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'], '/blah.feat/foo.ica/fum.gfeat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],          '/blah.feat/foo.ica/fum.gfeat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],            '/blah.feat/foo.ica/fum.gfeat/moo.ica'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],            '/blah.feat/foo.ica'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.bob'],            '/blah.feat/foo.ica/fum.gfeat/moo.bob'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],            'blah.feat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'],  'blah.feat/foo.ica/fum.gfeat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],           'blah.feat/foo.ica/fum.gfeat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],             'blah.feat/foo.ica/fum.gfeat/moo.ica'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],             'blah.feat/foo.ica'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica/fum.gfeat/moo.bob'),
-        
-        ('/',   [],       None),
-        ('',    [],       None),
-        ('///', [],       None),
-        ('/',   ['blah'], None),
-        ('',    ['blah'], None),
-        ('///', ['blah'], None),
+        ('file.hdr file.img', 'file',     'file.hdr file.img'),
+        ('file.hdr file.img', 'file.img', 'file.hdr file.img'),
+        ('file.hdr file.img', 'file.hdr', 'file.hdr file.img'),
+
+        ('file.hdr.gz file.img.gz', 'file',        'file.hdr.gz file.img.gz'),
+        ('file.hdr.gz file.img.gz', 'file.img.gz', 'file.hdr.gz file.img.gz'),
+        ('file.hdr.gz file.img.gz', 'file.hdr.gz', 'file.hdr.gz file.img.gz'),
+
+        ('file.hdr file.img file.hdr.gz file.img.gz', 'file.hdr',    'file.hdr    file.img'),
+        ('file.hdr file.img file.hdr.gz file.img.gz', 'file.img',    'file.hdr    file.img'),
+        ('file.hdr file.img file.hdr.gz file.img.gz', 'file.hdr.gz', 'file.hdr.gz file.img.gz'),
+        ('file.hdr file.img file.hdr.gz file.img.gz', 'file.hdr.gz', 'file.hdr.gz file.img.gz'),
+
+        ('file.hdr file.img file.nii', 'file.img', 'file.hdr file.img'),
+        ('file.hdr file.img file.nii', 'file.hdr', 'file.hdr file.img'),
+
+        ('file.hdr file.img file.blob', 'file',     'file.hdr file.img'),
+        ('file.hdr file.img file.blob', 'file.hdr', 'file.hdr file.img'),
+        ('file.hdr file.img file.blob', 'file.img', 'file.hdr file.img'),
+
+        ('file.nii', 'file',     'file.nii'),
+        ('file.nii', 'file.nii', 'file.nii'),
+
+        ('file.nii file.hdr file.img', 'file.nii', 'file.nii'),
+        ('file.nii file.blob',         'file',     'file.nii'),
+        ('file.nii file.blob',         'file.nii', 'file.nii'),
+
+        # The unambiguous arg defaults to
+        # False, so paths to incomplete
+        # file groups should still work.
+        ('file.hdr', 'file',     'file.hdr'),
+        ('file.hdr', 'file.hdr', 'file.hdr'),
     ]
 
-    for path, suffixes, output in tests:
-        assert fslpath.deepest(path, suffixes) == output
+    workdir = tempfile.mkdtemp()
+
+    try: 
+
+        for files_to_create, path, files_to_expect in tests:
+
+            files_to_create = files_to_create.split()
+            files_to_expect = files_to_expect.split()
+
+            for fn in files_to_create:
+                with open(op.join(workdir, fn), 'wt') as f:
+                    f.write('{}\n'.format(fn))
+
+            print()
+            print('files_to_create: ', files_to_create)
+            print('path:            ', path)
+            print('files_to_expect: ', files_to_expect)
+
+            fullPaths = fslpath.getFileGroup(
+                op.join(workdir, path),
+                allowedExts=allowedExts,
+                fileGroups=groups,
+                fullPaths=True)
+            exts = fslpath.getFileGroup(
+                op.join(workdir, path),
+                allowedExts=allowedExts,
+                fileGroups=groups,
+                fullPaths=False)
+
+            assert sorted(fullPaths) == sorted([op.join(workdir, e)            for e in files_to_expect])
+            assert sorted(exts)      == sorted([fslpath.getExt(e, allowedExts) for e in files_to_expect])
+
+            cleardir(workdir)
+
+    finally:
+        shutil.rmtree(workdir)
 
 
-def test_shallowest():
-    # path, suffixes, output
+def test_getFileGroup_otherFiles_shouldPass():
+
+    # (files_to_create, allowedExts, fileGroups, path, files_to_expect)
+
     tests = [
+        # allowedExts is None - incomplete paths are not allowed
+        ('file.a',        '', '',        'file.a', 'file.a'),
+        ('file.a file.b', '', '',        'file.a', 'file.a'),
+        ('file.a file.b', '', '',        'file.b', 'file.b'),
+        ('file.a file.b', '', ['.a .b'], 'file.a', 'file.a file.b'),
+        ('file.a file.b', '', ['.a .b'], 'file.b', 'file.a file.b'),
         
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],           '/blah.feat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'], '/blah.feat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],          '/blah.feat/foo.ica/fum.gfeat'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],            '/blah.feat/foo.ica'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],            '/blah.feat/foo.ica'),
-        ('/blah.feat/foo.ica/fum.gfeat/moo.bob', ['.bob'],            '/blah.feat/foo.ica/fum.gfeat/moo.bob'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat'],            'blah.feat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.feat', '.gfeat'],  'blah.feat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.gfeat'],           'blah.feat/foo.ica/fum.gfeat'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.ica'],             'blah.feat/foo.ica'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.ica', ['.bob'],              None),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica'],             'blah.feat/foo.ica'),
-        ( 'blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica'),
-        (' blah.feat/foo.ica/fum.gfeat/moo.bob', ['.ica', '.bob'],     'blah.feat/foo.ica'),
+        ('file.a file.b file.c', '', ['.a .b .c'], 'file.a', 'file.a file.b file.c'),
+        ('file.a file.b file.c', '', ['.a .b .c'], 'file.b', 'file.a file.b file.c'),
+        ('file.a file.b file.c', '', ['.a .b .c'], 'file.c', 'file.a file.b file.c'),
+
+        ('file.a file.b file.c file.d', '', ['.a .b', '.c .d'], 'file.a', 'file.a file.b'),
+        ('file.a file.b file.c file.d', '', ['.a .b', '.c .d'], 'file.b', 'file.a file.b'),
+        ('file.a file.b file.c file.d', '', ['.a .b', '.c .d'], 'file.c', 'file.c file.d'),
+        ('file.a file.b file.c file.d', '', ['.a .b', '.c .d'], 'file.d', 'file.c file.d'), 
+
+        # allowedExts != None - incomplete paths 
+        # allowed, but must be unambiguous
+        ('file.a',          '.a',     '',       'file',    'file.a'),
+        ('file.a',          '.a',     '',       'file.a',  'file.a'),
+        ('file.a  file.b',  '.a .b',  '',       'file.a',  'file.a'),
+        ('file.a  file.b',  '.a .b',  '',       'file.b',  'file.b'),
+        ('file1.a file2.b', '.a .b',  '',       'file1',   'file1.a'),
+        ('file1.a file2.b', '.a .b',  '',       'file1.a', 'file1.a'),
+        ('file1.a file2.b', '.a .b',  '',       'file2',   'file2.b'), 
+        ('file1.a file2.b', '.a .b',  '',       'file2.b', 'file2.b'), 
+
+        ('file.a file.b', '.a .b', ['.a .b'], 'file',   'file.a file.b'),
+        ('file.a file.b', '.a .b', ['.a .b'], 'file.a', 'file.a file.b'),
+        ('file.a file.b', '.a .b', ['.a .b'], 'file.b', 'file.a file.b'), 
+
+        ('file.a file.b file.c', '.a .b .c', ['.a .b .c'],  'file',   'file.a file.b file.c'),
+        ('file.a file.b file.c', '.a .b .c', ['.a .b .c'],  'file.a', 'file.a file.b file.c'),
+        ('file.a file.b file.c', '.a .b .c', ['.a .b .c'],  'file.b', 'file.a file.b file.c'),
+        ('file.a file.b file.c', '.a .b .c', ['.a .b .c'],  'file.c', 'file.a file.b file.c'),
+
+        ('file.a  file.b  file.c  file.d',  '.a .b .c .d', ['.a .b', '.c .d'], 'file.a',  'file.a  file.b'),
+        ('file.a  file.b  file.c  file.d',  '.a .b .c .d', ['.a .b', '.c .d'], 'file.b',  'file.a  file.b'),
+        ('file.a  file.b  file.c  file.d',  '.a .b .c .d', ['.a .b', '.c .d'], 'file.c',  'file.c  file.d'),
+        ('file.a  file.b  file.c  file.d',  '.a .b .c .d', ['.a .b', '.c .d'], 'file.d',  'file.c  file.d'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file1',   'file1.a file1.b'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file1.a', 'file1.a file1.b'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file1.b', 'file1.a file1.b'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2',   'file2.c file2.d'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.c', 'file2.c file2.d'),
+        ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.d', 'file2.c file2.d'),
+
+        # incomplete group
+        ('file.a', '.a .b', ['.a .b'], 'file',   'file.a'),
+        ('file.a', '.a .b', ['.a .b'], 'file.a', 'file.a'),
+    ]
+
+
+    workdir = tempfile.mkdtemp()
+
+    try:
+        for files_to_create, allowedExts, fileGroups, path, files_to_expect in tests:
+
+            files_to_create = files_to_create.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+            files_to_expect = files_to_expect.split()
+
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
+
+            for fn in files_to_create:
+                with open(op.join(workdir, fn), 'wt') as f:
+                    f.write('{}\n'.format(fn))
+
+            print()
+            print('files_to_create: ', files_to_create)
+            print('path:            ', path)
+            print('allowedExts:     ', allowedExts)
+            print('fileGroups:      ', fileGroups)
+            print('files_to_expect: ', files_to_expect)
+
+            fullPaths = fslpath.getFileGroup(
+                op.join(workdir, path),
+                allowedExts=allowedExts,
+                fileGroups=fileGroups,
+                fullPaths=True)
+            exts = fslpath.getFileGroup(
+                op.join(workdir, path),
+                allowedExts=allowedExts,
+                fileGroups=fileGroups,
+                fullPaths=False)
+
+            assert sorted(fullPaths) == sorted([op.join(workdir, e)            for e in files_to_expect])
+            assert sorted(exts)      == sorted([fslpath.getExt(e, allowedExts) for e in files_to_expect])
+
+            cleardir(workdir)
+
+    finally:
+        shutil.rmtree(workdir)
+
+
+def test_getFileGroup_shouldFail():
+
+    # All of these tests should raise an error
+
+    allowedExts = ' '.join(fslimage.ALLOWED_EXTENSIONS)
+    fileGroups  = [' '.join(g) for g in fslimage.FILE_GROUPS]
+
+    # (files_to_create, path, allowedExts, fileGroups[, unambiguous])
+    tests = [
+
+        # Unsupported extension
+        ('file.a', 'file.a', '.b', []),
         
-        ('/',   [],       None),
-        ('',    [],       None),
-        ('///', [],       None),
-        ('/',   ['blah'], None),
-        ('',    ['blah'], None),
-        ('///', ['blah'], None),
+        # Incomplete path, and allowedExts is None
+        ('file.a', 'file', '', []),
+        
+        # non existent path
+        ('file.a', 'file.b', '.a', []),
+        
+        # ambigiuous
+        ('file.a file.b file.c file.d', 'file', '.a .b .c .d', ['.a .b', '.c .d']),
+
+        # Incomplete group, when unambiguous is set to True
+        ('file.a', 'file',   '.a .b', ['.a .b'], True),
+        ('file.a', 'file.a', '.a .b', ['.a .b'], True),
+
+        ('file.hdr', 'file',     allowedExts, fileGroups, True),
+        ('file.hdr', 'file.hdr', allowedExts, fileGroups, True),
+        ('file.img', 'file',     allowedExts, fileGroups, True),
+        ('file.img', 'file.img', allowedExts, fileGroups, True), 
     ]
     
-    for path, suffixes, output in tests:
-        assert fslpath.shallowest(path, suffixes) == output
+    workdir = tempfile.mkdtemp()
+
+    try:
+        for test in tests:
+
+            files_to_create = test[0]
+            path            = test[1]
+            allowedExts     = test[2]
+            fileGroups      = test[3]
+
+            if len(test) > 4: unambiguous = test[4]
+            else:             unambiguous = False
+
+            files_to_create = files_to_create.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
+
+            for fn in files_to_create:
+                with open(op.join(workdir, fn), 'wt') as f:
+                    f.write('{}\n'.format(fn))
+
+            print()
+            print('files_to_create: ', files_to_create)
+            print('path:            ', path)
+            print('allowedExts:     ', allowedExts)
+            print('fileGroups:      ', fileGroups)
+
+            with pytest.raises(fslpath.PathError):
+                fullPaths = fslpath.getFileGroup(
+                    op.join(workdir, path),
+                    allowedExts=allowedExts,
+                    fileGroups=fileGroups,
+                    fullPaths=True,
+                    unambiguous=unambiguous)
+
+                print('fullPaths:       ', fullPaths)
+
+            with pytest.raises(fslpath.PathError):
+                exts = fslpath.getFileGroup(
+                    op.join(workdir, path),
+                    allowedExts=allowedExts,
+                    fileGroups=fileGroups,
+                    fullPaths=False,
+                    unambiguous=unambiguous)
+                
+                print('exts:            ', exts)
+
+            cleardir(workdir)
+
+    finally:
+        shutil.rmtree(workdir)
 
 
-def test_removeDuplicates_shouldPass():
+
+def test_removeDuplicates_imageFiles_shouldPass():
 
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     groups      = fslimage.FILE_GROUPS 
 
     # [(files_to_create,
-    #    [([paths], [expected]),
+    #    [(paths, expected),
     #     ...
     #    ]),
     #  ...
     # ]
     allTests = [
-        (['file.hdr', 'file.img'], [
-            (['file'],                 ['file.img']),
-            (['file',     'file'],     ['file.img']),
-            (['file',     'file.hdr'], ['file.img']),
-            (['file',     'file.img'], ['file.img']),
-            (['file.hdr', 'file'],     ['file.img']),
-            (['file.hdr', 'file.hdr'], ['file.img']),
-            (['file.hdr', 'file.img'], ['file.img']),
-            (['file.img', 'file'],     ['file.img']),
-            (['file.img', 'file.hdr'], ['file.img']),
-            (['file.img', 'file.img'], ['file.img']), 
-            (['file.hdr'],             ['file.img']),
-            (['file.img'],             ['file.img']),
-            (['file.hdr', 'file.img'], ['file.img']),
-            (['file.img', 'file.hdr'], ['file.img']),
+        ('file.hdr file.img', [
+            ('file',              'file.img'),
+            ('file     file',     'file.img'),
+            ('file     file.hdr', 'file.img'),
+            ('file     file.img', 'file.img'),
+            ('file.hdr file',     'file.img'),
+            ('file.hdr file.hdr', 'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.img file',     'file.img'),
+            ('file.img file.hdr', 'file.img'),
+            ('file.img file.img', 'file.img'), 
+            ('file.hdr',          'file.img'),
+            ('file.img',          'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.img file.hdr', 'file.img'),
         ]),
 
-        (['file.hdr', 'file.img', 'file.blob'], [
-            (['file'],                 ['file.img']),
-            (['file.hdr'],             ['file.img']),
-            (['file.img'],             ['file.img']),
-            (['file.hdr', 'file.img'], ['file.img']),
-            (['file.img', 'file.hdr'], ['file.img']),
+        ('file.hdr file.img file.blob', [
+            ('file',              'file.img'),
+            ('file.hdr',          'file.img'),
+            ('file.img',          'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.img file.hdr', 'file.img'),
         ]),
 
 
-        (['file.hdr', 'file.img', 'file.nii'], [
-            (['file.hdr'],                         ['file.img']),
-            (['file.img'],                         ['file.img']),
-            (['file.hdr', 'file.nii'],             ['file.img', 'file.nii']),
-            (['file.img', 'file.nii'],             ['file.img', 'file.nii']), 
-            (['file.hdr', 'file.img'],             ['file.img']),
-            (['file.img', 'file.hdr'],             ['file.img']),
-            (['file.img', 'file.hdr'],             ['file.img']),
-            (['file.hdr', 'file.img', 'file.nii'], ['file.img', 'file.nii']),
-            (['file.img', 'file.hdr', 'file.nii'], ['file.img', 'file.nii']),
-            (['file.img', 'file.hdr', 'file.nii'], ['file.img', 'file.nii']), 
+        ('file.hdr file.img file.nii', [
+            ('file.hdr',                   'file.img'),
+            ('file.img',                   'file.img'),
+            ('file.hdr file.nii',          'file.img file.nii'),
+            ('file.img file.nii',          'file.img file.nii'), 
+            ('file.hdr file.img',          'file.img'),
+            ('file.img file.hdr',          'file.img'),
+            ('file.img file.hdr',          'file.img'),
+            ('file.hdr file.img file.nii', 'file.img file.nii'),
+            ('file.img file.hdr file.nii', 'file.img file.nii'),
+            ('file.img file.hdr file.nii', 'file.img file.nii'), 
         ]),        
                 
 
-        (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'], [
-            (['001',     '002',     '003'],
-             ['001.img', '002.img', '003.img']), 
-            
-            (['001.hdr', '002.hdr', '003.hdr'],
-             ['001.img', '002.img', '003.img']),
-            (['001.img', '002.img', '003.img'],
-             ['001.img', '002.img', '003.img']),
-
-            (['001.hdr', '001.img', '002.hdr', '002.img', '003.img'],
-             ['001.img', '002.img', '003.img']), 
-            (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'],
-             ['001.img', '002.img', '003.img']),
-            (['001.img', '001.hdr', '002.img', '002.hdr', '003.img', '003.hdr'],
-             ['001.img', '002.img', '003.img']), 
+        ('001.hdr 001.img 002.hdr 002.img 003.hdr 003.img', [
+            ('001     002     003',                             '001.img 002.img 003.img'), 
+            ('001.hdr 002.hdr 003.hdr',                         '001.img 002.img 003.img'),
+            ('001.img 002.img 003.img',                         '001.img 002.img 003.img'),
+            ('001.hdr 001.img 002.hdr 002.img 003.img',         '001.img 002.img 003.img'), 
+            ('001.hdr 001.img 002.hdr 002.img 003.hdr 003.img', '001.img 002.img 003.img'),
+            ('001.img 001.hdr 002.img 002.hdr 003.img 003.hdr', '001.img 002.img 003.img'), 
         ])
     ]
 
@@ -401,17 +963,23 @@ def test_removeDuplicates_shouldPass():
 
     try:
         for files_to_create, tests in allTests:
+
+            files_to_create = files_to_create.split()
+            
             for fn in files_to_create:
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
 
             for paths, expected in tests:
+
+                paths    = paths.split()
+                expected = expected.split()
                 
                 print()
                 print('files_to_create: ', files_to_create)
                 print('paths:           ', paths)
                 print('expected:        ', expected)
-
+                  
                 paths  = [op.join(workdir, p) for p in paths]
                 result = fslpath.removeDuplicates(paths, allowedExts, groups)
 
@@ -419,96 +987,139 @@ def test_removeDuplicates_shouldPass():
 
                 assert result == [op.join(workdir, e) for e in expected]
 
-            for f in files_to_create:
-                os.remove(op.join(workdir, f))
+            cleardir(workdir)
                     
+    finally:
+        shutil.rmtree(workdir)
+
+    
+    
+def test_removeDuplicates_otherFiles_shouldPass():
+    
+    # files_to_create, paths, allowedExts, fileGroups, expected
+    tests = [
+        
+        # allowedExts is None, but paths are unambiguouos
+        ('file.a file.b', 'file.a file.b', '', [], 'file.a file.b'),
+
+        # Retured path should be the first in the group
+        ('file.a file.b', 'file.a file.b', '', ['.a .b'], 'file.a'),
+        ('file.a file.b', 'file.a file.b', '', ['.b .a'], 'file.b'),
+        
+        ('file.a file.b file.c', 'file.a file.b file.c',      '', ['.a .b'], 'file.a file.c'),
+        ('file.a file.b file.c', 'file.a file.b file.c',      '', ['.b .a'], 'file.b file.c'),
+        
+        ('file.a file.b file.c', 'file.a file.b file.c',      '', ['.a .b .c'], 'file.a'),
+        ('file.a file.b file.c', 'file.a file.b file.c',      '', ['.a .b .c'], 'file.a'),
+        ('file.a file.b file.c', 'file.a file.b file.c',      '', ['.a .b .c'], 'file.a'),
+
+        ('file.a  file.b  file.c  file.d',  'file.a  file.b  file.c  file.d',  '', ['.a .b', '.c .d'], 'file.a  file.c'),
+        ('file1.a file1.b file2.a file2.b', 'file1.a file1.b file2.a file2.b', '', ['.a .b'],          'file1.a file2.a'),
+        
+        # Incomplete paths (but are unambiguouos because of allowedExts)
+        ('file.a'       , 'file',   '.a', [], 'file.a'), 
+        ('file.a'       , 'file.a', '.a', [], 'file.a'),
+        
+        ('file.a file.b', 'file.a',             '.a',    [],        'file.a'),
+        ('file.a file.b', 'file.a file.b',      '.a .b', [],        'file.a file.b'),
+        ('file.a file.b', 'file',               '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b', 'file file',          '.a .b', ['.a .b'], 'file.a'),
+        ('file.a file.b', 'file file.a file.b', '.a .b', ['.a .b'], 'file.a'),
+
+        ('file1.a file1.b file2.a file2.b', 'file1   file1.a file2   file2.a', '.a .b', ['.a .b'], 'file1.a file2.a'),
+        ('file1.a file1.b file2.a file2.b', 'file1           file2',           '.a .b', ['.a .b'], 'file1.a file2.a'),
+        ('file1.a file1.b file2.a file2.b', 'file1   file1.a file2',           '.a .b', ['.a .b'], 'file1.a file2.a'),
+    ]
+
+
+    workdir = tempfile.mkdtemp()
+
+
+    try:
+        for files_to_create, paths, allowedExts, fileGroups, expected in tests:
+
+            files_to_create = files_to_create.split()
+            paths           = paths.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+            expected        = expected.split()
+
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
+
+            for f in files_to_create:
+                make_dummy_file(op.join(workdir, f))
+
+            print('files_to_create: {}'.format(files_to_create))
+            print('paths:           {}'.format(paths))
+            print('allowedExts:     {}'.format(allowedExts))
+            print('fileGroups:      {}'.format(fileGroups))
+            print('workdir:         {}'.format(os.listdir(workdir)))
+            print('expected:        {}'.format(expected))
+ 
+            result = fslpath.removeDuplicates([op.join(workdir, p) for p in paths],
+                                              allowedExts=allowedExts,
+                                              fileGroups=fileGroups)
+
+            print('result:          {}'.format(result))
+
+            assert result == [op.join(workdir, e) for e in expected]
+
+            cleardir(workdir)
+
     finally:
         shutil.rmtree(workdir)
 
 
 def test_removeDuplicates_shouldFail():
-    pass
 
+    # (files_to_create, paths, allowedExts, fileGroups)
+    tests = [
+        # Invalid path(s)
+        ('',       'file.a',        '',      []),
+        ('file.a', 'file.b',        '',      []),
+        ('file.a', 'file.b file.c', '',      []),
+        ('file.a', 'file',          '',      []),
+        ('file.a', 'file.b',        '.a .b', ['.a .b']),
 
-def test_getFileGroup():
+        # Unsupported extension
+        ('file.a', 'file.a', '.b', []),
 
-    allowedExts = fslimage.ALLOWED_EXTENSIONS
-    groups      = fslimage.FILE_GROUPS
-
-    # (files_to_create,
-    #   [(path, expected),
-    #    ...
-    #   ]
-    # )
-    #
-    # expected == 'all' is equivalent to expected == files_to_create
-    allTests = [
-        (['file.hdr', 'file.img'], [
-            ('file',     'all'),
-            ('file.hdr', 'all'),
-            ('file.img', 'all')]),
-
-        (['file.hdr.gz', 'file.img.gz'], [
-            ('file',        'all'),
-            ('file.hdr.gz', 'all'),
-            ('file.img.gz', 'all')]), 
-
-        (['file.hdr', 'file.img', 'file.nii'], [
-            ('file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', ['file.hdr', 'file.img'])]), 
-        
-        (['file.hdr', 'file.img', 'file.blob'], [
-            ('file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', ['file.hdr', 'file.img'])]),
-
-
-        (['file.hdr'], [
-            ('file',     ['file']),
-            ('file.hdr', ['file.hdr']),
-            ('file.img', ['file.img'])]),
-
-        (['file.img'], [
-            ('file',     ['file']),
-            ('file.hdr', ['file.hdr']),
-            ('file.img', ['file.img'])]), 
+        # Ambiguous
+        ('file.a file.b',        'file',        '.a .b',    []),
+        ('file.a file.b file.c', 'file file.c', '.a .b .c', ['.a .b']),
     ]
 
     workdir = tempfile.mkdtemp()
 
-    try: 
 
-        for files_to_create, tests in allTests:
+    try:
+        for files_to_create, path, allowedExts, fileGroups in tests:
+
+            cleardir(workdir)
+
+            files_to_create = files_to_create.split()
+            allowedExts     = allowedExts.split()
+            fileGroups      = [g.split() for g in fileGroups]
+
+            if len(allowedExts) == 0: allowedExts = None
+            if len(fileGroups)  == 0: fileGroups  = None
 
             for fn in files_to_create:
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
 
-            for path, expected in tests:
-                if expected == 'all':
-                    expected = list(files_to_create)
+            print()
+            print('files_to_create: ', files_to_create)
+            print('path:            ', path)
+            print('allowedExts:     ', allowedExts)
+            print('fileGroups:      ', fileGroups)
 
-                print()
-                print('files_to_create: ', files_to_create)
-                print('path:            ', path)
-                print('expected:        ', expected)
-
-                fullPaths = fslpath.getFileGroup(
-                    op.join(workdir, path),
-                    allowedExts=allowedExts,
-                    fileGroups=groups,
-                    fullPaths=True)
-                exts = fslpath.getFileGroup(
-                    op.join(workdir, path),
-                    allowedExts=allowedExts,
-                    fileGroups=groups,
-                    fullPaths=False)
-
-                assert sorted(fullPaths) == sorted([op.join(workdir, e)            for e in expected])
-                assert sorted(exts)      == sorted([fslpath.getExt(e, allowedExts) for e in expected])
-
-            for f in files_to_create:
-                try:    os.remove(op.join(workdir,  f))
-                except: pass 
-
+            with pytest.raises(fslpath.PathError):
+                result = fslpath.removeDuplicates(path,
+                                                  allowedExts=allowedExts,
+                                                  fileGroups=fileGroups)
+                print('result:          ', result) 
+    
     finally:
         shutil.rmtree(workdir)
