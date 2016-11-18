@@ -226,7 +226,11 @@ def splitExt(filename, allowedExts=None):
     return filename[:-extLen], filename[-extLen:]
 
 
-def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
+def getFileGroup(path,
+                 allowedExts=None,
+                 fileGroups=None,
+                 fullPaths=True,
+                 unambiguous=False):
     """If the given ``path`` is part of a ``fileGroup``, returns a list 
     containing the paths to all other files in the group (including the
     ``path`` itself).
@@ -273,6 +277,11 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
     :arg fullPaths:   If ``True`` (the default), full file paths (relative to
                       the ``path``) are returned. Otherwise, only the file
                       extensions in the group are returned.
+
+    :arg unambiguous: Defaults to ``False``. If ``True``, and the path 
+                      is not unambiguouosly part of one group, or part of
+                      no groups, a :exc:`PathError` is raised.
+                      Otherwise, the path is returned.
     """
 
     path = addExt(path, allowedExts, mustExist=True, fileGroups=fileGroups)
@@ -284,6 +293,8 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
 
     matchedGroups     = []
     matchedGroupFiles = []
+    fullMatches       = 0
+    partialMatches    = 0
 
     for group in fileGroups:
 
@@ -291,28 +302,51 @@ def getFileGroup(path, allowedExts=None, fileGroups=None, fullPaths=True):
             continue
 
         groupFiles = [base + s for s in group]
+        exist      = [op.exists(f) for f in groupFiles]
 
-        if not all([op.exists(f) for f in groupFiles]):
-            continue
+        if any(exist): partialMatches += 1
+        if all(exist): fullMatches    += 1
+        else:          continue
 
         matchedGroups    .append(group)
         matchedGroupFiles.append(groupFiles)
 
-    if len(matchedGroupFiles) == 1:
-        if fullPaths: return matchedGroupFiles[0]
-        else:         return matchedGroups[    0]
-
     # Path is not part of any group
-    elif len(matchedGroupFiles) == 0:
+    if partialMatches == 0:
         if fullPaths: return [path]
         else:         return [ext]
-        
+
     # If the given path is part of more 
     # than one existing file group, we 
     # can't resolve this ambiguity.
-    else:
+    if fullMatches > 1:
         raise PathError('Path is part of multiple '
                         'file groups: {}'.format(path))
+
+    # If the unambiguous flag is not set,
+    # we don't care about partial matches
+    if not unambiguous:
+        partialMatches = 0
+
+    # The path is unambiguously part of a
+    # complete file group - resolve it to
+    # the first element of the group
+    if fullMatches == 1 and partialMatches == 0:
+        if fullPaths: return matchedGroupFiles[0]
+        else:         return matchedGroups[    0]
+
+    # The path appears to be part of
+    # an incomplete group - this is
+    # potentially ambiguuuos, so give
+    # up (but see the partialMatches
+    # clobber above).
+    elif partialMatches > 0:
+        raise PathError('Path is part of an incomplete '
+                        'file group: {}'.format(path))
+        
+    else:
+        if fullPaths: return [path]
+        else:         return [ext]
 
 
 def removeDuplicates(paths, allowedExts=None, fileGroups=None):

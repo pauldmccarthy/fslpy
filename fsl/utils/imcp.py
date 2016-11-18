@@ -118,8 +118,8 @@ def imcp(src,
     # match the destination file type,
     # we need to perform a conversion.
     #
-    # This is expensive in terms of io
-    # and cpu, but programmatically
+    # This is more expensive in terms of 
+    # io and cpu, but programmatically
     # very easy - nibabel does all the
     # hard work.
     if srcExt != destExt:
@@ -138,7 +138,7 @@ def imcp(src,
 
     # Otherwise we do a file copy. This
     # is actually more complicated than
-    # conveting the file type due to
+    # converting the file type due to
     # hdr/img pairs ...
     # 
     # If the source is part of a file group,
@@ -154,18 +154,18 @@ def imcp(src,
     # (base, ext) tuples, so we don't
     # have to re-split when creating
     # destination paths.
+    #
+    # The unambiguous flag tells getFileGroup
+    # to raise an error if the source appears
+    # to be part of an incopmlete file group
+    # (e.g. file.hdr without an accompanying
+    # file.img).
     copySrcs = fslpath.getFileGroup(src,
                                     fslimage.ALLOWED_EXTENSIONS,
                                     fslimage.FILE_GROUPS,
-                                    fullPaths=False)
-    
+                                    fullPaths=False,
+                                    unambiguous=True)
     copySrcs = [(srcBase, e) for e in copySrcs]
-
-    # Note that these additional files 
-    # do not have to exist, e.g.
-    # imcp('blah.img', ...)  will still
-    # work if there is no blah.hdr
-    copySrcs = [(b, e) for (b, e) in copySrcs if op.exists(b + e)]
 
     # Build a list of destinations for each
     # copy source - we build this list in
