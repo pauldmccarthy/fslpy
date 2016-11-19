@@ -44,15 +44,13 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     if len(argv) < 2:
-        print(usage)
-        sys.exit(1)
+        raise RuntimeError(usage)
 
     srcs = argv[:-1]
     dest = argv[ -1]
 
     if len(srcs) > 1 and not op.isdir(dest):
-        print(usage)
-        sys.exit(1)
+        raise RuntimeError(usage)
 
     srcs = fslpath.removeDuplicates(srcs,
                                     allowedExts=fslimage.ALLOWED_EXTENSIONS,
