@@ -5,13 +5,18 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import            os
-import os.path as op
-import            shutil
-import            tempfile
+from __future__ import print_function
+
+import               os
+import os.path    as op
+import               shutil
+import subprocess as sp 
+import               tempfile
 
 import numpy   as np
 import nibabel as nib
+
+import pytest
 
 import fsl.utils.path   as fslpath
 import fsl.utils.imcp   as imcp
@@ -23,11 +28,22 @@ import fsl.data.image   as fslimage
 def createImageFile(filename):
 
     data = np.random.random((10, 10, 10))
-    img  = nib.Nifti1Image(data, np.eye(4))
 
-    nib.save(img, filename)
+    # Image file
+    try:
+        img  = nib.Nifti1Image(data, np.eye(4))
 
-    return hash(data.tobytes())
+        nib.save(img, filename)
+
+        return hash(data.tobytes())
+
+    # Non-image file
+    except:
+        contents = '{}\n'.format(op.basename(filename))
+        with open(filename, 'wt') as f:
+            f.write(contents)
+
+        return hash(contents)
 
 
 def checkImageFile(filename, datahash):
@@ -42,18 +58,34 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
         'NIFTI'      : ['.nii'],
         'NIFTI_PAIR' : ['.hdr', '.img'],
         'NIFTI_GZ'   : ['.nii.gz'],
-    }.get(outputType, ['.nii.gz'])
-
+        ''           : ['.nii.gz'],
+    }.get(outputType, None)
 
     allFiles = []
 
-    for f, h in zip(files.split(), datahashes):
+    if isinstance(files, str):
+        files = files.split()
 
-        for e in exts:
+    for f in files:
+
+        f, fe = fslimage.splitExt(f)
+        fexts = exts
+
+        if fexts is None:
+            fexts = {
+                '.img'    : ['.hdr', '.img'],
+                '.hdr'    : ['.hdr', '.img'],
+                '.nii'    : ['.nii'],
+                '.nii.gz' : ['.nii.gz']
+            }.get(fe, [])
+
+        for e in fexts:
 
             expected = op.join(outdir, f + e)
 
             allFiles.append(expected)
+
+            print('  ', expected)
 
             assert op.exists(expected)
 
@@ -62,10 +94,27 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
 
     assert len(allThatExist) == len(allFiles)
 
-    for f, h in zip(files.split(), datahashes):
+    for i, f in enumerate(files):
         f = fslimage.addExt(op.join(outdir, f), mustExist=True)
 
+        if isinstance(datahashes, list):
+            if len(datahashes) > len(files):
+                diff = len(datahashes) - len(files)
+                h    = datahashes[i + diff]
+
+            else:
+                h = datahashes[i]
+        else:
+            h = datahashes[op.basename(f)]
+
         checkImageFile(f, h)
+
+def cleardir(dir):
+
+    for f in os.listdir(dir):
+        f = op.join(dir, f)
+        if   op.isfile(f): os.remove(f)
+        elif op.isdir(f):  shutil.rmtree(f)
 
 
 def test_imcp_script_shouldPass(move=False):
@@ -73,8 +122,9 @@ def test_imcp_script_shouldPass(move=False):
 
     # The imcp/immv scripts should honour the
     # FSLOUTPUTTYPE env var. If it is unset 
-    # or invalid), they should produce .nii.gz
-    outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ', 'BLAH_DI_BLAH']
+    # or invalid - '' in this case), they
+    # should produce .nii.gz
+    outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ', '']
  
 
     # Test tuples have the following structure (each
@@ -242,7 +292,24 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img b.img', 'a.hdr a.hdr b     b.hdr .', 'a b'),
         ('a.img b.img', 'a.hdr a.hdr b.img b     .', 'a b'),
         ('a.img b.img', 'a.hdr a.hdr b.img b.img .', 'a b'),
-        ('a.img b.img', 'a.hdr a.hdr b.img b.hdr .', 'a b'),        
+        ('a.img b.img', 'a.hdr a.hdr b.img b.hdr .', 'a b'),
+
+        # Inputs which cause the destination
+        # to be overwritten - this should be
+        # ok, the destination should be the
+        # last specified input. The order of
+        # files_to_create has to match the
+        # imcp_args order, otherwise my bodgy
+        # checkFilesToExpect function will
+        # break.
+        ('a.nii    a.img',             'a.nii    a.img             .', 'a'),
+        ('a.img    a.nii',             'a.img    a.nii             .', 'a'),
+        ('a.nii    a.img    a.nii.gz', 'a.nii    a.img    a.nii.gz .', 'a'),
+        ('a.nii    a.nii.gz a.img   ', 'a.nii    a.nii.gz a.img    .', 'a'),
+        ('a.img    a.nii.gz a.nii   ', 'a.img    a.nii.gz a.nii    .', 'a'),
+        ('a.img    a.nii    a.nii.gz', 'a.img    a.nii    a.nii.gz .', 'a'),
+        ('a.nii.gz a.img    a.nii   ', 'a.nii.gz a.img    a.nii    .', 'a'),
+        ('a.nii.gz a.nii    a.img   ', 'a.nii.gz a.nii    a.img    .', 'a'), 
     ]
 
     indir  = tempfile.mkdtemp()
@@ -258,12 +325,12 @@ def test_imcp_script_shouldPass(move=False):
 
                 imageHashes = []
 
-                print 
-                print 'files_to_create: ', files_to_create
-                print 'imcp_args:       ', imcp_args
-                print 'files_to_expect: ', files_to_expect
+                print()
+                print('files_to_create: ', files_to_create)
+                print('imcp_args:       ', imcp_args)
+                print('files_to_expect: ', files_to_expect)
 
-                for fname in files_to_create.split():
+                for i, fname in enumerate(files_to_create.split()):
                     imageHashes.append(createImageFile(op.join(indir, fname)))
 
                 imcp_args = imcp_args.split()
@@ -271,26 +338,26 @@ def test_imcp_script_shouldPass(move=False):
                 imcp_args[:-1] = [op.join(indir, a) for a in imcp_args[:-1]]
                 imcp_args[ -1] =  op.join(outdir, imcp_args[-1])
 
+                print('indir before:    ', os.listdir(indir))
+                print('outdir before:   ', os.listdir(outdir))
 
                 if move: immv_script.main(imcp_args)
                 else:    imcp_script.main(imcp_args)
 
-                checkFilesToExpect(files_to_expect, outdir, outputType, imageHashes)
+                print('indir after:     ', os.listdir(indir))
+                print('outdir after:    ', os.listdir(outdir)) 
+
+                checkFilesToExpect(
+                    files_to_expect, outdir, outputType, imageHashes)
 
                 if move:
                     infiles = os.listdir(indir)
                     infiles = [f for f in infiles if op.isfile(f)]
                     assert len(infiles) == 0
 
-                for f in os.listdir(outdir):
-                    f = op.join(outdir, f)
-                    if op.isfile(f):
-                        os.remove(f)
+                cleardir(indir)
+                cleardir(outdir)
 
-                for f in os.listdir(indir):
-                    f = op.join(indir, f)
-                    if op.isfile(f):
-                        os.remove(f)
         
     finally:
         shutil.rmtree(indir)
@@ -300,149 +367,248 @@ def test_imcp_script_shouldPass(move=False):
 
 def test_imcp_script_shouldFail(move=False):
 
-    # - non-existent input
-    # - destination exists
+    # - len(srcs) > 1 and dest is not dir
     # - input not readable
     # - move=True and input not deleteable
-    # - destination not writeable
-    pass
+    # - ambiguous inputs
+    # - input is incomplete pair (e.g. .hdr
+    #   without corresponding .img)
+    
+    # a.img
+    # a.hdr
+    # a.nii
+    # 
+    # FAIL: imcp a           dest
+
+    # (files_to_create, imcp_args[, preproc])
+    tests = [
+
+        # non-existent input
+        ('',      'a     b'),
+        ('a.img', 'b.img a'),
+
+        # dest is non-existent dir
+        ('a.img',       'a.img non_existent_dir/'),
+
+        # len(srcs) > 1, but dest is not dir
+        ('a.img b.img', 'a b c.img'),
+
+        # destination not writeable
+        ('a.img b.img', 'a b ./readonly_dir', 'mkdir outdir/readonly_dir; chmod a-wx outdir/readonly_dir'),
+        ('a.img',       'a    b',             'mkdir outdir/b.nii.gz; chmod a-wx outdir/b.nii.gz'),
+
+        # input not readable
+        ('a.img', 'a b', 'chmod a-rwx indir/a.img'),
+
+        # ambiguous input
+        ('a.img a.nii', 'a b'),
+
+        # input is part of incomplete pair
+        ('a.img', 'a     b', 'rm indir/a.hdr'),
+        ('a.img', 'a.img b', 'rm indir/a.hdr'),
+        ('a.img', 'a.hdr b', 'rm indir/a.hdr'),
+        ('a.img', 'a     b', 'rm indir/a.img'),
+        ('a.img', 'a.img b', 'rm indir/a.img'),
+        ('a.img', 'a.hdr b', 'rm indir/a.img'), 
+    ]
+
+    if move:
+        tests = tests + [
+            # Input not deletable
+            ('a.img', 'a b', 'chmod a-wx indir'),
+            ('a.img', 'a b', 'chmod a-wx indir'),
+            ('a.nii', 'a b', 'chmod a-wx indir')
+        ]
+
+    indir  = tempfile.mkdtemp()
+    outdir = tempfile.mkdtemp()
+    
+    try:
+        for test in tests:
+
+            files_to_create = test[0]
+            imcp_args       = test[1]
+            
+            if len(test) == 3: preproc = test[2]
+            else:              preproc = None
+
+            files_to_create = files_to_create.split()
+            imcp_args       = imcp_args      .split()
+
+            for fname in files_to_create:
+                createImageFile(op.join(indir, fname))
+
+            imcp_args[:-1] = [op.join(indir, a) for a in imcp_args[:-1]]
+            imcp_args[ -1] =  op.join(outdir, imcp_args[-1])
+
+            if preproc is not None:
+                for cmd in preproc.split(';'):
+                    cmd = cmd.replace('indir', indir).replace('outdir', outdir)
+                    sp.call(cmd.split())
+
+            try:
+                if move: immv_script.main(imcp_args)
+                else:    imcp_script.main(imcp_args)
+                assert False
+            except (RuntimeError, IOError, fslpath.PathError):
+                pass
+
+            sp.call('chmod u+rwx {}'.format(indir) .split())
+            sp.call('chmod u+rwx {}'.format(outdir).split())
+
+            cleardir(indir)
+            cleardir(outdir)
+
+    finally:
+        shutil.rmtree(indir)
+        shutil.rmtree(outdir)
+
 
 def test_immv_script_shouldPass():
     test_imcp_script_shouldPass(move=True)
 
+    
+def test_immv_script_shouldFail():
+    test_imcp_script_shouldFail(move=True) 
+
 
 def test_imcp_shouldPass(move=False):
 
+
+    #
+    # if not useDefaultExt:
+    #
+    #      imcp src.img dest     -> dest.img
+    #      imcp src.img dest.nii -> dest.nii
+    #
+    # if defaultExt:
+    #      imgp src.img dest     -> dest.nii.gz
+    #      imgp src.img dest.nii -> dest.nii.gz
+
     # 
     # (files_to_create,
-    #    [( imcp_src,   imcp_dest,  files_which_should_exist),
-    #     ( imcp_src,   imcp_dest, [files_which_should_exist]),
-    #     ([imcp_srcs], imcp_dest,  files_which_should_exist),
-    #     ([imcp_srcs], imcp_dest, [files_which_should_exist]),
+    #    [( imcp_args, files_which_should_exist),
     #     ...
     #    ]
     # )
-    #
-    # if icmp_dest == '', it means to copy to the directory
-    # files_which_should_exist == 'all' is equivalent to files_which_should_exist == files_to_create
     shouldPass = [
-        (['file.hdr', 'file.img'], [
-            ('file',     'file',     'all'),
-            ('file',     'file.img', 'all'),
-            ('file',     'file.hdr', 'all'),
-            ('file',     '',         'all'),
-            ('file.img', 'file',     'all'),
-            ('file.img', 'file.img', 'all'),
-            ('file.img', 'file.hdr', 'all'),
-            ('file.img', '',         'all'),
-            ('file.hdr', 'file',     'all'),
-            ('file.hdr', 'file.img', 'all'),
-            ('file.hdr', 'file.hdr', 'all'),
-            ('file.hdr', '',         'all'),
+        ('file.img', [
+            ('file     file',     'file.img'),
+            ('file     file.img', 'file.img'),
+            ('file     file.hdr', 'file.img'),
+            ('file     .',        'file.img'),
+            ('file.img file',     'file.img'),
+            ('file.img file.img', 'file.img'),
+            ('file.img file.hdr', 'file.img'),
+            ('file.img .',        'file.img'),
+            ('file.hdr file',     'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.hdr file.hdr', 'file.img'),
+            ('file.hdr .',        'file.img'),
         ]),
 
-        (['file.hdr', 'file.img', 'file.blob'], [
-            ('file',     'file',     ['file.hdr', 'file.img']),
-            ('file',     'file.img', ['file.hdr', 'file.img']),
-            ('file',     'file.hdr', ['file.hdr', 'file.img']),
-            ('file',     '',         ['file.hdr', 'file.img']),
-            ('file.img', 'file',     ['file.hdr', 'file.img']),
-            ('file.img', 'file.img', ['file.hdr', 'file.img']),
-            ('file.img', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', '',         ['file.hdr', 'file.img']),
-            ('file.hdr', 'file',     ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.img', ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.hdr', '',         ['file.hdr', 'file.img']),
+        ('file.img file.blob', [
+            ('file     file',     'file.img'),
+            ('file     file.img', 'file.img'),
+            ('file     file.hdr', 'file.img'),
+            ('file     .',        'file.img'),
+            ('file.img file',     'file.img'),
+            ('file.img file.img', 'file.img'),
+            ('file.img file.hdr', 'file.img'),
+            ('file.img .',        'file.img'),
+            ('file.hdr file',     'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.hdr file.hdr', 'file.img'),
+            ('file.hdr .',        'file.img'),
         ]),
 
 
-        (['file.hdr', 'file.img', 'file.nii'], [
-            ('file.img', 'file',     ['file.hdr', 'file.img']),
-            ('file.img', 'file.img', ['file.hdr', 'file.img']),
-            ('file.img', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.img', '',         ['file.hdr', 'file.img']),
-            ('file.hdr', 'file',     ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.img', ['file.hdr', 'file.img']),
-            ('file.hdr', 'file.hdr', ['file.hdr', 'file.img']),
-            ('file.hdr', '',         ['file.hdr', 'file.img']),
-            ('file.nii', 'file',     'file.nii'),
-            ('file.nii', 'file.nii', 'file.nii'),
-            ('file.nii', '',         'file.nii'),
+        ('file.img file.nii', [
+            ('file.img file',     'file.img'),
+            ('file.img file.img', 'file.img'),
+            ('file.img file.hdr', 'file.img'),
+            ('file.img .',        'file.img'),
+            ('file.hdr file',     'file.img'),
+            ('file.hdr file.img', 'file.img'),
+            ('file.hdr file.hdr', 'file.img'),
+            ('file.hdr .',        'file.img'),
+            ('file.nii file',     'file.nii'),
+            ('file.nii file.nii', 'file.nii'),
+
+            # TODO both img/nii files
         ]),        
                 
         
-        (['file.nii'], [
-            ('file',     'file',     'all'),
-            ('file',     'file.nii', 'all'),
-            ('file',     '',         'all'),
-            ('file.nii', 'file',     'all'),
-            ('file.nii', 'file.nii', 'all'),
-            ('file.nii', '',         'all'),
+        ('file.nii', [
+            ('file     file',     'file.nii'),
+            ('file     file.nii', 'file.nii'),
+            ('file     .',        'file.nii'),
+            ('file.nii file',     'file.nii'),
+            ('file.nii file.nii', 'file.nii'),
+            ('file.nii .',        'file.nii'),
         ]),
 
-        (['file.nii.gz'], [
-            ('file',        'file',        'all'),
-            ('file',        'file.nii.gz', 'all'),
-            ('file',        '',            'all'),
-            ('file.nii.gz', 'file',        'all'),
-            ('file.nii.gz', 'file.nii.gz', 'all'),
-            ('file.nii.gz', '',            'all'),
+        ('file.nii.gz', [
+            ('file        file',        'file.nii.gz'),
+            ('file        file.nii.gz', 'file.nii.gz'),
+            ('file        .',           'file.nii.gz'),
+            ('file.nii.gz file',        'file.nii.gz'),
+            ('file.nii.gz file.nii.gz', 'file.nii.gz'),
+            ('file.nii.gz .',           'file.nii.gz'),
         ]),
 
         
-        (['file.nii', 'file.blob'], [
-            ('file',     'file',     'file.nii'),
-            ('file',     'file.nii', 'file.nii'),
-            ('file',     '',         'file.nii'),
-            ('file.nii', 'file',     'file.nii'),
-            ('file.nii', 'file.nii', 'file.nii'),
-            ('file.nii', '',         'file.nii'),
+        ('file.nii file.blob', [
+            ('file     file',     'file.nii'),
+            ('file     file.nii', 'file.nii'),
+            ('file     .',        'file.nii'),
+            ('file.nii file',     'file.nii'),
+            ('file.nii file.nii', 'file.nii'),
+            ('file.nii .',        'file.nii'),
         ]), 
         
 
-        (['file.nii', 'file.nii.gz'], [
-            ('file.nii',    'file',        'file.nii'),
-            ('file.nii',    'file.nii',    'file.nii'),
-            ('file.nii',    '',            'file.nii'),
-            ('file.nii.gz', 'file',        'file.nii.gz'),
-            ('file.nii.gz', 'file.nii.gz', 'file.nii.gz'),
-            ('file.nii.gz', '',            'file.nii.gz'),
+        ('file.nii file.nii.gz', [
+            ('file.nii    file',        'file.nii'),
+            ('file.nii    file.nii',    'file.nii'),
+            ('file.nii    .',           'file.nii'),
+            ('file.nii.gz file',        'file.nii.gz'),
+            ('file.nii.gz file.nii.gz', 'file.nii.gz'),
+            ('file.nii.gz .',           'file.nii.gz'),
+
+            # TODO both
         ]),
 
-        (['file.hdr', 'file.img', 'file.nii', 'file.nii.gz'], [
-            (['file.img', 'file.nii', 'file.nii.gz'], '', 'all'),
-            ('file.img',                              '', ['file.hdr', 'file.img']),
-            (['file.hdr', 'file.img'],                '', ['file.hdr', 'file.img']),
-
-            ('file.nii',                              '', 'file.nii'),
-            (['file.nii', 'file.nii.gz'],             '', ['file.nii', 'file.nii.gz']),
+        ('file.img file.nii file.nii.gz', [
+            ('file.img file.nii file.nii.gz .', 'file.img file.nii file.nii.gz'),
+            ('file.img                      .', 'file.img'),
+            ('file.img                      .', 'file.img'),
+            ('file.nii                      .', 'file.nii'),
+            ('file.nii file.nii.gz          .', 'file.nii file.nii.gz'),
         ]),
 
 
-        (['001.hdr', '001.img', '002.hdr', '002.img', '003.hdr', '003.img'], [
+        ('001.img 002.img 003.img', [
             
-            (['001',     '002',     '003'],                                      '', 'all'),
-            (['001.img', '002.img', '003.img'],                                  '', 'all'),
-            (['001.hdr', '002.hdr', '003.hdr'],                                  '', 'all'),
-                                                                                    
-            (['001.img', '002',     '003'],                                      '', 'all'),
-            (['001.hdr', '002',     '003'],                                      '', 'all'),
+            ('001     002     003     .', '001.img 002.img 003.img'),
+            ('001.img 002.img 003.img .', '001.img 002.img 003.img'),
+            ('001.hdr 002.hdr 003.hdr .', '001.img 002.img 003.img'),
+                                               
+            ('001.img 002     003     .', '001.img 002.img 003.img'),
+            ('001.hdr 002     003     .', '001.img 002.img 003.img'),
 
-            (['001.img', '002.hdr', '003.img'],                                  '', 'all'),
-            (['001.hdr', '002.img', '003.hdr'],                                  '', 'all'),
+            ('001.img 002.hdr 003.img .', '001.img 002.img 003.img'),
+            ('001.hdr 002.img 003.hdr .', '001.img 002.img 003.img'),
 
-            (['001',     '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.img', '003.img'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003.hdr'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-                                                                         
-            (['001.img', '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003'],                                                 '', ['001.hdr', '001.img', '003.hdr', '003.img']),
+            ('001     003             .', '001.img 003.img'),
+            ('001.img 003.img         .', '001.img 003.img'),
+            ('001.hdr 003.hdr         .', '001.img 003.img'),
+                                      
+            ('001.img 003             .', '001.img 003.img'),
+            ('001.hdr 003             .', '001.img 003.img'),
 
-            (['001.img', '003.img'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']),
-            (['001.hdr', '003.hdr'],                                             '', ['001.hdr', '001.img', '003.hdr', '003.img']), 
-
-            (['001.img', '001.hdr', '002.img', '002.hdr', '003.img', '003.hdr'], '', 'all'),
+            ('001.img 003.img         .', '001.img 003.img'),
+            ('001.hdr 003.hdr         .', '001.img 003.img'), 
         ]),  
     ]
 
@@ -453,51 +619,45 @@ def test_imcp_shouldPass(move=False):
     try:
 
         for files_to_create, tests in shouldPass:
+
+            files_to_create = files_to_create.split()
             
-            if not isinstance(files_to_create, list):
-                files_to_create = [files_to_create]
-                
-            for imcp_src, imcp_dest, should_exist in tests:
+            for imcp_args, should_exist in tests:
 
-                if   not isinstance(imcp_src, list):     imcp_src     = [imcp_src]
-                if   should_exist == 'all':              should_exist = list(files_to_create)
-                elif not isinstance(should_exist, list): should_exist = [should_exist]
+                should_exist    = should_exist.split()
+                imcp_args       = imcp_args.split()
+                imcp_srcs       = imcp_args[:-1]
+                imcp_dest       = imcp_args[ -1]
 
-                imcp_dest = op.join(outdir, imcp_dest)
-
-                # Each input file contains
-                # its name in plain text,
-                # so we can verify that the
-                # files were correctly copied
-                hashes = []
+                hashes = {}
                 for fn in files_to_create:
-                    hashes.append(createImageFile(op.join(indir, fn)))
+                    hashes[fn] = createImageFile(op.join(indir, fn))
 
                 print()
                 print('files_to_create: ', files_to_create)
-                print('imcp_src:        ', imcp_src)
+                print('imcp_srcs:       ', imcp_srcs)
                 print('imcp_dest:       ', imcp_dest)
                 print('should_exist:    ', should_exist)
+                print('indir:           ', os.listdir(indir))
 
-                for src in imcp_src:
+                for src in imcp_srcs:
 
                     print('  src: {}'.format(src))
 
                     src = op.join(indir, src)
                     
-                    if move: imcp.immv(src, imcp_dest, overwrite=True)
-                    else:    imcp.imcp(src, imcp_dest, overwrite=True)
-
-                copied = os.listdir(outdir)
-                copied = [f for f in copied if op.isfile(op.join(outdir, f))]
-
-                assert sorted(copied) == sorted(should_exist)
+                    if move: imcp.immv(src, op.join(outdir, imcp_dest), overwrite=True)
+                    else:    imcp.imcp(src, op.join(outdir, imcp_dest), overwrite=True)
 
 
-                # check file contents 
-                for fn in should_exist:
-                    with open(op.join(outdir, fn), 'rt') as f:
-                        assert f.read() == '{}\n'.format(fn)
+                print('indir after:     ', os.listdir(indir))
+                print('outdir after:    ', os.listdir(outdir))
+
+                # check file contents
+                checkFilesToExpect(should_exist,
+                                   outdir,
+                                   None,
+                                   hashes)
 
                 # If move, check that
                 # input files are gone
@@ -505,11 +665,11 @@ def test_imcp_shouldPass(move=False):
                     for f in should_exist:
                          assert not op.exists(op.join(indir, f))
                          
-                for f in files_to_create:
+                for f in os.listdir(indir):
                     try:    os.remove(op.join(indir,  f))
                     except: pass
                         
-                for f in should_exist:
+                for f in os.listdir(outdir):
                     os.remove(op.join(outdir, f))
         
         

@@ -629,7 +629,7 @@ def test_getFileGroup_imageFiles_shouldPass():
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     groups      = fslimage.FILE_GROUPS
 
-    # [(files_to_create, path, files_to_expect),
+    # [(files_to_create, path, files_to_expect [, unambiguous]),
     #   ...
     # ]
     #
@@ -666,13 +666,30 @@ def test_getFileGroup_imageFiles_shouldPass():
         # file groups should still work.
         ('file.hdr', 'file',     'file.hdr'),
         ('file.hdr', 'file.hdr', 'file.hdr'),
+
+        # Unambigiuous paths, when
+        # unambiguous = True,
+        # should be ok.
+        ('file.hdr file.img file.nii', 'file.nii', 'file.nii',          True),
+        ('file.hdr file.img file.nii', 'file.hdr', 'file.hdr file.img', True),
+        ('file.hdr file.img file.nii', 'file.img', 'file.hdr file.img', True),
+        
     ]
+
+    # TODO You need to add passing tests for unambiguous=True
 
     workdir = tempfile.mkdtemp()
 
     try: 
 
-        for files_to_create, path, files_to_expect in tests:
+        for test in tests:
+
+            files_to_create = test[0]
+            path            = test[1]
+            files_to_expect = test[2]
+
+            if len(test) == 4: unambiguous = test[3]
+            else:              unambiguous = False
 
             files_to_create = files_to_create.split()
             files_to_expect = files_to_expect.split()
@@ -690,12 +707,14 @@ def test_getFileGroup_imageFiles_shouldPass():
                 op.join(workdir, path),
                 allowedExts=allowedExts,
                 fileGroups=groups,
-                fullPaths=True)
+                fullPaths=True,
+                unambiguous=unambiguous)
             exts = fslpath.getFileGroup(
                 op.join(workdir, path),
                 allowedExts=allowedExts,
                 fileGroups=groups,
-                fullPaths=False)
+                fullPaths=False,
+                unambiguous=unambiguous)
 
             assert sorted(fullPaths) == sorted([op.join(workdir, e)            for e in files_to_expect])
             assert sorted(exts)      == sorted([fslpath.getExt(e, allowedExts) for e in files_to_expect])
@@ -708,7 +727,7 @@ def test_getFileGroup_imageFiles_shouldPass():
 
 def test_getFileGroup_otherFiles_shouldPass():
 
-    # (files_to_create, allowedExts, fileGroups, path, files_to_expect)
+    # (files_to_create, allowedExts, fileGroups, path, files_to_expect [, unambiguous])
 
     tests = [
         # allowedExts is None - incomplete paths are not allowed
@@ -758,16 +777,34 @@ def test_getFileGroup_otherFiles_shouldPass():
         ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.c', 'file2.c file2.d'),
         ('file1.a file1.b file2.c file2.d', '.a .b .c .d', ['.a .b', '.c .d'], 'file2.d', 'file2.c file2.d'),
 
-        # incomplete group
+        # incomplete group should be ok when 
+        # unambiguous = False (the default)
         ('file.a', '.a .b', ['.a .b'], 'file',   'file.a'),
         ('file.a', '.a .b', ['.a .b'], 'file.a', 'file.a'),
+
+
+        # Unambiguous/complete group should 
+        # be ok when unambiguous = True
+        ('file.a file.b file.c', '.a .b .c', ['.a .b'], 'file.a', 'file.a file.b', True),
+        ('file.a file.b file.c', '.a .b .c', ['.a .b'], 'file.b', 'file.a file.b', True),
+        ('file.a file.b file.c', '.a .b .c', ['.a .b'], 'file.c', 'file.c',        True),
     ]
 
 
     workdir = tempfile.mkdtemp()
 
     try:
-        for files_to_create, allowedExts, fileGroups, path, files_to_expect in tests:
+        for test  in tests:
+
+            files_to_create = test[0]
+            allowedExts     = test[1]
+            fileGroups      = test[2]
+            path            = test[3]
+            files_to_expect = test[4]
+
+            if len(test) == 6: unambiguous = test[5]
+            else:              unambiguous = False
+                
 
             files_to_create = files_to_create.split()
             allowedExts     = allowedExts.split()
@@ -792,12 +829,14 @@ def test_getFileGroup_otherFiles_shouldPass():
                 op.join(workdir, path),
                 allowedExts=allowedExts,
                 fileGroups=fileGroups,
-                fullPaths=True)
+                fullPaths=True,
+                unambiguous=unambiguous)
             exts = fslpath.getFileGroup(
                 op.join(workdir, path),
                 allowedExts=allowedExts,
                 fileGroups=fileGroups,
-                fullPaths=False)
+                fullPaths=False,
+                unambiguous=unambiguous)
 
             assert sorted(fullPaths) == sorted([op.join(workdir, e)            for e in files_to_expect])
             assert sorted(exts)      == sorted([fslpath.getExt(e, allowedExts) for e in files_to_expect])
@@ -837,7 +876,10 @@ def test_getFileGroup_shouldFail():
         ('file.hdr', 'file',     allowedExts, fileGroups, True),
         ('file.hdr', 'file.hdr', allowedExts, fileGroups, True),
         ('file.img', 'file',     allowedExts, fileGroups, True),
-        ('file.img', 'file.img', allowedExts, fileGroups, True), 
+        ('file.img', 'file.img', allowedExts, fileGroups, True),
+
+        # Part of more than one group, when unambiguous is True
+        ('file.a file.b file.c', 'file.a', '.a .b', ['.a .b', '.a .c'], True),
     ]
     
     workdir = tempfile.mkdtemp()
