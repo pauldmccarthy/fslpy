@@ -331,13 +331,13 @@ def getFileGroup(path,
     # The path is unambiguously part of a
     # complete file group - resolve it to
     # the first element of the group
-    if fullMatches == 1 and partialMatches == 0:
+    if fullMatches == 1 and partialMatches <= 1:
         if fullPaths: return matchedGroupFiles[0]
         else:         return matchedGroups[    0]
 
     # The path appears to be part of
     # an incomplete group - this is
-    # potentially ambiguuuos, so give
+    # potentially ambiguous, so give
     # up (but see the partialMatches
     # clobber above).
     elif partialMatches > 0:
