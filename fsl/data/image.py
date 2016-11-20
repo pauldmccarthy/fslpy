@@ -6,10 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :class:`Nifti` and :class:`Image` classes, for
-representing 3D/4D NIFI1 images. The ``nibabel`` package is used for file
-I/O.
-
-.. note:: Support for ANALYZE75 and NIFTI2 images has not been tested.
+representing 3D/4D NIFTI1 and NIFTI2 images. The ``nibabel`` package is used
+for file I/O.
 
 
 It is very easy to load a NIFTI image::
@@ -66,7 +64,7 @@ class Nifti(object):
 
     
     ================= ====================================================
-    ``header``        The :mod:`nibabel.Nifti1Header` object.
+    ``header``        The :mod:`nibabel` NIFTI header object.
     ``shape``         A list/tuple containing the number of voxels along
                       each image dimension.
     ``pixdim``        A list/tuple containing the length of one voxel 
@@ -90,9 +88,17 @@ class Nifti(object):
     def __init__(self, header):
         """Create a ``Nifti`` object.
 
-        :arg header:   A :class:`nibabel.nifti1.Nifti1Header` to be used as 
-                       the image header. 
+        :arg header: A :class:`nibabel.nifti1.Nifti1Header` or
+                       :class:`nibabel.nifti2.Nifti2Header` to be used as the
+                       image header.
         """
+
+        import nibabel as nib
+
+        # Nifti2Header is a sub-class of Nifti1Header,
+        # so we don't need to test for it
+        if not isinstance(header, nib.nifti1.Nifti1Header):
+            raise ValueError('Unrecognised header: {}'.format(header))
 
         header                   = header.copy()
         origShape, shape, pixdim = self.__determineShape(header)
@@ -111,6 +117,20 @@ class Nifti(object):
         self.pixdim        = pixdim
         self.voxToWorldMat = voxToWorldMat
         self.worldToVoxMat = worldToVoxMat
+
+
+    @property
+    def niftiVersion(self):
+        """Returns the NIFTI file version - either ``1`` or ``2``. """
+
+        import nibabel as nib
+
+        # nib.Nifti2 is a subclass of Nifti1, 
+        # so we have to check it first.
+        if   isinstance(self.header, nib.nifti2.Nifti2Header): return 2
+        elif isinstance(self.header, nib.nifti1.Nifti1Header): return 1
+
+        else: raise RuntimeError('Unrecognised header: {}'.format(self.header))
 
         
     def __determineTransform(self, header):
@@ -185,7 +205,7 @@ class Nifti(object):
 
     def mapIndices(self, sliceobj):
         """Adjusts the given slice object so that it may be used to index the
-        underlying ``nibabel.Nifti1Image`` object.
+        underlying ``nibabel`` NIFTI image object.
 
         See the :meth:`__determineShape` method.
 
@@ -312,9 +332,10 @@ class Nifti(object):
 
 
 class Image(Nifti, notifier.Notifier):
-    """Class which represents a 3D/4D NIFTI image. Internally, the image
-    is loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image`, and data
-    access managed by a :class:`.ImageWrapper`.
+    """Class which represents a 3D/4D NIFTI image. Internally, the image is
+    loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image` or
+    :mod:`nibabel.nifti2.Nifti2Image`, and data access managed by a
+    :class:`.ImageWrapper`.
 
     
     In addition to the attributes added by the :meth:`Nifti.__init__` method,
@@ -330,7 +351,7 @@ class Image(Nifti, notifier.Notifier):
                    file from where it was loaded, or some other string
                    describing its origin.
 
-    ``nibImage``   A reference to the ``nibabel.Nifti1Image`` object.
+    ``nibImage``   A reference to the ``nibabel`` NIFTI image object.
     
     ``saveState``  A boolean value which is ``True`` if this image is
                    saved to disk, ``False`` if it is in-memory, or has
@@ -380,8 +401,9 @@ class Image(Nifti, notifier.Notifier):
 
         :arg name:      A name for the image.
 
-        :arg header:    If not ``None``, assumed to be a
-                        :class:`nibabel.nifti1.Nifti1Header` to be used as the 
+        :arg header: If not ``None``, assumed to be a
+                        :class:`nibabel.nifti1.Nifti1Header` or
+                        :class:`nibabel.nifti2.Nifti2Header` to be used as the
                         image header. Not applied to images loaded from file,
                         or existing :mod:`nibabel` images.
 
@@ -454,7 +476,10 @@ class Image(Nifti, notifier.Notifier):
 
             if   header is not None: xform = header.get_best_affine()
             elif xform  is     None: xform = np.identity(4)
-                    
+
+            # We default to NIFTI1 and not
+            # NIFTI2, because the rest of
+            # FSL is not yet NIFTI2 compatible.
             nibImage = nib.nifti1.Nifti1Image(image,
                                               xform,
                                               header=header)
@@ -538,7 +563,7 @@ class Image(Nifti, notifier.Notifier):
     
     @property
     def nibImage(self):
-        """Returns a reference to the ``nibabel.nifti1.Nifti1Image`` instance.
+        """Returns a reference to the ``nibabel`` NIFTI image instance.
         """
         return self.__nibImage
 
@@ -844,7 +869,7 @@ def defaultExt():
 def loadIndexedImageFile(filename):
     """Loads the given image file using ``nibabel`` and ``indexed_gzip``.
 
-    Returns a tuple containing the ``nibabel.Nifti1Image``, and the open
+    Returns a tuple containing the ``nibabel`` NIFTI image, and the open
     ``IndexedGzipFile`` handle.
     """
     
@@ -853,13 +878,17 @@ def loadIndexedImageFile(filename):
 
     log.debug('Loading {} using indexed gzip'.format(filename))
 
-    fobj = igzip.SafeIndexedGzipFile(
+    # guessed_image_type returns a
+    # ref to one of the Nifti1Image
+    # or Nifti2Image classes.
+    ftype = nib.loadsave.guessed_image_type(filename)
+    fobj  = igzip.SafeIndexedGzipFile(
         filename=filename,
         spacing=4194304,
         readbuf_size=1048576)
 
-    fmap = nib.Nifti1Image.make_file_map()
+    fmap = ftype.make_file_map()
     fmap['image'].fileobj = fobj
-    image = nib.Nifti1Image.from_file_map(fmap)
+    image = ftype.from_file_map(fmap)
 
     return image, fobj

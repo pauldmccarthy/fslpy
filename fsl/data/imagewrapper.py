@@ -62,7 +62,8 @@ class ImageWrapper(notifier.Notifier):
     *In memory or on disk?*
 
     The image data will be kept on disk, and accessed through the
-    ``nibabel.Nifti1Image.dataobj`` array proxy, if:
+    ``nibabel.Nifti1Image.dataobj`` (or ``nibabel.Nifti2Image.dataobj``) array
+    proxy, if:
 
      - The ``loadData`` parameter to :meth:`__init__` is ``False``.
      - The :meth:`loadData` method never gets called.
@@ -134,7 +135,7 @@ class ImageWrapper(notifier.Notifier):
                  threaded=False):
         """Create an ``ImageWrapper``.
 
-        :arg image:     A ``nibabel.Nifti1Image``.
+        :arg image:     A ``nibabel.Nifti1Image`` or ``nibabel.Nifti2Image``.
 
         :arg name:      A name for this ``ImageWrapper``, solely used for 
                         debug log messages.
