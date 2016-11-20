@@ -24,6 +24,10 @@ import fsl.scripts.imcp as imcp_script
 import fsl.scripts.immv as immv_script
 import fsl.data.image   as fslimage
 
+real_print = print
+def print(*a, **kwa):
+    pass
+
 
 def createImageFile(filename):
 

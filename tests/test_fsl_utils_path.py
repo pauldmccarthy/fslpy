@@ -18,6 +18,11 @@ import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
 
+real_print = print
+def print(*a, **kwa):
+    pass
+
+
 def make_dummy_file(path):
     with open(path, 'wt') as f:
         f.write('{}\n'.format(op.basename(path))) 

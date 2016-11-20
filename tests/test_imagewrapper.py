@@ -18,15 +18,7 @@ import fsl.data.image        as image
 import fsl.data.imagewrapper as imagewrap
 
 
-
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('fsl').setLevel(logging.WARNING)
-log = logging.getLogger()
-
-
 real_print = print
-
 def print(*args, **kwargs):
     pass
 
@@ -614,7 +606,6 @@ def test_ImageWrapper_write_out(niters, seed):
         applyCoverage(wrapper, cov)
         clo, chi = wrapper.dataRange
 
-        log.debug('{:3d} / {:3d}'.format(loop, niters))
         loop += 1
 
         # Now, we'll simulate some writes
@@ -718,7 +709,7 @@ def test_ImageWrapper_write_out(niters, seed):
             # print('--------------')
 
             
-def test_ImageWrapper_write_in_overlap(niters):
+def test_ImageWrapper_write_in_overlap(niters, seed):
 
     # Generate a bunch of random coverages
     for _ in range(niters):
@@ -741,6 +732,10 @@ def test_ImageWrapper_write_in_overlap(niters):
         # Generate a random coverage
         cov = random_coverage(shape, vol_limit=1)
 
+        print('Shape:    {}'.format(shape))
+        print('Coverage: {}'.format(cov))
+        print('Data:     {}'.format(data))
+        
         # Now, we'll simulate some writes
         # which are contained within, or
         # overlap with, the initial coverage
@@ -778,6 +773,9 @@ def test_ImageWrapper_write_in_overlap(niters):
                 rlo = rfloat(data.min() - 100, data.max() + 100)
                 rhi = rfloat(rlo,              data.max() + 100)
 
+                if np.prod(sliceshape) == 1:
+                    rhi = rlo
+
                 img     = nib.Nifti1Image(np.copy(data), np.eye(4))
                 wrapper = imagewrap.ImageWrapper(img)
                 applyCoverage(wrapper, cov)
@@ -785,7 +783,7 @@ def test_ImageWrapper_write_in_overlap(niters):
                 newData = np.linspace(rlo, rhi, np.prod(sliceshape))
                 newData = newData.reshape(sliceshape)
 
-
+                print('New data shape: {}'.format(newData))
                 print('Old range:      {} - {}'.format(*wrapper.dataRange))
 
                 wrapper[tuple(sliceobjs)] = newData
@@ -795,6 +793,8 @@ def test_ImageWrapper_write_in_overlap(niters):
 
                 print('Expected range: {} - {}'.format(rlo,   rhi))
                 print('New range:      {} - {}'.format(newLo, newHi))
+                print('Data min/max:   {} - {}'.format(img.get_data()[tuple(sliceobjs)].min(),
+                                                       img.get_data()[tuple(sliceobjs)].max()))
 
                 assert np.all(newCov == expCov)
 
@@ -802,7 +802,7 @@ def test_ImageWrapper_write_in_overlap(niters):
                 assert np.isclose(newHi, rhi)
 
             
-def test_ImageWrapper_write_different_volume(niters):
+def test_ImageWrapper_write_different_volume(niters, seed):
 
     for _ in range(niters):
 
@@ -853,7 +853,7 @@ def test_ImageWrapper_write_different_volume(niters):
 
             # Generate a slice, making
             # sure that the slice covers
-            # at least two elements
+            # at least one element
             while True:
                 slices = random_slices(fullcov,
                                        shape,
@@ -925,8 +925,14 @@ def test_ImageWrapper_write_different_volume(niters):
                 wrapper = imagewrap.ImageWrapper(img)
                 applyCoverage(wrapper, cov)
 
+                oldLo, oldHi = wrapper.dataRange
+
+
                 newData = np.linspace(rlo, rhi, np.prod(sliceshape))
                 newData = newData.reshape(sliceshape)
+
+                if np.prod(sliceshape) == 1:
+                    ehi = max(newData.max(), oldHi) 
 
                 wrapper[tuple(sliceobjs)] = newData
 
@@ -934,6 +940,11 @@ def test_ImageWrapper_write_different_volume(niters):
 
                 for vol in range(nvols):
                     np.all(wrapper.coverage(vol) == expCov[..., vol])
+
+                print('Old range:      {} - {}'.format(oldLo, oldHi))
+                print('Newdata range:  {} - {}'.format(newData.min(), newData.max()))
+                print('Expected range: {} - {}'.format(elo,   ehi))
+                print('New range:      {} - {}'.format(newLo, newHi))
                     
                 assert np.isclose(newLo, elo)
                 assert np.isclose(newHi, ehi)
