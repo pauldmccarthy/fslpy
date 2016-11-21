@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# __init__.py - Front end to fslpy. The entry point is main(), defined
-# at the bottom.
+# __init__.py - The fslpy library.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
