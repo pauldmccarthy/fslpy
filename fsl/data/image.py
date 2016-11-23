@@ -294,9 +294,9 @@ class Nifti(object):
         :class:`Nifti` instance) has the same dimensions and is in the
         same space as this image.
         """
-        return np.isclose(self.shape[:3],     other.shape[:3]) and \
-               np.isclose(self.pixdim,        other.pixdim)    and \
-               np.isclose(self.voxToWorldMat, other.voxToWorldMat)
+        return np.all(np.isclose(self.shape[:3],     other.shape[:3])) and \
+               np.all(np.isclose(self.pixdim,        other.pixdim))    and \
+               np.all(np.isclose(self.voxToWorldMat, other.voxToWorldMat))
 
 
     def getOrientation(self, axis, xform):
