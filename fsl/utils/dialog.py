@@ -760,6 +760,7 @@ class CheckBoxMessageDialog(wx.Dialog):
                  yesText=None,
                  noText=None,
                  cancelText=None,
+                 hintText=None,
                  focus=None,
                  icon=None,
                  style=None):
@@ -784,6 +785,9 @@ class CheckBoxMessageDialog(wx.Dialog):
 
         :arg cancelText:    Text to show on the *cancel* button. If not 
                             provided, there will be no cancel button.
+
+        :arg hintText:      If provided, shown as a "hint", in a slightly 
+                            faded font, between the checkboxes and the buttons.
 
         :arg focus:         One of ``'yes'``, ``'no'```, or ``'cancel'``,
                             specifying which button should be given initial
@@ -843,7 +847,13 @@ class CheckBoxMessageDialog(wx.Dialog):
                                             id=wx.ID_CANCEL)
             self.__cancelButton.Bind(wx.EVT_BUTTON, self.__onCancelButton)
         else:
-            self.__cancelButton = None 
+            self.__cancelButton = None
+
+        if hintText is not None:
+            self.__hint = wx.StaticText(self, label=hintText)
+            self.__hint.SetForegroundColour('#888888')
+        else:
+            self.__hint = None
 
         self.__mainSizer    = wx.BoxSizer(wx.HORIZONTAL)
         self.__contentSizer = wx.BoxSizer(wx.VERTICAL)
@@ -853,6 +863,10 @@ class CheckBoxMessageDialog(wx.Dialog):
         self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
         for cb in self.__checkboxes:
             self.__contentSizer.Add(cb, flag=wx.EXPAND)
+
+        if self.__hint is not None:
+            self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
+            self.__contentSizer.Add(self.__hint, flag=wx.EXPAND)
 
         self.__contentSizer.Add((1, 20), flag=wx.EXPAND)
         self.__btnSizer.Add((1, 1), flag=wx.EXPAND, proportion=1)
