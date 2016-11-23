@@ -289,6 +289,16 @@ class Nifti(object):
         return npla.det(self.voxToWorldMat) > 0
 
 
+    def sameSpace(self, other):
+        """Returns ``True`` if the ``other`` image (assumed to be a
+        :class:`Nifti` instance) has the same dimensions and is in the
+        same space as this image.
+        """
+        return np.isclose(self.shape[:3],     other.shape[:3]) and \
+               np.isclose(self.pixdim,        other.pixdim)    and \
+               np.isclose(self.voxToWorldMat, other.voxToWorldMat)
+
+
     def getOrientation(self, axis, xform):
         """Returns a code representing the orientation of the specified data
         axis in the coordinate system defined by the given transformation
