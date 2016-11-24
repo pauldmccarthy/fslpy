@@ -729,17 +729,9 @@ class Image(Nifti, notifier.Notifier):
         :arg sliceobj: Something which can slice the image data.
         """
 
-
         log.debug('{}: __getitem__ [{}]'.format(self.name, sliceobj))
-        
-        data = self.__imageWrapper.__getitem__(sliceobj)
 
-        if len(data.shape) > len(self.shape):
-
-            shape = data.shape[:len(self.shape)]
-            data  = np.reshape(data, shape)
-
-        return data
+        return self.__imageWrapper.__getitem__(sliceobj)
 
 
     def __setitem__(self, sliceobj, values):

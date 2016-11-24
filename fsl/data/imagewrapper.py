@@ -119,6 +119,8 @@ class ImageWrapper(notifier.Notifier):
        :nosignatures:
 
        naninfrange
+       isValidFancySliceObj
+       canonicalSliceObj
        sliceObjToSliceTuple
        sliceTupleToSliceObj
        sliceCovered
@@ -357,6 +359,15 @@ class ImageWrapper(notifier.Notifier):
         # the ArrayProxy reads from disk). So
         # we have to read from the in-memory
         # array to get changed values.
+        #
+        # Finally, note that if the caller has
+        # given us a 'fancy' slice object (a
+        # boolean numpy array), but the image
+        # data is not in memory, we can't access
+        # the data, as the nibabel ArrayProxy
+        # (the dataobj attribute) cannot handle
+        # fancy indexing. In this case an error
+        # will be raised.
         if self.__image.in_memory: return self.__image.get_data()[sliceobj]
         else:                      return self.__image.dataobj[   sliceobj]
 
@@ -538,29 +549,36 @@ class ImageWrapper(notifier.Notifier):
         """
 
         log.debug('Getting image data: {}'.format(sliceobj))
-
-        if not isinstance(sliceobj, tuple):
-            sliceobj = (sliceobj,)
-
-        # Figure out the number of dimensions
-        # that the result should have, given
-        # this slice object.
-        expNdims = len(self.__canonicalShape) - \
-                   len([s for s in sliceobj if isinstance(s, int)])
-
-        # Truncate some dimensions from the
-        # slice object if it has too many
-        # (e.g. trailing dims of length 1).
-        shape = self.__image.shape
+        
+        image = self.__image
+        shape = image.shape
         ndims = len(shape)
 
-        if len(sliceobj) > ndims:
-            sliceobj = sliceobj[:ndims]
+        fancy = isValidFancySliceObj(sliceobj, shape)
 
+        if fancy:
+            expNdims = ndims
+        else:
+            
+            if not isinstance(sliceobj, tuple):
+                sliceobj = (sliceobj,)
+
+            # Figure out the number of dimensions
+            # that the result should have, given
+            # this slice object.
+            expNdims = len(self.__canonicalShape) - \
+                       len([s for s in sliceobj if isinstance(s, int)])
+
+            # Truncate some dimensions from the
+            # slice object if it has too many
+            # (e.g. trailing dims of length 1).
+            if len(sliceobj) > ndims:
+                sliceobj = sliceobj[:ndims]
+                
         # TODO Cache 3D images for large 4D volumes, 
         #      so you don't have to hit the disk?
 
-        sliceobj = nib.fileslice.canonical_slicers(sliceobj, shape)
+        sliceobj = canonicalSliceObj(sliceobj, shape)
         data     = self.__getData(sliceobj)
 
         if not self.__covered:
@@ -570,11 +588,9 @@ class ImageWrapper(notifier.Notifier):
             if not sliceCovered(slices, self.__coverage):
                 self.__updateDataRangeOnRead(slices, data)
 
-        # Make sure that the result has
-        # the shape that the caller is
-        # expecting.
-        ndims = len(data.shape)
-        if ndims < expNdims:
+        # Make sure that the result has the
+        # shape that the caller is expecting.
+        if not fancy and ndims != expNdims:
             data = data.reshape(list(data.shape) + [1] * (expNdims - ndims))
 
         return data
@@ -592,10 +608,8 @@ class ImageWrapper(notifier.Notifier):
                   loaded into memory. 
         """
 
-        sliceobj = nib.fileslice.canonical_slicers(sliceobj,
-                                                   self.__image.shape)
-        slices   = sliceObjToSliceTuple(           sliceobj,
-                                                   self.__image.shape)
+        sliceobj = canonicalSliceObj(   sliceobj, self.__image.shape)
+        slices   = sliceObjToSliceTuple(sliceobj, self.__image.shape)
 
         # The image data has to be in memory
         # for the data to be changed. If it's
@@ -650,6 +664,37 @@ def naninfrange(data):
         return np.nan, np.nan
 
 
+def isValidFancySliceObj(sliceobj, shape):
+    """Returns ``True`` if the given ``sliceobj`` is a valid and fancy slice
+    object.
+
+    ``nibabel`` refers to slice objects as "fancy" if they comprise anything
+    but tuples of simple ``slice`` objects. The ``ImageWrapper`` class
+    supports one type of "fancy" slicing, where the ``sliceobj`` is a boolean
+    ``numpy`` array of the same shape as the image.
+
+    This function returns ``True`` if the given ``sliceobj`` adheres to these
+    requirements, ``False`` otherwise.
+    """
+
+    # We only support boolean numpy arrays
+    # which have the same shape as the image
+    return (isinstance(sliceobj, np.ndarray) and
+            sliceobj.dtype == np.bool        and
+            sliceobj.shape == shape)
+
+
+def canonicalSliceObj(sliceobj, shape):
+    """Returns a canonical version of the given ``sliceobj``. See the
+    ``nibabel.fileslice.canonical_slicers` function.
+    """
+
+    if not isValidFancySliceObj(sliceobj, shape):
+        sliceobj = nib.fileslice.canonical_slicers(sliceobj, shape)
+
+    return sliceobj
+    
+
 def canonicalShape(shape):
     """Calculates a *canonical* shape, how the given ``shape`` should
     be presented. The shape is forced to be at least three dimensions,
@@ -682,6 +727,9 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
     :arg shape:    Shape of the array being sliced.
     """
+
+    if isValidFancySliceObj(sliceobj, shape):
+        return tuple((0, s) for s in shape)
 
     indices = []
 
