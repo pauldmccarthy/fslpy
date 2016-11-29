@@ -372,7 +372,7 @@ def idle(task, *args, **kwargs):
 
     .. note:: You will run into difficulties if you schedule a function that
               expects/accepts its own keyword arguments called ``name``,
-              ``skipIfQueued``, ``after``, or ``timeout``.
+              ``skipIfQueued``, ``after``, ``timeout``, or ``alwaysQueue``.
     """
 
     global _idleRegistered
