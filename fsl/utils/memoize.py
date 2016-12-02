@@ -28,17 +28,10 @@ log = logging.getLogger(__name__)
 # TODO Make this a class, and add
 #      a "clearCache" method to it.
 def memoize(func):
-    """Memoize the given function by the value of the input arguments, allowing
-    the caller to specify which positional arguments (by index) and keyword
-    arguments (by name) are used for the comparison.
+    """Memoize the given function by the value of the input arguments.
 
-    If no positional or keyword arguments are specified, the function is
-    memoized on all arguments. Note that the arguments used for memoization
-    must be hashable, as they are used as keys in a dictionary.
-
-
-    :arg args:   A list of positional argument indices.
-    :arg kwargs: A list of keyword argument names.
+    Note that the arguments used for memoization must be hashable, as they are
+    used as keys in a dictionary.
     """
 
     cache      = {}
@@ -61,6 +54,8 @@ def memoize(func):
         
         try:
             result = cache[key]
+
+            log.debug('Retrieved from cache[{}]: {}'.format(key, result))
 
         except KeyError:
 
@@ -111,8 +106,8 @@ def memoizeMD5(func):
 
 def skipUnchanged(func):
     """This decorator is intended for use with *setter* functions - a function
-     which accepts a name and a value, and is intended to set some named
-     attribute to the given value.
+    which accepts a name and a value, and is intended to set some named
+    attribute to the given value.
 
     This decorator keeps a cache of name-value pairs. When the decorator is
     called with a specific name and value, the cache is checked and, if the
