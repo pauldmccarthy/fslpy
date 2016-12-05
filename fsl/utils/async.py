@@ -22,6 +22,7 @@ Idle tasks
    idle
    idleWhen
    inIdle
+   cancelIdle
    getIdleTimeout
    setIdleTimeout
 
@@ -180,8 +181,8 @@ loop.
 """
 
 
-_idleQueueSet = set()
-"""A ``set`` containing the names of all named tasks which are
+_idleQueueDict = {}
+"""A ``dict`` containing the names of all named tasks which are
 currently queued on the idle loop (see the ``name`` parameter to the
 :func:`idle` function).
 """
@@ -259,7 +260,7 @@ def _wxIdleLoop(ev):
 
     import wx
     global _idleQueue
-    global _idleQueueSet
+    global _idleQueueDict
     global _idleTimer
     global _idleCallRate
 
@@ -308,7 +309,8 @@ def _wxIdleLoop(ev):
                 taskName, type(e).__name__, str(e)), exc_info=True)
 
         if task.name is not None:
-            _idleQueueSet.discard(task.name)
+            try:             _idleQueueDict.pop(task.name)
+            except KeyError: pass
 
     if _idleQueue.qsize() > queueSizeOffset:
         ev.RequestMore()
@@ -320,9 +322,20 @@ def inIdle(taskName):
     """Returns ``True`` if a task with the given name is queued on the
     idle loop (or is currently running), ``False`` otherwise. 
     """
-    global _idleQueueSet
-    return taskName in _idleQueueSet
+    global _idleQueueDict
+    return taskName in _idleQueueDict
+
+
+def cancelIdle(taskName):
+    """If a task with the given ``taskName`` is in the idle queue, it
+    is cancelled. If the task is already running, it cannot be cancelled.
+
+    A ``KeyError`` is raised if no task called ``taskName`` exists.
+    """
     
+    global _idleQueueDict
+    _idleQueueDict[taskName].timeout = -1
+
 
 def idle(task, *args, **kwargs):
     """Run the given task on a ``wx.EVT_IDLE`` event.
@@ -343,6 +356,13 @@ def idle(task, *args, **kwargs):
                        amount of time passes before the function gets
                        scheduled to be called on the idle loop, the function
                        is not called, and is dropped from the queue.
+
+    :arg dropIfQueued: Optional. If provided, must be provided as a keyword
+                       argument. If ``True``, and a task with the given
+                       ``name`` is already enqueud, that function is dropped
+                       from the queue, and the new task is enqueued. Defaults
+                       to ``False``. This argument takes precedence over the
+                       ``skipIfQueued`` argument.
 
     :arg skipIfQueued: Optional. If provided, must be provided as a keyword
                        argument. If ``True``, and a task with the given
@@ -369,22 +389,28 @@ def idle(task, *args, **kwargs):
               This is because, if the required time has not elapsed when
               the task is popped from the queue, it will be re-queued.
 
+    .. note:: If you schedule multiple tasks with the same ``name``, and you
+              do not use the ``skipIfQueued`` or ``dropIfQueued`` arguments,
+              all of those tasks will be executed, but you will only be able
+              to query/cancel the most recently enqueued task.
 
     .. note:: You will run into difficulties if you schedule a function that
               expects/accepts its own keyword arguments called ``name``,
-              ``skipIfQueued``, ``after``, ``timeout``, or ``alwaysQueue``.
+              ``skipIfQueued``, ``dropIfQueued``, ``after``, ``timeout``, or
+              ``alwaysQueue``.
     """
 
     global _idleRegistered
     global _idleTimer
     global _idleQueue
-    global _idleQueueSet
+    global _idleQueueDict
 
     schedtime    = time.time()
     timeout      = kwargs.pop('timeout',      0)
     after        = kwargs.pop('after',        0)
     name         = kwargs.pop('name',         None)
-    skipIfQueued = kwargs.pop('skipIfQueued', None)
+    dropIfQueued = kwargs.pop('dropIfQueued', False)
+    skipIfQueued = kwargs.pop('skipIfQueued', False)
     alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
     if alwaysQueue or _haveWX():
@@ -399,10 +425,24 @@ def idle(task, *args, **kwargs):
 
             _idleTimer.Bind(wx.EVT_TIMER, _wxIdleLoop)
 
-        if name is not None and skipIfQueued and inIdle(name):
-            log.debug('Idle task ({}) is already queued - dropping '
-                      'it'.format(getattr(task, '__name__', '<unknown>')))
-            return
+        if name is not None and inIdle(name):
+
+            if dropIfQueued:
+
+                # The cancelIdle function sets the old
+                # task timeout to -1, so it won't get
+                # executed. But the task is left in the
+                # _idleQueue, and in the _idleQueueDict.
+                # In the latter, the old task gets
+                # overwritten with the new task below.
+                cancelIdle(name)
+                log.debug('Idle task ({}) is already queued - '
+                          'dropping the old task'.format(name))
+                
+            elif skipIfQueued:
+                log.debug('Idle task ({}) is already queued '
+                          '- skipping it'.format(name))
+                return
 
         log.debug('Scheduling idle task ({}) on wx idle '
                   'loop'.format(getattr(task, '__name__', '<unknown>')))
@@ -418,7 +458,7 @@ def idle(task, *args, **kwargs):
         _idleQueue.put_nowait(idleTask)
 
         if name is not None:
-            _idleQueueSet.add(name)
+            _idleQueueDict[name] = idleTask
             
     else:
         time.sleep(after)
