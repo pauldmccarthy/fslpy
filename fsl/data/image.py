@@ -383,7 +383,10 @@ class Image(Nifti, notifier.Notifier):
     
     =============== ======================================================
     ``'data'``      This topic is notified whenever the image data changes
-                    (via the :meth:`__setitem__` method).
+                    (via the :meth:`__setitem__` method). The indices/
+                    slices of the portion of data that was modified is
+                    passed to registered listeners as the notification
+                    value (see :meth:`.Notifier.notify`).
     
     ``'saveState'`` This topic is notified whenever the saved state of the
                     image changes (i.e. it is edited, or saved to disk).
@@ -756,7 +759,7 @@ class Image(Nifti, notifier.Notifier):
 
         if values.size > 0:
 
-            self.notify(topic='data')
+            self.notify(topic='data', value=sliceobj)
 
             if self.__saveState:
                 self.__saveState = False
