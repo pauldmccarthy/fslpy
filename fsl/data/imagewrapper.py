@@ -1012,9 +1012,8 @@ def calcExpansion(slices, coverage):
                 expLow  = min((ylo, yLowCover,  expLow))
                 expHigh = max((yhi, yHighCover, expHigh))
 
-                expansion[dimy][0] = expLow
-                expansion[dimy][1] = expHigh
-
+                expansion[dimy][0] = int(expLow)
+                expansion[dimy][1] = int(expHigh)
 
             # If no range exists for any of the
             # other dimensions, the range for
@@ -1025,7 +1024,7 @@ def calcExpansion(slices, coverage):
                     continue
 
                 if np.any(np.isnan(expansion[dimy])):
-                    expansion[dimy] = coverage[:, dimy, vol]
+                    expansion[dimy] = [int(c) for c in coverage[:, dimy, vol]]
 
             # Finish off this expansion
             expansion = finishExpansion(expansion, vol)
