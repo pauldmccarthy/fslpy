@@ -206,11 +206,20 @@ class AtlasRegistry(notifier.Notifier):
                        is given a unique id.
         """
 
+        filename = op.abspath(filename)
+
         if atlasID is None:
             atlasIDBase = op.splitext(op.basename(filename))[0].lower()
             atlasID     = atlasIDBase
         else:
             atlasIDBase = atlasID
+
+        # If an atlas with the same ID/path
+        # already exists, raise an error
+        atlasDesc = self.__atlasDescs.get(atlasID, None)
+        if atlasDesc is not None and atlasDesc.specPath == filename:
+            raise KeyError('{} is already in the atlas '
+                           'registry'.format(filename))
 
         # Find a unique atlas ID 
         i = 0
@@ -227,8 +236,7 @@ class AtlasRegistry(notifier.Notifier):
         self.__atlasDescs[desc.atlasID] = desc
 
         fsldir = op.join(os.environ.get('FSLDIR', None), 'data', 'atlases')
-
-        if not op.abspath(filename).startswith(fsldir):
+        if not filename.startswith(fsldir):
             self.__updateExtraAtlases()
 
         self.notify(value=desc)
