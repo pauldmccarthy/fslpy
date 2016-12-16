@@ -560,7 +560,8 @@ def test_ImageWrapper_read(niters, seed):
             for j, (vol, r) in enumerate(zip(ordering, ranges)):
 
                 # Access the volume
-                wrapper[..., vol]
+                if len(data.shape) >= 3: wrapper[..., vol]
+                else:                    wrapper[:, vol, 0]
 
                 # The current known data range
                 # should be the min/max of
