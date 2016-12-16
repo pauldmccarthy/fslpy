@@ -5,71 +5,22 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides access to the atlas images which are contained in
-``$FSLDIR/data/atlases/``. This directory contains XML files which describe
-all of the available atlases.  An XML atlas description file is assumed to
-have a structure that looks like the following:
+"""This module provides access to FSL atlas images, typically contained in
+``$FSLDIR/data/atlases/``. The :class:`AtlasRegistry` class provides access
+to these atlases, and allows the user to load atlases stored in other
+locations. A single :class:`.AtlasRegistry` instance is created when this
+module is first imported - it is available as amodule level attribute called
+:attr:`registry`, and some of its methods are available as module-level
+functions:
 
-.. code-block:: xml
-
-   <atlas>
-     <header>
-       <name></name>        # Atlas name
-       <type></type>        # 'Probabilistic' or 'Label'
-       <images>
-        <imagefile>
-        </imagefile>        # If type is Probabilistic, path
-                            # to 4D image file, one volume per
-                            # label, Otherwise, if type is
-                            # Label, path to 3D label file
-                            # (identical to the summaryimagefile
-                            # below)
-
-        <summaryimagefile>  # Path to 3D summary file, with each 
-        </summaryimagefile> # region having value (index + 1)
-
-       </images>
-       ...                  # More images - generally both
-                            # 1mm and 2mm  versions (in
-                            # MNI152 space) are available
-     </header>
-    <data>
-
-     # index - For probabilistic atlases, index of corresponding volume in
-     #         4D image file. For label images, the value of voxels which
-     #         are in the corresponding region.
-     # 
-     # x    |
-     # y    |- XYZ *voxel* coordinates into the first image of the <images>
-     #      |  list
-     # z    |
-     <label index="0" x="0" y="0" z="0">Name</label>
-     ...
-    </data>
-   </atlas>
-
-
-This module reads in all of these XML files, and builds a list of
-:class:`AtlasDescription` instances, each of which contains information about
-one atlas. Each atlas is assigned an identifier, which is simply the XML file
-name describing the atlas, sans-suffix, and converted to lower case.  For
-exmaple, the atlas described by:
-
-    ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
-
-is given the identifier
-
-    ``harvardoxford-cortical``
-
-
-The following functions provide access to the available
-:class:`AtlasDescription` instances:
 
 .. autosummary::
    :nosignatures:
 
    listAtlases
    getAtlasDescription
+   loadAtlas
+   addAtlas
 
 
 The :func:`loadAtlas` function allows you to load an atlas image, which will
@@ -96,122 +47,300 @@ import numpy                 as np
 import fsl.data.image        as fslimage
 import fsl.data.constants    as constants
 import fsl.utils.transform   as transform
+import fsl.utils.notifier    as notifier
+import fsl.utils.settings    as fslsettings
 
 
 log = logging.getLogger(__name__)
 
 
-def listAtlases(refresh=False):
-    """Returns a list containing :class:`AtlasDescription` objects for
-    all available atlases.
+class AtlasRegistry(notifier.Notifier):
+    """The ``AtlasRegistry`` maintains a list of all known atlases.
 
-    :arg refresh: If ``True``, or if the atlas desriptions have not
-                  previously been loaded, atlas descriptions are
-                  loaded from the atlas files. Otherwise, previously
-                  loaded descriptions are returned (see 
-                  :attr:`ATLAS_DESCRIPTIONS`).
 
-    .. note:: This function is thread-safe, because *FSLeyes* calls it
-              in a multi-threaded manner (to avoid blocking the GUI).
+    When created, the ``AtlasRegistry`` loads all of the FSL XML atlas
+    specification files in ``$FSLDIR/data/atlases``, and builds a list of
+    :class:`AtlasDescription` instances, each of which contains information
+    about one atlas. Each atlas is assigned an identifier, which is simply the
+    XML file name describing the atlas, sans-suffix, and converted to lower
+    case.  For exmaple, the atlas described by:
+
+        ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
+
+    is given the identifier
+
+        ``harvardoxford-cortical``
+
+    
+    The :meth:`addAtlas` method allows other atlases to be added to the
+    registry. Whenever a new atlas is added, the ``AtlasRegistry`` notifies
+    any registered listeners via the :class:`.Notifier` interface, passing
+    it the newly loaded class:`AtlasDecsription`.
     """
 
-    _setAtlasDir()
-
-    if ATLAS_DIR is None:
-        return []
     
-    # Make sure the atlas description
-    # refresh is only performed by one
-    # thread. If a thread is loading
-    # the descriptions, any other thread
-    # which enters the function will
-    # block here until the descriptions
-    # are loaded. When it continues,
-    # it will see a populated
-    # ATLAS_DESCRIPTIONS list.
-    LOAD_ATLAS_LOCK.acquire()
+    def __init__(self):
+        """Create an ``AtlasRegistry``. """
 
-    if len(ATLAS_DESCRIPTIONS) == 0:
-        refresh = True
+        # This dictionary contains an
+        # {atlasID : AtlasDescription}
+        # mapping for all known atlases
+        self.__atlasDescs = collections.OrderedDict()
 
-    try:
-        if refresh:
+        # This is used as a mutual-exclusion
+        # lock by the listAtlases function,
+        # to make it thread-safe.
+        self.__lock   = threading.Lock()
+        self.__loaded = False
 
-            log.debug('Loading atlas descriptions')
-            
-            atlasFiles = glob.glob(op.join(ATLAS_DIR, '*.xml'))
-            atlasDescs = map(AtlasDescription, atlasFiles)
-            atlasDescs = sorted(atlasDescs, key=lambda d: d.name)
 
-            ATLAS_DESCRIPTIONS.clear()
+    def __loadAtlasDescs(func):
+        """Used as a decorator on ``AtlasRegistry` methods to lazily load
+        :class:`AtlasDescription` objects on the first registry access.
+        Atlases are loaded from ``$FSLDIR/data/atlases/``, and from any other
+        previously loaded locations.
+                
+        .. note:: This function is thread-safe, because *FSLeyes* calls it
+                  in a multi-threaded manner (to avoid blocking the GUI).
+        """
 
-            for i, desc in enumerate(atlasDescs):
-                desc.index                       = i
-                ATLAS_DESCRIPTIONS[desc.atlasID] = desc
+        def wrapper(self, *args, **kwargs):
+
+            # Make sure the atlas description
+            # refresh is only performed by one
+            # thread. If a thread is loading
+            # the descriptions, any other thread
+            # which enters the function will
+            # block here until the descriptions
+            # are loaded. When it continues, it
+            # will see a populated atlasDescs
+            # list.
+            self.__lock.acquire()
+
+            try:
+                
+                if self.__loaded:
+                    return func(self, *args, **kwargs)
+
+                if os.environ.get('FSLDIR', None) is None:
+                    fslAtlasDir = None
+                else:
+                    fslAtlasDir = op.join(os.environ['FSLDIR'],
+                                          'data',
+                                          'atlases')
+
+                # Any extra atlases that have previously
+                # been loaded from outside of $FSLDIR
+                extraIDs, extraPaths = self.__getExtraAtlases()
+
+                atlasPaths = sorted(glob.glob(op.join(fslAtlasDir, '*.xml')))
+                atlasPaths = list(atlasPaths)         + extraPaths
+                atlasIDs   = [None] * len(atlasPaths) + extraIDs
+
+                with self.skipAll():
+                    for atlasPath, atlasID in zip(atlasPaths, atlasIDs):
+                        self.addAtlas(atlasPath, atlasID)
+
+                self.__loaded = True
+                return func(self, *args, **kwargs)
+                    
+            finally:
+                self.__lock.release()
+
+        return wrapper
+
+
+    @__loadAtlasDescs
+    def listAtlases(self):
+        """Returns a list containing :class:`AtlasDescription` objects for
+        all available atlases.
+        """
+        return list(self.__atlasDescs.values())
+
+
+    @__loadAtlasDescs
+    def getAtlasDescription(self, atlasID):
+        """Returns an :class:`AtlasDescription` instance describing the
+        atlas with the given ``atlasID``.
+        """
+        return self.__atlasDescs[atlasID]
+
+
+    @__loadAtlasDescs
+    def loadAtlas(self, atlasID, loadSummary=False, resolution=None):
+        """Loads and returns an :class:`Atlas` instance for the atlas
+        with the given  ``atlasID``. 
+
+        :arg loadSummary: If ``True``, a 3D :class:`LabelAtlas` image is
+                          loaded. Otherwise, if the atlas is probabilistic,
+                          a 4D :class:`ProbabilisticAtlas` image is loaded.
+
+        :arg resolution: Optional. Desired isotropic atlas resolution in
+                         millimetres, e.g. ``1.0`` or ``2.0``. The available
+                         atlas with the nearest resolution to this value
+                         will be returned. If not provided, the highest
+                         resolution atlas will be loaded.
+        """
+
+        atlasDesc = self.__atlasDescs[atlasID]
+
+        # label atlases are only
+        # available in 'summary' form
+        if atlasDesc.atlasType == 'label':
+            loadSummary = True
+
+        if loadSummary: atlas = LabelAtlas(        atlasDesc, resolution)
+        else:           atlas = ProbabilisticAtlas(atlasDesc, resolution)
+
+        return atlas
+
+
+    def addAtlas(self, filename, atlasID=None):
+        """Add an atlas from the given XML specification file to the registry.
+
+        :arg filename: Path to a FSL XML atlas specification file.
+
+        :arg atlasID:  ID to give this atlas. If not provided, the file
+                       base name (converted to lower-case) is used. If an
+                       atlas with the given ID already exists, this new atlas
+                       is given a unique id.
+        """
+
+        if atlasID is None:
+            atlasIDBase = op.splitext(op.basename(filename))[0].lower()
+            atlasID     = atlasIDBase
         else:
-            atlasDescs = list(ATLAS_DESCRIPTIONS.values())
+            atlasIDBase = atlasID
 
-    finally:
-        LOAD_ATLAS_LOCK.release()
+        # Find a unique atlas ID 
+        i = 0
+        while atlasID in self.__atlasDescs:
+            atlasID = '{}_{}'.format(atlasIDBase, i)
+            i      += 1
+        
+        desc = AtlasDescription(filename, atlasID)
 
-    return list(atlasDescs)
+        log.debug('Adding atlas to registry: {} / {}'.format(
+            desc.atlasID,
+            desc.specPath))
 
+        self.__atlasDescs[desc.atlasID] = desc
 
-def getAtlasDescription(atlasID):
-    """Returns an :class:`AtlasDescription` instance describing the
-    atlas with the given ``atlasID``.
-    """
+        fsldir = op.join(os.environ.get('FSLDIR', None), 'data', 'atlases')
 
-    _setAtlasDir()
+        if not op.abspath(filename).startswith(fsldir):
+            self.__updateExtraAtlases()
 
-    if ATLAS_DIR is None:
-        return None
+        self.notify(value=desc)
+            
+        return desc
+
     
-    if len(ATLAS_DESCRIPTIONS) == 0:
-        listAtlases()
+    def __getExtraAtlases(self):
+        """Returns a list of tuples containing the IDs and paths of all 
+        atlases which are not located in ``$FSLDIR/data/atlases``, and
+        which have previously been in the registry. The atlases are
+        retrieved via the :mod:`.settings` module - see
+        :meth:`__updateExtraAtlases`.
+        """
+        try:
+            extras = fslsettings.read('fsl.utils.atlases.extra')
 
-    return ATLAS_DESCRIPTIONS[atlasID]
+            if extras is None: extras = []
+            else:              extras = extras.split(op.pathsep)
 
+            extras = [e.split('=') for e in extras]
+            extras = [(name, path) for name, path in extras if op.exists(path)]
 
-def loadAtlas(atlasID, loadSummary=False, resolution=None):
-    """Loads and returns an :class:`Atlas` instance for the atlas
-    with the given  ``atlasID``. 
+            names = [e[0] for e in extras]
+            paths = [e[1] for e in extras]
 
-    :arg loadSummary: If ``True``, a 3D :class:`LabelAtlas` image is
-                      loaded. Otherwise, if the atlas is probabilistic,
-                      a 4D :class:`ProbabilisticAtlas` image is loaded.
+            return names, paths
+            
+        except:
+            return [], []
 
-    :arg resolution: Optional. Desired isotropic atlas resolution in
-                     millimetres, e.g. ``1.0`` or ``2.0``. The available
-                     atlas with the nearest resolution to this value
-                     will be returned. If not provided, the highest
-                     resolution atlas will be loaded.
-    """
-
-    _setAtlasDir()
-
-    if ATLAS_DIR is None:
-        return None
     
-    if len(ATLAS_DESCRIPTIONS) == 0:
-        listAtlases()
+    def __updateExtraAtlases(self):
+        """Saves the IDs and paths of all atlases which are not located in
+        ``$FSLDIR/data/atlases``, and which have previously been in the
+        registry. The atlases are saved via the :mod:`.settings` module.
+        """ 
 
-    atlasDesc = ATLAS_DESCRIPTIONS[atlasID]
+        if self.__atlasDescs is None:
+            return
 
-    # label atlases are only
-    # available in 'summary' form
-    if atlasDesc.atlasType == 'label':
-        loadSummary = True
+        if os.environ.get('FSLDIR', None) is None:
+            fslAtlasDir = None
+        else:
+            fslAtlasDir = op.abspath(
+                op.join(os.environ['FSLDIR'], 'data', 'atlases'))
 
-    if loadSummary: atlas = LabelAtlas(        atlasDesc, resolution)
-    else:           atlas = ProbabilisticAtlas(atlasDesc, resolution)
+        extras = []
 
-    return atlas
+        for desc in self.__atlasDescs.values():
+            if not desc.specPath.startswith(fslAtlasDir):
+                extras.append((desc.atlasID, desc.specPath))
+
+        extras = ['{}={}'.format(name, path) for name, path in extras]
+        extras = op.pathsep.join(extras)
+        
+        fslsettings.write('fsl.utils.atlases.extra', extras)
 
 
+registry            = AtlasRegistry()
+listAtlases         = registry.listAtlases
+getAtlasDescription = registry.getAtlasDescription
+loadAtlas           = registry.loadAtlas
+addAtlas            = registry.addAtlas
+    
+    
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
-    stored in the XML file that describes one atlas.
+    stored in the FSL XML file that describes a single FSL atlas.  An XML
+    atlas specification file is assumed to have a structure that looks like
+    the following:
+
+    .. code-block:: xml
+
+       <atlas>
+         <header>
+           <name></name>        # Atlas name
+           <type></type>        # 'Probabilistic' or 'Label'
+           <images>
+            <imagefile>
+            </imagefile>        # If type is Probabilistic, path
+                                # to 4D image file, one volume per
+                                # label, Otherwise, if type is
+                                # Label, path to 3D label file
+                                # (identical to the summaryimagefile
+                                # below). The path must be specified 
+                                # as relative to the location of this
+                                # XML file.
+
+            <summaryimagefile>  # Path to 3D summary file, with each 
+            </summaryimagefile> # region having value (index + 1)
+
+           </images>
+           ...                  # More images - generally both
+                                # 1mm and 2mm  versions (in
+                                # MNI152 space) are available
+         </header>
+        <data>
+
+         # index - For probabilistic atlases, index of corresponding volume in
+         #         4D image file. For label images, the value of voxels which
+         #         are in the corresponding region.
+         # 
+         # x    |
+         # y    |- XYZ *voxel* coordinates into the first image of the <images>
+         #      |  list
+         # z    |
+         <label index="0" x="0" y="0" z="0">Name</label>
+         ...
+        </data>
+       </atlas>
+
 
     The following attributes are available on an ``AtlasDescription`` instance:
 
@@ -219,6 +348,8 @@ class AtlasDescription(object):
     ``atlasID``       The atlas ID, as described above.
     
     ``name``          Name of the atlas.
+
+    ``specPath``      Path to the atlas XML specification file.
     
     ``atlasType``     Atlas type - either *probabilistic* or *label*.
     
@@ -259,13 +390,17 @@ class AtlasDescription(object):
               They are in the coordinate system defined by the transformation
               matrix for the first image in the ``images`` list.(typically
               MNI152 space).
+
     """
 
     
-    def __init__(self, filename):
+    def __init__(self, filename, atlasID=None):
         """Create an ``AtlasDescription`` instance.
 
         :arg filename: Name of the XML file describing the atlas.
+
+        :arg atlasID:  ID to use for this atlas. If not provided, the file
+                       base name is used.
         """
 
         log.debug('Loading atlas description from {}'.format(filename))
@@ -274,7 +409,11 @@ class AtlasDescription(object):
         header = root.find('header')
         data   = root.find('data')
 
-        self.atlasID   = op.splitext(op.basename(filename))[0].lower()
+        if atlasID is None:
+            atlasID = op.splitext(op.basename(filename))[0].lower()
+
+        self.atlasID   = atlasID
+        self.specPath  = op.abspath(filename)
         self.name      = header.find('name').text
         self.atlasType = header.find('type').text.lower()
  
@@ -287,14 +426,17 @@ class AtlasDescription(object):
         self.summaryImages = []
         self.pixdims       = []
         self.xforms        = []
-        
 
+        atlasDir = op.dirname(self.specPath)
+        
         for image in images:
             imagefile        = image.find('imagefile')       .text
             summaryimagefile = image.find('summaryimagefile').text
 
-            imagefile        = op.join(ATLAS_DIR, '.' + imagefile)
-            summaryimagefile = op.join(ATLAS_DIR, '.' + summaryimagefile)
+            # Assuming that the path
+            # names begin with a slash
+            imagefile        = op.join(atlasDir, '.' + imagefile)
+            summaryimagefile = op.join(atlasDir, '.' + summaryimagefile)
 
             i = fslimage.Image(imagefile, loadData=False, calcRange=False)
 
@@ -474,40 +616,3 @@ class ProbabilisticAtlas(Atlas):
             return []
         
         return self[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
-
-
-
-ATLAS_DIR = None
-"""This attribute stores the absolute path to ``$FSLDIR/data/atlases/``. It is
-``None`` if ``$FSLDIR`` is not set. See :func:`_setAtlasDir`.
-"""
-
-
-ATLAS_DESCRIPTIONS = collections.OrderedDict()
-"""This dictionary contains an ``{atlasID : AtlasDescription}`` mapping for
-all atlases contained in ``$FSLDIR/data/atlases/``.
-"""
-
-
-LOAD_ATLAS_LOCK = threading.Lock()
-"""This is used as a mutual-exclusion lock by the :func:`listAtlases`
-function, to make it thread-safe.
-"""
-
-
-def _setAtlasDir():
-    """Called by the :func:`listAtlases`, :func:`getAtlasDescription` and
-    :func:`loadAtlas` functions.
-
-    Sets the :data:`ATLAS_DIR` attribute if it has not already been set, and
-    if the ``$FSLDIR`` environment variable is set.
-    """
-    global ATLAS_DIR
-
-    if ATLAS_DIR is not None:
-        return
-    
-    if os.environ.get('FSLDIR', None) is None:
-        log.warn('$FSLDIR is not set - atlases are not available')
-    else:
-        ATLAS_DIR = op.join(os.environ['FSLDIR'], 'data', 'atlases')

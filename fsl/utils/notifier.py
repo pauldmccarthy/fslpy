@@ -214,11 +214,11 @@ class Notifier(object):
         :arg state: State to set listeners to.
         """
 
-
         if topic is None:
             topic = DEFAULT_TOPIC
 
-        self.__enabled[topic] = state
+        if topic in self.__enabled:
+            self.__enabled[topic] = state
 
     
     def disableAll(self, topic=None):
@@ -234,8 +234,9 @@ class Notifier(object):
         """
         if topic is None:
             topic = DEFAULT_TOPIC
-            
-        return self.__enabled[topic]
+
+        if topic in self.__enabled: return self.__enabled[topic]
+        else:                       return True
 
 
     @contextlib.contextmanager
