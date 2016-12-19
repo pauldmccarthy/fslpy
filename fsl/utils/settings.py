@@ -4,8 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides a simple API to :func:`read`, :func:`write`, and
-:func:`delete` persistent application settings.
+"""This module provides a simple API to :func:`read`, :func:`write`, 
+:func:`delete`, and :func:`clear` persistent application settings.
 
  .. note:: Currently the configuration management API provided by :mod:`wx`
            (http://docs.wxwidgets.org/trunk/overview_config.html) is used for
@@ -66,8 +66,11 @@ def read(name, default=None):
     
     value = config.Read(name)
 
-    log.debug('Read {}: {}'.format(
-        name, '(no value)' if value == '' else value))
+    
+    log.debug('Read {}/{}: {}'.format(
+        _CONFIG_ID,
+        name,
+        '(no value)' if value == '' else value))
 
     if value == '': return default
     else:           return value
@@ -84,7 +87,7 @@ def write(name, value):
     value  = str(value)
     config = wx.Config(_CONFIG_ID)
 
-    log.debug('Writing {}: {}'.format(name, value))
+    log.debug('Writing {}/{}: {}'.format(_CONFIG_ID, name, value))
 
     config.Write(name, value)
 
@@ -99,6 +102,21 @@ def delete(name):
 
     config = wx.Config(_CONFIG_ID)
 
-    log.debug('Deleting {}'.format(name))
+    log.debug('Deleting {}/{}'.format(_CONFIG_ID, name))
 
     config.DeleteEntry(name)
+
+
+def clear():
+    """Delete all settings. """
+    
+    if not fslplatform.haveGui:
+        return 
+
+    import wx 
+
+    config = wx.Config(_CONFIG_ID)
+
+    log.debug('Clearing all settings in {}'.format(_CONFIG_ID))
+
+    config.DeleteAll()
