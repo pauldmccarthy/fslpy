@@ -202,23 +202,25 @@ class Notifier(object):
         if topic is None:
             topic = DEFAULT_TOPIC
 
-        return self.__listeners[topic][name].enabled
+        try:             return self.__listeners[topic][name].enabled
+        except KeyError: return False
 
 
     def enableAll(self, topic=None, state=True):
         """Enable/disable all listeners for the specified topic.
 
         :arg topic: Topic to enable/disable listeners on. If ``None``,
-                    all listeners are enabled/disabled.
+                    all listeners are enabled/disabled. 
 
         :arg state: State to set listeners to.
         """
 
-        if topic is None:
-            topic = DEFAULT_TOPIC
+        if topic is not None: topics = [topic]
+        else:                 topics = list(self.__enabled.keys())
 
-        if topic in self.__enabled:
-            self.__enabled[topic] = state
+        for topic in topics:
+            if topic in self.__enabled:
+                self.__enabled[topic] = state
 
     
     def disableAll(self, topic=None):
@@ -231,14 +233,13 @@ class Notifier(object):
     def isAllEnabled(self, topic=None):
         """Returns ``True`` if all listeners for the specified topic (or all
         listeners if ``topic=None``) are enabled, ``False`` otherwise.
-        """
+        """ 
         if topic is None:
             topic = DEFAULT_TOPIC
 
-        if topic in self.__enabled: return self.__enabled[topic]
-        else:                       return True
+        return self.__enabled.get(topic, False)
 
-
+        
     @contextlib.contextmanager
     def skipAll(self, topic=None):
         """Context manager which disables all listeners for the
@@ -247,15 +248,21 @@ class Notifier(object):
         :arg topic: Topic to skip listeners on. If ``None``, notification
                     is disabled for all topics.
         """
-        
-        state = self.isAllEnabled(topic)
 
-        self.disableAll(topic)
+        if topic is not None: topics = [topic]
+        else:                 topics = list(self.__enabled.keys())
+
+        states = [self.isAllEnabled(t) for t in topics]
+
+        for t in topics:
+            self.disableAll(t)
 
         try:
             yield
+            
         finally:
-            self.enableAll(topic, state)
+            for t, s in zip(topics, states):
+                self.enableAll(t, s)
 
 
     @contextlib.contextmanager
@@ -364,21 +371,17 @@ class Notifier(object):
         notified for the specified ``topic``.
         """
 
-        isDefault    = topic is None
-        allEnabled   = self.__enabled.get(DEFAULT_TOPIC, True)
-        topicEnabled = ((isDefault and allEnabled) or
-                        self.__enabled.get(topic), True)
+        listeners = []
 
-        if isDefault:
-            topic = DEFAULT_TOPIC
-
-        if not allEnabled:
-            return []
-
-        if topicEnabled:
-            listeners = list(self.__listeners.get(topic, {}).values())
-
-        if not isDefault:
+        # Default listeners are called on all topics
+        # (unless the default topic is disabled)
+        if self.__enabled.get(DEFAULT_TOPIC, False):
             listeners.extend(self.__listeners.get(DEFAULT_TOPIC, {}).values())
+
+        if topic is None or topic == DEFAULT_TOPIC:
+            return listeners
+
+        if self.__enabled.get(topic, False):
+            listeners.extend(self.__listeners.get(topic, {}).values())
 
         return listeners
