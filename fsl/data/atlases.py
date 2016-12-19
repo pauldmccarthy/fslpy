@@ -9,7 +9,7 @@
 ``$FSLDIR/data/atlases/``. The :class:`AtlasRegistry` class provides access
 to these atlases, and allows the user to load atlases stored in other
 locations. A single :class:`.AtlasRegistry` instance is created when this
-module is first imported - it is available as amodule level attribute called
+module is first imported - it is available as a module level attribute called
 :attr:`registry`, and some of its methods are available as module-level
 functions:
 
@@ -17,14 +17,20 @@ functions:
 .. autosummary::
    :nosignatures:
 
+   rescanAtlases
    listAtlases
+   hasAtlas
    getAtlasDescription
    loadAtlas
    addAtlas
+   removeAtlas
+   rescanAtlases
 
 
-The :func:`loadAtlas` function allows you to load an atlas image, which will
-be one of the following  atlas-specific :class:`.Image` sub-classes:
+You must call the :meth:`.AtlasRegistry.rescanAtlases` function before any of
+the other functions will work.  The :func:`loadAtlas` function allows you to
+load an atlas image, which will be one of the following atlas-specific
+:class:`.Image` sub-classes:
 
 .. autosummary::
    :nosignatures:
@@ -34,21 +40,20 @@ be one of the following  atlas-specific :class:`.Image` sub-classes:
 """
 
 
-import                          os
-import xml.etree.ElementTree as et
-import os.path               as op
-import                          glob
-import                          collections
-import                          threading
-import                          logging
+import xml.etree.ElementTree              as et
+import os.path                            as op
+import                                       glob
+import                                       bisect
+import                                       logging
 
-import numpy                 as np
+import numpy                              as np
 
-import fsl.data.image        as fslimage
-import fsl.data.constants    as constants
-import fsl.utils.transform   as transform
-import fsl.utils.notifier    as notifier
-import fsl.utils.settings    as fslsettings
+import fsl.data.image                     as fslimage
+import fsl.data.constants                 as constants
+from   fsl.utils.platform import platform as platform
+import fsl.utils.transform                as transform
+import fsl.utils.notifier                 as notifier
+import fsl.utils.settings                 as fslsettings
 
 
 log = logging.getLogger(__name__)
@@ -58,115 +63,103 @@ class AtlasRegistry(notifier.Notifier):
     """The ``AtlasRegistry`` maintains a list of all known atlases.
 
 
-    When created, the ``AtlasRegistry`` loads all of the FSL XML atlas
-    specification files in ``$FSLDIR/data/atlases``, and builds a list of
-    :class:`AtlasDescription` instances, each of which contains information
-    about one atlas. Each atlas is assigned an identifier, which is simply the
-    XML file name describing the atlas, sans-suffix, and converted to lower
-    case.  For exmaple, the atlas described by:
-
-        ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
-
-    is given the identifier
-
-        ``harvardoxford-cortical``
+    When the :meth:`rescanAtlases` method is called, the ``AtlasRegistry``
+    loads all of the FSL XML atlas specification files in
+    ``$FSLDIR/data/atlases``, and builds a list of :class:`AtlasDescription`
+    instances, each of which contains information about one atlas.
 
     
     The :meth:`addAtlas` method allows other atlases to be added to the
     registry. Whenever a new atlas is added, the ``AtlasRegistry`` notifies
-    any registered listeners via the :class:`.Notifier` interface, passing
-    it the newly loaded class:`AtlasDecsription`.
+    any registered listeners via the :class:`.Notifier` interface with the
+    topic ``'add'``, passing it the newly loaded class:`AtlasDecsription`.
+    Similarly, the :meth:`removeAtlas` method allows individual atlases to be
+    removed. When this occurs, registered listeners on the ``'remove'`` topic
+    are notified, and passed the ``AtlasDescription`` instance of the removed
+    atlas.
+
+
+    The ``AtlasRegistry`` stores a list of all known atlases via the
+    :mod:`.settings` module. When an ``AtlasRegistry`` is created, it loads
+    in any previously known atlases. Whenever a new atlas is added, this 
+    list is updated. See the :meth:`__getKnownAtlases` and
+    :meth:`_saveKnownAtlases` methods.
     """
 
     
     def __init__(self):
         """Create an ``AtlasRegistry``. """
 
-        # This dictionary contains an
-        # {atlasID : AtlasDescription}
-        # mapping for all known atlases
-        self.__atlasDescs = collections.OrderedDict()
-
-        # This is used as a mutual-exclusion
-        # lock by the listAtlases function,
-        # to make it thread-safe.
-        self.__lock   = threading.Lock()
-        self.__loaded = False
+        # A list of all AtlasDescription
+        # instances in existence, sorted 
+        # by AtlasDescription.name. 
+        self.__atlasDescs = []
 
 
-    def __loadAtlasDescs(func):
-        """Used as a decorator on ``AtlasRegistry` methods to lazily load
-        :class:`AtlasDescription` objects on the first registry access.
-        Atlases are loaded from ``$FSLDIR/data/atlases/``, and from any other
-        previously loaded locations.
-                
-        .. note:: This function is thread-safe, because *FSLeyes* calls it
-                  in a multi-threaded manner (to avoid blocking the GUI).
+    def rescanAtlases(self):
+        """Causes the ``AtlasRegistry`` to rescan available atlases from
+        ``$FSLDIR``. Atlases are loaded from the ``fsl.data.atlases`` setting
+        (via the :mod:`.settings` module), and from ``$FSLDIR/data/atlases/``.
         """
 
-        def wrapper(self, *args, **kwargs):
+        log.debug('Initialising atlas registry')
+        self.__atlasDescs = []
 
-            # Make sure the atlas description
-            # refresh is only performed by one
-            # thread. If a thread is loading
-            # the descriptions, any other thread
-            # which enters the function will
-            # block here until the descriptions
-            # are loaded. When it continues, it
-            # will see a populated atlasDescs
-            # list.
-            self.__lock.acquire()
+        # Get $FSLDIR atlases 
+        fslPaths = []
+        if platform.fsldir is not None: 
+            fsldir   = op.join(platform.fsldir, 'data', 'atlases')
+            fslPaths = sorted(glob.glob(op.join(fsldir, '*.xml')))
 
-            try:
+        # Any extra atlases that have
+        # been loaded in the past
+        extraIDs, extraPaths = self.__getKnownAtlases()
+
+        # FSLDIR atlases first, any 
+        # other atlases second.
+        atlasPaths = list(fslPaths)         + extraPaths
+        atlasIDs   = [None] * len(fslPaths) + extraIDs
+
+        with self.skipAll():
+            for atlasID, atlasPath in zip(atlasIDs, atlasPaths):
                 
-                if self.__loaded:
-                    return func(self, *args, **kwargs)
+                # The FSLDIR atlases are probably
+                # listed twice - from the above glob,
+                # and from the saved extraPaths. So
+                # we remove any duplicates.
+                if atlasID is not None and self.hasAtlas(atlasID):
+                    continue
 
-                if os.environ.get('FSLDIR', None) is None:
-                    fslAtlasDir = None
-                else:
-                    fslAtlasDir = op.join(os.environ['FSLDIR'],
-                                          'data',
-                                          'atlases')
+                self.addAtlas(atlasPath, atlasID, save=False)
 
-                # Any extra atlases that have previously
-                # been loaded from outside of $FSLDIR
-                extraIDs, extraPaths = self.__getExtraAtlases()
-
-                atlasPaths = sorted(glob.glob(op.join(fslAtlasDir, '*.xml')))
-                atlasPaths = list(atlasPaths)         + extraPaths
-                atlasIDs   = [None] * len(atlasPaths) + extraIDs
-
-                with self.skipAll():
-                    for atlasPath, atlasID in zip(atlasPaths, atlasIDs):
-                        self.addAtlas(atlasPath, atlasID)
-
-                self.__loaded = True
-                return func(self, *args, **kwargs)
-                    
-            finally:
-                self.__lock.release()
-
-        return wrapper
-
-
-    @__loadAtlasDescs
+    
     def listAtlases(self):
         """Returns a list containing :class:`AtlasDescription` objects for
-        all available atlases.
+        all available atlases. The atlases are ordered in terms of the
+        ``AtlasDescription.name`` attribute (converted to lower case).
         """
-        return list(self.__atlasDescs.values())
+        return list(self.__atlasDescs)
 
 
-    @__loadAtlasDescs
+    def hasAtlas(self, atlasID):
+        """Returns ``True`` if this ``AtlasRegistry`` has an atlas with the
+        specified ``atlasID``.
+        """
+        return atlasID in [d.atlasID for d in self.__atlasDescs]
+
+
     def getAtlasDescription(self, atlasID):
         """Returns an :class:`AtlasDescription` instance describing the
         atlas with the given ``atlasID``.
         """
-        return self.__atlasDescs[atlasID]
+        
+        for desc in self.__atlasDescs:
+            if desc.atlasID == atlasID:
+                return desc
+            
+        raise KeyError('Unknown atlas ID: {}'.format(atlasID))
 
 
-    @__loadAtlasDescs
     def loadAtlas(self, atlasID, loadSummary=False, resolution=None):
         """Loads and returns an :class:`Atlas` instance for the atlas
         with the given  ``atlasID``. 
@@ -182,7 +175,7 @@ class AtlasRegistry(notifier.Notifier):
                          resolution atlas will be loaded.
         """
 
-        atlasDesc = self.__atlasDescs[atlasID]
+        atlasDesc = self.getAtlasDescription(atlasID)
 
         # label atlases are only
         # available in 'summary' form
@@ -195,7 +188,7 @@ class AtlasRegistry(notifier.Notifier):
         return atlas
 
 
-    def addAtlas(self, filename, atlasID=None):
+    def addAtlas(self, filename, atlasID=None, save=True):
         """Add an atlas from the given XML specification file to the registry.
 
         :arg filename: Path to a FSL XML atlas specification file.
@@ -204,6 +197,9 @@ class AtlasRegistry(notifier.Notifier):
                        base name (converted to lower-case) is used. If an
                        atlas with the given ID already exists, this new atlas
                        is given a unique id.
+
+        :arg save:     If ``True`` (the default), this atlas will be saved 
+                       so that it will be available in future instantiations. 
         """
 
         filename = op.abspath(filename)
@@ -216,52 +212,69 @@ class AtlasRegistry(notifier.Notifier):
 
         # If an atlas with the same ID/path
         # already exists, raise an error
-        atlasDesc = self.__atlasDescs.get(atlasID, None)
-        if atlasDesc is not None and atlasDesc.specPath == filename:
-            raise KeyError('{} is already in the atlas '
-                           'registry'.format(filename))
+        if self.hasAtlas(atlasID):
+            raise KeyError('An atlas with ID "{}" already '
+                           'exists'.format(atlasID))
 
-        # Find a unique atlas ID 
-        i = 0
-        while atlasID in self.__atlasDescs:
-            atlasID = '{}_{}'.format(atlasIDBase, i)
-            i      += 1
-        
         desc = AtlasDescription(filename, atlasID)
 
         log.debug('Adding atlas to registry: {} / {}'.format(
             desc.atlasID,
             desc.specPath))
 
-        self.__atlasDescs[desc.atlasID] = desc
+        bisect.insort_left(self.__atlasDescs, desc)
 
-        fsldir = op.join(os.environ.get('FSLDIR', None), 'data', 'atlases')
-        if not filename.startswith(fsldir):
-            self.__updateExtraAtlases()
+        if save:
+            self.__saveKnownAtlases()
 
-        self.notify(value=desc)
+        self.notify(topic='add', value=desc)
             
         return desc
 
+
+    def removeAtlas(self, atlasID):
+        """Removes the atlas with the specified ``atlasID`` from this
+        ``AtlasRegistry``.
+        """
+
+        for i, desc in enumerate(self.__atlasDescs):
+            if desc.atlasID == atlasID:
+
+                log.debug('Removing atlas from registry: {} / {}'.format(
+                    desc.atlasID,
+                    desc.specPath))
+                
+                self.__atlasDescs.pop(i)
+                break
+        
+        self.__saveKnownAtlases()
+
+        self.notify(topic='remove', value=desc)
+
     
-    def __getExtraAtlases(self):
-        """Returns a list of tuples containing the IDs and paths of all 
-        atlases which are not located in ``$FSLDIR/data/atlases``, and
-        which have previously been in the registry. The atlases are
-        retrieved via the :mod:`.settings` module - see
-        :meth:`__updateExtraAtlases`.
+    def __getKnownAtlases(self):
+        """Returns a list of tuples containing the IDs and paths of all known
+        atlases .
+
+        The atlases are retrieved via the :mod:`.settings` module - a setting
+        with the name ``fsl.data.atlases`` is assumed to contain a string of
+        ``atlasID=specPath`` pairs, separated with the operating system file
+        path separator (``:`` on Unix/Linux).
+        See also :meth:`__saveKnownAtlases`.
         """
         try:
-            extras = fslsettings.read('fsl.utils.atlases.extra')
+            atlases = fslsettings.read('fsl.data.atlases')
 
-            if extras is None: extras = []
-            else:              extras = extras.split(op.pathsep)
+            if atlases is None: atlases = []
+            else:               atlases = atlases.split(op.pathsep)
 
-            extras = [e.split('=') for e in extras]
-            extras = [(name, path) for name, path in extras if op.exists(path)]
+            atlases = [e.split('=') for e in atlases]
+            atlases = [(name.strip(), path.strip())
+                       for name, path in atlases
+                       if op.exists(path)]
 
-            names = [e[0] for e in extras]
-            paths = [e[1] for e in extras]
+            names = [e[0] for e in atlases]
+            paths = [e[1] for e in atlases]
 
             return names, paths
             
@@ -269,39 +282,24 @@ class AtlasRegistry(notifier.Notifier):
             return [], []
 
     
-    def __updateExtraAtlases(self):
-        """Saves the IDs and paths of all atlases which are not located in
-        ``$FSLDIR/data/atlases``, and which have previously been in the
-        registry. The atlases are saved via the :mod:`.settings` module.
+    def __saveKnownAtlases(self):
+        """Saves the IDs and paths of all atlases which are currently in
+        the registry. The atlases are saved via the :mod:`.settings` module.
         """ 
 
         if self.__atlasDescs is None:
             return
 
-        if os.environ.get('FSLDIR', None) is None:
-            fslAtlasDir = None
-        else:
-            fslAtlasDir = op.abspath(
-                op.join(os.environ['FSLDIR'], 'data', 'atlases'))
+        atlases = []
 
-        extras = []
+        for desc in self.__atlasDescs:
+            atlases.append((desc.atlasID, desc.specPath))
 
-        for desc in self.__atlasDescs.values():
-            if not desc.specPath.startswith(fslAtlasDir):
-                extras.append((desc.atlasID, desc.specPath))
-
-        extras = ['{}={}'.format(name, path) for name, path in extras]
-        extras = op.pathsep.join(extras)
+        atlases = ['{}={}'.format(name, path) for name, path in atlases]
+        atlases = op.pathsep.join(atlases)
         
-        fslsettings.write('fsl.utils.atlases.extra', extras)
+        fslsettings.write('fsl.data.atlases', atlases)
 
-
-registry            = AtlasRegistry()
-listAtlases         = registry.listAtlases
-getAtlasDescription = registry.getAtlasDescription
-loadAtlas           = registry.loadAtlas
-addAtlas            = registry.addAtlas
-    
     
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
@@ -348,6 +346,20 @@ class AtlasDescription(object):
          ...
         </data>
        </atlas>
+
+    
+    Each ``AtlasDescription`` is assigned an identifier, which is simply the
+    XML file name describing the atlas, sans-suffix, and converted to lower
+    case.  For exmaple, the atlas described by:
+
+        ``$FSLDIR/data/atlases/HarvardOxford-Cortical.xml``
+
+    is given the identifier
+
+        ``harvardoxford-cortical``
+
+    
+    This identifier is intended to be unique.
 
 
     The following attributes are available on an ``AtlasDescription`` instance:
@@ -398,7 +410,6 @@ class AtlasDescription(object):
               They are in the coordinate system defined by the transformation
               matrix for the first image in the ``images`` list.(typically
               MNI152 space).
-
     """
 
     
@@ -491,6 +502,25 @@ class AtlasDescription(object):
         for i, label in enumerate(self.labels):
 
             label.x, label.y, label.z = coords[i]
+
+
+    def __eq__(self, other):
+        """Compares the ``atlasID`` of this ``AtlasDescription`` with another.
+        """
+        return self.atlasID == other.atlasID
+
+    
+    def __neq__(self, other):
+        """Compares the ``atlasID`` of this ``AtlasDescription`` with another.
+        """
+        return self.atlasID != other.atlasID 
+    
+
+    def __cmp__(self, other):
+        """Compares this ``AtlasDescription`` with another by their ``name``
+        attribute.
+        """
+        return cmp(self.name.lower(), other.name.lower())
 
 
 class Atlas(fslimage.Image):
@@ -624,3 +654,14 @@ class ProbabilisticAtlas(Atlas):
             return []
         
         return self[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
+
+
+registry            = AtlasRegistry()
+rescanAtlases       = registry.rescanAtlases
+listAtlases         = registry.listAtlases
+hasAtlas            = registry.hasAtlas
+getAtlasDescription = registry.getAtlasDescription
+loadAtlas           = registry.loadAtlas
+addAtlas            = registry.addAtlas
+removeAtlas         = registry.removeAtlas
+rescanAtlases       = registry.rescanAtlases
