@@ -240,12 +240,27 @@ class Nifti(object):
                     - :data:`~.constants.NIFTI_XFORM_MNI_152`
         """
 
-        if   code is None:     code = 'sform_code'
-        elif code == 'sform' : code = 'sform_code'
+        if   code == 'sform' : code = 'sform_code'
         elif code == 'qform' : code = 'qform_code'
-        else: raise ValueError('code must be None, sform, or qform')
+        elif code is not None:
+            raise ValueError('code must be None, sform, or qform')
 
-        code = self.header[code]
+        if code is not None:
+            code = self.header[code]
+
+        # If a specific code is not
+        # specified, we check both.
+        # If the sform is present,
+        # we return it. Otherwise,
+        # if the qform is present,
+        # we return that.
+        else:
+            
+            sform_code = self.header['sform_code']
+            qform_code = self.header['qform_code']
+
+            if   sform_code != constants.NIFTI_XFORM_UNKNOWN: code = sform_code
+            elif qform_code != constants.NIFTI_XFORM_UNKNOWN: code = qform_code
 
         # Invalid values
         if   code > 4: code = constants.NIFTI_XFORM_UNKNOWN
