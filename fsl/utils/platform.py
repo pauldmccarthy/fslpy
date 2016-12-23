@@ -280,13 +280,16 @@ class Platform(notifier.Notifier):
         """Changes the value of the :attr:`fsldir` property, and notifies any
         registered listeners.
         """
-        value = value.strip()
-        
-        if   value == '':          value = None
+
+        if value is not None:
+            value = value.strip()
+
+        if   value is None:        pass
+        elif value == '':          value = None
         elif not op.exists(value): value = None
         elif not op.isdir(value):  value = None
             
-        self.__fsldir        = value
+        self.__fsldir = value
 
         if value is not None:
             os.environ['FSLDIR'] = value
