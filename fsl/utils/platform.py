@@ -22,6 +22,7 @@ away various platform differences:
 import logging
 
 import os
+import os.path as op
 import sys
 import importlib
 
@@ -144,7 +145,7 @@ class Platform(notifier.Notifier):
         self.WX_GTK        = WX_GTK
         self.isWidgetAlive = isWidgetAlive
 
-        self.__fsldir       = os.environ.get('FSLDIR', None)
+        self.fsldir         = os.environ.get('FSLDIR', None)
         self.__inSSHSession = False
         self.__glVersion    = None
         self.__glRenderer   = None
@@ -279,8 +280,17 @@ class Platform(notifier.Notifier):
         """Changes the value of the :attr:`fsldir` property, and notifies any
         registered listeners.
         """
+        value = value.strip()
+        
+        if   value == '':          value = None
+        elif not op.exists(value): value = None
+        elif not op.isdir(value):  value = None
+            
         self.__fsldir        = value
-        os.environ['FSLDIR'] = value
+
+        if value is not None:
+            os.environ['FSLDIR'] = value
+            
         self.notify()
 
         
