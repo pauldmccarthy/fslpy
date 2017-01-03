@@ -744,7 +744,7 @@ def isValidFancySliceObj(sliceobj, shape):
 
 def canonicalSliceObj(sliceobj, shape):
     """Returns a canonical version of the given ``sliceobj``. See the
-    ``nibabel.fileslice.canonical_slicers` function.
+    ``nibabel.fileslice.canonical_slicers`` function.
     """
 
     # Fancy slice objects must have 
