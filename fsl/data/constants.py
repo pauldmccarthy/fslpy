@@ -81,6 +81,10 @@ NIFTI_XFORM_MNI_152      = 4
 """MNI 152 normalized coordinates."""
 
 
+NIFTI_XFORM_ANALYZE      = 5
+"""Code which indicates that this is an ANALYZE image, not a NIFTI image. """
+
+
 # NIFTI file intent codes
 NIFTI_INTENT_NONE          = 0
 NIFTI_INTENT_CORREL        = 2

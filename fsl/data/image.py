@@ -64,19 +64,51 @@ class Nifti(object):
 
     
     ================= ====================================================
-    ``header``        The :mod:`nibabel` NIFTI header object.
+    ``header``        The :mod:`nibabel` NIFTI1/NIFTI2/Analyze header
+                      object.
+    
     ``shape``         A list/tuple containing the number of voxels along
                       each image dimension.
+    
     ``pixdim``        A list/tuple containing the length of one voxel 
-                      along each image dimension. 
+                      along each image dimension.
+    
     ``voxToWorldMat`` A 4*4 array specifying the affine transformation
                       for transforming voxel coordinates into real world
                       coordinates.
+    
     ``worldToVoxMat`` A 4*4 array specifying the affine transformation
                       for transforming real world coordinates into voxel
                       coordinates.
-    ``intent``        The NIFTI intent code specified in the header.
+    
+    ``intent``        The NIFTI intent code specified in the header (or
+                      :attr:`.constants.NIFTI_INTENT_NONE` for Analyze
+                      images).
     ================= ====================================================
+
+
+    A ``Nifti`` instance expects to be passed either a
+    ``nibabel.nifti1.Nifti1Header`` or a ``nibabel.nifti2.Nifti2Header``, but
+    can als encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
+
+      - The image voxel orientation is assumed to be R->L, P->A, I->S.
+
+      - The affine will be set to a diagonal matrix with the header pixdims as
+        its elements (with the X pixdim negated), and an offset specified by
+        the ANALYZE ``origin`` fields. Construction of the affine is handled 
+        by ``nibabel``.
+
+      - The :meth:`niftiVersion` method will return ``0``.
+
+      - The :meth:`getXFormCode` method will return
+        :attr:`.constants.NIFTI_XFORM_ANALYZE`.
+
+
+    .. warning:: The ``header`` field may either be a ``nifti1``, ``nifti2``,
+                 or ``analyze`` header object. Make sure to take this into
+                 account if you are writing code that should work with all
+                 three. Use the :meth:`niftiVersion` property if you need to
+                 know what type of image you are dealing with.
 
     
     .. note:: The ``shape`` attribute may not precisely match the image shape
@@ -85,19 +117,22 @@ class Nifti(object):
               :meth:`mapIndices` methods.
     """
 
+    
     def __init__(self, header):
         """Create a ``Nifti`` object.
 
-        :arg header: A :class:`nibabel.nifti1.Nifti1Header` or
-                       :class:`nibabel.nifti2.Nifti2Header` to be used as the
-                       image header.
+        :arg header: A :class:`nibabel.nifti1.Nifti1Header`, 
+                       :class:`nibabel.nifti2.Nifti2Header`, or
+                       ``nibabel.analyze.AnalyzeHeader`` to be used as the
+                       image header. 
         """
 
         import nibabel as nib
 
         # Nifti2Header is a sub-class of Nifti1Header,
-        # so we don't need to test for it
-        if not isinstance(header, nib.nifti1.Nifti1Header):
+        # and Nifti1Header a sub-class of AnalyzeHeader,
+        # so we only need to test for the latter.
+        if not isinstance(header, nib.analyze.AnalyzeHeader):
             raise ValueError('Unrecognised header: {}'.format(header))
 
         header                   = header.copy()
@@ -121,14 +156,21 @@ class Nifti(object):
 
     @property
     def niftiVersion(self):
-        """Returns the NIFTI file version - either ``1`` or ``2``. """
+        """Returns the NIFTI file version:
+
+           - ``0`` for ANALYZE
+           - ``1`` for NIFTI1
+           - ``2`` for NIFTI2
+        """
 
         import nibabel as nib
 
-        # nib.Nifti2 is a subclass of Nifti1, 
-        # so we have to check it first.
-        if   isinstance(self.header, nib.nifti2.Nifti2Header): return 2
-        elif isinstance(self.header, nib.nifti1.Nifti1Header): return 1
+        # nib.Nifti2 is a subclass of Nifti1,
+        # and Nifti1 a subclass of Analyze,
+        # so we have to check in order
+        if   isinstance(self.header, nib.nifti2.Nifti2Header):   return 2
+        elif isinstance(self.header, nib.nifti1.Nifti1Header):   return 1
+        elif isinstance(self.header, nib.analyze.AnalyzeHeader): return 0
 
         else: raise RuntimeError('Unrecognised header: {}'.format(self.header))
 
@@ -138,12 +180,15 @@ class Nifti(object):
         coordinate transformation matrix that is associated with this
         ``Nifti`` instance.
         """
-        
+
         # We have to treat FSL/FNIRT images
         # specially, as FNIRT clobbers the
         # sform section of the NIFTI header
         # to store other data. 
         intent = header.get('intent_code', -1)
+        qform  = header.get('qform_code',  -1)
+        sform  = header.get('sform_code',  -1)
+        
         if intent in (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
                       constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
                       constants.FSL_DCT_COEFFICIENTS,
@@ -161,12 +206,12 @@ class Nifti(object):
         # corresponds to world location (0, 0, 0).
         # This goes against the NIFTI spec - it
         # should just be a straight scaling matrix.
-        elif header['qform_code'] == 0 and header['sform_code'] == 0:
+        elif qform == 0 and sform == 0:
             pixdims       = header.get_zooms()
             voxToWorldMat = transform.scaleOffsetXform(pixdims, 0)
 
         # Otherwise we let nibabel decide
-        # which transform to use.
+        # which transform to use. 
         else:
             voxToWorldMat = np.array(header.get_best_affine())
 
@@ -238,7 +283,11 @@ class Nifti(object):
                     - :data:`~.constants.NIFTI_XFORM_ALIGNED_ANAT`
                     - :data:`~.constants.NIFTI_XFORM_TALAIRACH`
                     - :data:`~.constants.NIFTI_XFORM_MNI_152`
+                    - :data:`~.constants.NIFTI_XFORM_ANALYZE`
         """
+
+        if self.niftiVersion == 0:
+            return constants.NIFTI_XFORM_ANALYZE
 
         if   code == 'sform' : code = 'sform_code'
         elif code == 'qform' : code = 'qform_code'
