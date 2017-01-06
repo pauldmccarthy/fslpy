@@ -8,15 +8,18 @@
 a FEAT design matrix.
 
 
-The :class:`FEATFSFDesign`` class is intended to be used to access the design
+The :class:`FEATFSFDesign` class is intended to be used to access the design
 matrix for a FEAT analysis. The main reason for using the ``FEATFSFDesign``
 class, instead of just using the design matrix loaded directly from the
 ``[analysis].feat/design.mat`` file, is because FEAT supports voxelwise EVs,
 where the contents of the design matrix will differ for each voxel in the
 analysis. For all voxelwise EVs (confound or otherwise), the design matrix (in
 ``design.mat``) contains a dummy column which contains the mean across all
-voxels.  The :meth:`FEATFSFDesign.getDesign`` method will return an
+voxels.  The :meth:`FEATFSFDesign.getDesign` method will return an
 appropriate design matrix for a specific voxel.
+
+
+.. note:: Interaction EVs are not currently supported.
 
 
 Explanatory variables in a FEAT design
