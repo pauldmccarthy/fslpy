@@ -551,8 +551,9 @@ class Image(Nifti, notifier.Notifier):
         # to 1mm^3 in real world space)
         elif isinstance(image, np.ndarray):
 
-            if   header is not None: xform = header.get_best_affine()
-            elif xform  is     None: xform = np.identity(4)
+            if xform is None:
+                if header is not None: xform = header.get_best_affine()
+                else:                  xform = np.identity(4)
 
             # We default to NIFTI1 and not
             # NIFTI2, because the rest of
