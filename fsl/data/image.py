@@ -144,7 +144,7 @@ class Nifti(notifier.Notifier):
         if not isinstance(header, nib.analyze.AnalyzeHeader):
             raise ValueError('Unrecognised header: {}'.format(header))
 
-        header                   = header.copy()
+        header                   = header
         origShape, shape, pixdim = self.__determineShape(header)
 
         if len(shape) < 3 or len(shape) > 4:
@@ -765,6 +765,23 @@ class Image(Nifti):
         coords = [0] * len(self.__nibImage.shape)
         return self.__nibImage.dataobj[tuple(coords)].dtype
 
+    
+    @Nifti.voxToWorldMat.setter
+    def voxToWorldMat(self, xform):
+        """Overrides the :meth:`Nifti.voxToWorldMat` property setter.
+        In ``nibabel``, the header and image affines can easily get
+        out of sync when they are modified. The ``Nifti`` implementation
+        updates the header, and this implementation makes sure the
+        image is also updated.
+        """
+        
+        Nifti.voxToWorldMat.fset(self, xform)
+        
+        xform = self.voxToWorldMat
+        
+        self.__nibImage.set_sform(xform)
+        self.__nibImage.set_qform(xform)
+
 
     def __transformChanged(self, *args, **kwargs):
         """Called when the ``voxToWorldMat`` of this :class:`Nifti` instance
@@ -871,6 +888,7 @@ class Image(Nifti):
             nib.save(self.__nibImage, filename)
             self.__fileobj.close()
             self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
+            self.header = self.__nibImage.get_header()
 
         self.__dataSource = filename
         self.__saveState  = True
