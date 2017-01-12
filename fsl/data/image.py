@@ -308,7 +308,7 @@ class Nifti(notifier.Notifier):
         self.__worldToVoxMat = transform.invert(self.__voxToWorldMat)
         self.__pixdim        = header.get_zooms()
 
-        log.debug('{} affine changed:\npixdims: '
+        log.debug('Affine changed:\npixdims: '
                   '{}\nsform: {}\nqform: {}'.format(
                       header.get_zooms(),
                       header.get_sform(),
