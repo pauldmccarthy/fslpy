@@ -14,6 +14,10 @@ spaces. The following functions are provided:
    scaleOffsetXform
    invert
    concat
+   compse
+   decompose
+   rotMatToAxisAngles
+   axisAnglesToRotMat
    axisBounds
 """
 
@@ -74,6 +78,106 @@ def scaleOffsetXform(scales, offsets):
     xform[3, 2] = offsets[2]
 
     return xform
+
+
+def compose(scales, offsets, rotations, origin=None):
+    """Compose a transformation matrix out of the given scales, offsets
+    and axis rotations.
+
+    :arg scales:    Sequence of three scale values.
+    
+    :arg offsets:   Sequence of three offset values.
+    
+    :arg rotations: Sequence of three rotation values, in radians.
+    
+    :arg origin:    Origin of rotation - must be scaled by the ``scales``.
+                    If not provided, the rotation origin is ``(0, 0, 0)``.
+    """
+
+    preRotate  = np.eye(4)
+    postRotate = np.eye(4)
+    if origin is not None:
+        preRotate[ 0, 3] = -origin[0]
+        preRotate[ 1, 3] = -origin[1]
+        preRotate[ 2, 3] = -origin[2]
+        postRotate[0, 3] =  origin[0]
+        postRotate[1, 3] =  origin[1]
+        postRotate[2, 3] =  origin[2] 
+
+    scale  = np.eye(4, dtype=np.float64)
+    offset = np.eye(4, dtype=np.float64)
+    rotate = np.eye(4, dtype=np.float64)
+    
+    scale[  0,  0] = scales[ 0]
+    scale[  1,  1] = scales[ 1]
+    scale[  2,  2] = scales[ 2]
+    offset[ 0,  3] = offsets[0]
+    offset[ 1,  3] = offsets[1]
+    offset[ 2,  3] = offsets[2]
+    rotate[:3, :3] = axisAnglesToRotMat(*rotations)
+
+    return concat(offset, postRotate, rotate, preRotate, scale)
+
+
+def decompose(xform):
+    """Decomposes the given transformation matrix into separate offsets,
+    scales, and rotations.
+
+    .. note:: Shears are not yet supported, and may never be supported.
+    """
+
+    offsets = xform[:3, 3]
+    scales  = [np.sqrt(np.sum(xform[:3, 0] ** 2)),
+               np.sqrt(np.sum(xform[:3, 1] ** 2)),
+               np.sqrt(np.sum(xform[:3, 2] ** 2))]
+    
+    rotmat         = np.copy(xform[:3, :3])
+    rotmat[:, 0] /= scales[0]
+    rotmat[:, 1] /= scales[1]
+    rotmat[:, 2] /= scales[2]
+
+    rots = rotMatToAxisAngles(rotmat)
+
+    return scales, offsets, rots
+
+
+def rotMatToAxisAngles(rotmat):
+    """Given a ``(3, 3)`` rotation matrix, decomposes the rotations into
+    an angle in radians about each axis.
+    """
+    xrot = np.arctan2(rotmat[2, 1], rotmat[2, 2])
+    yrot = np.sqrt(   rotmat[2, 1] ** 2 + rotmat[2, 2] ** 2)
+    yrot = np.arctan2(rotmat[2, 0], yrot)
+    zrot = np.arctan2(rotmat[1, 0], rotmat[0, 0])
+
+    return [xrot, yrot, zrot]
+
+
+def axisAnglesToRotMat(xrot, yrot, zrot):
+    """Constructs a ``(3, 3)`` rotation matrix from the given angles, which
+    must be specified in radians.
+    """ 
+
+    xmat = np.eye(3)
+    ymat = np.eye(3)
+    zmat = np.eye(3)
+    
+    xmat[1, 1] =  np.cos(xrot)
+    xmat[1, 2] = -np.sin(xrot)
+    xmat[2, 1] =  np.sin(xrot)
+    xmat[2, 2] =  np.cos(xrot)
+
+    ymat[0, 0] =  np.cos(yrot)
+    ymat[0, 2] =  np.sin(yrot)
+    ymat[2, 0] = -np.sin(yrot)
+    ymat[2, 2] =  np.cos(yrot)
+
+    zmat[0, 0] =  np.cos(zrot)
+    zmat[0, 1] = -np.sin(zrot)
+    zmat[1, 0] =  np.sin(zrot)
+    zmat[1, 1] =  np.cos(zrot)
+
+    return concat(zmat, ymat, xmat)
 
 
 def axisBounds(shape,

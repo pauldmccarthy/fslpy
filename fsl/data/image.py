@@ -51,7 +51,7 @@ import fsl.data.imagewrapper as imagewrapper
 log = logging.getLogger(__name__)
 
 
-class Nifti(object):
+class Nifti(notifier.Notifier):
     """The ``Nifti`` class is intended to be used as a base class for
     things which either are, or are associated with, a NIFTI image.
     The ``Nifti`` class is intended to represent information stored in
@@ -104,6 +104,15 @@ class Nifti(object):
         :attr:`.constants.NIFTI_XFORM_ANALYZE`.
 
 
+    The ``Nifti`` class implements the :class:`.Notifier` interface - 
+    listeners may register to be notified on the following topics:
+
+    =============== ========================================================
+    ``'transform'`` The affine transformation matrix has changed. This topic
+                    will occur when the ``voxToWorldMat`` is changed.
+    =============== ========================================================
+
+
     .. warning:: The ``header`` field may either be a ``nifti1``, ``nifti2``,
                  or ``analyze`` header object. Make sure to take this into
                  account if you are writing code that should work with all
@@ -144,37 +153,16 @@ class Nifti(object):
         voxToWorldMat = self.__determineTransform(header)
         worldToVoxMat = transform.invert(voxToWorldMat)
 
-        self.header        = header
-        self.shape         = shape
-        self.intent        = header.get('intent_code',
-                                        constants.NIFTI_INTENT_NONE)
-        self.__origShape   = origShape
-        self.pixdim        = pixdim
-        self.voxToWorldMat = voxToWorldMat
-        self.worldToVoxMat = worldToVoxMat
+        self.header          = header
+        self.__shape         = shape
+        self.__intent        = header.get('intent_code',
+                                          constants.NIFTI_INTENT_NONE)
+        self.__origShape     = origShape
+        self.__pixdim        = pixdim
+        self.__voxToWorldMat = voxToWorldMat
+        self.__worldToVoxMat = worldToVoxMat
 
-
-    @property
-    def niftiVersion(self):
-        """Returns the NIFTI file version:
-
-           - ``0`` for ANALYZE
-           - ``1`` for NIFTI1
-           - ``2`` for NIFTI2
-        """
-
-        import nibabel as nib
-
-        # nib.Nifti2 is a subclass of Nifti1,
-        # and Nifti1 a subclass of Analyze,
-        # so we have to check in order
-        if   isinstance(self.header, nib.nifti2.Nifti2Header):   return 2
-        elif isinstance(self.header, nib.nifti1.Nifti1Header):   return 1
-        elif isinstance(self.header, nib.analyze.AnalyzeHeader): return 0
-
-        else: raise RuntimeError('Unrecognised header: {}'.format(self.header))
-
-        
+    
     def __determineTransform(self, header):
         """Called by :meth:`__init__`. Figures out the voxel-to-world
         coordinate transformation matrix that is associated with this
@@ -248,6 +236,87 @@ class Nifti(object):
         return origShape, shape, pixdims
 
 
+    @property
+    def niftiVersion(self):
+        """Returns the NIFTI file version:
+
+           - ``0`` for ANALYZE
+           - ``1`` for NIFTI1
+           - ``2`` for NIFTI2
+        """
+
+        import nibabel as nib
+
+        # nib.Nifti2 is a subclass of Nifti1,
+        # and Nifti1 a subclass of Analyze,
+        # so we have to check in order
+        if   isinstance(self.header, nib.nifti2.Nifti2Header):   return 2
+        elif isinstance(self.header, nib.nifti1.Nifti1Header):   return 1
+        elif isinstance(self.header, nib.analyze.AnalyzeHeader): return 0
+
+        else: raise RuntimeError('Unrecognised header: {}'.format(self.header))
+
+
+    @property
+    def shape(self):
+        """Returns a tuple containing the image data shape. """
+        return tuple(self.__shape)
+
+    
+    @property
+    def pixdim(self):
+        """Returns a tuple containing the image pixdims (voxel sizes)."""
+        return tuple(self.__pixdim)
+
+
+    @property
+    def intent(self):
+        """Returns the NIFTI intent code of this image.
+        """
+        return self.__intent
+
+
+    @property
+    def worldToVoxMat(self):
+        """Returns a ``numpy`` array of shape ``(4, 4)`` containing an
+        affine transformation from world coordinates to voxel coordinates.
+        """
+        return np.array(self.__worldToVoxMat)
+
+
+    @property
+    def voxToWorldMat(self):
+        """Returns a ``numpy`` array of shape ``(4, 4)`` containing an
+        affine transformation from voxel coordinates to world coordinates.
+        """
+        return np.array(self.__voxToWorldMat)
+
+
+    @voxToWorldMat.setter
+    def voxToWorldMat(self, xform):
+        """Update the ``voxToWorldMat``. The ``worldToVoxMat`` and ``pixdim``
+        values are also updated. This will result in notification on the
+        ``'transform'`` topic.
+        """
+
+        header = self.header
+
+        header.set_qform(xform)
+        header.set_sform(xform)
+
+        self.__voxToWorldMat = self.__determineTransform(header)
+        self.__worldToVoxMat = transform.invert(self.__voxToWorldMat)
+        self.__pixdim        = header.get_zooms()
+
+        log.debug('{} affine changed:\npixdims: '
+                  '{}\nsform: {}\nqform: {}'.format(
+                      header.get_zooms(),
+                      header.get_sform(),
+                      header.get_qform()))
+
+        self.notify(topic='transform')
+
+
     def mapIndices(self, sliceobj):
         """Adjusts the given slice object so that it may be used to index the
         underlying ``nibabel`` NIFTI image object.
@@ -267,7 +336,7 @@ class Nifti(object):
     # TODO: Remove this method, and use the shape attribute directly
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise. """
-        return len(self.shape) > 3 and self.shape[3] > 1 
+        return len(self.__shape) > 3 and self.__shape[3] > 1 
 
     
     def getXFormCode(self, code=None):
@@ -350,7 +419,7 @@ class Nifti(object):
         _the_transformation_parameters.3F
         """
         import numpy.linalg as npla
-        return npla.det(self.voxToWorldMat) > 0
+        return npla.det(self.__voxToWorldMat) > 0
 
 
     def sameSpace(self, other):
@@ -358,9 +427,12 @@ class Nifti(object):
         :class:`Nifti` instance) has the same dimensions and is in the
         same space as this image.
         """
-        return np.all(np.isclose(self.shape[:3],     other.shape[:3])) and \
-               np.all(np.isclose(self.pixdim,        other.pixdim))    and \
-               np.all(np.isclose(self.voxToWorldMat, other.voxToWorldMat))
+        return np.all(np.isclose(self .__shape[:3],
+                                 other.__shape[:3])) and \
+               np.all(np.isclose(self .__pixdim,
+                                 other.__pixdim))    and \
+               np.all(np.isclose(self .__voxToWorldMat,
+                                 other.__voxToWorldMat))
 
 
     def getOrientation(self, axis, xform):
@@ -405,7 +477,7 @@ class Nifti(object):
         return code 
 
 
-class Image(Nifti, notifier.Notifier):
+class Image(Nifti):
     """Class which represents a 3D/4D NIFTI image. Internally, the image is
     loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image` or
     :mod:`nibabel.nifti2.Nifti2Image`, and data access managed by a
@@ -439,10 +511,10 @@ class Image(Nifti, notifier.Notifier):
     ============== ===========================================================
 
     
-    The ``Image`` class implements the :class:`.Notifier` interface -
-    listeners may register to be notified of changes to the above properties,
-    by registering on the following _topic_ names (see the :class:`.Notifier`
-    class documentation):
+    The ``Image`` class adds some :class:`.Notifier` topics to those which are
+    already provided by the :class:`Nifti` class - listeners may register to
+    be notified of changes to the above properties, by registering on the
+    following _topic_ names (see the :class:`.Notifier` class documentation):
 
     
     =============== ======================================================
@@ -453,7 +525,8 @@ class Image(Nifti, notifier.Notifier):
                     value (see :meth:`.Notifier.notify`).
     
     ``'saveState'`` This topic is notified whenever the saved state of the
-                    image changes (i.e. it is edited, or saved to disk).
+                    image changes (i.e. data or ``voxToWorldMat`` is
+                    edited, or the image saved to disk).
     
     ``'dataRange'`` This topic is notified whenever the image data range
                     is changed/adjusted.
@@ -596,6 +669,11 @@ class Image(Nifti, notifier.Notifier):
                                                              loadData=loadData,
                                                              threaded=threaded)
 
+        # Listen to ourself for changes
+        # to the voxToWorldMat, so we
+        # can update the saveState.
+        self.register(self.name, self.__transformChanged, topic='transform')
+
         if calcRange:
             self.calcRange()
 
@@ -686,6 +764,15 @@ class Image(Nifti, notifier.Notifier):
         # first voxel in the image
         coords = [0] * len(self.__nibImage.shape)
         return self.__nibImage.dataobj[tuple(coords)].dtype
+
+
+    def __transformChanged(self, *args, **kwargs):
+        """Called when the ``voxToWorldMat`` of this :class:`Nifti` instance
+        changes. Updates the :attr:`saveState` accordinbgly.
+        """
+        if self.__saveState:
+            self.__saveState = False
+            self.notify(topic='saveState')
 
 
     def __dataRangeChanged(self, *args, **kwargs):
