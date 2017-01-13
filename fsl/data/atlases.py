@@ -495,7 +495,7 @@ class AtlasDescription(object):
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
         # into world coordinates
-        coords = transform.transform(coords, self.xforms[0].T)
+        coords = transform.transform(coords, self.xforms[0])
 
         # Update the coordinates 
         # in our label objects
@@ -594,7 +594,7 @@ class LabelAtlas(Atlas):
         location, or ``None`` if the location is out of bounds.
         """
 
-        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat)[0]
         voxelLoc = [int(v) for v in voxelLoc.round()]
 
         if voxelLoc[0] <  0             or \
@@ -642,7 +642,7 @@ class ProbabilisticAtlas(Atlas):
                   location. Returns an empty list if the given
                   location is out of bounds.
         """
-        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat.T)[0]
+        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat)[0]
         voxelLoc = [int(v) for v in voxelLoc.round()]
 
         if voxelLoc[0] <  0             or \

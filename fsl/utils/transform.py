@@ -73,9 +73,9 @@ def scaleOffsetXform(scales, offsets):
     xform[1, 1] = scales[1]
     xform[2, 2] = scales[2]
 
-    xform[3, 0] = offsets[0]
-    xform[3, 1] = offsets[1]
-    xform[3, 2] = offsets[2]
+    xform[0, 3] = offsets[0]
+    xform[1, 3] = offsets[1]
+    xform[2, 3] = offsets[2]
 
     return xform
 
@@ -337,8 +337,8 @@ def transform(p, xform, axes=None):
               scalings.
     """
 
-    p = _fillPoints(p, axes)
-    t = np.dot(xform[:3, :3].T, p.T).T  + xform[3, :3]
+    p  = _fillPoints(p, axes)
+    t  = np.dot(xform[:3, :3], p.T).T + xform[:3, 3]
 
     if axes is not None:
         t = t[:, axes]

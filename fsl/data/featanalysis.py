@@ -355,7 +355,7 @@ def loadClusterResults(featdir, settings, contrast):
         # later on.
         coordXform = fslimage.Image(
             getDataFile(featdir),
-            loadData=False).worldToVoxMat.T
+            loadData=False).worldToVoxMat
 
         if not op.exists(clusterFile):
             return None
