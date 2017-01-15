@@ -145,11 +145,12 @@ class Platform(notifier.Notifier):
         self.WX_GTK        = WX_GTK
         self.isWidgetAlive = isWidgetAlive
 
-        self.fsldir         = os.environ.get('FSLDIR', None)
         self.__inSSHSession = False
         self.__glVersion    = None
         self.__glRenderer   = None
         self.__glIsSoftware = None
+        self.__fslVersion   = None
+        self.fsldir         = os.environ.get('FSLDIR', None)
 
         # Determine if a display is available. We do
         # this once at init (instead of on-demand in
@@ -293,8 +294,23 @@ class Platform(notifier.Notifier):
 
         if value is not None:
             os.environ['FSLDIR'] = value
+
+        # Set the FSL version field if we can
+        versionFile = op.join(value, 'etc', 'fslversion')
+
+        if op.exists(versionFile):
+            with open(versionFile, 'rt') as f:
+                self.__fslVersion = f.read().strip()
             
         self.notify()
+
+
+    @property
+    def fslVersion(self):
+        """Returns the FSL version as a string, e.g. ``'5.0.9'``. Returns
+        ``None`` if a FSL installation could not be found.
+        """
+        return self.__fslVersion
 
         
     @property

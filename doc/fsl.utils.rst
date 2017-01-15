@@ -6,6 +6,7 @@ fsl.utils package
 
    fsl.utils.async
    fsl.utils.cache
+   fsl.utils.callfsl
    fsl.utils.colourbarbitmap
    fsl.utils.dialog
    fsl.utils.imagepanel
