@@ -422,6 +422,29 @@ class Nifti(notifier.Notifier):
         return npla.det(self.__voxToWorldMat) > 0
 
 
+    @memoize.Instanceify(memoize.memoize)
+    def voxelsToScaledVoxels(self):
+        """Returns a transformation matrix which transforms from voxel
+        coordinates into scaled voxel coordinates, with a left-right flip
+        if the image appears to be stored in neurological order.
+
+        See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
+        _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
+        _the_transformation_parameters.3F
+        """
+
+        shape          = list(self.shape[ :3])
+        pixdim         = list(self.pixdim[:3])
+        voxToPixdimMat = np.diag(pixdim + [1.0])
+        
+        if self.isNeurological():
+            x              = (shape[0] - 1) * pixdim[0]
+            flip           = transform.scaleOffsetXform([-1, 1, 1], [x, 0, 0])
+            voxToPixdimMat = transform.concat(voxToPixdimMat, flip)
+
+        return voxToPixdimMat
+
+
     def sameSpace(self, other):
         """Returns ``True`` if the ``other`` image (assumed to be a
         :class:`Nifti` instance) has the same dimensions and is in the

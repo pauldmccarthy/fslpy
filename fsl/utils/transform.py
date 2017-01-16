@@ -19,6 +19,7 @@ spaces. The following functions are provided:
    rotMatToAxisAngles
    axisAnglesToRotMat
    axisBounds
+   flirtMatrixToSform
 """
 
 import numpy        as np
@@ -378,3 +379,37 @@ def _fillPoints(p, axes):
         newp[:, ax] = p[:, i]
 
     return newp
+
+
+def flirtMatrixToSform(flirtMat, srcImage, refImage):
+    """Converts the given ``FLIRT`` transformation matrix into a
+    transformation from the source image voxel coordinate system to
+    the reference image world coordinate system.
+
+    FLIRT transformation matrices transform from the source image scaled voxel
+    coordinate system into the reference image scaled voxel coordinate system
+    (voxels scaled by pixdims, with a left-right flip if the image sform has a
+    positive determinant).
+
+    So to construct a transformation from source image voxel coordinates
+    into reference image world coordinates, we need to combine the following:
+
+      1. Source voxels -> Source scaled voxels
+      2. Source scaled voxels -> Reference scaled voxels (the FLIRT matrix)
+      3. Reference scaled voxels -> Reference voxels
+      4. Reference voxels -> Reference world (the reference image sform)
+
+    :arg flirtMat: A ``(4, 4)`` transformation matrix
+    :arg srcImage: Source :class:`.Image`
+    :arg refImage: Reference :class:`.Image`
+    """
+    
+    srcScaledVoxelMat    = srcImage.voxelsToScaledVoxels()
+    refScaledVoxelMat    = refImage.voxelsToScaledVoxels()
+    refVoxToWorldMat     = refImage.voxToWorldMat
+    refInvScaledVoxelMat = invert(refScaledVoxelMat)
+
+    return concat(refVoxToWorldMat,
+                  refInvScaledVoxelMat,
+                  flirtMat,
+                  srcScaledVoxelMat)
