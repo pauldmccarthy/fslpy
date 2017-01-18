@@ -295,12 +295,12 @@ class Platform(notifier.Notifier):
         if value is not None:
             os.environ['FSLDIR'] = value
 
-        # Set the FSL version field if we can
-        versionFile = op.join(value, 'etc', 'fslversion')
+            # Set the FSL version field if we can
+            versionFile = op.join(value, 'etc', 'fslversion')
 
-        if op.exists(versionFile):
-            with open(versionFile, 'rt') as f:
-                self.__fslVersion = f.read().strip()
+            if op.exists(versionFile):
+                with open(versionFile, 'rt') as f:
+                    self.__fslVersion = f.read().strip()
             
         self.notify()
 
