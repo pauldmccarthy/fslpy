@@ -87,6 +87,55 @@ class Nifti(notifier.Notifier):
     ================= ====================================================
 
 
+    The ``header`` field may either be a ``nifti1``, ``nifti2``, or
+    ``analyze`` header object. Make sure to take this into account if you are
+    writing code that should work with all three. Use the :meth:`niftiVersion`
+    property if you need to know what type of image you are dealing with.
+
+    
+    The ``shape`` attribute may not precisely match the image shape as
+    reported in the NIFTI header, because trailing dimensions of size 1 are
+    squeezed out. See the :meth:`__determineShape` and :meth:`mapIndices`
+    methods.
+
+    
+    **The affine transformation**
+
+    
+    The :meth:`voxToWorldMat` and :meth:`worldToVoxMat` attributes contain
+    transformation matrices for transforming between voxel and world
+    coordinates. The ``Nifti`` class follows the same process as ``nibabel``
+    in selecting the affine (see
+    http://nipy.org/nibabel/nifti_images.html#the-nifti-affines):
+
+    
+     1. If ``sform_code != 0`` ("unknown") use the sform affine; else
+     2. If ``qform_code != 0`` ("unknown") use the qform affine; else
+     3. Use the fall-back affine.
+
+    
+    However, the *fall-back* affine used by the ``Nifti`` class differs to
+    that used by ``nibabel``. In ``nibabel``, the origin (world coordinates
+    (0, 0, 0)) is set to the centre of the image. Here in the ``Nifti``
+    class, we set the world coordinate orign to be the corner of the image,
+    i.e. the corner of voxel (0, 0, 0).
+
+
+    You may change the ``voxToWorldMat`` of a ``Nifti`` instance (unless it
+    is an Analyze image). When you do so:
+
+     - Only the ``sform`` of the underlying ``Nifti1Header`` object is changed
+    
+     - The ``qform`` is not modified.
+    
+     - If the ``sform_code`` was previously set to ``NIFTI_XFORM_UNKNOWN``,
+       it is changed to ``NIFTI_XFORM_ALIGNED_ANAT``. Otherwise, the
+       ``sform_code`` is not modified.
+    
+
+    **ANALYZE support**
+
+
     A ``Nifti`` instance expects to be passed either a
     ``nibabel.nifti1.Nifti1Header`` or a ``nibabel.nifti2.Nifti2Header``, but
     can als encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
@@ -104,6 +153,9 @@ class Nifti(notifier.Notifier):
         :attr:`.constants.NIFTI_XFORM_ANALYZE`.
 
 
+    **Notification**
+
+
     The ``Nifti`` class implements the :class:`.Notifier` interface - 
     listeners may register to be notified on the following topics:
 
@@ -111,19 +163,6 @@ class Nifti(notifier.Notifier):
     ``'transform'`` The affine transformation matrix has changed. This topic
                     will occur when the ``voxToWorldMat`` is changed.
     =============== ========================================================
-
-
-    .. warning:: The ``header`` field may either be a ``nifti1``, ``nifti2``,
-                 or ``analyze`` header object. Make sure to take this into
-                 account if you are writing code that should work with all
-                 three. Use the :meth:`niftiVersion` property if you need to
-                 know what type of image you are dealing with.
-
-    
-    .. note:: The ``shape`` attribute may not precisely match the image shape
-              as reported in the NIFTI header, because trailing dimensions of
-              size 1 are squeezed out. See the :meth:`__determineShape` and
-              :meth:`mapIndices` methods.
     """
 
     
@@ -294,19 +333,27 @@ class Nifti(notifier.Notifier):
 
     @voxToWorldMat.setter
     def voxToWorldMat(self, xform):
-        """Update the ``voxToWorldMat``. The ``worldToVoxMat`` and ``pixdim``
-        values are also updated. This will result in notification on the
-        ``'transform'`` topic.
+        """Update the ``voxToWorldMat``. The ``worldToVoxMat`` value is also
+        updated. This will result in notification on the ``'transform'``
+        topic.
         """
 
-        header = self.header
+        # Can't do much with
+        # an analyze image
+        if self.niftiVersion == 0:
+            raise Exception('voxToWorldMat cannot be '
+                            'changed for an ANALYZE image')
 
-        header.set_qform(xform)
-        header.set_sform(xform)
+        header    = self.header
+        sformCode = header['sform_code']
+
+        if sformCode == constants.NIFTI_XFORM_UNKNOWN:
+            sformCode = constants.NIFTI_XFORM_ALIGNED_ANAT
+
+        header.set_sform(xform, code=sformCode)
 
         self.__voxToWorldMat = self.__determineTransform(header)
         self.__worldToVoxMat = transform.invert(self.__voxToWorldMat)
-        self.__pixdim        = header.get_zooms()
 
         log.debug('Affine changed:\npixdims: '
                   '{}\nsform: {}\nqform: {}'.format(
@@ -366,12 +413,11 @@ class Nifti(notifier.Notifier):
         if code is not None:
             code = self.header[code]
 
-        # If a specific code is not
-        # specified, we check both.
-        # If the sform is present,
-        # we return it. Otherwise,
-        # if the qform is present,
-        # we return that.
+        # If the caller did not specify
+        # a code, we check both. If the
+        # sform is present, we return it.
+        # Otherwise, if the qform is
+        # present, we return that.
         else:
             
             sform_code = self.header['sform_code']
@@ -574,7 +620,7 @@ class Image(Nifti):
 
         :arg name:      A name for the image.
 
-        :arg header: If not ``None``, assumed to be a
+        :arg header:    If not ``None``, assumed to be a
                         :class:`nibabel.nifti1.Nifti1Header` or
                         :class:`nibabel.nifti2.Nifti2Header` to be used as the
                         image header. Not applied to images loaded from file,
@@ -582,8 +628,10 @@ class Image(Nifti):
 
         :arg xform:     A :math:`4\\times 4` affine transformation matrix 
                         which transforms voxel coordinates into real world
-                        coordinates. Only used if ``image`` is a ``numpy``
-                        array, and ``header`` is ``None``.
+                        coordinates. If not provided, and a ``header`` is
+                        provided, the transformation in the header is used.
+                        If neither a ``xform`` nor a ``header`` are provided,
+                        an identity matrix is used.
 
         :arg loadData:  If ``True`` (the default) the image data is loaded
                         in to memory.  Otherwise, only the image header
@@ -680,6 +728,10 @@ class Image(Nifti):
                 name = 'Nibabel image'
  
         Nifti.__init__(self, nibImage.get_header())
+
+        print name
+        print self.voxToWorldMat
+        
 
         self.name                = name
         self.__lName             = '{}_{}'.format(id(self), self.name)
@@ -801,9 +853,9 @@ class Image(Nifti):
         Nifti.voxToWorldMat.fset(self, xform)
         
         xform = self.voxToWorldMat
+        code  = self.header['sform_code']
         
-        self.__nibImage.set_sform(xform)
-        self.__nibImage.set_qform(xform)
+        self.__nibImage.set_sform(xform, code)
 
 
     def __transformChanged(self, *args, **kwargs):
