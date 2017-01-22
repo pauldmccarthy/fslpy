@@ -345,7 +345,7 @@ class Nifti(notifier.Notifier):
                             'changed for an ANALYZE image')
 
         header    = self.header
-        sformCode = header['sform_code']
+        sformCode = int(header['sform_code'])
 
         if sformCode == constants.NIFTI_XFORM_UNKNOWN:
             sformCode = constants.NIFTI_XFORM_ALIGNED_ANAT
@@ -729,10 +729,6 @@ class Image(Nifti):
  
         Nifti.__init__(self, nibImage.get_header())
 
-        print name
-        print self.voxToWorldMat
-        
-
         self.name                = name
         self.__lName             = '{}_{}'.format(id(self), self.name)
         self.__dataSource        = dataSource
@@ -852,8 +848,8 @@ class Image(Nifti):
         
         Nifti.voxToWorldMat.fset(self, xform)
         
-        xform = self.voxToWorldMat
-        code  = self.header['sform_code']
+        xform =     self.voxToWorldMat
+        code  = int(self.header['sform_code'])
         
         self.__nibImage.set_sform(xform, code)
 
