@@ -20,6 +20,7 @@ spaces. The following functions are provided:
    axisAnglesToRotMat
    axisBounds
    flirtMatrixToSform
+   sformToFlirtMatrix
 """
 
 import numpy        as np
@@ -413,3 +414,32 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
                   refInvScaledVoxelMat,
                   flirtMat,
                   srcScaledVoxelMat)
+
+
+def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
+    """Under the assumption that the given ``srcImage`` and ``refImage``
+    share a common world coordinate system (defined by their
+    :attr:`voxToWorldMat` attributes), this function will calculate and
+    return a transformation matrix from the ``srcImage`` scaled voxel
+    coordinate system to the ``refImage`` scaled voxel coordinate system,
+    that can be saved to disk and used with FLIRT, to resample the source
+    image to the reference image.
+
+    :arg srcImage: Source :class:`.Image`
+    :arg refImage: Reference :class:`.Image`
+    :arg srcXform: Optionally used in place of the ``scrImage``
+                   :attr:`.voxToWorldMat`
+    """
+
+    srcScaledVoxelsToVoxelsMat = invert(srcImage.voxelsToScaledVoxels())
+    srcVoxToWorldMat           =        srcImage.voxToWorldMat
+    refWorldToVoxMat           = invert(refImage.voxToWorldMat)
+    refVoxelsToScaledVoxelsMat =        refImage.voxelsToScaledVoxels()
+
+    if srcXform is not None:
+        srcVoxToWorldMat = srcXform
+
+    return concat(refVoxelsToScaledVoxelsMat,
+                  refWorldToVoxMat,
+                  srcVoxToWorldMat,
+                  srcScaledVoxelsToVoxelsMat)

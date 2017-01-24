@@ -423,8 +423,10 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
     else:
 
         melDir     = lines[0]
-        noisyComps = map(int, lines[-1].strip(' []').split(','))
-
+        noisyComps = lines[-1].strip(' []').split(',')
+        noisyComps = [c      for c in noisyComps if c != '']
+        noisyComps = [int(c) for c in noisyComps]
+        
         # The melodic directory path should
         # either be an absolute path, or
         # be specified relative to the location
