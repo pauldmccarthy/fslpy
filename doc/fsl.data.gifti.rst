@@ -1,9 +1,9 @@
 :orphan:
 
-fsl.data.model module
+fsl.data.gifti module
 =====================
 
-.. automodule:: fsl.data.model
+.. automodule:: fsl.data.gifti
     :members:
     :undoc-members:
     :show-inheritance:
