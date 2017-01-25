@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 #
-# model.py - The Model class, for VTK polygon data.
+# mesh.py - The TriangleMesh class.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`Model` class, which represents a 3D model.
+"""This module provides the :class:`TriangleMesh` class, which represents a
+3D model made of triangles.
 
-.. note:: I/O support is very limited - currently, the only supported file 
+.. note:: I/O support is very limited - currently, the only supported file
           type is the VTK legacy file format, containing the ``POLYDATA``
-          dataset. the :class:`Model` class assumes that every polygon defined
-          in an input file is a triangle (i.e. refers to three vertices).
+          dataset. the :class:`TriangleMesh` class assumes that every polygon
+          defined in an input file is a triangle (i.e. refers to three
+          vertices).
 
           See http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
           for an overview of the VTK legacy file format.
+
+          In the future, I may or may not add support for more complex meshes.
 """
 
 
@@ -29,22 +33,41 @@ from . import image as fslimage
 log = logging.getLogger(__name__)
 
 
-class Model(object):
-    """The ``Model`` class represents a 3D model. A model is defined by a
-    collection of vertices and indices.  The indices index into the list of
+class TriangleMesh(object):
+    """The ``TriangleMesh`` class represents a 3D model. A mesh is defined by
+    a collection of vertices and indices.  The indices index into the list of
     vertices, and define a set of triangles which make the model.
+
+
+    A ``TriangleMesh`` instance has the following attributes:
+
+    
+    ============== ====================================================
+    ``name``       A name, typically the file name sans-suffix.
+    
+    ``dataSource`` Full path to the mesh file (or ``None`` if there is
+                   no file associated with this mesh).
+    
+    ``vertices``   A :math:`N\times 3` ``numpy `` array containing
+                   the vertices.
+    
+    ``indices``    A :meth:`M\times 3` ``numpy`` array containing
+                   the vertex indices for :math:`M` triangles
+    ============== ====================================================
+
     """
 
     
     def __init__(self, data, indices=None):
-        """Create a ``Model`` instance.
+        """Create a ``TriangleMesh`` instance.
 
         :arg data:    Can either be a file name, or a :math:`N\\times 3`
                       ``numpy`` array containing vertex data. If ``data`` is
                       a file name, it is passed to the
                       :func:`loadVTKPolydataFile` function.
 
-        :arg indices: A list of indices into the vertex data.
+        :arg indices: A list of indices into the vertex data, defining
+                      the triangles.
         """
 
         if isinstance(data, six.string_types):
@@ -58,34 +81,36 @@ class Model(object):
             self.name       = op.basename(infile)
             self.dataSource = infile
         else:
-            self.name       = 'Model'
-            self.dataSource = 'Model'
+            self.name       = 'TriangleMesh'
+            self.dataSource = None
             
         if indices is None:
-            indices = np.arange(data.shape[0], dtype=np.uint32)
+            indices = np.arange(data.shape[0])
 
-        self.vertices = np.array(data, dtype=np.float32)
-        self.indices  = indices
+        self.vertices = np.array(data)
+        self.indices  = np.array(indices).reshape((-1, 3))
 
         self.__loBounds = self.vertices.min(axis=0)
         self.__hiBounds = self.vertices.max(axis=0)
 
 
     def __repr__(self):
-        """Rewturns a string representation of this ``Model`` instance. """
+        """Returns a string representation of this ``TriangleMesh`` instance.
+        """
         return '{}({}, {})'.format(type(self).__name__,
                                    self.name,
                                    self.dataSource)
 
     def __str__(self):
-        """Rewturns a string representation of this ``Model`` instance. """
+        """Returns a string representation of this ``TriangleMesh`` instance.
+        """
         return self.__repr__()
 
 
     def getBounds(self):
         """Returns a tuple of values which define a minimal bounding box that
-        will contain all vertices in this ``Model`` instance. The bounding
-        box is arranged like so:
+        will contain all vertices in this ``TriangleMesh`` instance. The 
+        bounding box is arranged like so:
 
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
         """
@@ -93,7 +118,8 @@ class Model(object):
 
 
 ALLOWED_EXTENSIONS     = ['.vtk']
-"""A list of file extensions which could contain :class:`Model` data. """
+"""A list of file extensions which could contain :class:`TriangleMesh` data.
+"""
 
 
 EXTENSION_DESCRIPTIONS = ['VTK polygon model file']
