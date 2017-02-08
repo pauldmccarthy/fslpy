@@ -32,12 +32,15 @@ and file names:
 """
 
 
-import               os
-import os.path    as op
-import               logging
+import                      os
+import os.path           as op
+import                      logging
 
-import               six 
-import numpy      as np
+import                      six 
+import numpy             as np
+
+import nibabel           as nib
+import nibabel.fileslice as fileslice
 
 
 import fsl.utils.transform   as transform
@@ -175,8 +178,6 @@ class Nifti(notifier.Notifier):
                        image header. 
         """
 
-        import nibabel as nib
-
         # Nifti2Header is a sub-class of Nifti1Header,
         # and Nifti1Header a sub-class of AnalyzeHeader,
         # so we only need to test for the latter.
@@ -284,8 +285,6 @@ class Nifti(notifier.Notifier):
            - ``2`` for NIFTI2
         """
 
-        import nibabel as nib
-
         # nib.Nifti2 is a subclass of Nifti1,
         # and Nifti1 a subclass of Analyze,
         # so we have to check in order
@@ -376,7 +375,6 @@ class Nifti(notifier.Notifier):
 
         # How convenient - nibabel has a function
         # that does the dirty work for us.
-        import nibabel.fileslice as fileslice
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
  
         
@@ -443,8 +441,6 @@ class Nifti(notifier.Notifier):
         where the source and destinations are defined by the given affine
         transformation matrix.
         """
-
-        import nibabel as nib
 
         inaxes = [[-1, 1], [-2, 2], [-3, 3]]
 
@@ -536,7 +532,6 @@ class Nifti(notifier.Notifier):
         if self.getXFormCode() == constants.NIFTI_XFORM_UNKNOWN:
             return constants.ORIENT_UNKNOWN 
         
-        import nibabel as nib
         code = nib.orientations.aff2axcodes(
             xform,
             ((constants.ORIENT_R2L, constants.ORIENT_L2R),
@@ -656,8 +651,6 @@ class Image(Nifti):
                         separate thread for data range calculation. Defaults
                         to ``False``. Ignored if ``loadData`` is ``True``.
         """
-
-        import nibabel as nib
 
         nibImage   = None
         dataSource = None
@@ -918,8 +911,6 @@ class Image(Nifti):
         if ``filename`` is ``None``.
         """
 
-        import nibabel as nib
-        
         if self.__dataSource is None and filename is None:
             raise ValueError('A file name must be specified')
 
@@ -1118,10 +1109,10 @@ def loadIndexedImageFile(filename):
     Returns a tuple containing the ``nibabel`` NIFTI image, and the open
     ``IndexedGzipFile`` handle.
     """
-    
-    import nibabel      as nib
-    import indexed_gzip as igzip
 
+    import                 threading
+    import indexed_gzip as igzip
+    
     log.debug('Loading {} using indexed gzip'.format(filename))
 
     # guessed_image_type returns a
@@ -1133,8 +1124,78 @@ def loadIndexedImageFile(filename):
         spacing=4194304,
         readbuf_size=1048576)
 
+    # See the read_segments
+    # function below
+    fobj._arrayproxy_lock = threading.Lock()
+
     fmap = ftype.make_file_map()
     fmap['image'].fileobj = fobj
     image = ftype.from_file_map(fmap)
 
     return image, fobj
+
+
+def read_segments(fileobj, segments, n_bytes):
+    """This function is used in place of the
+    ``nibabel.fileslice.read_segments`` function to ensure thread-safe read
+    access to image data via the ``nibabel.arrayproxy.ArrayProxy`` (the
+    ``dataobj`` attribute of a ``nibabel`` image).
+
+    The ``nibabel`` implementation uses multiple calls to ``seek`` and
+    ``read`` to read segments of data from the file. When accessed by multiple
+    threads, these seeks and reads can become intertwined, which causes a read
+    from one thread to read data from the seek location requested by the other
+    thread.
+
+    This implementation protects the seek/read pairs with a
+    ``threading.Lock``, which is added to ``IndexedGzipFile`` instances that
+    are created in the :func:`loadIndexedImageFile` function.
+    """
+
+    from mmap import mmap
+    
+    try:
+        # fileobj is a nibabel.openers.ImageOpener - the
+        # actual file is available via the fobj attribute
+        lock = getattr(fileobj.fobj, '_arrayproxy_lock')
+        
+    except:
+        return fileslice.orig_read_segments(fileobj, segments, n_bytes)
+
+    if len(segments) == 0:
+        if n_bytes != 0:
+            raise ValueError("No segments, but non-zero n_bytes")
+        return b''
+    if len(segments) == 1:
+        offset, length = segments[0]
+
+        lock.acquire()
+        try:
+            fileobj.seek(offset)
+            bytes = fileobj.read(length)
+        finally:
+            lock.release()
+            
+        if len(bytes) != n_bytes:
+            raise ValueError("Whoops, not enough data in file")
+        return bytes
+    
+    # More than one segment
+    bytes = mmap(-1, n_bytes)
+    for offset, length in segments:
+
+        lock.acquire()
+        try: 
+            fileobj.seek(offset)
+            bytes.write(fileobj.read(length))
+        finally:
+            lock.release()
+            
+    if bytes.tell() != n_bytes:
+        raise ValueError("Oh dear, n_bytes does not look right")
+    return bytes 
+
+
+# Monkey-patch the above implementation into nibabel
+fileslice.orig_read_segments = fileslice.read_segments
+fileslice.read_segments      = read_segments
