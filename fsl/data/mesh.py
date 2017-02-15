@@ -55,6 +55,14 @@ class TriangleMesh(object):
                    the vertex indices for :math:`M` triangles
     ============== ====================================================
 
+
+    And the following methods:
+
+    .. autosummary::
+       :nosignatures:
+
+       getBounds
+       loadVertexData
     """
 
     
@@ -115,6 +123,15 @@ class TriangleMesh(object):
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
         """
         return (self.__loBounds, self.__hiBounds)
+
+
+    def loadVertexData(self, dataSource):
+        """Attempts to load scalar data associated with each vertex of this
+        ``TriangleMesh`` from the given ``dataSource``.
+
+        This method may be overridden by sub-classes.
+        """
+        raise NotImplementedError('Not implemented yet')
 
 
 ALLOWED_EXTENSIONS     = ['.vtk']

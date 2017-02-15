@@ -23,6 +23,8 @@ are available:
 
 import os.path as op
 
+import nibabel as nib
+
 import fsl.utils.path as fslpath
 from . import            mesh
 
@@ -50,7 +52,6 @@ class GiftiSurface(mesh.TriangleMesh):
         :arg infile: A GIFTI surface file
         """
 
-        import nibabel as nib
 
         surfimg           = nib.load(infile)
         vertices, indices = extractGiftiSurface(surfimg)
@@ -63,6 +64,16 @@ class GiftiSurface(mesh.TriangleMesh):
         self.name       = name
         self.dataSource = infile
         self.surfImg    = surfimg
+
+
+    def loadVertexData(self, dataSource):
+        """Attempts to load scalar data associated with each vertex of this
+        ``GiftiSurface`` from the given ``dataSource``. 
+        """
+
+        # TODO make this more robust
+        norms = nib.load(dataSource)
+        return norms.darrays[0].data 
 
 
 ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
