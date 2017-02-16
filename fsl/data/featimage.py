@@ -332,7 +332,9 @@ class FEATImage(fslimage.Image):
         # We also take the absolute value
         # of the values in the contrast
         # vector, as the parameter estimates
-        # should be appropriately signed.
+        # should be appropriately signed,
+        # so we don't negative contrast
+        # vector values to invert them.
         contrast = np.array(contrast)
         nonzero  = sum(~np.isclose(contrast, 0))
         contrast = contrast / np.sqrt((contrast ** 2).sum())

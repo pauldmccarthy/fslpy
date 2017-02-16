@@ -68,7 +68,9 @@ class GiftiSurface(mesh.TriangleMesh):
 
 
     def loadVertexData(self, dataSource):
-        """Attempts to load data associated with each vertex of this
+        """Overrides the :meth:`.TriangleMesh.loadVertexData` method.
+
+        Attempts to load data associated with each vertex of this
         ``GiftiSurface`` from the given ``dataSource``.
 
         Currently, only the first ``DataArray`` contained in the
@@ -80,15 +82,17 @@ class GiftiSurface(mesh.TriangleMesh):
          - ``*.time.gii``
         """
 
-        # TODO support 4D 
-        # TODO make this more robust
-        vdata = nib.load(dataSource)
-        vdata = vdata.darrays[0].data
+        if dataSource.endswith('.gii'):
 
-        if vdata.size != self.vertices.shape[0]:
-            raise ValueError('Incompatible size: {}'.format(dataSource))
+            # TODO support 4D 
+            # TODO make this more robust
+            vdata = nib.load(dataSource)
+            vdata = vdata.darrays[0].data
+            
+        else:
+            vdata = None
 
-        return vdata
+        return mesh.TriangleMesh.loadVertexData(self, dataSource, vdata)
 
 
 ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
@@ -161,7 +165,6 @@ def relatedFiles(fname):
     """Given a GIFTI file, returns a list of other GIFTI files in the same
     directory which appear to be related with the given one.  Files which
     share the same prefix are assumed to be related to the given file.
-
     """
 
     try:
