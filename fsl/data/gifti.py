@@ -82,8 +82,13 @@ class GiftiSurface(mesh.TriangleMesh):
 
         # TODO support 4D 
         # TODO make this more robust
-        norms = nib.load(dataSource)
-        return norms.darrays[0].data 
+        vdata = nib.load(dataSource)
+        vdata = vdata.darrays[0].data
+
+        if vdata.size != self.vertices.shape[0]:
+            raise ValueError('Incompatible size: {}'.format(dataSource))
+
+        return vdata
 
 
 ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
