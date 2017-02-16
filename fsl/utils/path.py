@@ -19,9 +19,11 @@ paths.
    splitExt
    getFileGroup
    removeDuplicates
+   uniquePrefix
 """
 
 
+import            glob
 import os.path as op
 
 
@@ -404,3 +406,36 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
             unique.append(groupFiles[0])
 
     return unique
+
+
+def uniquePrefix(path):
+    """Return the longest prefix for the given file name which unambiguously
+    identifies it, relative to the other files in the same directory.
+
+    Raises a :exc:`ValueError` if a unique prefix could not be found (which
+    will never happen if the path is valid).
+    """
+
+    dirname, filename = op.split(path)
+
+    idx    = 0
+    prefix = op.join(dirname, filename[0])
+    hits   = glob.glob('{}*'.format(prefix))
+
+    while True:
+
+        # Found a unique prefix
+        if len(hits) == 1:
+            break
+
+        # Should never happen if path is valid
+        elif len(hits) == 0 or idx >= len(filename) - 1:
+            raise ValueError('No unique prefix for {}'.format(filename))
+
+        # Not unique - continue looping
+        else:
+            idx    += 1
+            prefix  = prefix + filename[idx]
+            hits    = [h for h in hits if h.startswith(prefix)]
+
+    return prefix

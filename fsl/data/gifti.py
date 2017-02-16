@@ -17,10 +17,12 @@ are available:
      :nosignatures:
 
      GiftiSurface
-     extractGiftiSurface
+     loadGiftiSurface
+     relatedFiles
 """
 
 
+import            glob
 import os.path as op
 
 import nibabel as nib
@@ -49,12 +51,11 @@ class GiftiSurface(mesh.TriangleMesh):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
         data using the  :func:`extractGiftiSurface` function.
 
-        :arg infile: A GIFTI surface file
+        :arg infile: A GIFTI surface file (``*.surf.gii``).
         """
 
-
         surfimg           = nib.load(infile)
-        vertices, indices = extractGiftiSurface(surfimg)
+        vertices, indices = loadGiftiSurface(surfimg)
 
         mesh.TriangleMesh.__init__(self, vertices, indices)
 
@@ -67,10 +68,19 @@ class GiftiSurface(mesh.TriangleMesh):
 
 
     def loadVertexData(self, dataSource):
-        """Attempts to load scalar data associated with each vertex of this
-        ``GiftiSurface`` from the given ``dataSource``. 
+        """Attempts to load data associated with each vertex of this
+        ``GiftiSurface`` from the given ``dataSource``.
+
+        Currently, only the first ``DataArray`` contained in the
+        file is returned.
+
+         - ``*.func.gii``
+         - ``*.shape.gii``
+         - ``*.label.gii``
+         - ``*.time.gii``
         """
 
+        # TODO support 4D 
         # TODO make this more robust
         norms = nib.load(dataSource)
         return norms.darrays[0].data 
@@ -87,7 +97,7 @@ EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI surface file']
 """
 
 
-def extractGiftiSurface(surfimg):
+def loadGiftiSurface(surfimg):
     """Extracts surface data from the given ``nibabel.gifti.GiftiImage``.
 
     The image is expected to contain the following``<DataArray>`` elements:
@@ -140,3 +150,44 @@ def extractGiftiSurface(surfimg):
         raise ValueError('no array witbh intent "triangle"found')
     
     return vertices, indices
+
+
+def relatedFiles(fname):
+    """Given a GIFTI file, returns a list of other GIFTI files in the same
+    directory which appear to be related with the given one.  Files which
+    share the same prefix are assumed to be related to the given file.
+
+    """
+
+    try:
+        # We want to return all files in the same
+        # directory which have the following name:
+
+        # 
+        # [prefix].*.[type].gii
+        #
+        #   where
+        #     - prefix is the file prefix, and which
+        #       may include periods.
+        #
+        #     - we don't care about the middle
+        #
+        #     - type is func, shape, label, or time
+
+        # We determine the unique prefix of the
+        # given file, and back-up to the most
+        # recent period. Then search for other
+        # files which have that same (non-unique)
+        # prefix.
+        prefix = fslpath.uniquePrefix(fname)
+        prefix = prefix[:prefix.rfind('.')]
+
+        funcs  = glob.glob('{}*.func.gii' .format(prefix))
+        shapes = glob.glob('{}*.shape.gii'.format(prefix))
+        labels = glob.glob('{}*.label.gii'.format(prefix))
+        times  = glob.glob('{}*.time.gii' .format(prefix))
+
+        return funcs + shapes + labels + times
+
+    except:
+        return []
