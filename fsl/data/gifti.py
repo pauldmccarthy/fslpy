@@ -189,7 +189,7 @@ def loadGiftiVertexData(filename):
     # DataArray goes against the GIFTI spec,
     # but hey, it happens.
     if len(gimg.darrays) == 1:
-        return gimg.darrays[0].data
+        return gimg, gimg.darrays[0].data
 
     # Otherwise extract and concatenate
     # multiple 1-dimensional arrays
