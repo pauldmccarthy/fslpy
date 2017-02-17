@@ -139,6 +139,9 @@ class TriangleMesh(object):
         :arg dataSource: Path to the vertex data to load
         :arg vertexData: The vertex data itself, if it has already been
                          loaded.
+
+        :returns: A ``(M, N)``) array, which contains ``N`` data points
+                  for ``M`` vertices.
         """
 
         nvertices = self.vertices.shape[0]
