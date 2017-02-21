@@ -482,7 +482,7 @@ class Nifti(notifier.Notifier):
         if self.isNeurological():
             x              = (shape[0] - 1) * pixdim[0]
             flip           = transform.scaleOffsetXform([-1, 1, 1], [x, 0, 0])
-            voxToPixdimMat = transform.concat(voxToPixdimMat, flip)
+            voxToPixdimMat = transform.concat(flip, voxToPixdimMat)
 
         return voxToPixdimMat
 
