@@ -12,5 +12,5 @@ version number and information.
    __version__
 """
 
-__version__ = '0.9.12'
+__version__ = '0.9.13'
 """Current version number, as a string. """
