@@ -15,6 +15,16 @@ following functions:
     update
     clearStatus
 
+A couple of other functions are also provided, for reporting error messages
+to the user:
+
+ .. autosummary::
+    :nosignatures:
+
+    reportError
+    reportIfError
+    reportErrorDecorator
+
 
 The :func:`update` function may be used to display a message. By default, the
 message is simply logged (via the ``logging`` module). However, if a status
@@ -29,6 +39,7 @@ passed to this target.
 
 
 import            threading
+import            contextlib
 import            logging
 import            inspect
 import os.path as op
@@ -108,7 +119,56 @@ def clearStatus():
     if _statusUpdateTarget is None:
         return
         
-    _statusUpdateTarget('') 
+    _statusUpdateTarget('')
+
+
+def reportError(title, msg, err):
+    """Reports an error to the user in a generic manner. If a GUI is available,
+    (see the :meth.`.Platform.haveGui` attribute), a ``wx.MessageBox`` is
+    shown. Otherwise a log message is generated.
+    """
+
+    from .platform import platform as fslplatform
+    from .         import async
+
+    log.error('{}: {}'.format(title, msg, exc_info=True))
+
+    if fslplatform.haveGui:
+        msg = '{}\n\nDetails: {}'.format(msg, str(err))
+        
+        import wx
+        async.idle(wx.MessageBox, msg, title, wx.ICON_ERROR | wx.OK)
+    
+
+@contextlib.contextmanager
+def reportIfError(title, msg, raiseError=True):
+    """A context manager which calls :func:`reportError` if the enclosed code
+    raises an ``Exception``.
+    """
+    try:
+        yield
+        
+    except Exception as e:
+        
+        reportError(title, msg, e)
+
+        if raiseError:
+            raise
+
+
+def reportErrorDecorator(title, msg):
+    """A decorator which calls :func:`reportError` if the decorated function
+    raises an ``Exception``.
+    """ 
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            with reportIfError(title, msg):
+                func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
     
 class ClearThread(threading.Thread):
