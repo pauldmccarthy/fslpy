@@ -501,13 +501,18 @@ class Nifti(notifier.Notifier):
 
 
     def getOrientation(self, axis, xform):
-        """Returns a code representing the orientation of the specified data
-        axis in the coordinate system defined by the given transformation
+        """Returns a code representing the orientation of the specified 
+        axis in the input coordinate system of the given transformation
         matrix.
 
         :arg xform: A transformation matrix which is assumed to transform
-                    coordinates from the image world coordinate system to
-                    some other coordinate system.
+                    coordinates from some coordinate system (the one
+                    which you want an orientation for) into the image
+                    world coordinate system.
+
+                    For example, if you pass in the voxel-to-world
+                    transformation matrix, you will get an orientation
+                    for axes in the voxel coordinate system.
 
         This method returns one of the following values, indicating the
         direction in which coordinates along the specified axis increase:
