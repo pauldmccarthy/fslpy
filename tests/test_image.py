@@ -176,13 +176,13 @@ def test_Image_orientation(testdir):
     # The radio image should be
     # l/r flipped in the voxel
     # coordinate system
-    assert neuro.getOrientation(0, neuro.worldToVoxMat) == constants.ORIENT_L2R
-    assert neuro.getOrientation(1, neuro.worldToVoxMat) == constants.ORIENT_P2A
-    assert neuro.getOrientation(2, neuro.worldToVoxMat) == constants.ORIENT_I2S
+    assert neuro.getOrientation(0, neuro.voxToWorldMat) == constants.ORIENT_L2R
+    assert neuro.getOrientation(1, neuro.voxToWorldMat) == constants.ORIENT_P2A
+    assert neuro.getOrientation(2, neuro.voxToWorldMat) == constants.ORIENT_I2S
     
-    assert radio.getOrientation(0, radio.worldToVoxMat) == constants.ORIENT_R2L
-    assert radio.getOrientation(1, radio.worldToVoxMat) == constants.ORIENT_P2A
-    assert radio.getOrientation(2, radio.worldToVoxMat) == constants.ORIENT_I2S 
+    assert radio.getOrientation(0, radio.voxToWorldMat) == constants.ORIENT_R2L
+    assert radio.getOrientation(1, radio.voxToWorldMat) == constants.ORIENT_P2A
+    assert radio.getOrientation(2, radio.voxToWorldMat) == constants.ORIENT_I2S 
 
 
 def test_Image_sqforms(testdir):
