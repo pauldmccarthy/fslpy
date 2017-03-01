@@ -449,6 +449,7 @@ class TextEditDialog(wx.Dialog):
         # set the min size of the text 
         # ctrl so it can fit a few lines
         self.__textEdit.SetMinSize((-1, 120))
+        self.__textEdit.SetMaxSize((600, -1))
 
         self.__ok      = (-1, -1)
         self.__copy    = (-1, -1)

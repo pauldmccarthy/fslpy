@@ -131,8 +131,6 @@ def reportError(title, msg, err):
     from .platform import platform as fslplatform
     from .         import async
 
-    log.error('{}: {}'.format(title, msg, exc_info=True))
-
     if fslplatform.haveGui:
         msg = '{}\n\nDetails: {}'.format(msg, str(err))
         
@@ -149,7 +147,9 @@ def reportIfError(title, msg, raiseError=True):
         yield
         
     except Exception as e:
-        
+
+        log.error('{}: {}'.format(title, msg), exc_info=True)
+
         reportError(title, msg, e)
 
         if raiseError:
