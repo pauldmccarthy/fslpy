@@ -16,9 +16,9 @@ import collections
 
 import six
 
-import props
 
-import fsl.utils.async as async
+import fsl.utils.async       as async
+import fsl.utils.weakfuncref as weakfuncref
 
 
 log = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class _Listener(object):
 
         # We use a WeakFunctionRef so we can refer to
         # both functions and class/instance methods
-        self.__callback = props.WeakFunctionRef(callback)
+        self.__callback = weakfuncref.WeakFunctionRef(callback)
         self.topic      = topic
         self.runOnIdle  = runOnIdle
         self.enabled    = True
@@ -104,10 +104,6 @@ class Notifier(object):
         # enable states for each topic, as
         # { topic : enabled } mappings.
         new.__enabled = {}
-
-        if isinstance(new, props.HasProperties):
-            log.warning('Warning: {} is a sub-class of both '
-                        'Notifier and props.HasProperties!')
 
         return new
 

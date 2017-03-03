@@ -130,15 +130,19 @@ class FEATFSFDesign(object):
     with FSL 5.0.9 and older.
     """
     
-    def __init__(self, featDir, settings):
+    def __init__(self, featDir, settings=None):
         """Create a ``FEATFSFDesign``.
 
         :arg featDir:      Path to the FEAT directory.
 
         :arg settings:     A dictionary containing the FEAT analysis 
-                           settings from its ``design.fsf`` file (see
-                           :func:`.featanalysis.loadSettings`).
+                           settings from its ``design.fsf``. If not provided,
+                           is loaded via :func:`.featanalysis.loadSettings`.
         """
+
+        if settings is None:
+            from .featanalysis import loadSettings
+            settings = loadSettings(featDir)
 
         # Get the design matrix, and some
         # information about the analysis

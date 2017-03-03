@@ -28,12 +28,11 @@ class TypeDict(object):
     
     Let's say we have a class with some properties::
 
-        import props
         import fsl.utils.typedict as td
 
-        class Animal(props.HasProperties):
-            isMammal = props.Boolean()
-            numLegs  = props.Int()
+        class Animal(object):
+            isMammal = True
+            numLegs  = 4
 
     
     And we want to associate some tooltips with those properties::
@@ -63,7 +62,7 @@ class TypeDict(object):
     This functionality also works across class hierarchies::
 
         class Cat(Animal):
-           numYoutubeHits = props.Int()
+           numYoutubeHits = 10
 
         tooltips = td.TypeDict({
 
