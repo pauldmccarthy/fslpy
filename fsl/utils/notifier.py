@@ -78,8 +78,8 @@ class Notifier(object):
     *topic*, or be notified for all topics.
 
     .. note:: The ``Notifier`` class stores ``weakref`` references to
-              registered callback functions, using the :class:`WeakFunctionRef`
-              class, provided by the :mod:`props` package.
+              registered callback functions, using the
+              :class:`.WeakFunctionRef` class.
     """
 
 
