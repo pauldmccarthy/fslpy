@@ -10,8 +10,9 @@ import os.path as op
 import pytest
 import glob
 
-import numpy   as np
-import nibabel as nib
+import numpy        as np
+import numpy.linalg as npla
+import nibabel      as nib
 
 from nibabel.spatialimages import ImageFileError
 
@@ -201,6 +202,118 @@ def test_Image_sqforms(testdir):
     assert np.all(np.isclose(noqform.worldToVoxMat,  benchmark.worldToVoxMat))
     assert np.all(np.isclose(nosqform.voxToWorldMat, scalemat))
     assert np.all(np.isclose(nosqform.worldToVoxMat, invScalemat))
+
+    assert benchmark.getXFormCode()        == constants.NIFTI_XFORM_MNI_152
+    assert benchmark.getXFormCode('sform') == constants.NIFTI_XFORM_MNI_152
+    assert benchmark.getXFormCode('qform') == constants.NIFTI_XFORM_MNI_152
+    assert nosform  .getXFormCode()        == constants.NIFTI_XFORM_MNI_152
+    assert nosform  .getXFormCode('sform') == constants.NIFTI_XFORM_UNKNOWN
+    assert nosform  .getXFormCode('qform') == constants.NIFTI_XFORM_MNI_152
+    assert noqform  .getXFormCode()        == constants.NIFTI_XFORM_MNI_152
+    assert noqform  .getXFormCode('sform') == constants.NIFTI_XFORM_MNI_152 
+    assert noqform  .getXFormCode('qform') == constants.NIFTI_XFORM_UNKNOWN
+    assert nosqform .getXFormCode()        == constants.NIFTI_XFORM_UNKNOWN 
+    assert nosqform .getXFormCode('sform') == constants.NIFTI_XFORM_UNKNOWN 
+    assert nosqform .getXFormCode('qform') == constants.NIFTI_XFORM_UNKNOWN 
+
+
+def test_Image_changeXform(testdir):
+
+    img   = fslimage.Image(op.join(testdir, 'MNI152_T1_2mm.nii.gz'))
+
+    notified = {}
+
+    def onXform(*a):
+        notified['xform'] = True
+
+    def onSave(*a):
+        notified['save'] = True 
+
+    img.register('name1', onXform, 'transform')
+    img.register('name2', onSave,  'saveState')
+
+    newXform = np.array([[5, 0, 0, 10], [0, 2, 0, 23], [0, 0, 14, 5], [0, 0, 0, 1]])
+
+    assert img.saveState
+
+    img.voxToWorldMat = newXform
+
+    invx = npla.inv(newXform)
+
+    assert notified.get('xform', False)
+    assert notified.get('save',  False)
+    assert not img.saveState
+    
+    assert np.all(np.isclose(img.voxToWorldMat, newXform))
+    assert np.all(np.isclose(img.worldToVoxMat, invx))
+
+
+def test_Image_changeData(testdir):
+
+    img = fslimage.Image(op.join(testdir, 'dtypes', 'MNI152_T1_1mm_float.nii.gz'))
+
+    notified = {}
+    
+    def randvox():
+        return (np.random.randint(0, img.shape[0]),
+                np.random.randint(0, img.shape[1]),
+                np.random.randint(0, img.shape[2]))
+    
+
+    def onData(*a):
+        notified['data'] = True
+
+    def onSaveState(*a):
+        notified['save'] = True
+
+    def onDataRange(*a):
+        notified['dataRange'] = True
+
+    img.register('name1', onData,      'data')
+    img.register('name2', onSaveState, 'saveState')
+    img.register('name3', onDataRange, 'dataRange')
+
+    data   = img.nibImage.get_data()
+    dmin   = data.min()
+    dmax   = data.max()
+    drange = dmax - dmin
+
+    assert img.saveState
+    assert np.all(np.isclose(img.dataRange, (dmin, dmax)))
+
+    randval    = dmin + np.random.random() * drange
+    rx, ry, rz = randvox()
+
+    img[rx, ry, rz] = randval
+
+    assert np.isclose(img[rx, ry, rz], randval)
+    assert notified.get('data', False)
+    assert notified.get('save', False)
+    assert not img.saveState
+
+    notified.pop('data')
+
+    newdmin = dmin - 100
+    newdmax = dmax + 100
+
+    rx, ry, rz = randvox()
+    img[rx, ry, rz] = newdmin
+
+    assert notified.get('data',      False)
+    assert notified.get('dataRange', False)
+    assert np.isclose(img[rx, ry, rz], newdmin)
+    assert np.all(np.isclose(img.dataRange, (newdmin, dmax)))
+
+    notified.pop('data')
+    notified.pop('dataRange')
+
+    rx, ry, rz = randvox()
+    img[rx, ry, rz] = newdmax
+
+    assert notified.get('data',      False)
+    assert notified.get('dataRange', False)
+    assert np.isclose(img[rx, ry, rz], newdmax)
+    assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
     
 
 def test_2D_images(testdir):

@@ -244,7 +244,7 @@ def coverageDataRange(data, coverage, slices=None):
         sliceobj = []
 
         for d in range(ndims):
-            sliceobj.append(slice(cov[0, d], cov[1, d], 1))
+            sliceobj.append(slice(int(cov[0, d]), int(cov[1, d]), 1))
         sliceobj.append(vol)
 
         voldata = data[tuple(sliceobj)]
