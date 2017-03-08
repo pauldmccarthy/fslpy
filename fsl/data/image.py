@@ -211,11 +211,26 @@ class Nifti(notifier.Notifier):
         # We have to treat FSL/FNIRT images
         # specially, as FNIRT clobbers the
         # sform section of the NIFTI header
-        # to store other data. 
-        intent = header.get('intent_code', -1)
-        qform  = header.get('qform_code',  -1)
-        sform  = header.get('sform_code',  -1)
-        
+        # to store other data.
+        #
+        # TODO Nibabel <= 2.1.0 has a bug in header.get
+        #      for fields with a value of 0. When this
+        #      bug gets fixed, we can replace the if-else
+        #      block below with this:
+        #
+        #          intent = header.get('intent_code', -1)
+        #          qform  = header.get('qform_code',  -1)
+        #          sform  = header.get('sform_code',  -1)
+        #
+        if isinstance(header, nib.nifti1.Nifti1Header):
+            intent = header['intent_code']
+            qform  = header['qform_code']
+            sform  = header['sform_code']
+        else:
+            intent = -1
+            qform  = -1
+            sform  = -1
+
         if intent in (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
                       constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
                       constants.FSL_DCT_COEFFICIENTS,
