@@ -13,7 +13,7 @@ import glob
 import numpy   as np
 import nibabel as nib
 
-from nibabel.spatialimages import HeaderDataError
+from nibabel.spatialimages import ImageFileError
 
 import fsl.data.constants as constants
 import fsl.data.image     as fslimage
@@ -49,8 +49,8 @@ def test_load(testdir):
     shouldRaise = [('notexist',        fslpath.PathError),
                    ('notexist.nii.gz', fslpath.PathError),
                    ('ambiguous',       fslpath.PathError),
-                   ('notnifti',        HeaderDataError),
-                   ('notnifti.nii.gz', HeaderDataError)]
+                   ('notnifti',        ImageFileError),
+                   ('notnifti.nii.gz', ImageFileError)]
     
     # Not raising an error means the test passes
     for fname in shouldPass:

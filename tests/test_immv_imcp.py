@@ -16,6 +16,8 @@ import               tempfile
 import numpy   as np
 import nibabel as nib
 
+from nibabel.spatialimages import ImageFileError
+
 import pytest
 
 import fsl.utils.path   as fslpath
@@ -454,7 +456,7 @@ def test_imcp_script_shouldFail(move=False):
                 if move: immv_script.main(imcp_args)
                 else:    imcp_script.main(imcp_args)
                 assert False
-            except (RuntimeError, IOError, fslpath.PathError):
+            except (RuntimeError, IOError, fslpath.PathError, ImageFileError):
                 pass
 
             sp.call('chmod u+rwx {}'.format(indir) .split())
