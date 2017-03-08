@@ -321,19 +321,19 @@ class Nifti(notifier.Notifier):
         # but we want the NIFTI codes. So we use
         # the (undocumented) nifti1.unit_codes field
         # to convert back to the raw codes.
-        xyzUnits = self.header.get_xyzt_units()[0]
-        xyzUnits = nib.nifti1.unit_codes[xyzUnits]
+        units = self.header.get_xyzt_units()[0]
+        units = nib.nifti1.unit_codes[units]
+        return units
 
-        return xyzUnits
 
-
+    @property
     def timeUnits(self):
         """Returns the NIFTI time dimension unit code. """
 
         # See xyzUnits
-        timeUnits = self.header.get_xyzt_units()[1]
-        timeUnits = nib.nifti1.unit_codes[timeUnits]
-        return timeUnits
+        units = self.header.get_xyzt_units()[1]
+        units = nib.nifti1.unit_codes[units]
+        return units
 
 
     @property
