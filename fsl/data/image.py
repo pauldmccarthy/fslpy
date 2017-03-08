@@ -42,7 +42,6 @@ import numpy             as np
 import nibabel           as nib
 import nibabel.fileslice as fileslice
 
-
 import fsl.utils.transform   as transform
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
@@ -312,6 +311,29 @@ class Nifti(notifier.Notifier):
         """Returns the NIFTI intent code of this image.
         """
         return self.__intent
+
+
+    @property
+    def xyzUnits(self):
+        """Returns the NIFTI XYZ dimension unit code. """
+
+        # The nibabel get_xyzt_units returns labels,
+        # but we want the NIFTI codes. So we use
+        # the (undocumented) nifti1.unit_codes field
+        # to convert back to the raw codes.
+        xyzUnits = self.header.get_xyzt_units()[0]
+        xyzUnits = nib.nifti1.unit_codes[xyzUnits]
+
+        return xyzUnits
+
+
+    def timeUnits(self):
+        """Returns the NIFTI time dimension unit code. """
+
+        # See xyzUnits
+        timeUnits = self.header.get_xyzt_units()[1]
+        timeUnits = nib.nifti1.unit_codes[timeUnits]
+        return timeUnits
 
 
     @property
