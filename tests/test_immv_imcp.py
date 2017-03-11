@@ -7,11 +7,14 @@
 
 from __future__ import print_function
 
+
+
 import               os
 import os.path    as op
 import               shutil
 import subprocess as sp 
 import               tempfile
+import               logging
 
 import numpy   as np
 import nibabel as nib
@@ -26,36 +29,11 @@ import fsl.scripts.imcp as imcp_script
 import fsl.scripts.immv as immv_script
 import fsl.data.image   as fslimage
 
-real_print = print
-def print(*a, **kwa):
-    pass
-
-
-def createImageFile(filename):
-
-    data = np.random.random((10, 10, 10))
-
-    # Image file
-    try:
-        img  = nib.Nifti1Image(data, np.eye(4))
-
-        nib.save(img, filename)
-
-        return hash(data.tobytes())
-
-    # Non-image file
-    except:
-        contents = '{}\n'.format(op.basename(filename))
-        with open(filename, 'wt') as f:
-            f.write(contents)
-
-        return hash(contents)
-
-
-def checkImageFile(filename, datahash):
-
-    img = nib.load(filename)
-    assert hash(img.get_data().tobytes()) == datahash
+from . import make_random_image
+from . import make_dummy_file
+from . import check_image_hash
+from . import looks_like_image
+from . import cleardir
 
 
 def checkFilesToExpect(files, outdir, outputType, datahashes):
@@ -113,14 +91,7 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
         else:
             h = datahashes[op.basename(f)]
 
-        checkImageFile(f, h)
-
-def cleardir(dir):
-
-    for f in os.listdir(dir):
-        f = op.join(dir, f)
-        if   op.isfile(f): os.remove(f)
-        elif op.isdir(f):  shutil.rmtree(f)
+        check_image_hash(f, h)
 
 
 def test_imcp_script_shouldPass(move=False):
@@ -337,7 +308,7 @@ def test_imcp_script_shouldPass(move=False):
                 print('files_to_expect: ', files_to_expect)
 
                 for i, fname in enumerate(files_to_create.split()):
-                    imageHashes.append(createImageFile(op.join(indir, fname)))
+                    imageHashes.append(make_random_image(op.join(indir, fname)))
 
                 imcp_args = imcp_args.split()
 
@@ -442,7 +413,7 @@ def test_imcp_script_shouldFail(move=False):
             imcp_args       = imcp_args      .split()
 
             for fname in files_to_create:
-                createImageFile(op.join(indir, fname))
+                make_random_image(op.join(indir, fname))
 
             imcp_args[:-1] = [op.join(indir, a) for a in imcp_args[:-1]]
             imcp_args[ -1] =  op.join(outdir, imcp_args[-1])
@@ -637,7 +608,10 @@ def test_imcp_shouldPass(move=False):
 
                 hashes = {}
                 for fn in files_to_create:
-                    hashes[fn] = createImageFile(op.join(indir, fn))
+                    if looks_like_image(fn):
+                        hashes[fn] = make_random_image(op.join(indir, fn))
+                    else:
+                        hashes[fn] = make_dummy_file(op.join(indir, fn))
 
                 print()
                 print('files_to_create: ', files_to_create)

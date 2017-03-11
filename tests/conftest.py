@@ -17,7 +17,7 @@ def pytest_addoption(parser):
     parser.addoption('--niters',
                      type=int,
                      action='store',
-                     default=150,
+                     default=50,
                      help='Number of test iterations for imagewrapper')
     
     parser.addoption('--testdir',
