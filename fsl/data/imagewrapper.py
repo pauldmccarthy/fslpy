@@ -421,13 +421,15 @@ class ImageWrapper(notifier.Notifier):
         log.debug('Updating image {} data range [slice: {}] '
                   '(current range: [{}, {}]; '
                   'number of expansions: {}; '
-                  'current coverage: {})'.format(
+                  'current coverage: {}; '
+                  'volume ranges: {})'.format(
                       self.__name,
                       slices,
                       self.__range[0],
                       self.__range[1],
                       len(expansions),
-                      self.__coverage))
+                      self.__coverage,
+                      self.__volRanges))
 
         # As we access the data for each expansions,
         # we want it to have the same dimensionality
@@ -530,17 +532,17 @@ class ImageWrapper(notifier.Notifier):
         # area and the current coverage, then it's
         # easy - we just expand the coverage to
         # include the newly written area.
+        # 
+        # But if there is overlap between the written
+        # area and the current coverage, things are
+        # more complicated, because the portion of
+        # the image that has been written over may
+        # have contained the currently known data
+        # minimum/maximum. We have no way of knowing
+        # this, so we have to reset the coverage (on
+        # the affected volumes), and recalculate the
+        # data range.
         if overlap in (OVERLAP_SOME, OVERLAP_ALL):
-
-            # If there is overlap between the written
-            # area and the current coverage, things are
-            # more complicated, because the portion of
-            # the image that has been written over may
-            # have contained the currently known data
-            # minimum/maximum. We have no way of knowing
-            # this, so we have to reset the coverage (on
-            # the affected volumes), and recalculate the
-            # data range.
 
             # TODO Could you store the location of the
             #      data minimum/maximum (in each volume),
@@ -548,12 +550,28 @@ class ImageWrapper(notifier.Notifier):
             #      coverage is necessary?
             lowVol, highVol = slices[self.__numRealDims - 1]
 
+            # We create a single slice which
+            # encompasses the given slice, and
+            # all existing coverages for each
+            # volume in the given slice. The
+            # data range for this slice will
+            # be recalculated.
+            slices = adjustCoverage(self.__coverage[:, :, lowVol], slices)
+            for vol in range(lowVol + 1, highVol):
+                slices = adjustCoverage(slices, self.__coverage[:, :, vol].T)
+
+            slices = np.array(slices.T, dtype=np.uint32)
+            slices = tuple(it.chain(map(tuple, slices), [(lowVol, highVol)]))
+
             log.debug('Image {} data written - clearing known data '
-                      'range on volumes {} - {} (write slice: {})'.format(
+                      'range on volumes {} - {} (write slice: {}; '
+                      'coverage: {}; volRanges: {})'.format(
                           self.__name,
                           lowVol,
                           highVol,
-                          slices))
+                          slices,
+                          self.__coverage[:, :, lowVol:highVol],
+                          self.__volRanges[lowVol:highVol, :]))
 
             for vol in range(lowVol, highVol):
                 self.__coverage[:, :, vol]    = np.nan
@@ -909,7 +927,7 @@ def adjustCoverage(oldCoverage, slices):
     :return: A ``numpy`` array containing the adjusted/expanded coverage.
     """
 
-    newCoverage = np.zeros(oldCoverage.shape, dtype=np.uint32)
+    newCoverage = np.zeros(oldCoverage.shape, dtype=oldCoverage.dtype)
 
     for dim in range(oldCoverage.shape[1]):
 

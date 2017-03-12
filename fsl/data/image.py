@@ -486,11 +486,11 @@ class Nifti(notifier.Notifier):
 
     @memoize.Instanceify(memoize.memoize)
     def isNeurological(self):
-        """Returns ``True`` if it looks like this ``Nifti`` object is in
-        neurological orientation, ``False`` otherwise. This test is purely
-        based on the determinant of the voxel-to-mm transformation matrix -
-        if it has a positive determinant, the image is assumed to be in
-        neurological orientation, otherwise it is assumed to be in
+        """Returns ``True`` if it looks like this ``Nifti`` object has a
+        neurological voxel orientation, ``False`` otherwise. This test is
+        purely based on the determinant of the voxel-to-mm transformation
+        matrix - if it has a positive determinant, the image is assumed to
+        be in neurological orientation, otherwise it is assumed to be in
         radiological orientation.
 
         See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
