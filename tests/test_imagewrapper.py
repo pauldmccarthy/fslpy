@@ -759,15 +759,10 @@ def test_ImageWrapper_write_in_overlap(niters, seed):
                 sliceshape = sliceshape[:-1]
                 break
 
-
-            # Expected wrapper coverage after the write 
-            # The write will invalidate the current
-            # known data range and coverage, so the
-            # expected coverage after the write will
-            # be the area covered by the write slice
-            nullCov    = np.zeros(cov.shape)
-            nullCov[:] = np.nan
-            expCov     = imagewrap.adjustCoverage(nullCov[..., 0], slices)
+            # Expected wrapper coverage after the 
+            # write is the union of the original 
+            # coverage and the write slice.
+            expCov = imagewrap.adjustCoverage(cov[..., 0], slices)
 
             for _ in range(10):
 
@@ -784,23 +779,41 @@ def test_ImageWrapper_write_in_overlap(niters, seed):
                 newData = np.linspace(rlo, rhi, np.prod(sliceshape))
                 newData = newData.reshape(sliceshape)
 
-                print('New data shape: {}'.format(newData))
-                print('Old range:      {} - {}'.format(*wrapper.dataRange))
+                print('Old coverage:      {}'.format(cov[..., 0]))
+                print('Slice:             {}'.format(sliceobjs[:-1]))
+                print('Expected coverage: {}'.format(expCov))
+                print('Old range:         {} - {}'.format(*wrapper.dataRange))
+                print('New data range:    {} - {}'.format(newData.min(), newData.max()))
+
+                # We figure out the expected data
+                # range by creating a copy of the
+                # data, and doing the same write
+                expData = np.copy(data[..., 0])
+                expData[sliceobjs[:-1]] = newData
+
+                # Then calcultaing the min/max
+                # on this copy
+                expCovSlice = [slice(int(lo), int(hi)) for lo, hi in expCov.T]
+
+                expLo = expData[expCovSlice].min()
+                expHi = expData[expCovSlice].max()
 
                 wrapper[tuple(sliceobjs)] = newData
 
                 newCov       = wrapper.coverage(0)
                 newLo, newHi = wrapper.dataRange
 
-                print('Expected range: {} - {}'.format(rlo,   rhi))
-                print('New range:      {} - {}'.format(newLo, newHi))
-                print('Data min/max:   {} - {}'.format(img.get_data()[tuple(sliceobjs)].min(),
-                                                       img.get_data()[tuple(sliceobjs)].max()))
+                print('Expected range:    {} - {}'.format(expLo, expHi))
+                print('New range:         {} - {}'.format(newLo, newHi))
+                print('Slice min/max:     {} - {}'.format(img.get_data()[tuple(sliceobjs)].min(),
+                                                          img.get_data()[tuple(sliceobjs)].max()))
+                print('Data min/max:      {} - {}'.format(img.get_data().min(),
+                                                          img.get_data().max())) 
 
                 assert np.all(newCov == expCov)
 
-                assert np.isclose(newLo, rlo)
-                assert np.isclose(newHi, rhi)
+                assert np.isclose(newLo, expLo)
+                assert np.isclose(newHi, expHi)
 
             
 def test_ImageWrapper_write_different_volume(niters, seed):
