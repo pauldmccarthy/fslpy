@@ -31,9 +31,20 @@ import fsl.data.image   as fslimage
 
 from . import make_random_image
 from . import make_dummy_file
-from . import check_image_hash
 from . import looks_like_image
 from . import cleardir
+
+
+def makeImage(filename):
+    return hash(make_random_image(filename).get_data().tobytes())
+
+
+def checkImageHash(filename, datahash):
+    """Checks that the given NIFTI image matches the given hash.
+    """
+
+    img = nib.load(filename)
+    assert hash(img.get_data().tobytes()) == datahash
 
 
 def checkFilesToExpect(files, outdir, outputType, datahashes):
@@ -91,7 +102,7 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
         else:
             h = datahashes[op.basename(f)]
 
-        check_image_hash(f, h)
+        checkImageHash(f, h)
 
 
 def test_imcp_script_shouldPass(move=False):
@@ -308,7 +319,7 @@ def test_imcp_script_shouldPass(move=False):
                 print('files_to_expect: ', files_to_expect)
 
                 for i, fname in enumerate(files_to_create.split()):
-                    imageHashes.append(make_random_image(op.join(indir, fname)))
+                    imageHashes.append(makeImage(op.join(indir, fname)))
 
                 imcp_args = imcp_args.split()
 
@@ -413,7 +424,7 @@ def test_imcp_script_shouldFail(move=False):
             imcp_args       = imcp_args      .split()
 
             for fname in files_to_create:
-                make_random_image(op.join(indir, fname))
+                makeImage(op.join(indir, fname))
 
             imcp_args[:-1] = [op.join(indir, a) for a in imcp_args[:-1]]
             imcp_args[ -1] =  op.join(outdir, imcp_args[-1])
@@ -609,7 +620,7 @@ def test_imcp_shouldPass(move=False):
                 hashes = {}
                 for fn in files_to_create:
                     if looks_like_image(fn):
-                        hashes[fn] = make_random_image(op.join(indir, fn))
+                        hashes[fn] = makeImage(op.join(indir, fn))
                     else:
                         hashes[fn] = make_dummy_file(op.join(indir, fn))
 

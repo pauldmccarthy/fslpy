@@ -60,24 +60,14 @@ def cleardir(dir):
         elif op.isdir(f):  shutil.rmtree(f)
 
 
-def make_random_image(filename, dims=(10, 10, 10), affine=None):
-    """Creates a NIFTI image with random data, returns the hash of said data.
+def make_random_image(filename, dims=(10, 10, 10)):
+    """Creates a NIFTI1 image with random data, saves and
+    returns it.
     """
 
-    if affine is None:
-        affine = np.eye(4)
-    
-    data = np.random.random(dims)
-    img  = nib.Nifti1Image(data, affine)
+    data = np.array(np.random.random(dims) * 100, dtype=np.float32)
+    img  = nib.Nifti1Image(data, np.eye(4))
 
     nib.save(img, filename)
 
-    return hash(data.tobytes())
-
-def check_image_hash(filename, datahash):
-    """Checks that the given NIFTI image matches the given hash.
-    """
-
-    img = nib.load(filename)
-    assert hash(img.get_data().tobytes()) == datahash
-
+    return img
