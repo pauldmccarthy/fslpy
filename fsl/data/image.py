@@ -493,6 +493,12 @@ class Nifti(notifier.Notifier):
         be in neurological orientation, otherwise it is assumed to be in
         radiological orientation.
 
+        ..warning:: This method will return ``True`` for images with an
+                    unknown orientation (e.g. the ``sform_code`` and
+                    ``qform_code`` are both set to ``0``). Therefore, you
+                    must check the orientation via the :meth:`getXFormCode`
+                    before trusting the result of this method.
+
         See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
         _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
         _the_transformation_parameters.3F
