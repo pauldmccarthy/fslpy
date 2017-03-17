@@ -536,9 +536,9 @@ class Nifti(notifier.Notifier):
         same space as this image.
         """
         return np.all(np.isclose(self .__shape[:3],
-                                 other.__shape[:3])) and \
-               np.all(np.isclose(self .__pixdim,
-                                 other.__pixdim))    and \
+                                 other.__shape[:3]))  and \
+               np.all(np.isclose(self .__pixdim[:3],
+                                 other.__pixdim[:3])) and \
                np.all(np.isclose(self .__voxToWorldMat,
                                  other.__voxToWorldMat))
 
