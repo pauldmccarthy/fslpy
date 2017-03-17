@@ -130,7 +130,12 @@ class AtlasRegistry(notifier.Notifier):
                 if atlasID is not None and self.hasAtlas(atlasID):
                     continue
 
-                self.addAtlas(atlasPath, atlasID, save=False)
+                try:
+                    self.addAtlas(atlasPath, atlasID, save=False)
+                except:
+                    log.warning('Failed to load atlas '
+                                'specification {}'.format(atlasPath),
+                                exc_info=True)
 
     
     def listAtlases(self):
