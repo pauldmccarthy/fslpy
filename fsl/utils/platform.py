@@ -162,13 +162,18 @@ class Platform(notifier.Notifier):
             self.__canHaveGui = wx.App.IsDisplayAvailable()
         except ImportError:
             self.__canHaveGui = False
-        
 
-        # If one of these environment
-        # variables is set, then we're
-        # probably running over SSH.
-        self.__inSSHSession = 'SSH_CLIENT' in os.environ or \
-                              'SSH_TTY'    in os.environ
+
+        # If one of the SSH_ environment
+        # variables is set, and we're
+        # not running in a VNC session,
+        # then we're probably running
+        # over SSH.
+        inSSH = 'SSH_CLIENT' in os.environ or \
+                'SSH_TTY'    in os.environ
+        inVNC = 'VNCDESKTOP' in os.environ
+
+        self.__inSSHSession = inSSH and not inVNC
 
                 
     @property
