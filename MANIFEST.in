@@ -1,4 +1,6 @@
 include           LICENSE
+include           COPYRIGHT
 include           README.md
 include           requirements.txt
 recursive-include doc *
+recursive-include tests *
