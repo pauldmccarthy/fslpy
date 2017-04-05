@@ -139,9 +139,15 @@ def reportError(title, msg, err):
     
 
 @contextlib.contextmanager
-def reportIfError(title, msg, raiseError=True):
+def reportIfError(title, msg, raiseError=True, report=True):
     """A context manager which calls :func:`reportError` if the enclosed code
     raises an ``Exception``.
+
+    :arg raiseError: If ``True``, the ``Exception`` which was raised is
+                     propagated upwards.
+
+    :arg report:     Defaults to ``True``. If ``False``, an error message
+                     is logged, but :func:`reportError` is not called.
     """
     try:
         yield
@@ -150,21 +156,22 @@ def reportIfError(title, msg, raiseError=True):
 
         log.error('{}: {}'.format(title, msg), exc_info=True)
 
-        reportError(title, msg, e)
+        if report:
+            reportError(title, msg, e)
 
         if raiseError:
             raise
 
 
-def reportErrorDecorator(title, msg):
-    """A decorator which calls :func:`reportError` if the decorated function
-    raises an ``Exception``.
+def reportErrorDecorator(*args, **kwargs):
+    """A decorator which wraps the decorated function with
+    :func:`reportIfError`.
     """ 
 
     def decorator(func):
-        def wrapper(*args, **kwargs):
-            with reportIfError(title, msg):
-                func(*args, **kwargs)
+        def wrapper(*wargs, **wkwargs):
+            with reportIfError(*args, **kwargs):
+                func(*wargs, **wkwargs)
 
         return wrapper
 
