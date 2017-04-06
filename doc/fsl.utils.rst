@@ -22,6 +22,7 @@ fsl.utils package
    fsl.utils.transform
    fsl.utils.typedict
    fsl.utils.webpage
+   fsl.utils.weakfuncref
 
 .. automodule:: fsl.utils
     :members:
