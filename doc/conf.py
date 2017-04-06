@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'fslpy'
-copyright = u'{}, Paul McCarthy, FMRIB Centre, University of Oxford'.format(
+copyright = u'{}, Paul McCarthy, University of Oxford, Oxford, UK'.format(
     date.year)
 
 # Links to other things

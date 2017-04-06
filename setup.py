@@ -5,15 +5,28 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os.path as op
+
+from __future__ import print_function
+
+import               os
+import os.path    as op
+import subprocess as sp
+import               shutil
+import               pkgutil
 
 from setuptools import setup
 from setuptools import find_packages
+from setuptools import Command
 
 
 # The directory in which this setup.py file is contained.
 basedir = op.dirname(__file__)
 
+# Dependencies are listed in requirements.txt
+install_requires = open(op.join(basedir, 'requirements.txt'), 'rt').readlines()
+
+packages = find_packages(
+    exclude=('doc', 'tests', 'dist', 'build', 'fslpy.egg-info'))
 
 # Figure out the current fslpy version, as defined in fsl/version.py. We
 # don't want to import the fsl package,  as this may cause build problems.
@@ -26,10 +39,35 @@ with open(op.join(basedir, "fsl", "version.py")) as f:
             exec(line, version)
             break 
 
-install_requires = open(op.join(basedir, 'requirements.txt'), 'rt').readlines()
 
-dependency_links = [i for i in install_requires if     i.startswith('git')]
-install_requires = [i for i in install_requires if not i.startswith('git')]
+class doc(Command):
+    """Build the API documentation. """
+    
+    user_options = []
+    
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+
+        docdir  = op.join(basedir, 'doc')
+        destdir = op.join(docdir, 'html')
+
+        if op.exists(destdir):
+            shutil.rmtree(destdir)
+
+        env   = dict(os.environ)
+        ppath = [op.join(pkgutil.get_loader('fsl').filename, '..')]
+        
+        env['PYTHONPATH'] = op.pathsep.join(ppath)
+
+        print('Building documentation [{}]'.format(destdir))
+
+        sp.call(['sphinx-build', docdir, destdir], env=env) 
+
 
 setup(
 
@@ -52,16 +90,18 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
-    packages=find_packages(exclude=('doc', 'tests')),
+    packages=packages,
 
     install_requires=install_requires,
-    dependency_links=dependency_links,
 
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-runner'],
     test_suite='tests',
+
+    cmdclass={'doc' : doc},
 
     entry_points={
         'console_scripts' : [
