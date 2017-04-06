@@ -98,7 +98,7 @@ setup(
     install_requires=install_requires,
 
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-runner'],
+    tests_require=['pytest', 'pytest-cov', 'pytest-runner'],
     test_suite='tests',
 
     cmdclass={'doc' : doc},

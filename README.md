@@ -30,8 +30,8 @@ The HTML documentation will be generated and saved in the `doc/html/` directory.
 Tests
 -----
 
-To run the tests, install `pytest` and `coverage`, and then run:
+To run the tests, install `pytest` and `pytest-cov`, and then run:
 
-       python setup.py test --addopts="-v --niters=50 --cov=fsl --cov-report=html"
+       python setup.py test
 
 A code coverage report will be generated in `htmlcov/`.
