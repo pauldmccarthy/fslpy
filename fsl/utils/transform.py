@@ -14,7 +14,7 @@ spaces. The following functions are provided:
    scaleOffsetXform
    invert
    concat
-   compse
+   compose
    decompose
    rotMatToAxisAngles
    axisAnglesToRotMat
@@ -417,18 +417,18 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
 
 
 def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
-    """Under the assumption that the given ``srcImage`` and ``refImage``
-    share a common world coordinate system (defined by their
-    :attr:`voxToWorldMat` attributes), this function will calculate and
+    """Under the assumption that the given ``srcImage`` and ``refImage`` share a
+    common world coordinate system (defined by their
+    :attr:`.Nifti.voxToWorldMat` attributes), this function will calculate and
     return a transformation matrix from the ``srcImage`` scaled voxel
-    coordinate system to the ``refImage`` scaled voxel coordinate system,
-    that can be saved to disk and used with FLIRT, to resample the source
-    image to the reference image.
+    coordinate system to the ``refImage`` scaled voxel coordinate system, that
+    can be saved to disk and used with FLIRT, to resample the source image to
+    the reference image.
 
     :arg srcImage: Source :class:`.Image`
     :arg refImage: Reference :class:`.Image`
     :arg srcXform: Optionally used in place of the ``scrImage``
-                   :attr:`.voxToWorldMat`
+                   :attr:`.Nifti.voxToWorldMat`
     """
 
     srcScaledVoxelsToVoxelsMat = invert(srcImage.voxelsToScaledVoxels())

@@ -48,7 +48,7 @@ class TriangleMesh(object):
     ``dataSource`` Full path to the mesh file (or ``None`` if there is
                    no file associated with this mesh).
     
-    ``vertices``   A :math:`N\times 3` ``numpy `` array containing
+    ``vertices``   A :math:`N\times 3` ``numpy`` array containing
                    the vertices.
     
     ``indices``    A :meth:`M\times 3` ``numpy`` array containing
