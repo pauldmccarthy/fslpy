@@ -310,7 +310,7 @@ def axisBounds(shape,
 
     :arg axes:     The world coordinate system axis bounds to calculate.
 
-    :arg origin:   Either ``'centre'`` (the default) or ``'origin'``.
+    :arg origin:   Either ``'centre'`` (the default) or ``'corner'``.
 
     :arg boundary: Either ``'high'`` (the default), ``'low'``, ''`both'``,
                    or ``None``. 
@@ -318,9 +318,8 @@ def axisBounds(shape,
     :arg offset:   Amount by which the boundary voxel coordinates should be
                    offset. Defaults to ``1e-4``.
 
-    :returns:      A list of tuples, one for each axis specified in the 
-                   ``axes`` argument. Each tuple contains the ``(lo, hi)`` 
-                   bounds of the corresponding world coordinate system axis.
+    :returns:      A tuple containing the ``(low, high)`` bounds for each
+                   requested world coordinate system axis.
     """
 
     origin = origin.lower()
@@ -331,6 +330,8 @@ def axisBounds(shape,
 
     if origin not in ('centre', 'corner'):
         raise ValueError('Invalid origin value: {}'.format(origin))
+    if boundary not in ('low', 'high', 'both', None):
+        raise ValueError('Invalid boundary value: {}'.format(boundary)) 
 
     scalar = False
 
