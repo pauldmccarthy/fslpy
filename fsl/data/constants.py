@@ -85,6 +85,19 @@ NIFTI_XFORM_ANALYZE      = 5
 """Code which indicates that this is an ANALYZE image, not a NIFTI image. """
 
 
+# NIFTI unit codes
+NIFTI_UNITS_UNKNOWN = 0
+NIFTI_UNITS_METER   = 1
+NIFTI_UNITS_MM      = 2
+NIFTI_UNITS_MICRON  = 3
+NIFTI_UNITS_SEC     = 8
+NIFTI_UNITS_MSEC    = 16
+NIFTI_UNITS_USEC    = 24
+NIFTI_UNITS_HZ      = 32
+NIFTI_UNITS_PPM     = 40
+NIFTI_UNITS_RADS    = 48
+
+
 # NIFTI file intent codes
 NIFTI_INTENT_NONE          = 0
 NIFTI_INTENT_CORREL        = 2

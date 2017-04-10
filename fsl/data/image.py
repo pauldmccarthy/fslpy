@@ -332,6 +332,10 @@ class Nifti(notifier.Notifier):
     def xyzUnits(self):
         """Returns the NIFTI XYZ dimension unit code. """
 
+        # analyze images have no unit field
+        if self.niftiVersion == 0:
+            return constants.NIFTI_UNITS_MM
+
         # The nibabel get_xyzt_units returns labels,
         # but we want the NIFTI codes. So we use
         # the (undocumented) nifti1.unit_codes field
@@ -344,6 +348,10 @@ class Nifti(notifier.Notifier):
     @property
     def timeUnits(self):
         """Returns the NIFTI time dimension unit code. """
+
+        # analyze images have no unit field
+        if self.niftiVersion == 0:
+            return constants.NIFTI_UNITS_SEC
 
         # See xyzUnits
         units = self.header.get_xyzt_units()[1]
@@ -742,10 +750,20 @@ class Image(Nifti):
 
             # We default to NIFTI1 and not
             # NIFTI2, because the rest of
-            # FSL is not yet NIFTI2 compatible.
-            nibImage = nib.nifti1.Nifti1Image(image,
-                                              xform,
-                                              header=header)
+            # FSL is not yet NIFTI2 compatible. 
+            if header is None:
+                ctr = nib.nifti1.Nifti1Image
+
+            # But if a nibabel header has been provided,
+            # we use the corresponding image type
+            if isinstance(header, nib.nifti2.Nifti2Header):
+                ctr = nib.nifti2.Nifti2Image
+            elif isinstance(header, nib.nifti1.Nifti1Header):
+                ctr = nib.nifti1.Nifti1Image 
+            elif isinstance(header, nib.analyze.AnalyzeHeader):
+                ctr = nib.analyze.AnalyzeImage
+
+            nibImage = ctr(image, xform, header=header)
             
         # otherwise, we assume that it is a nibabel image
         else:
@@ -1026,6 +1044,7 @@ class Image(Nifti):
         .. note:: Modifying image data will force the entire image to be 
                   loaded into memory if it has not already been loaded.
         """
+        values = np.array(values)
 
         log.debug('{}: __setitem__ [{} = {}]'.format(self.name,
                                                      sliceobj,
