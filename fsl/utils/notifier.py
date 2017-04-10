@@ -29,6 +29,12 @@ DEFAULT_TOPIC = 'default'
 deregistering, or notifying listeners.
 """
 
+class Registered(Exception):
+    """``Exception`` raised by :meth:`Notifier.register` when an attempt is
+    made to register a listener with a name that is already registered.
+    """
+    pass
+
 
 class _Listener(object):
     """This class is used internally by the :class:`.Notifier` class to
@@ -130,12 +136,18 @@ class Notifier(object):
                         thread, via the :func:`.async.idle` function.
                         Otherwise this function will be called directly by the
                         :meth:`notify` method. Defaults to ``False``.
+
+        :raises: A :exc:`Registered` error if a listener with the given
+                 ``name`` is already registered on the given ``topic``.
         """
 
         if topic is None:
             topic = DEFAULT_TOPIC
 
         listener = _Listener(name, callback, topic, runOnIdle)
+
+        if name in self.__listeners[topic]:
+            raise Registered('Listener {} is already registered'.format(name))
         
         self.__listeners[topic][name] = listener
         self.__enabled[  topic]       = self.__enabled.get(topic, True)
