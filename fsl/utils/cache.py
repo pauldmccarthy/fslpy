@@ -63,7 +63,8 @@ class Cache(object):
                      ``0`` will not expire.
         """
 
-        if len(self.__cache) == self.__maxsize:
+        if len(self.__cache) == self.__maxsize and \
+           key not in self.__cache:
             self.__cache.popitem(last=False)
 
         self.__cache[key] = CacheItem(key, value, expiry)
@@ -105,9 +106,13 @@ class Cache(object):
 
 
     def clear(self):
-        """Remove all items fromthe cache.
-        """
+        """Remove all items from the cache. """
         self.__cache = collections.OrderedDict()
+
+
+    def __len__(self):
+        """Returns the number of items in the cache. """
+        return len(self.__cache)
 
 
     def __parseDefault(self, *args, **kwargs):
