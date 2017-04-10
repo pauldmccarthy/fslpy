@@ -7,6 +7,7 @@
 """Unit tests for the fsl.data.image module. """
 
 
+import              os
 import os.path   as op
 import itertools as it
 import              tempfile
@@ -29,7 +30,7 @@ from . import make_random_image
 from . import make_dummy_file
 
 
-def make_image(filename,
+def make_image(filename=None,
                imgtype=1,
                dims=(10, 10, 10),
                pixdims=(1, 1, 1),
@@ -41,9 +42,6 @@ def make_image(filename,
     imgtype == 1: NIFTI1
     imgtype == 2: NIFTI2
     """
-
-    if imgtype == 0: filename = '{}.img'.format(filename)
-    else:            filename = '{}.nii'.format(filename)
 
     if   imgtype == 0: hdr = nib.AnalyzeHeader()
     elif imgtype == 1: hdr = nib.Nifti1Header()
@@ -65,7 +63,13 @@ def make_image(filename,
     elif imgtype == 1: img = nib.Nifti1Image( data, xform, hdr)
     elif imgtype == 2: img = nib.Nifti2Image( data, xform, hdr)
 
-    nib.save(img, filename)
+    if filename is not None:
+
+        if op.splitext(filename)[1] == '':
+            if imgtype == 0: filename = '{}.img'.format(filename)
+            else:            filename = '{}.nii'.format(filename)
+ 
+        nib.save(img, filename)
 
     return img
 
@@ -136,6 +140,93 @@ def test_load():
         shutil.rmtree(testdir)
 
 
+def test_create():
+
+    # Test creating:
+    #  from a numpy array
+    #  from a numpy array + xform
+    #  from a numpy array + nibabel header
+    #  from a numpy array + nibabel header + xform
+    #  from a file
+    #  from a nibabel image
+
+    data  = np.random.random((10, 10, 10))
+    xform = np.diag([2, 3, 4, 1])
+
+    img = fslimage.Image(data)
+    assert np.all(np.isclose(img.pixdim, (1, 1, 1)))
+    assert np.all(np.isclose(img.voxToWorldMat, np.eye(4)))
+    assert img.niftiVersion == 1
+
+    img = fslimage.Image(data, xform=xform)
+    assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
+    assert np.all(np.isclose(img.voxToWorldMat, xform))
+    assert img.niftiVersion == 1
+
+    for imgType in [0, 1, 2]:
+        
+        nimg = make_image(imgtype=imgType, pixdims=(5, 6, 7))
+        nhdr = nimg.header
+
+        img = fslimage.Image(data, header=nhdr)
+        assert img.niftiVersion == imgType
+        assert np.all(np.isclose(img.pixdim, (5, 6, 7)))
+
+        img = fslimage.Image(data, header=nhdr, xform=xform)
+        assert img.niftiVersion == imgType
+        assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
+
+    for imgtype in [0, 1, 2]:
+        testdir = tempfile.mkdtemp()
+        try:
+            fname = op.join(testdir, 'myimage')
+            nimg  = make_image(fname, imgtype, pixdims=(2, 3, 4))
+
+            img = fslimage.Image(fname)
+            assert img.niftiVersion == imgtype
+            assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
+
+            img = fslimage.Image(nimg)
+            assert img.niftiVersion == imgtype
+            assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
+            
+        finally:
+            shutil.rmtree(testdir)
+
+
+def test_bad_create():
+    
+    class BadThing(object):
+        pass
+
+    # Bad header object
+    with pytest.raises(Exception):
+        fslimage.Image(
+            np.random.random((10, 10, 10)),
+            header=BadThing())
+        
+    # Bad data
+    with pytest.raises(Exception):
+        fslimage.Image(BadThing())
+
+    # Bad data
+    with pytest.raises(Exception):
+        fslimage.Image(np.random.random(10, 10, 10, 10, 10))
+
+    # Bad xform
+    with pytest.raises(Exception):
+        fslimage.Image(np.random.random(10, 10, 10),
+                       xform=BadThing())
+    # Bad xform
+    with pytest.raises(Exception):
+        fslimage.Image(np.random.random(10, 10, 10),
+                       xform=np.eye(3))
+        
+    with pytest.raises(Exception):
+        fslimage.Image(np.random.random(10, 10, 10),
+                       xform=np.eye(5))
+
+
 def  test_Image_atts_analyze(): _test_Image_atts(0) 
 def  test_Image_atts_nifti1():  _test_Image_atts(1)
 def  test_Image_atts_nifti2():  _test_Image_atts(2)
@@ -165,20 +256,25 @@ def _test_Image_atts(imgtype):
                (2.0, 2.0, 2.0, 2),
                (1.0, 5.0, 1.0, 3)]
 
-    tests = list(it.product(dims, pixdims, dtypes))
+    tests = it.product(dims, pixdims, dtypes)
+    tests = list(tests)
     paths = ['test{:03d}'.format(i) for i in range(len(tests))]
                        
-    for path, (dims, pixdims, dtype) in zip(paths, tests):
+    for path, atts in zip(paths, tests):
+
+        dims, pixdims, dtype = atts
 
         ndims   = len(dims)
         pixdims = pixdims[:ndims] 
 
         path = op.abspath(op.join(testdir, path))
         make_image(path, imgtype, dims, pixdims, dtype)
-
+ 
     try:
 
-        for path, (dims, pixdims, dtype) in zip(paths, tests):
+        for path, atts in zip(paths, tests):
+
+            dims, pixdims, dtype = atts
 
             ndims   = len(dims)
             pixdims = pixdims[:ndims]
@@ -199,6 +295,37 @@ def _test_Image_atts(imgtype):
                                                   fileGroups=fileGroups)
     finally:
         shutil.rmtree(testdir)
+        
+def  test_Image_atts2_analyze(): _test_Image_atts2(0) 
+def  test_Image_atts2_nifti1():  _test_Image_atts2(1)
+def  test_Image_atts2_nifti2():  _test_Image_atts2(2)
+def _test_Image_atts2(imgtype):
+    
+    # See fsl.utils.constants for the meanings of these codes
+    xyzUnits  = [0, 1, 2, 3]
+    timeUnits = [8, 16, 24, 32, 40, 48]
+    intents   = [0, 2, 1007, 2005, 2006, 2016]
+
+    for xyzu, timeu, intent in it.product(xyzUnits, timeUnits, intents):
+
+        nimg = make_image(imgtype=imgtype)
+
+        # Analyze images do not have units or intent
+        if imgtype != 0:
+            nimg.header.set_xyzt_units(xyzu, timeu)
+            nimg.header['intent_code'] = intent
+            nimg.update_header()
+
+        img = fslimage.Image(nimg)
+
+        if imgtype == 0:
+            assert img.xyzUnits  == constants.NIFTI_UNITS_MM
+            assert img.timeUnits == constants.NIFTI_UNITS_SEC
+            assert img.intent    == constants.NIFTI_INTENT_NONE
+        else:
+            assert img.xyzUnits  == xyzu
+            assert img.timeUnits == timeu
+            assert img.intent    == intent
 
 
 def test_looksLikeImage():
@@ -282,6 +409,55 @@ def test_addExt():
     finally:
         shutil.rmtree(testdir)
 
+
+def test_removeExt():
+
+    exts = ['.nii.gz', '.nii', '.img', '.img.gz', '.hdr', '.hdr.gz']
+
+    for e in exts:
+        prefix = 'blob'
+        fname  = '{}{}'.format(prefix, e)
+
+        assert fslimage.removeExt(fname) == prefix
+
+
+def test_getExt():
+
+    exts = ['.nii.gz', '.nii', '.img', '.img.gz', '.hdr', '.hdr.gz']
+
+    for e in exts:
+        prefix = 'blob'
+        fname  = '{}{}'.format(prefix, e)
+
+        assert fslimage.getExt(fname) == e
+
+
+def test_splitExt():
+
+    exts = ['.nii.gz', '.nii', '.img', '.img.gz', '.hdr', '.hdr.gz']
+
+    for e in exts:
+        prefix = 'blob'
+        fname  = '{}{}'.format(prefix, e)
+
+        assert fslimage.splitExt(fname) == (prefix, e)
+
+
+def test_defaultExt():
+
+    fslOutputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ']
+    exts           = ['.nii', '.img', '.nii.gz']
+
+    os.environ.pop('FSLOUTPUTTYPE', None)
+    assert fslimage.defaultExt() == '.nii.gz'
+
+    for o, e in zip(fslOutputTypes, exts):
+
+        os.environ['FSLOUTPUTTYPE'] = o
+
+        assert fslimage.defaultExt() == e
+        
+
 def  test_Image_orientation_analyze_neuro(): _test_Image_orientation(0, 'neuro')
 def  test_Image_orientation_analyze_radio(): _test_Image_orientation(0, 'radio')
 def  test_Image_orientation_nifti1_neuro():  _test_Image_orientation(1, 'neuro')
@@ -358,7 +534,7 @@ def  test_Image_sqforms_nifti1_nosqform(): _test_Image_sqforms(1, 1, 0)
 def  test_Image_sqforms_nifti2_normal():   _test_Image_sqforms(2, 1, 1)
 def  test_Image_sqforms_nifti2_nosform():  _test_Image_sqforms(2, 0, 1)
 def  test_Image_sqforms_nifti2_noqform():  _test_Image_sqforms(2, 1, 0)
-def  test_Image_sqforms_nifti2_nosqform(): _test_Image_sqforms(2, 1, 0) 
+def  test_Image_sqforms_nifti2_nosqform(): _test_Image_sqforms(2, 0, 0) 
 def _test_Image_sqforms(imgtype, sformcode, qformcode):
     """Test the Nifti.getXFormCode method, and the voxToWorldMat/worldToVoxMat
     attributes for NIFTI images with the given sform/qform code combination.
@@ -391,20 +567,26 @@ def _test_Image_sqforms(imgtype, sformcode, qformcode):
         expAffine    = scaleMat
         invExpAffine = invScaleMat
         expCode      = constants.NIFTI_XFORM_UNKNOWN
+        expOrient    = constants.ORIENT_UNKNOWN
 
     # No sform, but valid qform - expect the affine
     elif sformcode == 0 and qformcode > 0:
         expAffine    = affine
         invExpAffine = invAffine
         expCode      = qformcode
+        expOrient    = constants.ORIENT_L2R
 
     # Valid sform (qform irrelevant) - expect the affine
     elif sformcode > 0:
         expAffine    = affine
         invExpAffine = invAffine
-        expCode      = sformcode 
+        expCode      = sformcode
+        expOrient    = constants.ORIENT_L2R
 
     image = fslimage.Image(imagefile)
+
+    with pytest.raises(ValueError):
+        image.getXFormCode('badcode')
     
     try:
         assert np.all(np.isclose(image.voxToWorldMat,  expAffine))
@@ -413,20 +595,30 @@ def _test_Image_sqforms(imgtype, sformcode, qformcode):
         assert image.getXFormCode()        == expCode
         assert image.getXFormCode('sform') == sformcode
         assert image.getXFormCode('qform') == qformcode
+
+        assert image.getOrientation(0, image.voxToWorldMat) == expOrient
     finally:
         shutil.rmtree(testdir)
 
 
-def  test_Image_changeXform_analyze(): _test_Image_changeXform(0) 
-def  test_Image_changeXform_nifti1():  _test_Image_changeXform(1)
-def  test_Image_changeXform_nifti2():  _test_Image_changeXform(2) 
-def _test_Image_changeXform(imgtype):
+def  test_Image_changeXform_analyze():         _test_Image_changeXform(0) 
+def  test_Image_changeXform_nifti1():          _test_Image_changeXform(1)
+def  test_Image_changeXform_nifti1_nosqform(): _test_Image_changeXform(1, 0, 0)
+def  test_Image_changeXform_nifti2():          _test_Image_changeXform(2) 
+def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
     """Test changing the Nifti.voxToWorldMat attribute. """
 
     testdir   = tempfile.mkdtemp()
     imagefile = op.join(testdir, 'image')
 
-    make_image(imagefile, imgtype)
+    image = make_image(imagefile, imgtype)
+
+    if imgtype > 0:
+
+        if sformcode is not None: image.set_sform(image.affine, sformcode)
+        if qformcode is not None: image.set_qform(image.affine, qformcode)
+        image.update_header()
+        nib.save(image, imagefile)
 
     notified = {}
 
@@ -445,6 +637,16 @@ def _test_Image_changeXform(imgtype):
                          [0, 2, 0, 23],
                          [0, 0, 14, 5],
                          [0, 0, 0, 1]])
+
+    if imgtype > 0:
+        expSformCode = image.get_sform(coded=True)[1]
+        expQformCode = image.get_qform(coded=True)[1]
+        
+        if sformcode == 0:
+            expSformCode = constants.NIFTI_XFORM_ALIGNED_ANAT
+    else:
+        expSformCode = constants.NIFTI_XFORM_ANALYZE
+        expQformCode = constants.NIFTI_XFORM_ANALYZE
 
     try:
 
@@ -469,6 +671,8 @@ def _test_Image_changeXform(imgtype):
         # Did the affine get updated?
         assert np.all(np.isclose(img.voxToWorldMat, newXform))
         assert np.all(np.isclose(img.worldToVoxMat, invx))
+        assert img.getXFormCode('sform') == expSformCode
+        assert img.getXFormCode('qform') == expQformCode
     finally:
         shutil.rmtree(testdir)
 
@@ -602,6 +806,124 @@ def _test_Image_2D(imgtype):
             assert tuple(map(float, shape))  == tuple(map(float, image   .shape))
             assert tuple(map(float, shape))  == tuple(map(float, image[:].shape))
             assert tuple(map(float, pixdim)) == tuple(map(float, image   .pixdim))
+
+    finally:
+        shutil.rmtree(testdir)
+
+
+def test_Image_voxelsToScaledVoxels():
+
+    imgTypes = [0, 1, 2]
+    dims     = [(10, 10, 10)]
+    pixdims  = [(-1, 1, 1),
+                ( 1, 1, 1),
+                (-2, 2, 2),
+                ( 2, 2, 2),
+                (-3, 4, 5),
+                ( 3, 4, 5)]
+
+    def expect(itype, dims, pixdims):
+        xf = np.eye(4)
+        xf[0, 0] = abs(pixdims[0])
+        xf[1, 1] =     pixdims[1]
+        xf[2, 2] =     pixdims[2]
+
+        if itype > 0 and pixdims[0] > 0:
+            xf[0, 0] = -pixdims[0]
+            xf[0, 3] =  pixdims[0] * (dims[0] - 1)
+            
+        return xf
+    
+    for imgType, dim, pixdim in it.product(imgTypes, dims, pixdims):
+        nimg = make_image(imgtype=imgType, dims=dim, pixdims=pixdim)
+        img  = fslimage.Image(nimg)
+
+        expected = expect(imgType, dim, pixdim)
+        result   = img.voxelsToScaledVoxels()
+
+        assert np.all(np.isclose(result, expected))
+        
+
+def test_Image_sameSpace():
+
+    imgTypes = [0, 1, 2]
+    dims     = [(10, 10),
+                (10, 10, 10),
+                (10, 10, 10, 10)]
+    pixdims = [(2, 2, 2, 1),
+               (2, 3, 4, 1)]
+
+    for (imgType, 
+         dim1,
+         dim2,
+         pixdim1,
+         pixdim2) in it.product(imgTypes, dims, dims, pixdims, pixdims):
+
+        expected = dim1[:3] == dim2[:3] and pixdim1[:3] == pixdim2[:3]
+
+        img1 = fslimage.Image(make_image(imgtype=imgType, dims=dim1, pixdims=pixdim1))
+        img2 = fslimage.Image(make_image(imgtype=imgType, dims=dim2, pixdims=pixdim2))
+
+        assert img1.sameSpace(img2) == expected
+        assert img2.sameSpace(img1) == expected
+
+def  test_Image_save_analyze(seed): _test_Image_save(0)
+def  test_Image_save_nifti1( seed): _test_Image_save(1)
+def  test_Image_save_nifti2( seed): _test_Image_save(2)
+def _test_Image_save(imgtype):
+
+    def randvox():
+        return (np.random.randint(0, 10),
+                np.random.randint(0, 10),
+                np.random.randint(0, 10))
+    
+    testdir   = tempfile.mkdtemp()
+    if imgtype == 0:
+        filename  = op.join(testdir, 'blob.img')
+        filename2 = op.join(testdir, 'blob_copy.img')
+    else:
+        filename  = op.join(testdir, 'blob.nii')
+        filename2 = op.join(testdir, 'blob_copy.nii')
+
+    xform = np.eye(4)
+    xform[:3, 3] = [-10, 20, 30]
+    xform[ 0, 0] = 33
+    xform[ 1, 1] = 55
+    xform[ 2, 2] = 38
+
+    try:
+        make_image(filename, imgtype)
+
+        img = fslimage.Image(filename)
+
+        randvoxes = [randvox()          for i in range(5)]
+        randvals  = [np.random.random() for i in range(5)]
+        
+        for (x, y, z), v in zip(randvoxes, randvals):
+            img[x, y, z] = v
+
+        if imgtype > 0:
+            img.voxToWorldMat = xform
+
+        # Save to original location, and
+        # to a different location
+        targets = [None, filename, filename2]
+
+        for t in targets:
+
+            img.save(t)
+
+            if t is None: expDataSource = filename
+            else:         expDataSource = t
+
+            assert img.saveState
+            assert img.dataSource == expDataSource
+
+            if imgtype > 0:
+                assert np.all(np.isclose(img.voxToWorldMat, xform))
+
+            for (x, y, z), v in zip(randvoxes, randvals):
+                assert np.isclose(img[x, y, z], v)
 
     finally:
         shutil.rmtree(testdir)

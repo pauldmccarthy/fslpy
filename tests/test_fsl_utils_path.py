@@ -1170,3 +1170,94 @@ def test_removeDuplicates_shouldFail():
     
     finally:
         shutil.rmtree(workdir)
+
+
+def test_uniquePrefix():
+
+    contents = """
+    100307.32k_fs_LR.wb.spec
+    100307.ArealDistortion_FS.32k_fs_LR.dscalar.nii
+    100307.ArealDistortion_MSMSulc.32k_fs_LR.dscalar.nii
+    100307.BA.32k_fs_LR.dlabel.nii
+    100307.L.ArealDistortion_FS.32k_fs_LR.shape.gii
+    100307.L.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii
+    100307.L.BA.32k_fs_LR.label.gii
+    100307.L.MyelinMap.32k_fs_LR.func.gii
+    100307.L.MyelinMap_BC.32k_fs_LR.func.gii
+    100307.L.SmoothedMyelinMap.32k_fs_LR.func.gii
+    100307.L.SmoothedMyelinMap_BC.32k_fs_LR.func.gii
+    100307.L.aparc.32k_fs_LR.label.gii
+    100307.L.aparc.a2009s.32k_fs_LR.label.gii
+    100307.L.atlasroi.32k_fs_LR.shape.gii
+    100307.L.corrThickness.32k_fs_LR.shape.gii
+    100307.L.curvature.32k_fs_LR.shape.gii
+    100307.L.flat.32k_fs_LR.surf.gii
+    100307.L.inflated.32k_fs_LR.surf.gii
+    100307.L.midthickness.32k_fs_LR.surf.gii
+    100307.L.pial.32k_fs_LR.surf.gii
+    100307.L.sphere.32k_fs_LR.surf.gii
+    100307.L.sulc.32k_fs_LR.shape.gii
+    100307.L.thickness.32k_fs_LR.shape.gii
+    100307.L.very_inflated.32k_fs_LR.surf.gii
+    100307.L.white.32k_fs_LR.surf.gii
+    100307.MyelinMap.32k_fs_LR.dscalar.nii
+    100307.MyelinMap_BC.32k_fs_LR.dscalar.nii
+    100307.R.ArealDistortion_FS.32k_fs_LR.shape.gii
+    100307.R.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii
+    100307.R.BA.32k_fs_LR.label.gii
+    100307.R.MyelinMap.32k_fs_LR.func.gii
+    100307.R.MyelinMap_BC.32k_fs_LR.func.gii
+    100307.R.SmoothedMyelinMap.32k_fs_LR.func.gii
+    100307.R.SmoothedMyelinMap_BC.32k_fs_LR.func.gii
+    100307.R.aparc.32k_fs_LR.label.gii
+    100307.R.aparc.a2009s.32k_fs_LR.label.gii
+    100307.R.atlasroi.32k_fs_LR.shape.gii
+    100307.R.corrThickness.32k_fs_LR.shape.gii
+    100307.R.curvature.32k_fs_LR.shape.gii
+    100307.R.flat.32k_fs_LR.surf.gii
+    100307.R.inflated.32k_fs_LR.surf.gii
+    100307.R.midthickness.32k_fs_LR.surf.gii
+    100307.R.pial.32k_fs_LR.surf.gii
+    100307.R.sphere.32k_fs_LR.surf.gii
+    100307.R.sulc.32k_fs_LR.shape.gii
+    100307.R.thickness.32k_fs_LR.shape.gii
+    100307.R.very_inflated.32k_fs_LR.surf.gii
+    100307.R.white.32k_fs_LR.surf.gii
+    100307.SmoothedMyelinMap.32k_fs_LR.dscalar.nii
+    100307.SmoothedMyelinMap_BC.32k_fs_LR.dscalar.nii
+    100307.aparc.32k_fs_LR.dlabel.nii
+    100307.aparc.a2009s.32k_fs_LR.dlabel.nii
+    100307.corrThickness.32k_fs_LR.dscalar.nii
+    100307.curvature.32k_fs_LR.dscalar.nii
+    100307.sulc.32k_fs_LR.dscalar.nii
+    100307.thickness.32k_fs_LR.dscalar.nii 
+    """.split()
+
+    # (filename, expected_result)
+    tests = [
+        ('100307.32k_fs_LR.wb.spec',                        '100307.3'),
+        ('100307.ArealDistortion_FS.32k_fs_LR.dscalar.nii', '100307.ArealDistortion_F'),
+        ('100307.L.ArealDistortion_FS.32k_fs_LR.shape.gii', '100307.L.ArealDistortion_F'),
+        ('100307.L.flat.32k_fs_LR.surf.gii',                '100307.L.f'),
+        ('100307.R.flat.32k_fs_LR.surf.gii',                '100307.R.f'),
+        ('100307.MyelinMap.32k_fs_LR.dscalar.nii',          '100307.MyelinMap.'),
+        ('100307.SmoothedMyelinMap.32k_fs_LR.dscalar.nii',  '100307.SmoothedMyelinMap.'),
+        ('100307.sulc.32k_fs_LR.dscalar.nii',               '100307.s'),
+    ]
+    
+    workdir = tempfile.mkdtemp()
+
+    try:
+        for fname in contents:
+            with open(op.join(workdir, fname), 'wt') as f:
+                f.write(fname)
+
+        for filename, expected in tests:
+
+            expected = op.join(workdir, expected)
+            result   = fslpath.uniquePrefix(op.join(workdir, filename))
+
+            assert result == expected
+
+    finally:
+        shutil.rmtree(workdir)
