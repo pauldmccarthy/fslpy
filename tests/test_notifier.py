@@ -30,9 +30,9 @@ def test_normal_usage():
     t.register('default_callback', default_callback)
     t.register('topic_callback',   topic_callback, topic='topic')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(notifier.Registered):
         t.register('default_callback', default_callback)
-    with pytest.raises(ValueError):
+    with pytest.raises(notifier.Registered):
         t.register('topic_callback',   topic_callback, topic='topic') 
 
     t.notify()
