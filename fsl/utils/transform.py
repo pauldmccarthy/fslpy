@@ -503,7 +503,7 @@ def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
 
     :arg srcImage: Source :class:`.Image`
     :arg refImage: Reference :class:`.Image`
-    :arg srcXform: Optionally used in place of the ``scrImage``
+    :arg srcXform: Optionally used in place of the ``srcImage``
                    :attr:`.Nifti.voxToWorldMat`
     """
 
