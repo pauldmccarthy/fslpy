@@ -306,8 +306,8 @@ class Platform(notifier.Notifier):
             if op.exists(versionFile):
                 with open(versionFile, 'rt') as f:
                     self.__fslVersion = f.read().strip()
-            
-        self.notify()
+
+        self.notify(value=value)
 
 
     @property
