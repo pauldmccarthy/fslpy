@@ -127,7 +127,9 @@ class TypeDict(object):
     The ``TypeDict`` is a custom dictionary which allows classes or class
     instances to be used as keys for value lookups, but internally transforms
     any class/instance keys into strings. Tuple keys are supported. Value
-    assignment with class/instance keys is not supported.
+    assignment with class/instance keys is not supported. All keys are
+    transformed via the :meth:`tokenifyKey` method before being internally
+    used and/or stored.
 
     If a class/instance is passed in as a key, and there is no value
     associated with that class, a search is performed on all of the base
@@ -150,17 +152,35 @@ class TypeDict(object):
             self[k] = v
 
 
-    def __str__( self): return self.__dict.__str__()
-    def __repr__(self): return self.__dict.__repr__()
-    def keys(    self): return self.__dict.keys()
-    def values(  self): return self.__dict.values()
-    def items(   self): return self.__dict.items()
+    def __str__(self):
+        return self.__dict.__str__()
+
+
+    def __repr__(self):
+        return self.__dict.__repr__()
+
+
+    def __len__(self):
+        return len(self.__dict)
+
+
+    def keys(self):
+        return self.__dict.keys()
+
+
+    def values(self):
+        return self.__dict.values()
+
+
+    def items(self):
+        return self.__dict.items()
+
 
     def __setitem__(self, key, value):
-        self.__dict[self.__tokenifyKey(key)] = value
+        self.__dict[self.tokenifyKey(key)] = value
 
 
-    def __tokenifyKey(self, key):
+    def tokenifyKey(self, key):
         """Turns a dictionary key, which may have been specified as a
         string, or a combination of strings and types, into a tuple.
         """
@@ -171,7 +191,7 @@ class TypeDict(object):
 
         if isinstance(key, collections.Sequence):
 
-            tKeys = map(self.__tokenifyKey, key)
+            tKeys = map(self.tokenifyKey, key)
             key   = []
 
             for tk in tKeys:
@@ -206,9 +226,9 @@ class TypeDict(object):
 
         
     def __getitem__(self, key, allhits=False, bykey=False):
-        
+
         origKey = key
-        key     = self.__tokenifyKey(key)
+        key     = self.tokenifyKey(key)
         bases   = []
 
         # Make the code a bit easier by
