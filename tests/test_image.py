@@ -876,6 +876,16 @@ def _test_Image_save(imgtype):
         return (np.random.randint(0, 10),
                 np.random.randint(0, 10),
                 np.random.randint(0, 10))
+
+    def randvoxes(num):
+        rvoxes = []
+
+        while len(rvoxes) < num:
+            rvox = randvox()
+            if rvox not in rvoxes:
+                rvoxes.append(rvox)
+        return rvoxes
+        
     
     testdir   = tempfile.mkdtemp()
     if imgtype == 0:
@@ -896,7 +906,7 @@ def _test_Image_save(imgtype):
 
         img = fslimage.Image(filename)
 
-        randvoxes = [randvox()          for i in range(5)]
+        randvoxes = randvoxes(5)
         randvals  = [np.random.random() for i in range(5)]
         
         for (x, y, z), v in zip(randvoxes, randvals):
@@ -924,6 +934,19 @@ def _test_Image_save(imgtype):
 
             for (x, y, z), v in zip(randvoxes, randvals):
                 assert np.isclose(img[x, y, z], v)
+
+            # Load the image back in
+            img2 = fslimage.Image(img.dataSource)
+            
+            assert img.saveState
+            assert img.dataSource == expDataSource
+
+            if imgtype > 0:
+                assert np.all(np.isclose(img.voxToWorldMat, xform))
+
+            for (x, y, z), v in zip(randvoxes, randvals):
+                assert np.isclose(img[x, y, z], v) 
+            
 
     finally:
         shutil.rmtree(testdir)
