@@ -86,7 +86,7 @@ def getDTIFitDataPrefix(path):
     if len(prefixes) > 1:
         log.warning('Multiple dtifit prefixes detected: {}'.format(prefixes))
 
-    return op.basename(prefixes[0])
+    return op.basename(sorted(prefixes)[0])
 
 
 def isDTIFitPath(path):
