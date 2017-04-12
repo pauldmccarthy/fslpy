@@ -39,6 +39,9 @@ with open(op.join(basedir, "fsl", "version.py")) as f:
             exec(line, version)
             break 
 
+with open(op.join(basedir, 'README.md'), 'rt') as f:
+    readme = f.read()
+
 
 class doc(Command):
     """Build the API documentation. """
@@ -76,6 +79,7 @@ setup(
     version=version['__version__'],
 
     description='FSL Python library',
+    long_description=readme,
 
     url='https://git.fmrib.ox.ac.uk/paulmc/fslpy',
 
