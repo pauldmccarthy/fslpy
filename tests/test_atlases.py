@@ -131,6 +131,7 @@ def test_add_remove_atlas():
     added   = [False]
     removed = [False]
     reg     = atlases.registry
+    reg.rescanAtlases()
 
     def atlas_added(r, topic, val):
         assert topic == 'add'
@@ -167,3 +168,85 @@ def test_add_remove_atlas():
 
     finally:
         shutil.rmtree(testdir)
+
+
+def test_load_atlas():
+
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
+    lblatlas     = reg.loadAtlas('talairach')
+
+    assert isinstance(probatlas,    atlases.ProbabilisticAtlas)
+    assert isinstance(probsumatlas, atlases.LabelAtlas)
+    assert isinstance(lblatlas,     atlases.LabelAtlas)
+
+
+def test_label_atlas():
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    # Label atlas (i.e. not a probabilistic atlas)
+    atlas = reg.loadAtlas('talairach')
+
+    # coordinates are MNI152
+    taltests = [
+        ([ 23, -37, -22], 89),
+        ([-29, -78, -22], 157),
+        ([ 48,  39, -22], 196),
+        ([  6,  56,  37], 1034),
+        ([  6, -78,  50], 862)]
+
+    for coords, expected in taltests:
+        assert atlas.label(coords) == expected
+
+    assert atlas.label([ 999,  999,  999]) is None
+    assert atlas.label([-999, -999, -999]) is None
+
+    # Summary atlas (a thresholded probabilistic atlas)
+    atlas    = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
+    hoctests = [
+        ([-23,  58,  20], 0),
+        ([-23,  27, -20], 32),
+        ([-37, -75,  29], 21),
+        ([ -1,  37,   6], 28),
+        ([ 54, -44, -27], 15)]
+
+    for coords, expected in hoctests:
+        assert atlas.label(coords) == expected
+
+    assert atlas.label([ 999,  999,  999]) is None
+    assert atlas.label([-999, -999, -999]) is None
+
+
+def test_prob_atlas():
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    atlas = reg.loadAtlas('harvardoxford-cortical')
+
+    assert len(atlas.proportions([ 999,  999,  999])) == 0
+    assert len(atlas.proportions([-999, -999, -999])) == 0
+
+    # Coordinates are MNI152
+    # Expected proportions are lists of (volume, proportion) tuples
+    hoctests = [
+        ([ 41, -14,  18], [( 1,  5), (41, 74), (42, 10)]),
+        ([ 41, -72,  34], [(21, 72)]),
+        ([-39, -21,  58], [(6,  39), (16, 19)]),
+        ([-37, -28,  13], [(42,  4), (44, 48), (45, 19)]),
+        ([-29, -42, -11], [(34, 21), (35, 23), (37, 26), (38, 24)])]
+
+    for coords, expected in hoctests:
+        
+        result  = atlas.proportions(coords)
+        expidxs = [e[0] for e in expected]
+        
+        for i in range(len(result)):
+            if i not in expidxs:
+                assert result[i] == 0
+
+        for expidx, expprob in expected:
+            assert result[expidx] == expprob
