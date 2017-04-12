@@ -9,9 +9,25 @@
 
 import            os
 import            shutil
+import            tempfile
 import os.path as op
 import numpy   as np
 import nibabel as nib
+
+
+def testdir():
+    """Returnsa context manager which creates and returns a temporary
+    directory, and then deletes it on exit.
+    """
+    class ctx(object):
+        def __enter__(self):
+            self.testdir = tempfile.mkdtemp()
+            return self.testdir
+
+        def __exit__(self, *a, **kwa):
+            shutil.rmtree(self.testdir)
+
+    return ctx()
 
 
 def make_dummy_file(path):
