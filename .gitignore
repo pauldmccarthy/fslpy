@@ -1,3 +1,10 @@
 *.pyc
-apidoc/html
-fsleyes_doc/html
+.cache
+.eggs
+.DS_Store
+.dir-locals.el
+.projectile
+fslpy.egg-info
+.coverage
+htmlcov
+doc/html
