@@ -51,7 +51,7 @@ class GiftiSurface(mesh.TriangleMesh):
 
     def __init__(self, infile):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
-        data using the  :func:`extractGiftiSurface` function.
+        data using the  :func:`loadGiftiSurface` function.
 
         :arg infile: A GIFTI surface file (``*.surf.gii``).
 
@@ -71,7 +71,7 @@ class GiftiSurface(mesh.TriangleMesh):
         self.surfImg    = surfimg
 
 
-    def loadVertexData(self, dataSource):
+    def loadVertexData(self, dataSource, vertexData=None):
         """Overrides the :meth:`.TriangleMesh.loadVertexData` method.
 
         Attempts to load data associated with each vertex of this
@@ -79,12 +79,13 @@ class GiftiSurface(mesh.TriangleMesh):
         a GIFTI file or a plain text file which contains vertex data.
         """
 
-        if dataSource.endswith('.gii'):
-            vdata = loadGiftiVertexData(dataSource)[1]
-        else:
-            vdata = None
+        if vertexData is None:
+            if dataSource.endswith('.gii'):
+                vertexData = loadGiftiVertexData(dataSource)[1]
+            else:
+                vertexData = None
             
-        return mesh.TriangleMesh.loadVertexData(self, dataSource, vdata)
+        return mesh.TriangleMesh.loadVertexData(self, dataSource, vertexData)
 
 
 ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
@@ -208,35 +209,35 @@ def relatedFiles(fname):
     share the same prefix are assumed to be related to the given file.
     """
 
-    try:
-        # We want to return all files in the same
-        # directory which have the following name:
+    # We want to return all files in the same
+    # directory which have the following name:
 
-        # 
-        # [prefix].*.[type].gii
-        #
-        #   where
-        #     - prefix is the file prefix, and which
-        #       may include periods.
-        #
-        #     - we don't care about the middle
-        #
-        #     - type is func, shape, label, or time
+    # 
+    # [prefix].*.[type].gii
+    #
+    #   where
+    #     - prefix is the file prefix, and which
+    #       may include periods.
+    #
+    #     - we don't care about the middle
+    #
+    #     - type is func, shape, label, or time
 
-        # We determine the unique prefix of the
-        # given file, and back-up to the most
-        # recent period. Then search for other
-        # files which have that same (non-unique)
-        # prefix.
-        prefix = fslpath.uniquePrefix(fname)
-        prefix = prefix[:prefix.rfind('.')]
+    # We determine the unique prefix of the
+    # given file, and back-up to the most
+    # recent period. Then search for other
+    # files which have that same (non-unique)
+    # prefix.
+    prefix  = fslpath.uniquePrefix(fname)
+    lastdot = prefix.rfind('.')
+    prefix  = prefix[:lastdot]
 
-        funcs  = glob.glob('{}*.func.gii' .format(prefix))
-        shapes = glob.glob('{}*.shape.gii'.format(prefix))
-        labels = glob.glob('{}*.label.gii'.format(prefix))
-        times  = glob.glob('{}*.time.gii' .format(prefix))
-
-        return funcs + shapes + labels + times
-
-    except:
+    if lastdot == -1:
         return []
+
+    funcs  = list(glob.glob('{}*.func.gii' .format(prefix)))
+    shapes = list(glob.glob('{}*.shape.gii'.format(prefix)))
+    labels = list(glob.glob('{}*.label.gii'.format(prefix)))
+    times  = list(glob.glob('{}*.time.gii' .format(prefix)))
+
+    return funcs + shapes + labels + times
