@@ -23,6 +23,7 @@ Idle tasks
    idleWhen
    inIdle
    cancelIdle
+   idleReset
    getIdleTimeout
    setIdleTimeout
 
@@ -202,6 +203,29 @@ _idleCallRate = 200
 """
 
 
+def idleReset():
+    """Reset the internal :func:`idle` queue state.
+
+    In a normal execution environment, this function will never need to be
+    called.  However, in an execution environment where multiple ``wx.App``
+    instances are created, run, and destroyed sequentially, this function
+    will need to be called after each ``wx.App`` has been destroyed.
+    Otherwise the ``idle`` function will not work during exeution of
+    subsequent ``wx.App`` instances.
+    """
+    global _idleRegistered
+    global _idleQueue
+    global _idleQueueDict
+    global _idleTimer
+    global _idleCallRate
+
+    _idleRegistered = False
+    _idleQueue      = queue.Queue()
+    _idleQueueDict  = {}
+    _idleTimer      = None
+    _idleCallRate   = 200
+
+
 def getIdleTimeout():
     """Returns the current ``wx`` idle loop time out/call rate.
     """
@@ -373,7 +397,9 @@ def idle(task, *args, **kwargs):
                        argument. If ``True``, and a ``wx.MainLoop`` is not
                        running, the task is enqueued anyway, under the
                        assumption that a ``wx.MainLoop`` will be started in
-                       the future.
+                       the future. Note that another  call to ``idle`` must
+                       be made after the ``MainLoop`` has started for the
+                       original task to be executed.
 
 
     All other arguments are passed through to the task function.
@@ -413,10 +439,12 @@ def idle(task, *args, **kwargs):
     skipIfQueued = kwargs.pop('skipIfQueued', False)
     alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
-    if alwaysQueue or _haveWX():
+    havewx       = _haveWX()
+
+    if havewx or alwaysQueue:
         import wx
 
-        if not _idleRegistered:
+        if havewx and (not _idleRegistered):
             app = wx.GetApp()
             app.Bind(wx.EVT_IDLE, _wxIdleLoop)
             
