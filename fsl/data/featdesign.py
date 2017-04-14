@@ -130,14 +130,18 @@ class FEATFSFDesign(object):
     with FSL 5.0.9 and older.
     """
     
-    def __init__(self, featDir, settings=None):
+    def __init__(self, featDir, settings=None, loadVoxelwiseEVs=True):
         """Create a ``FEATFSFDesign``.
 
-        :arg featDir:      Path to the FEAT directory.
+        :arg featDir:          Path to the FEAT directory.
 
-        :arg settings:     A dictionary containing the FEAT analysis 
-                           settings from its ``design.fsf``. If not provided,
-                           is loaded via :func:`.featanalysis.loadSettings`.
+        :arg settings:         A dictionary containing the FEAT analysis 
+                               settings from its ``design.fsf``. If not 
+                               provided, is loaded via 
+                               :func:`.featanalysis.loadSettings`. 
+
+        :arg loadVoxelwiseEVs: If ``True`` (the default), image files
+                               for all voxelwise EVs are loaded.
         """
 
         if settings is None:
@@ -178,11 +182,13 @@ class FEATFSFDesign(object):
             if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
                 continue
 
+            ev.image = None 
+
             # The path to some voxelwise 
             # EVs may not be present - 
             # see the VoxelwisEV class.
-            if ev.filename is not None: ev.image = fslimage.Image(ev.filename)
-            else:                       ev.image = None
+            if loadVoxelwiseEVs and (ev.filename is not None):
+                ev.image = fslimage.Image(ev.filename)
 
 
     def getEVs(self):
@@ -216,6 +222,7 @@ class FEATFSFDesign(object):
             if ev.image is None:
                 log.warning('Voxel EV image missing '
                             'for ev {}'.format(ev.index))
+                continue
 
             design[:, ev.index] = ev.image.data[x, y, z, :]
 
