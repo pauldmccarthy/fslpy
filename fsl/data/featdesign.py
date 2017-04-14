@@ -141,7 +141,10 @@ class FEATFSFDesign(object):
                                :func:`.featanalysis.loadSettings`. 
 
         :arg loadVoxelwiseEVs: If ``True`` (the default), image files
-                               for all voxelwise EVs are loaded.
+                               for all voxelwise EVs are loaded. Otherwise
+                               they are not loaded, and all calls to
+                               meth:`getDesign` will contain the mean
+                               data for any voxelwise EV columns.
         """
 
         if settings is None:
@@ -201,10 +204,12 @@ class FEATFSFDesign(object):
     def getDesign(self, voxel=None):
         """Returns the design matrix for the specified voxel.
 
-        :arg voxel: A tuple containing the ``(x, y, z)`` voxel coordinates
-                    of interest. If ``None`` (the default), the design
-                    matrix is returned, with any voxelwise EV columns
-                    containing the mean voxelwise EV data.
+        :arg voxel: A tuple containing the ``(x, y, z)`` voxel coordinates of
+                    interest. If ``None`` (the default), or if this
+                    ``FEATFSFDesign`` was created with
+                    ``loadVoxelwiseEVs=False``, the design matrix is returned,
+                    with any voxelwise EV columns containing the mean
+                    voxelwise EV data.
         """
 
         design = np.array(self.__design)
