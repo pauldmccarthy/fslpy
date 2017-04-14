@@ -146,7 +146,7 @@ class FEATFSFDesign(object):
 
         # Get the design matrix, and some
         # information about the analysis
-        designMatrix = loadDesignMat(featDir)
+        designMatrix = loadDesignMat(op.join(featDir, 'design.mat'))
         version      = float(settings['version'])
         level        = int(  settings['level'])
 
@@ -407,7 +407,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
                     from its ``design.fsf`` file (see
                     :func:`.featanalysis.loadSettings`).
     :arg designMat: The FEAT design matrix (a numpy array - see
-                    :func:`.featanalysis.loadDesign`).
+                    :func:`loadDesignMat`).
 
     :returns: A list of :class:`EV` instances, one for each column in the
               design matrix.
@@ -570,7 +570,7 @@ def getHigherLevelEVs(featDir, settings, designMat):
                     from its ``design.fsf`` file (see
                     :func:`.featanalysis.loadSettings`).
     :arg designMat: The FEAT design matrix (a numpy array - see
-                    :func:`.featanalysis.loadDesign`).
+                    :func:`loadDesignMat`).
 
     :returns: A list of :class:`EV` instances, one for each column in the
               design matrix. 
@@ -619,17 +619,16 @@ def getHigherLevelEVs(featDir, settings, designMat):
     return evs
 
 
-def loadDesignMat(featdir):
-    """Loads the design matrix from a FEAT directory.
+def loadDesignMat(designmat):
+    """Loads the specified design matrix.
 
     Returns a ``numpy`` array containing the design matrix data, where the
     first dimension corresponds to the data points, and the second to the EVs.
 
-    :arg featdir: A FEAT directory.
+    :arg designmat: Path to the ``design.mat`` file.
     """
 
-    matrix    = None 
-    designmat = op.join(featdir, 'design.mat')
+    matrix = None 
 
     log.debug('Loading FEAT design matrix from {}'.format(designmat))
 
@@ -637,6 +636,12 @@ def loadDesignMat(featdir):
 
         while True:
             line = f.readline()
+
+            # readline returns an empty string at EOF
+            if line == '':
+                break
+
+            # Matrix data starts after "/Matrix"
             if line.strip() == '/Matrix':
                 break
 
