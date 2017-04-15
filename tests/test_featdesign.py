@@ -76,10 +76,17 @@ Second level cope?.feats:
 """
 
 
-import os.path as op
+import              os
+import os.path   as op
+import itertools as it
+import              glob
+import              shutil
+import numpy     as np
 
 import pytest
 
+import tests
+import fsl.data.image        as fslimage
 import fsl.data.featdesign   as featdesign
 import fsl.data.featanalysis as featanalysis
 
@@ -88,7 +95,7 @@ datadir = op.join(op.dirname(__file__), 'testdata', 'test_feat')
 
 
 
-def test_FeatFSFDesign():
+def test_FEATFSFDesign():
 
     featdirs = ['1stlevel_1.feat', '1stlevel_2.feat', '1stlevel_3.feat',
                 '2ndlevel_1.gfeat', '2ndlevel_2.gfeat']
@@ -117,6 +124,57 @@ def test_FeatFSFDesign():
         assert len(des.getEVs()) == nev
         assert des.getDesign().shape == shape
         assert des.getDesign((10, 10, 3)).shape == shape
+
+
+def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
+
+    template = op.join(datadir, '1stlevel_2.feat')
+
+    with tests.testdir() as testdir:
+
+        # Set up some test data - we make
+        # a copy of the feat directory,
+        # and generate some dummy data for
+        # the voxelwise EVs.
+        featdir    = op.join(testdir, '1stlevel_2.feat')
+        shape      = (64, 64, 5)
+        timepoints = 45
+        
+        shutil.copytree(template, featdir)
+ 
+        voxFiles = list(it.chain(
+            glob.glob(op.join(featdir, 'designVoxelwiseEV*nii.gz')),
+            glob.glob(op.join(featdir, 'InputConfoundEV*nii.gz'))))
+
+        for i, vf in enumerate(voxFiles):
+
+            # Each voxel contains range(i, i + timepoints),
+            # offset by the flattened voxel index
+            data = np.meshgrid(*[range(s) for s in shape], indexing='ij')
+            data = np.ravel_multi_index(data, shape)
+            data = data.reshape(list(shape) + [1]).repeat(timepoints, axis=3)
+            data[..., :] += range(i, i + timepoints)
+            
+            fslimage.Image(data).save(vf)
+
+        # Now load the design, and make sure that
+        # the voxel EVs are filled correctly
+        design    = featdesign.FEATFSFDesign(featdir)
+        voxevIdxs = [ev.index for ev in design.getEVs()
+                     if isinstance(ev, (featdesign.VoxelwiseEV,
+                                        featdesign.VoxelwiseConfoundEV))]
+
+        randVoxels = np.vstack([np.random.randint(0, s, 10) for s in shape]).T
+
+        for voxel in randVoxels:
+
+            voxel  = [int(v) for v in voxel]
+            offset = np.ravel_multi_index(voxel, shape)
+            matrix = design.getDesign(voxel)
+
+            for i, evidx in enumerate(voxevIdxs):
+                expect = np.arange(i, i + 45) + offset
+                assert np.all(np.isclose(matrix[:, evidx], expect))
 
 
 def test_getFirstLevelEVs_1():
