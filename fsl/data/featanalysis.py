@@ -62,9 +62,11 @@ def isFEATImage(path):
     a FEAT analysis, ``False`` otherwise.
     """
     dirname  = op.dirname( path)
-    filename = op.basename(path) 
+    filename = op.basename(path)
 
-    return filename.startswith('filtered_func_data') and isFEATDir(dirname) 
+    return filename.startswith('filtered_func_data') and \
+        fslimage.looksLikeImage(filename)            and \
+        isFEATDir(dirname) 
 
 
 def isFEATDir(path):
@@ -90,7 +92,7 @@ def isFEATDir(path):
         return False
 
     try:
-        fslimage.addExt(op.join(path, 'filtered_func_data'), mustExist=True)
+        fslimage.addExt(op.join(dirname, 'filtered_func_data'), mustExist=True)
     except fslimage.PathError:
         return False
     
@@ -124,7 +126,7 @@ def getAnalysisDir(path):
     """If the given path is contained within a FEAT directory, the path
     to that FEAT directory is returned. Otherwise, ``None`` is returned.
     """
-    featdir = fslpath.deepest(path, ['.feat', '.gfeat'])
+    featdir = fslpath.deepest(path, ['.feat'])
 
     if featdir is not None and isFEATDir(featdir):
         return featdir
@@ -153,8 +155,7 @@ def getReportFile(featdir):
 def loadContrasts(featdir):
     """Loads the contrasts from a FEAT directory. Returns a tuple containing:
     
-      - A dictionary of ``{contrastnum : name}`` mappings (the ``contrastnum``
-        values are 1-indexed).
+      - A list of names, one for each contrast.
     
       - A list of contrast vectors (each of which is a list itself).
 
@@ -274,10 +275,13 @@ def getThresholds(settings):
 
     :arg settings: A FEAT settings dictionary (see :func:`loadSettings`).
     """
-    return {
-        'p' : settings.get('prob_thresh', None),
-        'z' : settings.get('z_thresh',    None)
-    }
+    p = settings.get('prob_thresh', None)
+    z = settings.get('z_thresh',    None)
+
+    if p is not None: p = float(p)
+    if z is not None: z = float(z)
+
+    return {'p' : p, 'z' : z}
 
 
 def isFirstLevelAnalysis(settings):
@@ -431,10 +435,6 @@ def loadClusterResults(featdir, settings, contrast):
         # each line should be tab-separated
         colNames     =  colNames.split('\t')
         clusterLines = [cl      .split('\t') for cl in clusterLines]
-
-        # No clusters
-        if len(clusterLines) == 0:
-            return None
 
         # Turn each cluster line into a
         # Cluster instance. An error will
