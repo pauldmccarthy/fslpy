@@ -15,24 +15,50 @@ import numpy   as np
 import nibabel as nib
 
 
-def testdir():
+def testdir(contents=None):
     """Returnsa context manager which creates and returns a temporary
     directory, and then deletes it on exit.
     """
+
+    if contents is not None:
+        contents = [op.join(*c.split('/')) for c in contents]
+        print(contents)
+    
     class ctx(object):
+
+        def __init__(self, contents):
+            self.contents = contents
+        
         def __enter__(self):
+            
             self.testdir = tempfile.mkdtemp()
+
+            if self.contents is not None:
+                contents = [op.join(self.testdir, c) for c in self.contents]
+                make_dummy_files(contents)
+
             return self.testdir
 
         def __exit__(self, *a, **kwa):
             shutil.rmtree(self.testdir)
 
-    return ctx()
+    return ctx(contents)
+
+def make_dummy_files(paths):
+    """Creates dummy files for all of the given paths. """
+    for p in paths:
+        make_dummy_file(p)
 
 
-def make_dummy_file(path):
+def make_dummy_file(path, contents=None):
     """Makes a plain text file. Returns a hash of the file contents. """
-    contents = '{}\n'.format(op.basename(path))
+    dirname = op.dirname(path)
+    
+    if not op.exists(dirname):
+        os.makedirs(dirname)
+
+    if contents is None:
+        contents = '{}\n'.format(op.basename(path))
     with open(path, 'wt') as f:
         f.write(contents)
 
