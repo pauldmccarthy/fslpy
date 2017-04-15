@@ -109,9 +109,8 @@ def test_FEATFSFDesign():
         # We can't load the voxelwise EVs
         # here, because all of the .nii.gz
         # files in the test directory are
-        # stubs.
-        # 
-        # See the test_firstLevelVoxelwiseEV
+        # stubs. Voxelwise EVs get tested
+        # in the test_FEATFSFDesign_firstLevelVoxelwiseEV
         # function
         des = featdesign.FEATFSFDesign(featdir,
                                        loadVoxelwiseEVs=False)
