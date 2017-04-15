@@ -229,7 +229,7 @@ class FEATFSFDesign(object):
                             'for ev {}'.format(ev.index))
                 continue
 
-            design[:, ev.index] = ev.image.data[x, y, z, :]
+            design[:, ev.index] = ev.image[x, y, z, :]
 
         return design
 
