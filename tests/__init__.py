@@ -7,12 +7,14 @@
 """Unit tests for ``fslpy``. """
 
 
-import            os
-import            shutil
-import            tempfile
-import os.path as op
-import numpy   as np
-import nibabel as nib
+import              os
+import              glob
+import              shutil
+import              tempfile
+import itertools as it
+import os.path   as op
+import numpy     as np
+import nibabel   as nib
 
 
 def testdir(contents=None):
@@ -102,14 +104,95 @@ def cleardir(dir):
         elif op.isdir(f):  shutil.rmtree(f)
 
 
-def make_random_image(filename, dims=(10, 10, 10)):
+def make_random_image(filename, dims=(10, 10, 10), xform=None):
     """Creates a NIFTI1 image with random data, saves and
     returns it.
     """
 
+    if xform is None:
+        xform = np.eye(4)
+
     data = np.array(np.random.random(dims) * 100, dtype=np.float32)
-    img  = nib.Nifti1Image(data, np.eye(4))
+    img  = nib.Nifti1Image(data, xform)
 
     nib.save(img, filename)
 
     return img
+
+def make_mock_feat_analysis(featdir,
+                            testdir,
+                            shape4D,
+                            xform=None,
+                            indata=True,
+                            voxEVs=True,
+                            pes=True,
+                            copes=True,
+                            zstats=True,
+                            residuals=True,
+                            clustMasks=True):
+
+    if xform is None:
+        xform = np.eye(4)
+
+    timepoints = shape4D[ 3]
+    shape      = shape4D[:3]
+
+    src     = featdir
+    dest    = op.join(testdir, op.basename(featdir))
+    featdir = dest 
+    
+    shutil.copytree(src, dest)
+
+    if indata:
+        filtfunc = op.join(featdir, 'filtered_func_data.nii.gz')
+        make_random_image(filtfunc, shape4D, xform)
+
+    # and some dummy voxelwise EV files
+    if voxEVs:
+        voxFiles = list(it.chain(
+            glob.glob(op.join(featdir, 'designVoxelwiseEV*nii.gz')),
+            glob.glob(op.join(featdir, 'InputConfoundEV*nii.gz'))))
+
+        for i, vf in enumerate(voxFiles):
+
+            # Each voxel contains range(i, i + timepoints),
+            # offset by the flattened voxel index
+            data = np.meshgrid(*[range(s) for s in shape], indexing='ij')
+            data = np.ravel_multi_index(data, shape)
+            data = data.reshape(list(shape) + [1]).repeat(timepoints, axis=3)
+            data[..., :] += range(i, i + timepoints)
+
+            nib.save(nib.nifti1.Nifti1Image(data, xform), vf)
+
+    otherFiles  = []
+    otherShapes = []
+
+    if pes:
+        files = glob.glob(op.join(featdir, 'stats', 'pe*nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape] * len(files))
+
+    if copes:
+        files = glob.glob(op.join(featdir, 'stats', 'cope*nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape] * len(files)) 
+
+    if zstats:
+        files = glob.glob(op.join(featdir, 'stats', 'zstat*nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape] * len(files)) 
+    
+    if residuals:
+        files = glob.glob(op.join(featdir, 'stats', 'res4d.nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape4D]) 
+    
+    if clustMasks:
+        files = glob.glob(op.join(featdir, 'cluster_mask*nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape] * len(files))
+
+    for f, s in zip(otherFiles, otherShapes):
+        make_random_image(f, s, xform)
+
+    return featdir

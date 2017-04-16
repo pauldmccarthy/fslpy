@@ -136,25 +136,17 @@ def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
         # and generate some dummy data for
         # the voxelwise EVs.
         featdir    = op.join(testdir, '1stlevel_2.feat')
-        shape      = (64, 64, 5)
-        timepoints = 45
-        
-        shutil.copytree(template, featdir)
- 
-        voxFiles = list(it.chain(
-            glob.glob(op.join(featdir, 'designVoxelwiseEV*nii.gz')),
-            glob.glob(op.join(featdir, 'InputConfoundEV*nii.gz'))))
+        shape4D    = (64, 64, 5, 45)
+        shape      = shape4D[:3]
 
-        for i, vf in enumerate(voxFiles):
-
-            # Each voxel contains range(i, i + timepoints),
-            # offset by the flattened voxel index
-            data = np.meshgrid(*[range(s) for s in shape], indexing='ij')
-            data = np.ravel_multi_index(data, shape)
-            data = data.reshape(list(shape) + [1]).repeat(timepoints, axis=3)
-            data[..., :] += range(i, i + timepoints)
-            
-            fslimage.Image(data).save(vf)
+        featdir = tests.make_mock_feat_analysis(
+            template, testdir, shape4D,
+            indata=False,
+            pes=False,
+            copes=False,
+            zstats=False,
+            residuals=False,
+            clusterMasks=False)
 
         # Now load the design, and make sure that
         # the voxel EVs are filled correctly
