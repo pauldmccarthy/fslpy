@@ -30,12 +30,29 @@ Second level analyses:
 
 Second level cope?.feats:
     rm -r logs .files tsplot .ramp.gif
-    
 
+
+Two data sets - `1stlevel_realdata.feat` and `2ndlevel_realdata.gfeat` -
+still have real (cut-down) NIFTI images, and have only been cleaned
+with the following commands:
+
+    find . -name "*png" -delete
+    find . -name "*ppm" -delete
+    find . -name "*html" -delete
+    rm -r logs .files tsplot .ramp.gif
+
+
+`1stlevel_realdata.feat`
+ - 45 time points
+ - Shape (4, 4, 5)
+ - 4 evs in total:
+   - 2 stimulus EVs
+   - 2 temporal derivative EVs
+ - 2 contrasts - one on each stimulus EV
 
 `1stlevel_1.feat`
-
  - 45 time points
+ - Shape (64, 64, 5)
  - 10 EVs in total:
    - 2 stimulus EVs
    - 2 temporal derivative EVs
@@ -45,6 +62,7 @@ Second level cope?.feats:
 `1stlevel_2.feat`
 
  - 45 time points
+ - Shape (64, 64, 5)
  - 11 EVs in total:
    - 2 stimulus EVs
    - 2 temporal derivative EVs
@@ -54,6 +72,7 @@ Second level cope?.feats:
 
 `1stlevel_3.feat`
  - 45 time points
+ - Shape (64, 64, 5)
  - 32 EVs in total:
    - 2 stimulus EVs
    - 1 Temporal derivative EV on first
@@ -63,16 +82,24 @@ Second level cope?.feats:
    - 1 Voxelwise confound EV
  - 2 contrasts - one on each stimulus EV
 
-`2ndlevel_1.feat`
- - Three inputs
+`2ndlevel_1.gfeat`
+ - Shape (91, 109, 91)
+ - Three subjects
  - Two copes
  - One main EV - group average
 
-`2ndlevel_1.feat`
- - Three inputs
+`2ndlevel_2.gfeat`
+ - Shape (91, 109, 91)
+ - Three subjects
  - Two copes
  - One main EV - group average
  - One voxelwise EV
+
+`2ndlevel_realdata.gfeat`
+ - Shape (10, 10, 10)
+ - Three subjects
+ - Two copes
+ - One main EV - group average 
 """
 
 
@@ -93,16 +120,35 @@ import fsl.data.featanalysis as featanalysis
 
 datadir = op.join(op.dirname(__file__), 'testdata', 'test_feat')
 
+featdirs = ['1stlevel_1.feat', '1stlevel_2.feat', '1stlevel_3.feat',
+            '1stlevel_realdata.feat',
+            '2ndlevel_1.gfeat', '2ndlevel_2.gfeat', '2ndlevel_realdata.gfeat']
+nevs     = [10, 11, 32, 4, 1, 2, 1]
+shapes   = [(64,  64,  5),
+            (64,  64,  5),
+            (64,  64,  5),
+            ( 4,   4,  5),
+            (91, 109, 91),
+            (91, 109, 91),
+            (10,  10, 10)]
+designShapes = [(45, 10), (45, 11), (45, 32), (45, 4), (3, 1), (3, 2), (3, 1)]
+
+TEST_ANALYSES = {}
+for i, featdir in enumerate(featdirs):
+    TEST_ANALYSES[featdir] = {
+        'nevs'        : nevs[i],
+        'shape'       : shapes[i],
+        'designShape' : designShapes[i]
+    }
 
 
 def test_FEATFSFDesign():
 
-    featdirs = ['1stlevel_1.feat', '1stlevel_2.feat', '1stlevel_3.feat',
-                '2ndlevel_1.gfeat', '2ndlevel_2.gfeat']
-    nevs     = [10, 11, 32, 1, 2]
-    shapes   = [(45, 10), (45, 11), (45, 32), (3, 1), (3, 2)]    
-
-    for featdir, nev, shape in zip(featdirs, nevs, shapes):
+    for featdir in TEST_ANALYSES.keys():
+        
+        nev      = TEST_ANALYSES[featdir]['nevs']
+        shape    = TEST_ANALYSES[featdir]['shape']
+        desshape = TEST_ANALYSES[featdir]['designShape']
         featdir  = op.join(datadir, featdir)
         settings = featanalysis.loadSettings(featdir)
 
@@ -120,9 +166,11 @@ def test_FEATFSFDesign():
                                  settings=settings,
                                  loadVoxelwiseEVs=False)
 
+        rvox = tests.random_voxels(shape)
+
         assert len(des.getEVs()) == nev
-        assert des.getDesign().shape == shape
-        assert des.getDesign((10, 10, 3)).shape == shape
+        assert des.getDesign().shape == desshape
+        assert des.getDesign(rvox).shape == desshape
 
 
 def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
@@ -146,7 +194,7 @@ def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
             copes=False,
             zstats=False,
             residuals=False,
-            clusterMasks=False)
+            clustMasks=False)
 
         # Now load the design, and make sure that
         # the voxel EVs are filled correctly
@@ -272,6 +320,28 @@ def test_getFirstLevelEVs_3():
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
 
+def test_getFirstLevelEVs_realdata():
+    featdir  = op.join(datadir, '1stlevel_realdata.feat')
+    settings = featanalysis.loadSettings(featdir)
+    matrix   = featdesign.loadDesignMat(op.join(featdir, 'design.mat'))
+    expected = [(featdesign.NormalEV,             {'index' : 0, 'origIndex' : 0}),
+                (featdesign.TemporalDerivativeEV, {'index' : 1}),
+                (featdesign.NormalEV,             {'index' : 2, 'origIndex' : 1}),
+                (featdesign.TemporalDerivativeEV, {'index' : 3})]
+
+    evs = featdesign.getFirstLevelEVs(featdir, settings, matrix)
+    
+    assert len(evs) == 4
+
+    for i, (evtype, atts) in enumerate(expected):
+
+        print(i, evs[i])
+
+        assert isinstance(evs[i], evtype)
+        for k, v in atts.items():
+            assert getattr(evs[i], k) == v
+ 
+
 
 def test_getHigherLevelEVs_1():
 
@@ -307,12 +377,9 @@ def test_getHigherLevelEVs_2():
 
 def test_loadDesignMat():
 
-    analyses = ['1stlevel_1.feat', '1stlevel_2.feat', '1stlevel_3.feat',
-                '2ndlevel_1.gfeat', '2ndlevel_2.gfeat']
-    shapes   = [(45, 10), (45, 11), (45, 32), (3, 1), (3, 2)]
-
-    for analysis, shape in zip(analyses, shapes):
-        featdir = op.join(datadir, analysis)
+    for featdir in TEST_ANALYSES.keys():
+        shape   = TEST_ANALYSES[featdir]['designShape']
+        featdir = op.join(datadir, featdir)
         fname   = op.join(featdir, 'design.mat')
         mat     = featdesign.loadDesignMat(fname)
 

@@ -1,0 +1,10 @@
+/ContrastName1	auditory 
+/ContrastName2	visual 
+/NumWaves	4
+/NumContrasts	2
+/PPheights		1.139390e+00	1.211980e+00
+/RequiredEffect		2.222	2.408
+
+/Matrix
+1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 1.000000e+00 0.000000e+00 

@@ -104,6 +104,15 @@ def cleardir(dir):
         elif op.isdir(f):  shutil.rmtree(f)
 
 
+def random_voxels(shape, nvoxels=1):
+    randVoxels = np.vstack([np.random.randint(0, s, nvoxels) for s in shape[:3]]).T
+
+    if nvoxels == 1:
+        return randVoxels[0]
+    else:
+        return randVoxels
+
+
 def make_random_image(filename, dims=(10, 10, 10), xform=None):
     """Creates a NIFTI1 image with random data, saves and
     returns it.
