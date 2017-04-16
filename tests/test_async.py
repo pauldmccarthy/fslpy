@@ -489,4 +489,7 @@ def test_mutex():
         t1.join()
         t2.join()
 
-        assert t[0].method2start > t[0].method1end
+        # Either t1 has to start and
+        # finish before t2 or vice versa
+        assert (t[0].method2start > t[0].method1end or
+                t[0].method1start > t[0].method2end)
