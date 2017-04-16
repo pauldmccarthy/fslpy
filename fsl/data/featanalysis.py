@@ -61,6 +61,12 @@ def isFEATImage(path):
     """Returns ``True`` if the given path looks like it is the input data to
     a FEAT analysis, ``False`` otherwise.
     """
+
+    try:
+        path = fslimage.addExt(path, mustExist=True)
+    except:
+        return False
+
     dirname  = op.dirname( path)
     filename = op.basename(path)
 

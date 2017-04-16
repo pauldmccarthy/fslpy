@@ -18,7 +18,7 @@ from . import          featanalysis
 
 
 class FEATImage(fslimage.Image):
-    """An ``Image`` from a FEAT analysis.
+    """An ``Image`` which contains the input data from a FEAT analysis.
 
     The :class:`FEATImage` class makes use of the functions defined in the
     :mod:`.featanalysis` module.
@@ -29,14 +29,14 @@ class FEATImage(fslimage.Image):
         import fsl.data.featimage as featimage
 
         # You can pass in the name of the
-        # .feat directory, or any file
-        # contained within that directory.
+        # .feat directory, or the filtered_func_data
+        # file contained within that directory.
         img = featimage.FEATImage('myanalysis.feat/filtered_func_data.nii.gz')
 
         # Query information about the FEAT analysis
-        print img.numEVs()
-        print img.contrastNames()
-        print img.numPoints()
+        print(img.numEVs())
+        print(img.contrastNames())
+        print(img.numPoints())
 
         # Get the model fit residuals
         res4d = img.getResiduals()
@@ -52,15 +52,10 @@ class FEATImage(fslimage.Image):
     def __init__(self, path, **kwargs):
         """Create a ``FEATImage`` instance.
 
-        :arg path:   A FEAT analysis directory, or an image file contained
-                     within such a directory.
+        :arg path:   A FEAT analysis directory, or the input data image file
+                     contained within such a directory.
 
         :arg kwargs: Passed to the :class:`.Image` constructor.
-
-        .. note:: If a FEAT directory is passed in for the ``path``
-                  argument, this ``FEATImage`` instance will encapsulate
-                  the model input data, typically called
-                  ``<directory>.feat/filtered_func_data.nii.gz``.
         """
 
         if op.isdir(path):
