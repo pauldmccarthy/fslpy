@@ -6,6 +6,7 @@
 #
 """This module provides the :class:`FEATImage` class, a subclass of
 :class:`.Image` designed to encapsulate data from a FEAT analysis.
+This module also provides the :func:`modelFit` function.
 """
 
 
@@ -291,7 +292,7 @@ class FEATImage(fslimage.Image):
 
     def fit(self, contrast, xyz):
         """Calculates the model fit for the given contrast vector
-        at the given voxel.
+        at the given voxel. See the :func:`modelFit` function.
 
         :arg contrast:  The contrast vector (pass all 1s for a full model
                         fit).
@@ -310,48 +311,11 @@ class FEATImage(fslimage.Image):
         if len(contrast) != numEVs:
             raise ValueError('Contrast is wrong length')
 
-        # Here we are basically trying to 
-        # replicate the behaviour of tsplot.
-        # There are some differences though - 
-        # by default, tsplot weights the
-        # data by Z statistics. We're not
-        # doing that here.
+        design = self.getDesign(xyz)
+        data   = self[x, y, z, :]
+        pes    = [self.getPE(i)[x, y, z] for i in range(numEVs)]
 
-        # Normalise the contrast vector.
-        # The scaling factor is arbitrary,
-        # but should result in a visually
-        # sensible scaling of the model fit.
-        # For a vector of all 1's (i.e. a
-        # full model fit) this is a no-op.
-        #
-        # We also take the absolute value
-        # of the values in the contrast
-        # vector, as the parameter estimates
-        # should be appropriately signed,
-        # so we don't negative contrast
-        # vector values to invert them.
-        contrast = np.array(contrast)
-        nonzero  = sum(~np.isclose(contrast, 0))
-        contrast = contrast / np.sqrt((contrast ** 2).sum())
-        contrast = np.abs(contrast * np.sqrt(nonzero))
-
-        X        = self.__design.getDesign(xyz)
-        data     = self[x, y, z, :]
-        modelfit = np.zeros(len(data))
-
-        for i in range(numEVs):
-
-            ev        = X[:, i]
-            pe        = self.getPE(i)[x, y, z]
-            modelfit += ev * pe * contrast[i]
-
-        # Make sure the model fit has an
-        # appropriate mean.  The data in
-        # first level analyses is demeaned
-        # before model fitting, so we need
-        # to add it back in.
-        if firstLevel: return modelfit + data.mean()
-        else:          return modelfit
+        return modelFit(data, design, contrast, pes, firstLevel)
 
 
     def partialFit(self, contrast, xyz):
@@ -366,3 +330,65 @@ class FEATImage(fslimage.Image):
         modelfit  = self.fit(contrast, xyz)
 
         return residuals + modelfit
+
+
+def modelFit(data, design, contrast, pes, firstLevel=True):
+    """Calculates the model fit to the given data for the given contrast
+    vector.
+
+    :arg data:       The input data
+
+    :arg design:     The design matrix
+
+    :arg contrast:   The contrast vector (pass all 1s for a full model
+                     fit)
+
+    :arg pes:        Parameter estimates for each EV in the design matrix
+
+    :arg firstLevel: If ``True`` (the default), the mean of the input
+                     data is added to the result.
+
+    :returns: The best fit of the model to the data.
+    """
+
+    # Here we are basically trying to 
+    # replicate the behaviour of tsplot.
+    # There are some differences though - 
+    # by default, tsplot weights the
+    # data by Z statistics. We're not
+    # doing that here.
+
+    # Normalise the contrast vector.
+    # The scaling factor is arbitrary,
+    # but should result in a visually
+    # sensible scaling of the model fit.
+    # For a vector of all 1's (i.e. a
+    # full model fit) this is a no-op.
+    #
+    # We also take the absolute value
+    # of the values in the contrast
+    # vector, as the parameter estimates
+    # should be appropriately signed,
+    # so we don't want negative contrast
+    # vector values to invert them.
+    contrast = np.array(contrast)
+    nevs     = len(contrast)
+    nonzero  = sum(~np.isclose(contrast, 0))
+    contrast = contrast / np.sqrt((contrast ** 2).sum())
+    contrast = np.abs(contrast * np.sqrt(nonzero))
+
+    modelfit = np.zeros(len(data))
+
+    for i in range(nevs):
+
+        ev        = design[:, i]
+        pe        = pes[i]
+        modelfit += ev * pe * contrast[i] 
+
+    # Make sure the model fit has an
+    # appropriate mean.  The data in
+    # first level analyses is demeaned
+    # before model fitting, so we need
+    # to add it back in.
+    if firstLevel: return modelfit + data.mean()
+    else:          return modelfit
