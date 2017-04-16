@@ -453,43 +453,34 @@ def test_mutex():
 
     class Thing(object):
 
+
         @async.mutex
         def method1(self):
+            self.method1start = time.time()
             time.sleep(0.5)
+            self.method1end = time.time()
 
         @async.mutex
         def method2(self):
+            self.method2start = time.time()
             time.sleep(0.5)
+            self.method2end = time.time()
 
     t = [Thing()]
 
-    times = {
-        'thread1start' : 0,
-        'thread1end'   : 0,
-        'thread2start' : 0,
-        'thread2end'   : 0,
-    }
-
-
     def thread1():
-        times['thread1start'] = time.time()
         t[0].method1()
-        times['thread1end'] = time.time()
 
     def thread2():
-        times['thread2start'] = time.time()
         t[0].method2()
-        times['thread2start'] = time.time()
 
-    for i in range(10):
+    for i in range(20):
+
+        t[0].method1start = None
+        t[0].method2start = None
+        t[0].method1end   = None
+        t[0].method2end   = None
         
-        times = {
-            'thread1start' : 0,
-            'thread1end'   : 0,
-            'thread2start' : 0,
-            'thread2end'   : 0,
-        }
-
         t1 = threading.Thread(target=thread1)
         t2 = threading.Thread(target=thread2)
 
@@ -498,4 +489,4 @@ def test_mutex():
         t1.join()
         t2.join()
 
-        assert times['thread2start'] > times['thread1end']
+        assert t[0].method2start > t[0].method1end
