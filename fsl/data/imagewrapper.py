@@ -244,7 +244,7 @@ class ImageWrapper(notifier.Notifier):
 
         
         :arg dataRange: A tuple containing the initial ``(min, max)``  data
-                        range to use. See the :meth:`reset` method.
+                        range to use. 
 
 
         .. note:: The ``dataRange`` parameter is intended for situations where

@@ -792,6 +792,7 @@ class Image(Nifti):
         self.__lName             = '{}_{}'.format(id(self), self.name)
         self.__dataSource        = dataSource
         self.__fileobj           = fileobj
+        self.__threaded          = threaded
         self.__nibImage          = nibImage
         self.__saveState         = dataSource is not None
         self.__imageWrapper      = imagewrapper.ImageWrapper(self.nibImage,
@@ -1024,6 +1025,19 @@ class Image(Nifti):
             self.__fileobj.close()
             self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
             self.header = self.__nibImage.get_header()
+
+            # We have to create a new ImageWrapper
+            # instance too, as we have just destroyed
+            # the nibabel image we gave to the last
+            # one.
+            self.__imageWrapper.deregister(self.__lName) 
+            self.__imageWrapper = imagewrapper.ImageWrapper(
+                self.nibImage,
+                self.name,
+                loadData=False,
+                dataRange=self.dataRange,
+                threaded=self.__threaded)
+            self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
 
         self.__dataSource = filename
         self.__saveState  = True
