@@ -837,6 +837,13 @@ class Image(Nifti):
         
         if self.__fileobj is not None:
             self.__fileobj.close()
+
+
+    def getImageWrapper(self):
+        """Returns the :class:`.ImageWrapper` instance used to manage
+        access to the image data.
+        """
+        return self.__imageWrapper
         
     
     @property
