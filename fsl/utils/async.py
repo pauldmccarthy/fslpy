@@ -691,6 +691,34 @@ class TaskThread(threading.Thread):
         while True:
 
             try:
+                # Clear ref to previous task if any. This
+                # is very important, because otherwise, if
+                # no tasks get posted to the queue, this
+                # loop will spin on queue.Empty exceptions,
+                # and the previous Task object will preserve
+                # a hanging ref to its function/method. Not
+                # ideal if the ref is to a method of the
+                # object which created this TaskThread, and
+                # needs to be GC'd!
+                task = None
+
+                # An example: Without clearing the task
+                # reference, the following code would
+                # result in the TaskThread spinning on empty
+                # forever, and would prevent the Blah
+                # instance from being GC'd:
+                #
+                #     class Blah(object):
+                #         def __init__(self):
+                #             tt = TaskThraed()
+                #             tt.enqueue(self.method)
+                #             tt.start()
+                #
+                #     def method(self):
+                #         pass
+                #
+                #     b = Blah()
+                #     del b
                 task = self.__q.get(timeout=1)
 
             except queue.Empty:
