@@ -679,6 +679,12 @@ class TaskThread(threading.Thread):
         self.__stop = True
 
 
+    def waitUntilIdle(self):
+        """Causes the calling thread to block until the task queue is empty.
+        """
+        self.__q.join()
+
+
     def run(self):
         """Run the ``TaskThread``. """
 
@@ -703,6 +709,7 @@ class TaskThread(threading.Thread):
             self.__enqueued.pop(task.name, None)
 
             if not task.enabled:
+                self.__q.task_done()
                 continue
 
             log.debug('Running task: {} [{}]'.format(
@@ -733,6 +740,8 @@ class TaskThread(threading.Thread):
                     type(e).__name__,
                     str(e)),
                     exc_info=True)
+            finally:
+                self.__q.task_done()
 
         self.__q        = None
         self.__enqueued = None

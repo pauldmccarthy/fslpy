@@ -229,6 +229,15 @@ class ImageWrapper(notifier.Notifier):
             self.__taskThraed = None
 
 
+    def getTaskThread(self):
+        """If this ``ImageWrapper`` was created with ``threaded=True``,
+        this method returns the ``TaskThread`` that is used for running
+        data range calculation tasks. Otherwise, this method returns
+        ``False``.
+        """
+        return self.__taskThread
+
+
     def reset(self, dataRange=None):
         """Reset the internal state and known data range of this
         ``ImageWrapper``.
@@ -745,9 +754,9 @@ def isValidFancySliceObj(sliceobj, shape):
     object.
 
     ``nibabel`` refers to slice objects as "fancy" if they comprise anything
-    but tuples of simple ``slice`` objects. The ``ImageWrapper`` class
-    supports one type of "fancy" slicing, where the ``sliceobj`` is a boolean
-    ``numpy`` array of the same shape as the image.
+    but tuples of integers and simple ``slice`` objects. The ``ImageWrapper``
+    class supports one type of "fancy" slicing, where the ``sliceobj`` is a
+    boolean ``numpy`` array of the same shape as the image.
 
     This function returns ``True`` if the given ``sliceobj`` adheres to these
     requirements, ``False`` otherwise.
