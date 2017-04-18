@@ -71,7 +71,7 @@ def _test_image_indexed_read4D(threaded):
 
         # Data range grows with volume
         nvols = 50
-        data  = np.zeros((100, 100, 100, nvols))
+        data  = np.zeros((50, 50, 50, nvols))
         for vol in range(nvols):
             data[..., vol] = vol
         
@@ -88,7 +88,7 @@ def _test_image_indexed_read4D(threaded):
         # 4D (e.g. voxel time course)
         # 
         # n.b. This is SUPER SLOW!!
-        voxels = tests.random_voxels((100, 100, 100), 5)
+        voxels = tests.random_voxels((50, 50, 50), 5)
         for i, xyz in enumerate(voxels):
             
             x, y, z = [int(v) for v in xyz]
