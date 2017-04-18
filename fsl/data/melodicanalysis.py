@@ -46,19 +46,23 @@ def isMelodicImage(path):
     component image file, ``False`` otherwise. 
     """
 
-    
+
+    try:
+        path = fslimage.addExt(path, mustExist=True)
+    except:
+        return False
+
     dirname  = op.dirname( path)
     filename = op.basename(path)
 
-    return fslimage.removeExt(filename) == 'melodic_IC' and \
-        isMelodicDir(dirname)
- 
+    return filename.startswith('melodic_IC') and isMelodicDir(dirname)
+
 
 def isMelodicDir(path):
     """Returns ``True`` if the given path looks like it is contained within
     a MELODIC directory, ``False`` otherwise. A melodic directory:
 
-      - Must be named ``*.ica`` or ``*.gica``.
+      - Must be named ``*.ica``.
       - Must contain a file called ``melodic_IC.nii.gz``.
       - Must contain a file called ``melodic_mix``.
       - Must contain a file called ``melodic_FTmix``.
@@ -69,7 +73,7 @@ def isMelodicDir(path):
     if op.isdir(path): dirname = path
     else:              dirname = op.dirname(path)
 
-    sufs = ['.ica', '.gica']
+    sufs = ['.ica']
 
     if not any([dirname.endswith(suf) for suf in sufs]):
         return False
@@ -93,7 +97,7 @@ def getAnalysisDir(path):
     to that MELODIC directory is returned. Otherwise, ``None`` is returned.
     """
 
-    meldir = fslpath.deepest(path, ['.ica', '.gica'])
+    meldir = fslpath.deepest(path, ['.ica'])
 
     if meldir is not None and isMelodicDir(meldir):
         return meldir
@@ -140,12 +144,18 @@ def getICFile(meldir):
 
 def getMixFile(meldir):
     """Returns the path to the melodic mix file. """
-    return op.join(meldir, 'melodic_mix')
+    
+    mixfile = op.join(meldir, 'melodic_mix')
+    if op.exists(mixfile): return mixfile
+    else:                  return None
 
 
 def getFTMixFile(meldir):
     """Returns the path to the melodic FT mix file. """
-    return op.join(meldir, 'melodic_FTmix')
+    
+    ftmixfile = op.join(meldir, 'melodic_FTmix')
+    if op.exists(ftmixfile): return ftmixfile
+    else:                    return None
 
 
 def getReportFile(meldir):

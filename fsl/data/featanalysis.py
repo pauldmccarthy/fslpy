@@ -70,9 +70,7 @@ def isFEATImage(path):
     dirname  = op.dirname( path)
     filename = op.basename(path)
 
-    return filename.startswith('filtered_func_data') and \
-        fslimage.looksLikeImage(filename)            and \
-        isFEATDir(dirname) 
+    return filename.startswith('filtered_func_data') and isFEATDir(dirname) 
 
 
 def isFEATDir(path):
