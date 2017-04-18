@@ -176,6 +176,3 @@ def test_MelodicImage_tr():
 
         assert cbCalled[0]
         assert img.tr == 8
-
-def test_MelodicImage_classification():
-    pass
