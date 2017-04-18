@@ -14,7 +14,6 @@ import os.path as op
 
 from . import image           as fslimage
 from . import melodicanalysis as melanalysis
-from . import melodiclabels   as mellabels
 
 
 class MelodicImage(fslimage.Image):

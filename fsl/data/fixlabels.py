@@ -62,8 +62,9 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
       - One or more labels for the component (multiple labels must be
         comma-separated).
       - ``'True'`` if the component has been classified as *bad*,
-        ``'False'`` otherwise.
-
+        ``'False'`` otherwise. This field is optional - if the last
+        comma-separated token on a line is not equal (case-insensitive)
+        to ``True`` or ``False``, it is interpreted as a component label.
     
     The last line of the file contains the index (starting from 1) of all
     *bad* components, i.e. those components which are not classified as
@@ -74,7 +75,7 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
     :arg includeLabel: If the file contains a single line containing a list
                        component indices, this label will be used for the
                        components in the list. Defaults to 'Unclassified
-                       noise' for FIX-like files, and 'Motion' for
+                       noise' for FIX-like files, and 'Movement' for
                        ICA-AROMA-like files.
     
     :arg excludeLabel: If the file contains a single line containing component
@@ -88,7 +89,8 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
               the corresponding component.
     """
 
-    filename = op.abspath(filename)
+    signalLabels = None
+    filename     = op.abspath(filename)
 
     with open(filename, 'rt') as f:
         lines = f.readlines()
@@ -128,6 +130,8 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
         if excludeLabel is None:
             if line[0] == '[': excludeLabel = 'Signal'
             else:              excludeLabel = 'Unknown'
+        else:
+            signalLabels = [excludeLabel]
 
         # Remove any leading/trailing
         # whitespace or brackets.
@@ -176,8 +180,11 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
                 raise InvalidLabelFileError(
                     'Invalid FIX classification file - '
                     'line {}: {}'.format(i + 1, compLine))
-                    
-            compLabels = tokens[1:-1]
+
+            if tokens[-1].lower() in ('true', 'false'):
+                compLabels = tokens[1:-1]
+            else:
+                compLabels = tokens[1:]
 
             if compIdx != i + 1:
                 raise InvalidLabelFileError(
@@ -193,9 +200,10 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
     for i, labels in enumerate(allLabels):
 
         comp  = i + 1
-        noise = isNoisyComponent(labels)
+        noise = isNoisyComponent(labels, signalLabels)
 
         if noise and (comp not in noisyComps):
+            print(signalLabels)
             raise InvalidLabelFileError('Noisy component {} has invalid '
                                         'labels: {}'.format(comp, labels))
 
@@ -203,7 +211,7 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
         
         i      = comp - 1
         labels = allLabels[i]
-        noise  = isNoisyComponent(labels)
+        noise  = isNoisyComponent(labels, signalLabels)
         
         if not noise:
             raise InvalidLabelFileError('Noisy component {} is missing '
@@ -212,24 +220,31 @@ def loadLabelFile(filename, includeLabel=None, excludeLabel=None):
     return melDir, allLabels
 
 
-def saveLabelFile(allLabels, filename, dirname=None, listBad=True):
+def saveLabelFile(allLabels,
+                  filename,
+                  dirname=None,
+                  listBad=True,
+                  signalLabels=None):
     """Saves the given classification labels to the specified file. The
     classifications are saved in the format described in the
     :func:`loadLabelFile` method.
 
-    :arg allLabels: A list of lists, one list for each component, where
-                    each list contains the labels for the corresponding
-                    component.
+    :arg allLabels:    A list of lists, one list for each component, where
+                       each list contains the labels for the corresponding
+                       component.
 
-    :arg filename:  Name of the file to which the labels should be saved.
+    :arg filename:     Name of the file to which the labels should be saved.
 
-    :arg dirname:   If provided, is output as the first line of the file.
-                    Intended to be a relative path to the MELODIC analysis
-                    directory with which this label file is associated.
+    :arg dirname:      If provided, is output as the first line of the file.
+                       Intended to be a relative path to the MELODIC analysis
+                       directory with which this label file is associated.
 
-    :arg listBad:   If ``True`` (the default), the last line of the file
-                    will contain a comma separated list of components which
-                    are deemed 'noisy' (see :func:`isNoisyComponent`).
+    :arg listBad:      If ``True`` (the default), the last line of the file
+                       will contain a comma separated list of components which
+                       are deemed 'noisy' (see :func:`isNoisyComponent`).
+
+    :arg signalLabels: Labels which should be deemed 'signal' - see the
+                       :func:`isNoisyComponent` function.
     """
     
     lines      = []
@@ -243,7 +258,7 @@ def saveLabelFile(allLabels, filename, dirname=None, listBad=True):
     for i, labels in enumerate(allLabels):
 
         comp   = i + 1
-        noise  = isNoisyComponent(labels)
+        noise  = isNoisyComponent(labels, signalLabels)
 
         # Make sure there are no
         # commas in any label names
@@ -263,13 +278,20 @@ def saveLabelFile(allLabels, filename, dirname=None, listBad=True):
         f.write('\n'.join(lines) + '\n')
 
 
-def isNoisyComponent(labels):
+def isNoisyComponent(labels, signalLabels=None):
     """Given a set of component labels, returns ``True`` if the component
     is ultimately classified as noise, ``False`` otherwise.
-    """
 
-    labels = [l.lower() for l in labels]
-    noise  = ('signal' not in labels) and ('unknown' not in labels)
+    :arg signalLabels: Labels which are deemed signal. If a component has
+                       no labels in this list, it is deemed noise. Defaults
+                       to ``['Signal', 'Unknown']`.
+    """
+    if signalLabels is None:
+        signalLabels = ['signal', 'unknown']
+        
+    signalLabels = [l.lower() for l in signalLabels]
+    labels       = [l.lower() for l in labels]
+    noise        = not any([sl in labels for sl in signalLabels])
 
     return noise
     
