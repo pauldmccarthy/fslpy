@@ -333,9 +333,10 @@ def test_saveLabelFile():
         fname = op.join(testdir, 'fname.txt')
 
         # dirname=None, listBad=False
+        exp = '.\n{}'.format(expected)
         fixlabels.saveLabelFile(labels, fname, listBad=False)
         with open(fname, 'rt') as f:
-            assert f.read().strip() == expected
+            assert f.read().strip() == exp
 
         # dirname=something, listBad=False
         dirname = 'Blob/a.ica'
@@ -346,13 +347,14 @@ def test_saveLabelFile():
             
         # dirname=None, listBad=True
         fixlabels.saveLabelFile(labels, fname)
-        exp = '{}\n[1, 3, 4]'.format(expected)
+        exp = '.\n{}\n[1, 3, 4]'.format(expected)
         with open(fname, 'rt') as f: 
             assert f.read().strip() == exp 
 
         # Custom signal labels
         sigLabels = ['Label1']
         exp = textwrap.dedent("""
+        .
         1, Label1, Label2, Label3, False
         2, Signal, True
         3, Noise, True
