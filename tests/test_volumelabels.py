@@ -346,14 +346,13 @@ def test_save():
 
         # Test saving without dirname
         lbls.save(fname)
+        exp = '.\n{}'.format(expected) 
         with open(fname, 'rt') as f:
-            assert f.read().strip() == expected.strip()
+            assert f.read().strip() == exp.strip()
  
         # And with dirname
         lbls.save(fname, 'path/to/analysis.ica')
-        expected = '{}\n{}'.format(
-            'path/to/analysis.ica',
-            expected)
+        exp = 'path/to/analysis.ica\n{}'.format(expected)
 
         with open(fname, 'rt') as f:
-            assert f.read().strip() == expected.strip()
+            assert f.read().strip() == exp.strip()
