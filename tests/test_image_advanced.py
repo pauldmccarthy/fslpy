@@ -200,3 +200,71 @@ def _test_image_no_calcRange(threaded):
             img.getImageWrapper().getTaskThread().waitUntilIdle()
 
         assert img.dataRange == (0, i)
+
+
+def test_image_calcRange_threaded():   _test_image_calcRange(True)
+def test_image_calcRange_unthreaded(): _test_image_calcRange(False)
+def _test_image_calcRange(threaded):
+
+    # Testing with a 3D image
+    data = np.zeros((10, 10, 10))
+    for slc in range(10):
+        data[..., slc] = slc + 1
+    data[0, 0, 0] = 0
+
+    kwargs = { 'calcRange' : False,
+               'loadData'  : False,
+               'threaded'  : threaded}
+
+    # Check that calcRange(None) will calculate the full range
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange()
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 10)
+
+    # Check that calcRange(numBiggerThanImage)
+    # will calculate the full range
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange(np.prod(img.shape) * img.dtype.itemsize + 1)
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 10) 
+    
+    # Check that calcRange(smallnum) will
+    # calculate the range of the first slice
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange(100)
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 1)
+
+    #########################
+    # Testing with a 4D image
+    data = np.zeros((10, 10, 10, 10))
+    for slc in range(10):
+        data[..., slc] = slc + 1
+    data[0, 0, 0, 0] = 0
+
+    # Check that calcRange(None) will calculate the full range
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange()
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 10)
+    
+    # Check that calcRange(numBiggerThanImage)
+    # will calculate the full range
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange(np.prod(img.shape) * img.dtype.itemsize + 1)
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 10) 
+    
+    # Check that calcRange(smallnum) will
+    # calculate the range of the first volume
+    img = fslimage.Image(data, **kwargs)
+    img.calcRange(100)
+    if threaded:
+        img.getImageWrapper().getTaskThread().waitUntilIdle()
+    assert img.dataRange == (0, 1)
