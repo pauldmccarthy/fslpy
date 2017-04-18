@@ -237,7 +237,8 @@ def saveLabelFile(allLabels,
 
     :arg dirname:      If provided, is output as the first line of the file.
                        Intended to be a relative path to the MELODIC analysis
-                       directory with which this label file is associated.
+                       directory with which this label file is associated. If
+                       not provided, a ``'.'`` is output as the first line.
 
     :arg listBad:      If ``True`` (the default), the last line of the file
                        will contain a comma separated list of components which
@@ -251,8 +252,10 @@ def saveLabelFile(allLabels,
     noisyComps = []
 
     # The first line - the melodic directory name
-    if dirname is not None:
-        lines.append(dirname)
+    if dirname is None:
+        dirname = '.'
+
+    lines.append(dirname)
 
     # A line for each component
     for i, labels in enumerate(allLabels):

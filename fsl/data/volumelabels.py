@@ -38,6 +38,7 @@ class VolumeLabels(notifier.Notifier):
        clear
        load
        save
+       numComponents
        hasLabel
        hasComponent
        getLabels
@@ -94,6 +95,12 @@ class VolumeLabels(notifier.Notifier):
         self.__components = None
 
         self.clear()
+
+    def numComponents(self):
+        """Returns the number of components (a.k.a. volumes) that this
+        ``VolumeLabels`` instance is managing.
+        """
+        return self.__ncomps
 
 
     def getDisplayLabel(self, label):
