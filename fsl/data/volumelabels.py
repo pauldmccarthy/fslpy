@@ -8,6 +8,8 @@
 manage labels associated with the volumes of an :class:`.Image`.  This class
 is primarily used for managing component classifications of a
 :class:`.MelodicImage`.
+
+See also the :func:`.fixlabels` module for loading/saving melodic label files.
 """
 
 
@@ -22,7 +24,8 @@ log = logging.getLogger(__name__)
 
 class VolumeLabels(notifier.Notifier):
     """The ``VolumeLabels`` class is a convenience class for managing a
-    collection of classification labels fgor the volumes of an :class:`.Image`.
+    collection of classification labels for the volumes of an :class:`.Image`.
+
     The ``VolumeLabels`` class refers to *volumes* as *components*, because
     it was originally written to manage classification labels associated wirh
     the components of a Melodic analysis.
@@ -230,8 +233,12 @@ class VolumeLabels(notifier.Notifier):
         labels.remove(label)
         comps .remove(component)
 
-        self.__components[label]     = comps        
-        self.__labels[    component] = labels
+        if len(comps) == 0:
+            self.__components.pop(label, None)
+        else:
+            self.__components[label] = comps
+
+        self.__labels[component] = labels
 
         log.debug('Label removed from component: {} <-> {}'.format(component,
                                                                    label))
@@ -273,12 +280,12 @@ class VolumeLabels(notifier.Notifier):
     
     def addComponent(self, label, component):
         """Adds the given label to the given component. """
-        self.addLabel(component, label)
+        return self.addLabel(component, label)
 
 
     def removeComponent(self, label, component, notify=True):
         """Removes the given label from the given component. """
-        self.removeLabel(component, label, notify)
+        return self.removeLabel(component, label, notify)
 
     
     def clearComponents(self, label):

@@ -252,7 +252,7 @@ def saveLabelFile(allLabels,
 
     # The first line - the melodic directory name
     if dirname is not None:
-        lines.append(op.abspath(dirname))
+        lines.append(dirname)
 
     # A line for each component
     for i, labels in enumerate(allLabels):
