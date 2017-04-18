@@ -340,7 +340,7 @@ def test_saveLabelFile():
         # dirname=something, listBad=False
         dirname = 'Blob/a.ica'
         fixlabels.saveLabelFile(labels, fname, dirname=dirname, listBad=False)
-        exp = '{}\n{}'.format(op.abspath(dirname), expected)
+        exp = '{}\n{}'.format(dirname, expected)
         with open(fname, 'rt') as f:
             assert f.read().strip() == exp
             

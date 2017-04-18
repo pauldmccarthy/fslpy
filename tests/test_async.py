@@ -123,6 +123,15 @@ def _test_run():
     assert     onErrorCalled[ 0]
 
 
+def test_idleTimeout():
+    async.idleReset()
+    default = async.getIdleTimeout()
+    async.setIdleTimeout(999)
+    assert async.getIdleTimeout() == 999
+    async.setIdleTimeout()
+    assert async.getIdleTimeout() == default
+
+
 def test_idle():
 
     called = [False]
