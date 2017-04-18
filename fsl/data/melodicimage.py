@@ -36,7 +36,6 @@ class MelodicImage(fslimage.Image):
        getMelodicDir
        getTopLevelAnalysisDir
        getDataFile
-       getICClassification
 
 
     The :attr:`tr` time of the ``MelodicImage`` may not be known when it is
@@ -70,7 +69,6 @@ class MelodicImage(fslimage.Image):
         self.__meldir     = meldir
         self.__melmix     = melanalysis.getComponentTimeSeries(  meldir)
         self.__melFTmix   = melanalysis.getComponentPowerSpectra(meldir)
-        self.__melICClass = mellabels  .MelodicClassification(   self)
 
         # Automatically set the
         # TR value if possible
@@ -82,10 +80,6 @@ class MelodicImage(fslimage.Image):
                                        calcRange=False)
             if dataImage.is4DImage():
                 self.__tr = dataImage.pixdim[3]
-
-        # TODO load classifications if present
-        for i in range(self.numComponents()):
-            self.__melICClass.addLabel(i, 'Unknown')
 
 
     @property
@@ -163,10 +157,3 @@ class MelodicImage(fslimage.Image):
         function.
         """
         return melanalysis.getMeanFile(self.__meldir) 
-
-
-    def getICClassification(self):
-        """Return the :class:`.MelodicClassification` instance associated with
-        this ``MelodicImage``.
-        """
-        return self.__melICClass
