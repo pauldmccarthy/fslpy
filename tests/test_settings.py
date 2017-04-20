@@ -29,8 +29,14 @@ def test_initialise():
 
     # Assuming that initialise()
     # has not yet been called
-    with pytest.raises(AttributeError):
-        settings.read('nothing')
+    assert settings.read('nothing') is None
+    assert settings.read('nothing', 'default') == 'default'
+    settings.write('nothing', 'nothing')
+    settings.delete('nothing')
+    assert settings.readFile('nothing') is None
+    settings.writeFile('nothing', 'nothing')
+    settings.deleteFile('nothing')
+    settings.clear()
 
     with tests.testdir() as testdir:
         
@@ -143,8 +149,20 @@ def test_init_writeOnExit():
             readback = pickle.load(f)
             assert testdata == readback
 
+def test_init_not_writeOnExit():
 
-        
+
+    atexit_funcs = []
+
+    def mock_atexit_register(func, *args, **kwargs):
+        atexit_funcs.append((func, args, kwargs))
+
+    with tests.testdir() as testdir, \
+         mock.patch('fsl.utils.settings.atexit.register', mock_atexit_register):
+
+        s = settings.Settings('test', cfgdir=testdir, writeOnExit=False)
+
+        assert len(atexit_funcs) == 0
 
             
 
