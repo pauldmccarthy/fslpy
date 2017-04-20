@@ -36,6 +36,7 @@ def test_initialise():
     assert settings.readFile('nothing') is None
     settings.writeFile('nothing', 'nothing')
     settings.deleteFile('nothing')
+    assert settings.readAll() == {}
     settings.clear()
 
     with tests.testdir() as testdir:
@@ -280,6 +281,34 @@ def test_deleteFile():
         
         s.deleteFile(path)
         assert s.read(path) is None 
+
+
+def test_readall():
+    
+    testsettings = [('namespace1.setting1', '1'),
+                    ('namespace1.setting2', '2'),
+                    ('namespace1.setting3', '3'),
+                    ('namespace2.setting1', '4'),
+                    ('namespace2.setting2', '5'),
+                    ('namespace2.setting3', '6')]
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        assert s.readAll() == {}
+
+        for k, v in testsettings:
+            s.write(k, v)
+
+        assert s.readAll() == dict(testsettings)
+
+        ns1 = [(k, v) for k, v in testsettings if k.startswith('namespace1')]
+        ns2 = [(k, v) for k, v in testsettings if k.startswith('namespace2')]
+        
+        assert s.readAll('namespace1.*') == dict(ns1)
+        assert s.readAll('namespace2.*') == dict(ns2)
+        assert s.readAll('*setting*')    == dict(testsettings)
 
 
 def test_clear():
