@@ -19,7 +19,9 @@ the following functions can be called at the module-level:
    Settings.readFile
    Settings.writeFile
    Settings.deleteFile
+   Settings.readAll
    Settings.clear
+
 
 These functions will have no effect before :func:`initialise` is called.
 
@@ -43,10 +45,12 @@ from __future__ import absolute_import
 import            os
 import os.path as op
 import            sys
+import            copy
 import            atexit
 import            shutil
 import            pickle
 import            logging
+import            fnmatch
 import            tempfile
 import            platform
 
@@ -76,6 +80,7 @@ def initialise(*args, **kwargs):
     mod.readFile   = settings.readFile
     mod.writeFile  = settings.writeFile
     mod.deleteFile = settings.deleteFile
+    mod.readAll    = settings.readAll
     mod.clear      = settings.clear
 
 
@@ -93,6 +98,8 @@ def writeFile(*args, **kwargs):
     pass
 def deleteFile(*args, **kwargs):
     pass
+def readAll(*args, **kwarg):
+    return {}
 def clear(*args, **kwarg):
     pass
 
@@ -101,17 +108,6 @@ class Settings(object):
     """The ``Settings`` class contains all of the logic provided by the
     ``settings`` module.  It is not meant to be instantiated directly
     (although you may do so if you wish).
-
-    .. autosummary::
-       :nosignatures:
-
-        read
-        write
-        delete
-        readFile
-        writeFile
-        deleteFile
-        clear
     """
 
 
@@ -213,6 +209,19 @@ class Settings(object):
 
         if op.exists(path):
             os.remove(path)
+
+
+    def readAll(self, pattern=None):
+        """Returns all settings with names that match the given glob-style
+        pattern.
+        """
+        if pattern is None:
+            return copy.deepcopy(self.__config)
+
+        keys = fnmatch.filter(self.__config.keys(), pattern)
+        vals = [copy.deepcopy(self.__config[k]) for k in keys]
+
+        return dict(zip(keys, vals))
 
 
     def clear(self):
