@@ -10,6 +10,7 @@ import            os
 import os.path as op
 import numpy   as np
 
+import mock
 import pytest
 
 import tests
@@ -20,6 +21,49 @@ import fsl.data.image   as fslimage
 def setup_module():
     if os.environ.get('FSLDIR', None) is None:
         raise Exception('FSLDIR is not set - atlas tests cannot be run')
+
+
+    
+
+dummy_atlas_desc = """<?xml version="1.0" encoding="ISO-8859-1"?>
+<atlas version="1.0">
+  <header>
+    <name>{name}</name>
+    <shortname>{shortname}</shortname>
+    <type>Label</type>
+    <images>
+      <imagefile>/{shortname}/{filename}</imagefile>
+       <summaryimagefile>/{shortname}/My{filename}</summaryimagefile>
+    </images>
+  </header>
+  <data>
+    <label index="1" x="5" y="5" z="5">First region</label>
+    <label index="2" x="6" y="6" z="6">Second region</label>
+  </data>
+</atlas>
+"""
+def _make_dummy_atlas(savedir, name, shortName, filename):
+    mladir     = op.join(savedir, shortName)
+    mlaxmlfile = op.join(savedir, '{}.xml'.format(shortName))
+    mlaimgfile = op.join(savedir, shortName, '{}.nii.gz'.format(filename))
+
+    data = np.zeros((10, 10, 10))
+    data[5, 5, 5] = 1
+    data[6, 6, 6] = 2
+
+    img = fslimage.Image(data, xform=np.eye(4))
+            
+    os.makedirs(mladir)
+    img.save(mlaimgfile)
+
+    with open(mlaxmlfile, 'wt') as f:
+        desc = dummy_atlas_desc.format(
+            name=name,
+            shortname=shortName,
+            filename=filename)
+        f.write(desc)
+
+    return mlaxmlfile
 
 
 def test_registry():
@@ -87,46 +131,10 @@ def test_AtlasDescription():
 
 
 
-dummy_atlas_desc = """<?xml version="1.0" encoding="ISO-8859-1"?>
-<atlas version="1.0">
-  <header>
-    <name>My Little Atlas</name>
-    <shortname>MLA</shortname>
-    <type>Label</type>
-    <images>
-      <imagefile>/MLA/MyLittleAtlas</imagefile>
-       <summaryimagefile>/MLA/MyLittleAtlas</summaryimagefile>
-    </images>
-  </header>
-  <data>
-    <label index="1" x="5" y="5" z="5">First little region</label>
-    <label index="2" x="6" y="6" z="6">Second little region</label>
-  </data>
-</atlas>
-"""
-
 
 def test_add_remove_atlas():
 
     with tests.testdir() as testdir:
-
-        mladir     = op.join(testdir, 'MLA')
-        mlaxmlfile = op.join(testdir, 'MLA.xml')
-        mlaimgfile = op.join(testdir, 'MLA', 'MyLittleAtlas.nii.gz')
-
-        def _make_dummy_atlas():
-
-            data = np.zeros((10, 10, 10))
-            data[5, 5, 5] = 1
-            data[6, 6, 6] = 2
-
-            img = fslimage.Image(data, xform=np.eye(4))
-
-            os.makedirs(mladir)
-            img.save(mlaimgfile)
-
-            with open(mlaxmlfile, 'wt') as f:
-                f.write(dummy_atlas_desc)
 
         added   = [False]
         removed = [False]
@@ -145,16 +153,16 @@ def test_add_remove_atlas():
             assert val.atlasID == 'mla'
             removed[0] = True 
 
-        _make_dummy_atlas()
+        xmlfile = _make_dummy_atlas(testdir, 'My Little Atlas', 'MLA', 'MyLittleAtlas')
 
         reg.register('added',   atlas_added,   topic='add')
         reg.register('removed', atlas_removed, topic='remove')
 
         # add an atlas with an ID that is taken
-        with pytest.raises(Exception):
-            reg.addAtlas(mlaxmlfile, atlasID='harvardoxford-cortical')
+        with pytest.raises(KeyError):
+            reg.addAtlas(xmlfile, atlasID='harvardoxford-cortical')
 
-        reg.addAtlas(mlaxmlfile)
+        reg.addAtlas(xmlfile)
 
         assert added[0]
 
@@ -163,6 +171,36 @@ def test_add_remove_atlas():
         reg.removeAtlas('mla')
 
         assert removed[0]
+
+
+def test_extra_atlases():
+
+    with tests.testdir() as testdir:
+
+        atlas1spec = _make_dummy_atlas(testdir, 'My atlas 1', 'myatlas1', 'MyAtlas1')
+        atlas2spec = _make_dummy_atlas(testdir, 'My atlas 2', 'myatlas2', 'MyAtlas2')
+
+        badspec = op.join(testdir, 'badSpec.xml')
+        with open(badspec, 'wt') as f:
+            f.write('Bwahahahah!')
+        
+        extraAtlases = ':'.join([
+            'myatlas1={}'.format(atlas1spec),
+            'myatlas2={}'.format(atlas2spec),
+            'badatlas1=non-existent-path',
+            'badatlas2={}'.format(badspec)
+        ])
+
+        with mock.patch('fsl.data.atlases.fslsettings.read',  return_value=extraAtlases), \
+             mock.patch('fsl.data.atlases.fslsettings.write', return_value=None):
+
+            reg = atlases.registry
+            reg.rescanAtlases()
+
+            assert     reg.hasAtlas('myatlas1')
+            assert     reg.hasAtlas('myatlas2')
+            assert not reg.hasAtlas('badatlas1')
+            assert not reg.hasAtlas('badatlas2')
 
 
 def test_load_atlas():
