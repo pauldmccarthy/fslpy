@@ -5,97 +5,321 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+
+import os.path as op
+import            os
+import            pickle
+import            textwrap
+import            tempfile
+
+# python 3
+try:
+    import unittest.mock as mock
+# python 2
+except:
+    import mock
+    
+import pytest
+
+import tests
 import fsl.utils.settings as settings
 
 
+def test_initialise():
 
-def test_strToBool():
+    # Assuming that initialise()
+    # has not yet been called
+    with pytest.raises(AttributeError):
+        settings.read('nothing')
 
-    assert settings.strToBool('FALSE') is False
-    assert settings.strToBool('False') is False
-    assert settings.strToBool('false') is False
-    assert settings.strToBool( False)  is False
-    assert settings.strToBool('TRUE')  is True
-    assert settings.strToBool('True')  is True
-    assert settings.strToBool('true')  is True
-    assert settings.strToBool( True)   is True
+    with tests.testdir() as testdir:
+        
+        settings.initialise(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        assert settings.settings.configID  == 'test'
+        assert settings.settings.configDir == testdir
+
+        settings.write('setting', 'value')
+
+        assert settings.read('setting') == 'value'
+        assert settings.read('nothing') is None
 
 
-def _do_wx_settings_test(func):
+def test_init_configDir():
 
-    import wx 
+    # config dir on linux 
+    with tests.testdir() as testdir, \
+          mock.patch('fsl.utils.settings.platform.system', return_value='linux'),  \
+          mock.patch('fsl.utils.settings.op.expanduser',   return_value=testdir):
 
-    passed = [False]
-    app    = wx.App()
-    frame  = wx.Frame(None)
+        expected = op.join(testdir, '.config', 'test')
 
-    def wrap():
-        try:
-            func()
-            passed[0] = True
-        finally:
-            frame.Destroy()
-            app.ExitMainLoop()
+        s = settings.Settings(cfgid='test', writeOnExit=False)
+
+        assert s.configDir == expected
+
+    # config dir on linux  with XDG_CONFIG_DIR set
+    with tests.testdir() as testdir, \
+          mock.patch('fsl.utils.settings.platform.system', return_value='linux'):
+
+        oldval = os.environ.get('XDG_CONFIG_HOME', None)
+
+        os.environ['XDG_CONFIG_HOME'] = testdir
+
+        expected = op.join(testdir, 'test')
+
+        s = settings.Settings(cfgid='test', writeOnExit=False)
+
+        assert s.configDir == expected
+
+        if oldval is None:
+            os.environ.pop('XDG_CONFIG_HOME')
+        else:
+            os.environ['XDG_CONFIG_HOME'] = oldval
+
+    # config dir on any other platform
+    with tests.testdir() as testdir, \
+          mock.patch('fsl.utils.settings.platform.system', return_value='notlinux'), \
+          mock.patch('fsl.utils.settings.op.expanduser',   return_value=testdir):
+
+        expected = op.join(testdir, '.test')
+
+        s = settings.Settings(cfgid='test', writeOnExit=False)
+
+        assert s.configDir == expected
+        
+def test_init_configDir_tempdir():
+
+    atexit_funcs = []
+
+    def mock_atexit_register(func, *args, **kwargs):
+        atexit_funcs.append((func, args, kwargs))
+
+    with mock.patch('fsl.utils.settings.atexit.register', mock_atexit_register), \
+         mock.patch('fsl.utils.settings.os.makedirs', side_effect=IOError):
+        
+        s      = settings.Settings('test', writeOnExit=False)
+        cfgdir = s.configDir
+
+        assert cfgdir.startswith(tempfile.gettempdir())
+        assert op.exists(cfgdir)
+
+        assert len(atexit_funcs) == 1
+
+        f, a, kwa = atexit_funcs[0]
+        f(*a, **kwa)
+
+        assert not op.exists(cfgdir)
+        
+
+
+def test_init_writeOnExit():
+
+    atexit_funcs = []
+
+    def mock_atexit_register(func, *args, **kwargs):
+        atexit_funcs.append((func, args, kwargs))
+
+    testdata = {
+        'setting1' : 123,
+        'setting2' : 'Blahblah',
+        'setting3' : [1, 2, ('three', 4)]
+    }
+
+    with tests.testdir() as testdir, \
+         mock.patch('fsl.utils.settings.atexit.register', mock_atexit_register):
+
+        s = settings.Settings('test', cfgdir=testdir)
+
+        for k, v in testdata.items():
+            s.write(k, v)
+
+        assert len(atexit_funcs) == 1
+
+        f, a, kwa = atexit_funcs[0]
+        f(*a, **kwa)
+
+        with open(op.join(testdir, 'config.pkl'), 'rb') as f:
+            readback = pickle.load(f)
+            assert testdata == readback
+
+
+        
+
+            
+
+
+def test_readConfigFile():
+
+    with tests.testdir() as testdir:
+
+        testdata = {
+            'setting1' : 123,
+            'setting2' : 'Blahblah',
+            'setting3' : [1, 2, ('three', 4)]
+        }
+
+        with open(op.join(testdir, 'config.pkl'), 'wb') as f:
+            pickle.dump(testdata, f)
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        for k, v in testdata.items():
+            assert s.read(k) == v
+        
+
+def test_readwrite():
+
+    testcases = [('string_setting', 'string_value'),
+                 ('int_setting',     123),
+                 ('float_setting',   123.0),
+                 ('bool_setting1',   True),
+                 ('bool_setting2',   True),
+                 ('tuple_setting',  (1, 2, 'blah')),
+                 ('list_setting',   [1, 2, 'blah'])]
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        for k, v in testcases:
+            s.write(k, v)
+            assert s.read(k) == v
+
+        assert s.read('non-existent')            is None
+        assert s.read('non-existent', 'default') == 'default'
+
+        
+def test_readdefault():
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
     
-    frame.Show()
-
-    wx.CallLater(500, wrap)
-
-    app.MainLoop()
-    assert passed[0]
+        assert s.read('non-existent')            is None
+        assert s.read('non-existent', 'default') == 'default' 
 
 
-def  test_readwrite(): _do_wx_settings_test(_test_readwrite)
-def _test_readwrite():
+def test_delete():
 
-    tests = [('string_setting', 'string_value'),
-             ('int_setting',     123),
-             ('float_setting',   123.0),
-             ('bool_setting1',   True),
-             ('bool_setting2',   True),
-             ('tuple_setting',  (1, 2, 'blah')),
-             ('list_setting',   [1, 2, 'blah'])]
+    with tests.testdir() as testdir:
 
-    for k, v in tests:
-        settings.write(k, v)
-        assert settings.read(k) == str(v)
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+        
+        s.delete('non-existent')
+        assert s.read('non-existent') is None
 
-    assert settings.read('non-existent')            is None
-    assert settings.read('non-existent', 'default') == 'default'
+        s.write('my_setting', 'abcdef')
+        assert s.read('my_setting') == 'abcdef'
+        s.delete('my_setting')
+        assert s.read('my_setting') is None
 
 
-def  test_readdefault(): _do_wx_settings_test(_test_readdefault)
-def _test_readdefault():
-    assert settings.read('non-existent')            is None
-    assert settings.read('non-existent', 'default') == 'default' 
+
+def test_readwriteFile_text():
+
+    contents = textwrap.dedent("""
+    Test file 1
+    This is a test
+    """).strip()
+
+    with tests.testdir() as testdir:
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        s.writeFile('testfile/contents.txt', contents, 't')
+
+        assert s.readFile('testfile/contents.txt', 't') == contents
+        assert s.readFile('notafile',              't') is None
 
 
-def  test_delete(): _do_wx_settings_test(_test_delete)
-def _test_delete():
+def test_readwriteFile_binary():
 
-    settings.delete('non-existent')
-    assert settings.read('non-existent') is None
+    contents = b'\x00\x10\x20\x30\x40\x50\x6a'
 
-    settings.write('my_setting', 'abcdef')
-    assert settings.read('my_setting') == 'abcdef'
-    settings.delete('my_setting')
-    assert settings.read('my_setting') is None
+    with tests.testdir() as testdir:
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        s.writeFile('testfile/contents.bin', contents, 'b')
+
+        assert s.readFile('testfile/contents.bin', 'b') == contents
+        assert s.readFile('notafile',              'b') is None
 
 
-def  test_clear(): _do_wx_settings_test(_test_clear)
-def _test_clear():
+def test_deleteFile():
 
-    tests = [('setting1', '1'),
-             ('setting2', '2'),
-             ('setting3', '3')]
+    with tests.testdir() as testdir:
 
-    for k, v in tests:
-        settings.write(k, v)
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
 
-    for k, v in tests:
-        assert settings.read(k) == v
+        s.deleteFile('non-existent')
+        assert s.readFile('non-existent') is None
 
-    settings.clear()
+        path     = 'path/to/file.txt'
+        contents = 'abcdef'
 
-    for k, v in tests:
-        assert settings.read(k) is None
+        s.writeFile(path, contents)
+        assert s.readFile(path) == contents
+        
+        s.deleteFile(path)
+        assert s.read(path) is None 
+
+
+def test_clear():
+
+    testsettings = [('setting1', '1'),
+                    ('setting2', '2'),
+                    ('setting3', '3')]
+    testfiles     = [('path/to/file1.txt',         'testfile1 contents'),
+                     ('path/to/another/file2.txt', 'testfile2 contents'),
+                     ('file3.txt',                 'testfile3 contents')]
+
+    # TODO File
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        for k, v in testsettings:
+            s.write(k, v)
+
+        for p, c in testfiles:
+            s.writeFile(p, c)
+
+        for k, v in testsettings:
+            assert s.read(k) == v
+
+        for p, c in testfiles:
+            assert s.readFile(p) == c
+
+        s.clear()
+
+        for k, v in testsettings:
+            assert s.read(k) is None
+ 
+        for p, c in testfiles:
+            assert s.readFile(p) is None
+
+
+def test_writeConfigFile():
+
+    with tests.testdir() as testdir:
+
+        testdata = {
+            'setting1' : 123,
+            'setting2' : 'Blahblah',
+            'setting3' : [1, 2, ('three', 4)]
+        }
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        for k, v in testdata.items():
+            s.write(k, v)
+
+        for k, v in testdata.items():
+            assert s.read(k) == v
+
+        s.writeConfigFile()
+
+        with open(op.join(testdir, 'config.pkl'), 'rb') as f:
+            readback = pickle.load(f)
+            assert testdata == readback
