@@ -81,8 +81,8 @@ def initialise(*args, **kwargs):
 
 # These are all overwritten by
 # the initialise function.
-def read(*args, **kwargs):
-    pass
+def read(name, default=None):
+    return default
 def write(*args, **kwargs):
     pass
 def delete(*args, **kwargs):
