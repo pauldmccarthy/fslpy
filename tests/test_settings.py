@@ -36,6 +36,7 @@ def test_initialise():
     assert settings.readFile('nothing') is None
     settings.writeFile('nothing', 'nothing')
     settings.deleteFile('nothing')
+    assert settings.filePath() is None
     assert settings.readAll() == {}
     assert settings.listFiles() == []
     settings.clear()
@@ -338,6 +339,28 @@ def test_listFiles():
         assert list(sorted(s.listFiles('*.txt')))        == list(sorted(ns1files + ns2files))
 
         assert list(sorted(s.listFiles('*/setting1.txt'))) == list(sorted([ns1files[0]] + [ns2files[0]]))
+
+
+def test_filePath():
+
+    testfiles  = ['file1.txt',
+                  'dir1/file2.txt',
+                  'dir1/dir2/file3.txt']
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        assert s.filePath('nofile') == op.join(testdir, 'nofile')
+
+        for fn in testfiles:
+            s.writeFile(fn, fn)
+
+        assert s.filePath('nofile') == op.join(testdir, 'nofile')
+
+        for f in testfiles:
+            assert s.filePath(f) == op.join(testdir, f)
+
 
 def test_clear():
 
