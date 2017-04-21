@@ -247,7 +247,8 @@ def test_readwriteFile_text():
     with tests.testdir() as testdir:
         s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
 
-        s.writeFile('testfile/contents.txt', contents, 't')
+        with s.writeFile('testfile/contents.txt', 't') as f:
+            f.write(contents)
 
         assert s.readFile('testfile/contents.txt', 't') == contents
         assert s.readFile('notafile',              't') is None
@@ -260,7 +261,8 @@ def test_readwriteFile_binary():
     with tests.testdir() as testdir:
         s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
 
-        s.writeFile('testfile/contents.bin', contents, 'b')
+        with s.writeFile('testfile/contents.bin', 'b') as f:
+            f.write(contents)
 
         assert s.readFile('testfile/contents.bin', 'b') == contents
         assert s.readFile('notafile',              'b') is None
@@ -278,7 +280,9 @@ def test_deleteFile():
         path     = 'path/to/file.txt'
         contents = 'abcdef'
 
-        s.writeFile(path, contents)
+        with s.writeFile(path) as f:
+            f.write(contents)
+
         assert s.readFile(path) == contents
         
         s.deleteFile(path)
@@ -329,7 +333,8 @@ def test_listFiles():
         assert s.listFiles() == []
 
         for fn in ns1files + ns2files:
-            s.writeFile(fn, fn)
+            with s.writeFile(fn) as f:
+                f.write(fn)
 
         assert list(sorted(s.listFiles())) == list(sorted(ns1files + ns2files))
 
@@ -354,7 +359,8 @@ def test_filePath():
         assert s.filePath('nofile') == op.join(testdir, 'nofile')
 
         for fn in testfiles:
-            s.writeFile(fn, fn)
+            with s.writeFile(fn) as f:
+                f.write(fn)
 
         assert s.filePath('nofile') == op.join(testdir, 'nofile')
 
@@ -381,7 +387,8 @@ def test_clear():
             s.write(k, v)
 
         for p, c in testfiles:
-            s.writeFile(p, c)
+            with s.writeFile(p) as f:
+                f.write(c)
 
         for k, v in testsettings:
             assert s.read(k) == v
