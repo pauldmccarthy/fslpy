@@ -19,6 +19,7 @@ the following functions can be called at the module-level:
    Settings.readFile
    Settings.writeFile
    Settings.deleteFile
+   Settings.listFiles
    Settings.readAll
    Settings.clear
 
@@ -81,6 +82,7 @@ def initialise(*args, **kwargs):
     mod.writeFile  = settings.writeFile
     mod.deleteFile = settings.deleteFile
     mod.readAll    = settings.readAll
+    mod.listFiles  = settings.listFiles
     mod.clear      = settings.clear
 
 
@@ -100,6 +102,8 @@ def deleteFile(*args, **kwargs):
     pass
 def readAll(*args, **kwarg):
     return {}
+def listFiles(*args, **kwarg):
+    return []
 def clear(*args, **kwarg):
     pass
 
@@ -224,6 +228,28 @@ class Settings(object):
         return dict(zip(keys, vals))
 
 
+    def listFiles(self, pattern=None):
+        """Returns a list of all stored settings files which match the given
+        glob-style pattern. If a pattern is not given, all files are returned.
+        """
+        allFiles = []
+
+        if pattern is not None:
+            pattern = self.__fixPath(pattern)
+
+        for dirpath, dirnames, filenames in os.walk(self.__configDir):
+
+            dirpath   = op.relpath(dirpath, self.__configDir)
+            filenames = [op.join(dirpath, fn) for fn in filenames]
+
+            if pattern is None:
+                allFiles.extend(filenames)
+            else:
+                allFiles.extend(fnmatch.filter(filenames, pattern))
+
+        return allFiles
+
+
     def clear(self):
         """Delete all configuration settings and files. """
 
@@ -241,8 +267,9 @@ class Settings(object):
 
     def __fixPath(self, path):
         """Ensures that the given path (passed into :meth:`readFile`,
-        :meth:`writeFile`,  or :meth:`deleteFile`) is cross-platform
-        compatible.
+        :meth:`writeFile`, or :meth:`deleteFile`) is cross-platform
+        compatible. Only works for paths which use ``'/'`` as the path
+        separator.
         """
         return op.join(*path.split('/'))
 
