@@ -55,6 +55,7 @@ import            logging
 import            fnmatch
 import            tempfile
 import            platform
+import            contextlib
 
 
 log = logging.getLogger(__name__)
@@ -181,6 +182,8 @@ class Settings(object):
     def readFile(self, path, mode='t'):
         """Reads and returns the contents of the given file ``path``. 
         Returns ``None`` if the path does not exist.
+
+        :arg mode: ``'t'`` for text mode, or ``'b'`` for binary.
         """
 
         mode = 'r' + mode
@@ -193,8 +196,28 @@ class Settings(object):
             return None
 
 
-    def writeFile(self, path, value, mode='t'):
-        """Writes the given ``value`` to the given file ``path``. """
+    @contextlib.contextmanager
+    def writeFile(self, path, mode='t'):
+        """Write to the given file ``path``. This function is intended
+        to be used as a context manager. For example::
+
+
+            with settings.writeFile('mydata.txt') as f:
+                f.write('data\n')
+
+
+        An alternate method of writing to a file is via :meth:`filePath`,
+        e.g.::
+
+
+            fname = settings.filePath('mydata.txt')
+            with open(fname, 'wt') as f:
+                f.write('data\n')
+
+
+        However using ``writeFile`` has the advantage that any intermediate
+        directories will be created if they don't already exist.
+        """
 
         mode    = 'w' + mode
         path    = self.filePath(path)
@@ -204,7 +227,7 @@ class Settings(object):
             os.makedirs(pathdir)
 
         with open(path, mode) as f:
-            f.write(value)
+            yield f
 
 
     def deleteFile(self, path):
@@ -216,7 +239,10 @@ class Settings(object):
 
 
     def filePath(self, path):
-        """Converts the given ``path`` to an absolute path. """
+        """Converts the given ``path`` to an absolute path.  Note that there
+        is no guarantee that the returned file path (or its containing
+        directory) exists.
+        """
 
         path = self.__fixPath(path)
         path = op.join(self.__configDir, path)
