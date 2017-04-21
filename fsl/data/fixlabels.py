@@ -287,7 +287,7 @@ def isNoisyComponent(labels, signalLabels=None):
 
     :arg signalLabels: Labels which are deemed signal. If a component has
                        no labels in this list, it is deemed noise. Defaults
-                       to ``['Signal', 'Unknown']`.
+                       to ``['Signal', 'Unknown']``.
     """
     if signalLabels is None:
         signalLabels = ['signal', 'unknown']

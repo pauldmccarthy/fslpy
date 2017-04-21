@@ -34,7 +34,7 @@ Two types of configuration data are available:
     that can be pickled can be stored.
 
   - Separate files, either text or binary. Access these via the ``readFile``,
-    ``writeFile`, and ``deleteFile` functions.
+    ``writeFile``, and ``deleteFile`` functions.
 
 Both of the above data types will be stored in a configuration directory.
 The location of this directory differs from platform to platform, but is
