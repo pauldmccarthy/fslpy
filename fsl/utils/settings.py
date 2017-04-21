@@ -19,8 +19,9 @@ the following functions can be called at the module-level:
    Settings.readFile
    Settings.writeFile
    Settings.deleteFile
-   Settings.listFiles
+   Settings.filePath
    Settings.readAll
+   Settings.listFiles
    Settings.clear
 
 
@@ -81,6 +82,7 @@ def initialise(*args, **kwargs):
     mod.readFile   = settings.readFile
     mod.writeFile  = settings.writeFile
     mod.deleteFile = settings.deleteFile
+    mod.filePath   = settings.filePath
     mod.readAll    = settings.readAll
     mod.listFiles  = settings.listFiles
     mod.clear      = settings.clear
@@ -100,6 +102,8 @@ def writeFile(*args, **kwargs):
     pass
 def deleteFile(*args, **kwargs):
     pass
+def filePath(*args, **kwargs):
+    pass 
 def readAll(*args, **kwarg):
     return {}
 def listFiles(*args, **kwarg):
@@ -180,8 +184,7 @@ class Settings(object):
         """
 
         mode = 'r' + mode
-        path = self.__fixPath(path)
-        path = op.join(self.__configDir, path)
+        path = self.filePath(path)
 
         if op.exists(path):
             with open(path, mode) as f:
@@ -194,8 +197,7 @@ class Settings(object):
         """Writes the given ``value`` to the given file ``path``. """
 
         mode    = 'w' + mode
-        path = self.__fixPath(path)
-        path    = op.join(self.__configDir, path)
+        path    = self.filePath(path)
         pathdir = op.dirname(path)
 
         if not op.exists(pathdir):
@@ -208,11 +210,17 @@ class Settings(object):
     def deleteFile(self, path):
         """Deletes the given file ``path``. """
 
-        path = self.__fixPath(path)
-        path = op.join(self.__configDir, path)
-
+        path = self.filePath(path)
         if op.exists(path):
             os.remove(path)
+
+
+    def filePath(self, path):
+        """Converts the given ``path`` to an absolute path. """
+
+        path = self.__fixPath(path)
+        path = op.join(self.__configDir, path)
+        return path
 
 
     def readAll(self, pattern=None):
