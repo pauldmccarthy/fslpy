@@ -37,6 +37,7 @@ def test_initialise():
     settings.writeFile('nothing', 'nothing')
     settings.deleteFile('nothing')
     assert settings.readAll() == {}
+    assert settings.listFiles() == []
     settings.clear()
 
     with tests.testdir() as testdir:
@@ -310,6 +311,33 @@ def test_readall():
         assert s.readAll('namespace2.*') == dict(ns2)
         assert s.readAll('*setting*')    == dict(testsettings)
 
+
+def test_listFiles():
+
+    ns1files  = ['namespace1/setting1.txt',
+                 'namespace1/setting2.txt',
+                 'namespace1/setting3.txt']
+    ns2files  = ['namespace2/setting1.txt',
+                 'namespace2/setting2.txt',
+                 'namespace2/setting3.txt']     
+
+    with tests.testdir() as testdir:
+
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+        assert s.listFiles() == []
+
+        for fn in ns1files + ns2files:
+            s.writeFile(fn, fn)
+
+        assert list(sorted(s.listFiles())) == list(sorted(ns1files + ns2files))
+
+        assert list(sorted(s.listFiles('namespace1/*'))) == list(sorted(ns1files))
+        assert list(sorted(s.listFiles('namespace2/*'))) == list(sorted(ns2files))
+        assert list(sorted(s.listFiles('namespace?/*'))) == list(sorted(ns1files + ns2files))
+        assert list(sorted(s.listFiles('*.txt')))        == list(sorted(ns1files + ns2files))
+
+        assert list(sorted(s.listFiles('*/setting1.txt'))) == list(sorted([ns1files[0]] + [ns2files[0]]))
 
 def test_clear():
 
