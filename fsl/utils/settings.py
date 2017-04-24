@@ -203,7 +203,7 @@ class Settings(object):
 
 
             with settings.writeFile('mydata.txt') as f:
-                f.write('data\n')
+                f.write('data\\n')
 
 
         An alternate method of writing to a file is via :meth:`filePath`,
@@ -212,7 +212,7 @@ class Settings(object):
 
             fname = settings.filePath('mydata.txt')
             with open(fname, 'wt') as f:
-                f.write('data\n')
+                f.write('data\\n')
 
 
         However using ``writeFile`` has the advantage that any intermediate
