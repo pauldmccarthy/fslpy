@@ -1,10 +1,9 @@
 *.pyc
-.cache
-.eggs
-.DS_Store
-.dir-locals.el
 .projectile
-fslpy.egg-info
+.dir-locals.el
+.cache
 .coverage
+.eggs
+fslpy.egg-info
 htmlcov
 doc/html
