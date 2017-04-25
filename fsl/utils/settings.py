@@ -62,7 +62,7 @@ log = logging.getLogger(__name__)
 
 
 _CONFIG_ID = 'fslpy'
-"""The default configuration identifier, used as the directory name for 
+"""The default configuration identifier, used as the directory name for
 storing configuration files.
 """
 
@@ -72,7 +72,7 @@ def initialise(*args, **kwargs):
     :class:`Settings` instance, and enables the module-level
     functions. All settings are passed through to :meth:`Settings.__init__`.
     """
-    
+
     mod = sys.modules[__name__]
 
     settings       = Settings(*args, **kwargs)
@@ -104,7 +104,7 @@ def writeFile(*args, **kwargs):
 def deleteFile(*args, **kwargs):
     pass
 def filePath(*args, **kwargs):
-    pass 
+    pass
 def readAll(*args, **kwarg):
     return {}
 def listFiles(*args, **kwarg):
@@ -126,7 +126,7 @@ class Settings(object):
         :arg cfgid:       Configuration ID, used as the name of the
                           configuration directory.
 
-        :arg cfgdir:      Store configuration settings in this directory, 
+        :arg cfgdir:      Store configuration settings in this directory,
                           instead of the default.
 
         :arg writeOnExit: If ``True`` (the default), an ``atexit`` function
@@ -159,7 +159,7 @@ class Settings(object):
     def read(self, name, default=None):
         """Reads a setting with the given ``name``, return ``default`` if
         there is no setting called ``name``.
-        """ 
+        """
 
         log.debug('Reading {}/{}'.format(self.__configID, name))
         return self.__config.get(name, default)
@@ -180,7 +180,7 @@ class Settings(object):
 
 
     def readFile(self, path, mode='t'):
-        """Reads and returns the contents of the given file ``path``. 
+        """Reads and returns the contents of the given file ``path``.
         Returns ``None`` if the path does not exist.
 
         :arg mode: ``'t'`` for text mode, or ``'b'`` for binary.
@@ -320,7 +320,7 @@ class Settings(object):
         cfgdir  = None
         homedir = op.expanduser('~')
 
-        # On linux, if $XDG_CONFIG_HOME is set, use $XDG_CONFIG_HOME/fslpy/ 
+        # On linux, if $XDG_CONFIG_HOME is set, use $XDG_CONFIG_HOME/fslpy/
         # Otherwise, use $HOME/.config/fslpy/
         #
         # https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -348,7 +348,7 @@ class Settings(object):
                     exc_info=True)
                 cfgdir = None
 
-        # If dir creation failed, use a temporary 
+        # If dir creation failed, use a temporary
         # directory, and delete it on exit
         if cfgdir is None:
             cfgdir = tempfile.mkdtemp()
@@ -368,7 +368,7 @@ class Settings(object):
 
         log.debug('Reading {} configuration from: {}'.format(
             self.__configID, configFile))
-        
+
         try:
             with open(configFile, 'rb') as f:
                 return pickle.load(f)
@@ -380,14 +380,14 @@ class Settings(object):
 
 
     def writeConfigFile(self):
-        """Writes all settings to a file.""" 
+        """Writes all settings to a file."""
 
         config     = self.__config
         configFile = op.join(self.__configDir, 'config.pkl')
 
         log.debug('Writing {} configuration to: {}'.format(
-            self.__configID, configFile)) 
-        
+            self.__configID, configFile))
+
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f)

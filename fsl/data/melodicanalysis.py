@@ -2,7 +2,7 @@
 #
 # melodicanalysis.py - Utility functions for loading/querying the contents of
 # a MELODIC analysis directory.
-# 
+#
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides a set of functions for accessing the contents of a
@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 def isMelodicImage(path):
     """Returns ``True`` if the given path looks like it is a melodic
-    component image file, ``False`` otherwise. 
+    component image file, ``False`` otherwise.
     """
 
 
@@ -69,7 +69,7 @@ def isMelodicDir(path):
     """
 
     path = op.abspath(path)
-    
+
     if op.isdir(path): dirname = path
     else:              dirname = op.dirname(path)
 
@@ -88,7 +88,7 @@ def isMelodicDir(path):
     # melodic_mix and melodic_FTmix
     if not op.exists(op.join(dirname, 'melodic_mix')):   return False
     if not op.exists(op.join(dirname, 'melodic_FTmix')): return False
- 
+
     return True
 
 
@@ -101,7 +101,7 @@ def getAnalysisDir(path):
 
     if meldir is not None and isMelodicDir(meldir):
         return meldir
-    
+
     return None
 
 
@@ -111,10 +111,10 @@ def getTopLevelAnalysisDir(path):
     file system) directory is returned. Otherwise, ``None`` is returned.
 
     See :func:`.featanalysis.getTopLevelAnalysisDir`.
-    """ 
+    """
     return featanalysis.getTopLevelAnalysisDir(path)
 
-    
+
 def getDataFile(meldir):
     """If the given melodic directory is contained within another analysis
     directory, the path to the data file is returned. Otherwise ``None`` is
@@ -144,7 +144,7 @@ def getICFile(meldir):
 
 def getMixFile(meldir):
     """Returns the path to the melodic mix file. """
-    
+
     mixfile = op.join(meldir, 'melodic_mix')
     if op.exists(mixfile): return mixfile
     else:                  return None
@@ -152,7 +152,7 @@ def getMixFile(meldir):
 
 def getFTMixFile(meldir):
     """Returns the path to the melodic FT mix file. """
-    
+
     ftmixfile = op.join(meldir, 'melodic_FTmix')
     if op.exists(ftmixfile): return ftmixfile
     else:                    return None
@@ -162,10 +162,10 @@ def getReportFile(meldir):
     """Returns the path to the MELODIC report index file, or ``None`` if there
     is no report.
     """
-    
+
     report = op.join(meldir, '..', 'report.html')
     if op.exists(report): return report
-    else:                 return None 
+    else:                 return None
 
 
 def getNumComponents(meldir):

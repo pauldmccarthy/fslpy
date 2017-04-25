@@ -21,7 +21,7 @@ class WeakFunctionRef(object):
     or attribute changes.
     """
 
-    
+
     def __init__(self, func):
         """Create a new ``WeakFunctionRef`` to encapsulate the given
         function or bound/unbound method.
@@ -46,7 +46,7 @@ class WeakFunctionRef(object):
 
         # Unbound/class method or function
         else:
- 
+
             self.obj      = None
             self.objType  = None
             self.func     = weakref.ref(func)
@@ -67,20 +67,20 @@ class WeakFunctionRef(object):
         if func is None: return '{} <dead>'.format(s)
         else:            return s
 
-        
+
     def __repr__(self):
         """Return a string representation of the function."""
         return self.__str__()
 
-    
+
     def __isMethod(self, func):
         """Returns ``True`` if the given function is a bound method,
         ``False`` otherwise.
-        
+
         This seems to be one of the few areas where python 2 and 3 are
         irreconcilably incompatible (or just where :mod:`six` does not have a
         function to help us).
-        
+
         In Python 2 there is no difference between an unbound method and a
         function. But in Python 3, an unbound method is still a method (and
         inspect.ismethod returns True).
@@ -101,7 +101,7 @@ class WeakFunctionRef(object):
             ismethod = inspect.ismethod(func)
 
         return ismethod
-    
+
 
     def __findPrivateMethod(self):
         """Finds and returns the bound method associated with the encapsulated
@@ -131,7 +131,7 @@ class WeakFunctionRef(object):
 
         return None
 
-    
+
     def function(self):
         """Return a reference to the encapsulated function or method,
         or ``None`` if the function has been garbage collected.
@@ -152,5 +152,5 @@ class WeakFunctionRef(object):
 
         # If the function is a bound private method,
         # its name on the instance will have been
-        # mangled, so we need to search for it 
+        # mangled, so we need to search for it
         except: return self.__findPrivateMethod()

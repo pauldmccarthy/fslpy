@@ -28,7 +28,7 @@ get their definitions straight:
 
   - *Expansion*:   A sequence of ``(low, high)`` tuples, specifying an
                    index range into each image dimension, that is used to
-                   *expand* the *coverage* of an image, based on a given set 
+                   *expand* the *coverage* of an image, based on a given set
                    of *slices*.
 
   - *Fancy slice*: Any object which is used to slice an array, and is not
@@ -56,9 +56,9 @@ class ImageWrapper(notifier.Notifier):
     access to ``nibabel`` NIFTI images. The ``ImageWrapper`` class can be
     used to:
 
-    
+
       - Control whether the image is loaded into memory, or kept on disk
-    
+
       - Incrementally update the known image data range, as more image
         data is read in.
 
@@ -80,7 +80,7 @@ class ImageWrapper(notifier.Notifier):
 
     *Image dimensionality*
 
-    
+
     The ``ImageWrapper`` abstracts away trailing image dimensions of length 1.
     This means that if the header for a NIFTI image specifies that the image
     has four dimensions, but the fourth dimension is of length 1, you do not
@@ -92,22 +92,22 @@ class ImageWrapper(notifier.Notifier):
 
     *Data access*
 
-    
+
     The ``ImageWrapper`` can be indexed in one of two ways:
 
        - With basic ``numpy``-like multi-dimensional array slicing (with step
          sizes of 1)
-    
+
        - With boolean array indexing, where the boolean/mask array has the
          same shape as the image data.
 
     See https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html for
     more details on numpy indexing.
- 
+
 
     *Data range*
 
-    
+
     In order to avoid the computational overhead of calculating the image data
     range (its minimum/maximum values) when an image is first loaded in, an
     ``ImageWrapper`` incrementally updates the known image data range as data
@@ -118,7 +118,7 @@ class ImageWrapper(notifier.Notifier):
     is always expanded in a rectilinear manner, i.e. the coverage is always
     rectangular for a 2D image, or cuboid for a 3D image.
 
-    
+
     For a 4D image, the ``ImageWrapper`` internally maintains a separate
     coverage and known data range for each 3D volume within the image. For a 3D
     image, separate coverages and data ranges are stored for each 2D slice.
@@ -130,7 +130,7 @@ class ImageWrapper(notifier.Notifier):
     property.
 
 
-    The ``ImageWrapper`` class uses the following functions (also defined in 
+    The ``ImageWrapper`` class uses the following functions (also defined in
     this module) to keep track of the portion of the image that has currently
     been included in the data range calculation:
 
@@ -147,7 +147,7 @@ class ImageWrapper(notifier.Notifier):
        adjustCoverage
     """
 
-    
+
     def __init__(self,
                  image,
                  name=None,
@@ -158,7 +158,7 @@ class ImageWrapper(notifier.Notifier):
 
         :arg image:     A ``nibabel.Nifti1Image`` or ``nibabel.Nifti2Image``.
 
-        :arg name:      A name for this ``ImageWrapper``, solely used for 
+        :arg name:      A name for this ``ImageWrapper``, solely used for
                         debug log messages.
 
         :arg loadData:  If ``True``, the image data is loaded into memory.
@@ -242,9 +242,9 @@ class ImageWrapper(notifier.Notifier):
         """Reset the internal state and known data range of this
         ``ImageWrapper``.
 
-        
+
         :arg dataRange: A tuple containing the initial ``(min, max)``  data
-                        range to use. 
+                        range to use.
 
 
         .. note:: The ``dataRange`` parameter is intended for situations where
@@ -254,7 +254,7 @@ class ImageWrapper(notifier.Notifier):
                   any range calculated from the data, unless the calculated
                   data range is wider than the provided ``dataRange``.
         """
-        
+
         if dataRange is None:
             dataRange = None, None
 
@@ -278,7 +278,7 @@ class ImageWrapper(notifier.Notifier):
         # (or 3D volume for 4D images). This effectively
         # means a seaprate coverage for each index in the
         # last 'real' image dimension (see above).
-        # 
+        #
         # For each slice/volume, the the coverage is
         # stored as sequences of (low, high) indices, one
         # for each dimension in the slice/volume (e.g.
@@ -288,7 +288,7 @@ class ImageWrapper(notifier.Notifier):
         # All of these indices are stored in a numpy array:
         #   - first dimension:  low/high index
         #   - second dimension: image dimension
-        #   - third dimension:  slice/volume index 
+        #   - third dimension:  slice/volume index
         self.__coverage = np.zeros((2, ndims, nvols), dtype=np.float32)
 
         # Internally, we calculate and store the
@@ -303,7 +303,7 @@ class ImageWrapper(notifier.Notifier):
         # (i.e. when all data has been loaded in).
         self.__covered = False
 
-        
+
     @property
     def dataRange(self):
         """Returns the currently known data range as a tuple of ``(min, max)``
@@ -321,7 +321,7 @@ class ImageWrapper(notifier.Notifier):
 
         return low, high
 
-    
+
     @property
     def covered(self):
         """Returns ``True`` if this ``ImageWrapper`` has read the entire
@@ -355,7 +355,7 @@ class ImageWrapper(notifier.Notifier):
         """
         return np.array(self.__coverage[..., vol])
 
-    
+
     def loadData(self):
         """Forces all of the image data to be loaded into memory.
 
@@ -413,7 +413,7 @@ class ImageWrapper(notifier.Notifier):
         """Returns ``True`` if all portions of the image have been covered
         in the data range calculation, ``False`` otherwise.
         """
-        
+
         shape  = self.__image.shape
         slices = zip([0] * len(shape), shape)
         return sliceCovered(slices, self.__coverage)
@@ -448,7 +448,7 @@ class ImageWrapper(notifier.Notifier):
         # but not the volume dimension.
         squeezeDims = tuple(range(self.__numRealDims,
                                   self.__numRealDims + self.__numPadDims))
-        
+
         # The calcExpansion function splits up the
         # expansions on volumes - here we calculate
         # the min/max per volume/expansion, and
@@ -472,7 +472,7 @@ class ImageWrapper(notifier.Notifier):
                 if (not np.isnan(oldvhi)) and oldvhi > newvhi: newvhi = oldvhi
 
                 # Update the stored range and
-                # coverage for each volume 
+                # coverage for each volume
                 self.__volRanges[vol, :]  = newvlo, newvhi
                 self.__coverage[..., vol] = adjustCoverage(
                     self.__coverage[..., vol], exp)
@@ -504,8 +504,8 @@ class ImageWrapper(notifier.Notifier):
         of the image.
 
         :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
-                     index pair, one for each dimension in the image. 
-        
+                     index pair, one for each dimension in the image.
+
         :arg data:   The image data at the given ``slices`` (as a ``numpy``
                      array).
         """
@@ -529,10 +529,10 @@ class ImageWrapper(notifier.Notifier):
         Updates the image data coverage, and known data range accordingly.
 
         :arg slices: A tuple of tuples, each tuple being a ``(low, high)``
-                     index pair, one for each dimension in the image. 
-        
+                     index pair, one for each dimension in the image.
+
         :arg data:   The image data at the given ``slices`` (as a ``numpy``
-                     array). 
+                     array).
         """
 
         overlap = sliceOverlap(slices, self.__coverage)
@@ -541,7 +541,7 @@ class ImageWrapper(notifier.Notifier):
         # area and the current coverage, then it's
         # easy - we just expand the coverage to
         # include the newly written area.
-        # 
+        #
         # But if there is overlap between the written
         # area and the current coverage, things are
         # more complicated, because the portion of
@@ -595,23 +595,23 @@ class ImageWrapper(notifier.Notifier):
                 self.__taskThread.enqueue(
                     self.__expandCoverage, slices, taskName=name)
 
-            
+
     def __getitem__(self, sliceobj):
         """Returns the image data for the given ``sliceobj``, and updates
         the known image data range if necessary.
 
         :arg sliceobj: Something which can slice the image data.
         """
-        
+
         log.debug('Getting image data: {}'.format(sliceobj))
-        
+
         shape              = self.__canonicalShape
         realShape          = self.__image.shape
         sliceobj           = canonicalSliceObj(   sliceobj, shape)
         fancy              = isValidFancySliceObj(sliceobj, shape)
         expNdims, expShape = expectedShape(       sliceobj, shape)
 
-        # TODO Cache 3D images for large 4D volumes, 
+        # TODO Cache 3D images for large 4D volumes,
         #      so you don't have to hit the disk?
 
         # Make the slice object compatible with the
@@ -619,7 +619,7 @@ class ImageWrapper(notifier.Notifier):
         sliceobj = canonicalSliceObj(sliceobj, realShape)
         data     = self.__getData(sliceobj)
 
-        # Update data range for the 
+        # Update data range for the
         # data that we just read in
         if not self.__covered:
 
@@ -648,20 +648,20 @@ class ImageWrapper(notifier.Notifier):
             # ndarray with 0 dims, data[0] will raise
             # an error!
             data = data[()]
-                
+
         return data
 
 
     def __setitem__(self, sliceobj, values):
         """Writes the given ``values`` to the image at the given ``sliceobj``.
 
-        
+
         :arg sliceobj: Something which can be used to slice the array.
         :arg values:   Data to write to the image.
 
-        
+
         .. note:: Modifying image data will cause the entire image to be
-                  loaded into memory. 
+                  loaded into memory.
         """
 
         realShape = self.__image.shape
@@ -675,7 +675,7 @@ class ImageWrapper(notifier.Notifier):
         # values to prevent numpy from raising
         # an error in the assignment below.
         if realShape != self.__canonicalShape:
-            
+
             expNdims, expShape = expectedShape(sliceobj, realShape)
 
             # If we are slicing a scalar, the
@@ -685,13 +685,13 @@ class ImageWrapper(notifier.Notifier):
                 if len(values) > 1:
                     raise IndexError('Invalid assignment: [{}] = {}'.format(
                         sliceobj, len(values)))
-        
+
                 values = values[0]
 
-            # Make sure that the values 
+            # Make sure that the values
             # have a compatible shape.
             else:
-                
+
                 values = np.array(values)
                 if values.shape != expShape:
                     values = values.reshape(expShape)
@@ -774,7 +774,7 @@ def canonicalSliceObj(sliceobj, shape):
     ``nibabel.fileslice.canonical_slicers`` function.
     """
 
-    # Fancy slice objects must have 
+    # Fancy slice objects must have
     # the same shape as the data
     if isValidFancySliceObj(sliceobj, shape):
         return sliceobj.reshape(shape)
@@ -783,12 +783,12 @@ def canonicalSliceObj(sliceobj, shape):
 
         if not isinstance(sliceobj, tuple):
             sliceobj = (sliceobj,)
-        
+
         if len(sliceobj) > len(shape):
             sliceobj = sliceobj[:len(shape)]
 
         return nib.fileslice.canonical_slicers(sliceobj, shape)
-    
+
 
 def canonicalShape(shape):
     """Calculates a *canonical* shape, how the given ``shape`` should
@@ -800,12 +800,12 @@ def canonicalShape(shape):
 
     # Squeeze out empty dimensions, as
     # 3D image can sometimes be listed
-    # as having 4 or more dimensions 
+    # as having 4 or more dimensions
     for i in reversed(range(len(shape))):
         if shape[i] == 1: shape = shape[:i]
         else:             break
 
-    # But make sure the shape 
+    # But make sure the shape
     # has at 3 least dimensions
     if len(shape) < 3:
         shape = shape + [1] * (3 - len(shape))
@@ -827,13 +827,13 @@ def expectedShape(sliceobj, shape):
     :arg shape:    Shape of the array being sliced.
 
     :returns:      A tuple containing:
-    
+
                      - Expected number of dimensions of the result
-    
+
                      - Expected shape of the result (or ``None`` if
                        ``sliceobj`` is fancy).
     """
-    
+
     if isValidFancySliceObj(sliceobj, shape):
         return 1, None
 
@@ -845,19 +845,19 @@ def expectedShape(sliceobj, shape):
 
     # Figure out the number of dimensions
     # that the result should have, given
-    # this slice object. 
+    # this slice object.
     expShape = []
 
     for i in range(len(sliceobj)):
 
-        # Each dimension which has an 
+        # Each dimension which has an
         # int slice will be collapsed
         if isinstance(sliceobj[i], int):
             continue
 
         start = sliceobj[i].start
         stop  = sliceobj[i].stop
-        
+
         if start is None: start = 0
         if stop  is None: stop  = shape[i]
 
@@ -893,7 +893,7 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
     for dim, s in enumerate(sliceobj):
 
-        # each element in the slices tuple should 
+        # each element in the slices tuple should
         # be a slice object or an integer
         if isinstance(s, slice): i = [s.start, s.stop]
         else:                    i = [s,       s + 1]
@@ -921,14 +921,14 @@ def sliceTupleToSliceObj(slices):
     return tuple(sliceobj)
 
 
-def adjustCoverage(oldCoverage, slices): 
+def adjustCoverage(oldCoverage, slices):
     """Adjusts/expands the given ``oldCoverage`` so that it covers the
     given set of ``slices``.
 
     :arg oldCoverage: A ``numpy`` array of shape ``(2, n)`` containing
                       the (low, high) index pairs for ``n`` dimensions of
                       a single slice/volume in the image.
-    
+
     :arg slices:      A sequence of (low, high) index pairs. If ``slices``
                       contains more dimensions than are specified in
                       ``oldCoverage``, the trailing dimensions are ignored.
@@ -982,7 +982,7 @@ def sliceOverlap(slices, coverage):
                     the current image coverage.
 
     :returns: One of the following codes:
-    
+
               .. autosummary::
 
               OVERLAP_ALL
@@ -1003,7 +1003,7 @@ def sliceOverlap(slices, coverage):
         for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
-            lowSlice, highSlice = slices[     dim] 
+            lowSlice, highSlice = slices[     dim]
 
             # No coverage
             if np.isnan(lowCover) or np.isnan(highCover):
@@ -1028,7 +1028,7 @@ def sliceOverlap(slices, coverage):
             # slice and coverage on this dimension
             # - check the other dimensions.
             state = OVERLAP_SOME
-            
+
         overlapStates[i] = state
 
     if   np.any(overlapStates == OVERLAP_SOME): return OVERLAP_SOME
@@ -1057,7 +1057,7 @@ def sliceCovered(slices, coverage):
         for dim in range(numDims):
 
             lowCover, highCover = coverage[:, dim, vol]
-            lowSlice, highSlice = slices[     dim] 
+            lowSlice, highSlice = slices[     dim]
 
             if np.isnan(lowCover) or np.isnan(highCover):
                 return False
@@ -1081,7 +1081,7 @@ def calcExpansion(slices, coverage):
 
     numDims         = coverage.shape[1]
     padDims         = len(slices) - numDims - 1
-    lowVol, highVol = slices[numDims] 
+    lowVol, highVol = slices[numDims]
 
     expansions = []
     volumes    = []
@@ -1095,10 +1095,10 @@ def calcExpansion(slices, coverage):
         for i in range(padDims):
             exp.append((0, 1))
         return exp
-    
+
     for vol in range(lowVol, highVol):
 
-        # No coverage of this volume - 
+        # No coverage of this volume -
         # we need the whole slice.
         if np.any(np.isnan(coverage[:, :, vol])):
             exp = [(s[0], s[1]) for s in slices[:numDims]]
@@ -1125,7 +1125,7 @@ def calcExpansion(slices, coverage):
             # below the current coverage
             if lowCover - lowSlice > 0:
                 reqRanges.append((dim, int(lowSlice), int(lowCover)))
-                
+
             # The slice covers a region
             # above the current coverage
             if highCover - highSlice < 0:
@@ -1143,7 +1143,7 @@ def calcExpansion(slices, coverage):
             # for that dimension...
             expansion[dimx][0] = xlo
             expansion[dimx][1] = xhi
-                
+
             # And will span the union of
             # the coverage, and calculated
             # range for every other dimension.
@@ -1239,7 +1239,7 @@ def calcExpansion(slices, coverage):
 
 
 def collapseExpansions(expansions, numDims):
-    """Scans through the given list of expansions (each assumed to pertain 
+    """Scans through the given list of expansions (each assumed to pertain
     to a single 3D image), and combines any which cover the same
     image area, and cover adjacent volumes.
 
@@ -1268,7 +1268,7 @@ def collapseExpansions(expansions, numDims):
         vol        = exp[numDims][0]
         exp        = tuple(exp[:numDims])
         commonExps = commonExpansions.get(exp, None)
-        
+
         if commonExps is None:
             commonExps            = []
             commonExpansions[exp] = commonExps
@@ -1277,17 +1277,17 @@ def collapseExpansions(expansions, numDims):
 
             if vol >= vlo and vol < vhi:
                 break
-            
+
             elif vol == vlo - 1:
                 commonExps[i] = vol, vhi
                 break
             elif vol == vhi:
                 commonExps[i] = vlo, vol + 1
                 break
-            
+
         else:
             commonExps.append((vol, vol + 1))
-            
+
     collapsed = []
 
     for exp, volRanges in commonExpansions.items():

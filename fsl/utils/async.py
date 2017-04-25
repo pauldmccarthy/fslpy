@@ -132,30 +132,30 @@ def run(task, onFinish=None, onError=None, name=None):
 
     # Calls the onFinish or onError handler
     def callback(cb, *args, **kwargs):
-        
+
         if cb is None:
             return
-        
+
         if haveWX: idle(cb, *args, **kwargs)
         else:      cb(      *args, **kwargs)
 
-    # Runs the task, and calls 
+    # Runs the task, and calls
     # callback functions as needed.
     def wrapper():
 
         try:
             task()
             log.debug('Task "{}" finished'.format(name))
-            callback(onFinish) 
-            
+            callback(onFinish)
+
         except Exception as e:
-            
+
             log.warn('Task "{}" crashed'.format(name), exc_info=True)
             callback(onError, e)
 
     # If WX, run on a thread
     if haveWX:
-        
+
         log.debug('Running task "{}" on thread'.format(name))
 
         thread = threading.Thread(target=wrapper)
@@ -238,7 +238,7 @@ def setIdleTimeout(timeout=None):
     """
 
     global _idleCallRate
-    
+
     if timeout is None:
         timeout = 200
 
@@ -292,7 +292,7 @@ def _wxIdleLoop(ev):
 
     try:
         task = _idleQueue.get_nowait()
-        
+
     except queue.Empty:
 
         # Make sure that we get called periodically,
@@ -323,7 +323,7 @@ def _wxIdleLoop(ev):
 
     # Has the task timed out?
     elif task.timeout == 0 or (elapsed < task.timeout):
-        
+
         log.debug('Running function ({}) on wx idle loop'.format(taskName))
 
         try:
@@ -344,7 +344,7 @@ def _wxIdleLoop(ev):
 
 def inIdle(taskName):
     """Returns ``True`` if a task with the given name is queued on the
-    idle loop (or is currently running), ``False`` otherwise. 
+    idle loop (or is currently running), ``False`` otherwise.
     """
     global _idleQueueDict
     return taskName in _idleQueueDict
@@ -356,7 +356,7 @@ def cancelIdle(taskName):
 
     A ``KeyError`` is raised if no task called ``taskName`` exists.
     """
-    
+
     global _idleQueueDict
     _idleQueueDict[taskName].timeout = -1
 
@@ -404,7 +404,7 @@ def idle(task, *args, **kwargs):
 
     All other arguments are passed through to the task function.
 
-    
+
     If a ``wx.App`` is not running, the ``timeout``, ``name`` and
     ``skipIfQueued`` arguments are ignored. Instead, the call will sleep for
     ``after`` seconds, and then the ``task`` is called directly.
@@ -447,7 +447,7 @@ def idle(task, *args, **kwargs):
         if havewx and (not _idleRegistered):
             app = wx.GetApp()
             app.Bind(wx.EVT_IDLE, _wxIdleLoop)
-            
+
             _idleTimer      = wx.Timer(app)
             _idleRegistered = True
 
@@ -466,7 +466,7 @@ def idle(task, *args, **kwargs):
                 cancelIdle(name)
                 log.debug('Idle task ({}) is already queued - '
                           'dropping the old task'.format(name))
-                
+
             elif skipIfQueued:
                 log.debug('Idle task ({}) is already queued '
                           '- skipping it'.format(name))
@@ -487,10 +487,10 @@ def idle(task, *args, **kwargs):
 
         if name is not None:
             _idleQueueDict[name] = idleTask
-            
+
     else:
         time.sleep(after)
-        log.debug('Running idle task directly') 
+        log.debug('Running idle task directly')
         task(*args, **kwargs)
 
 
@@ -499,11 +499,11 @@ def idleWhen(func, condition, *args, **kwargs):
     :func:`idle` when it returns ``True``.
 
     :arg func:      Function to call.
-    
+
     :arg condition: Function which returns ``True`` or ``False``. The ``func``
-                    function is only called when the ``condition`` function 
+                    function is only called when the ``condition`` function
                     returns ``True``.
-    
+
     :arg pollTime:  Must be passed as a keyword argument. Time (in seconds) to
                     wait between successive calls to ``when``. Defaults to
                     ``0.2``.
@@ -538,10 +538,10 @@ def wait(threads, task, *args, **kwargs):
                        function will create a new thread to ``join`` the
                        ``threads``, and will return immediately.
 
-    
+
     All other arguments are passed to the ``task`` function.
 
-    
+
     .. note:: This function will not support ``task`` functions which expect
               a keyword argument called ``wait_direct``.
     """
@@ -550,7 +550,7 @@ def wait(threads, task, *args, **kwargs):
 
     if not isinstance(threads, collections.Sequence):
         threads = [threads]
-    
+
     haveWX = _haveWX()
 
     def joinAll():
@@ -566,7 +566,7 @@ def wait(threads, task, *args, **kwargs):
         thread = threading.Thread(target=joinAll)
         thread.start()
         return thread
-    
+
     else:
         joinAll()
         return None
@@ -632,7 +632,7 @@ class TaskThread(threading.Thread):
         All other arguments are passed through to the task function when it is
         executed.
 
-        .. note:: If the specified ``taskName`` is not unique (i.e. another 
+        .. note:: If the specified ``taskName`` is not unique (i.e. another
                   task with the same name may already be enqueued), the
                   :meth:`isQueued` method will probably return invalid
                   results.
@@ -760,7 +760,7 @@ class TaskThread(threading.Thread):
                 log.debug('Task completed (vetoed onFinish): {} [{}]'.format(
                     task.name,
                     getattr(task.func, '__name__', '<unknown>')))
-                
+
             except Exception as e:
                 log.warning('Task crashed: {} [{}]: {}: {}'.format(
                     task.name,
@@ -798,7 +798,7 @@ def mutex(*args, **kwargs):
             def dangerousMethod2(self):
                 return sefl.__sharedData.pop()
 
-    
+
 
     The ``@mutex`` decorator will ensure that, at any point in time, only
     one thread is running either of the ``dangerousMethod1`` or
@@ -840,7 +840,7 @@ class MutexFactory(object):
         If this ``MutexFactory`` is accessed through a class, the
         decorated function is returned.
         """
-        
+
         # Class-level access
         if instance is None:
             return self.__func
@@ -863,7 +863,7 @@ class MutexFactory(object):
                 lock.release()
 
         # Replace this MutexFactory with
-        # the decorator on the instance 
+        # the decorator on the instance
         decorator = functools.update_wrapper(decorator, self.__func)
         setattr(instance, self.__func.__name__, decorator)
         return decorator

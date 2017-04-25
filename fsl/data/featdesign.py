@@ -129,16 +129,16 @@ class FEATFSFDesign(object):
     analysis. This class is intended to be used for FEAT analyses generated
     with FSL 5.0.9 and older.
     """
-    
+
     def __init__(self, featDir, settings=None, loadVoxelwiseEVs=True):
         """Create a ``FEATFSFDesign``.
 
         :arg featDir:          Path to the FEAT directory.
 
-        :arg settings:         A dictionary containing the FEAT analysis 
-                               settings from its ``design.fsf``. If not 
-                               provided, is loaded via 
-                               :func:`.featanalysis.loadSettings`. 
+        :arg settings:         A dictionary containing the FEAT analysis
+                               settings from its ``design.fsf``. If not
+                               provided, is loaded via
+                               :func:`.featanalysis.loadSettings`.
 
         :arg loadVoxelwiseEVs: If ``True`` (the default), image files
                                for all voxelwise EVs are loaded. Otherwise
@@ -157,7 +157,7 @@ class FEATFSFDesign(object):
         version      = float(settings['version'])
         level        = int(  settings['level'])
 
-        # Print a warning if we're 
+        # Print a warning if we're
         # using an old version of FEAT
         if version < 6:
             log.warning('Unsupported FEAT version: {}'.format(version))
@@ -181,14 +181,14 @@ class FEATFSFDesign(object):
         # so they're ready to be used by
         # the getDesign method.
         for ev in self.__evs:
-            
+
             if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
                 continue
 
-            ev.image = None 
+            ev.image = None
 
-            # The path to some voxelwise 
-            # EVs may not be present - 
+            # The path to some voxelwise
+            # EVs may not be present -
             # see the VoxelwisEV class.
             if loadVoxelwiseEVs and (ev.filename is not None):
                 ev.image = fslimage.Image(ev.filename)
@@ -199,8 +199,8 @@ class FEATFSFDesign(object):
         each column of this ``FEATFSFDesign``.
         """
         return list(self.__evs)
- 
-    
+
+
     def getDesign(self, voxel=None):
         """Returns the design matrix for the specified voxel.
 
@@ -254,7 +254,7 @@ class EV(object):
         self.index = index
         self.title = title
 
-        
+
 class NormalEV(EV):
     """Class representing a *normal* EV in a FEAT design matrix, i.e. one
     which has been explicitly provided by the user.
@@ -284,7 +284,7 @@ class TemporalDerivativeEV(NormalEV):
     """Class representing a temporal derivative EV, derived from a normal EV.
     """
     pass
-                          
+
 
 class BasisFunctionEV(NormalEV):
     """Class representing a basis function EV, derived from a normal EV. """
@@ -339,7 +339,7 @@ class ConfoundEV(EV):
     ============= ==========================================================
     ``confIndex`` Index of this ``ConfoundEV`` (starting from 0) in relation
                   to all other confound EVs.
-    ============= ========================================================== 
+    ============= ==========================================================
     """
     def __init__(self, index, confIndex, title):
         """Create a ``ConfoundEV``.
@@ -352,7 +352,7 @@ class ConfoundEV(EV):
         """
         EV.__init__(self, index, title)
         self.confIndex = confIndex
- 
+
 
 class MotionParameterEV(EV):
     """Class representing a motion parameter EV.
@@ -361,10 +361,10 @@ class MotionParameterEV(EV):
     addition to the :class:`EV` attributes):
 
     =============== ========================================================
-    ``motionIndex`` Index of this ``MotionParameterEV`` (starting from 0) in 
+    ``motionIndex`` Index of this ``MotionParameterEV`` (starting from 0) in
                     relation to all other motion parameter EVs.
     =============== ========================================================
-    """ 
+    """
     def __init__(self, index, motionIndex, title):
         """Create a ``MotionParameterEV``.
 
@@ -373,33 +373,33 @@ class MotionParameterEV(EV):
         :arg confIndex: Index (starting from 0) of this ``MotionParameterEV``
                         in relation to all other motion parameter EVs.
         :arg title:     Name of this ``MotionParameterEV``.
-        """ 
+        """
         EV.__init__(self, index, title)
-        self.motionIndex = motionIndex 
+        self.motionIndex = motionIndex
 
 
 class VoxelwiseConfoundEV(EV):
     """Class representing a voxelwise confound EV.
 
-    ``VoxelwiseConfoundEV`` instances contain the following attributes (in 
+    ``VoxelwiseConfoundEV`` instances contain the following attributes (in
     addition to the :class:`EV` attributes):
 
     ============ ==========================================================
-    ``voxIndex`` Index of this ``VoxelwiseConfoundEV`` (starting from 0) in 
+    ``voxIndex`` Index of this ``VoxelwiseConfoundEV`` (starting from 0) in
                  relation to all other voxelwise confound EVs.
     ``filename`` Path to the image file containing the data for this EV
-    ============ ========================================================== 
-    """ 
+    ============ ==========================================================
+    """
     def __init__(self, index, voxIndex, title, filename):
         """Create a ``Voxelwise ConfoundEV``.
 
-        :arg index:     Index (starting from 0) of this 
+        :arg index:     Index (starting from 0) of this
                         ``VoxelwiseConfoundEV`` in the design matrix.
-        :arg confIndex: Index (starting from 0) of this 
+        :arg confIndex: Index (starting from 0) of this
                         ``VoxelwiseConfoundEV`` in relation to all other
                         voxelwise confound EVs.
         :arg title:     Name of this ``VoxelwiseConfoundEV``.
-        """        
+        """
         EV.__init__(self, index, title)
         self.voxIndex = voxIndex
 
@@ -408,8 +408,8 @@ class VoxelwiseConfoundEV(EV):
         else:
             log.warning('Voxelwise confound EV file '
                         'does not exist: '.format(filename))
-            self.filename = None 
-    
+            self.filename = None
+
 
 def getFirstLevelEVs(featDir, settings, designMat):
     """Derives the EVs for the given first level FEAT analysis.
@@ -423,20 +423,20 @@ def getFirstLevelEVs(featDir, settings, designMat):
 
     :returns: A list of :class:`EV` instances, one for each column in the
               design matrix.
-    """ 
+    """
 
     evs     = []
     origEVs = int(settings['evs_orig'])
 
     # First, we loop through the EVs that
     # are explicitly defined in design.fsf.
-    # This includes 
+    # This includes
     #   - normal EVs
     #   - temporal derivative EVs
     #   - basis function EVs
     #   - voxelwise EVs
     for origIdx in range(origEVs):
-            
+
         title    = settings[        'evtitle{}'  .format(origIdx + 1)]
         shape    = int(settings[    'shape{}'    .format(origIdx + 1)])
         convolve = int(settings[    'convolve{}' .format(origIdx + 1)])
@@ -445,7 +445,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
 
         # Normal EV. This is just a column
         # in the design matrix, defined by
-        # the user. 
+        # the user.
         if shape != 9:
             evs.append(NormalEV(len(evs), origIdx, title))
 
@@ -463,8 +463,8 @@ def getFirstLevelEVs(featDir, settings, designMat):
             filename = op.join(
                 featDir, 'designVoxelwiseEV{}'.format(origIdx + 1))
             filename = fslimage.addExt(filename, True)
-            
-            evs.append(VoxelwiseEV(len(evs), origIdx, title, filename)) 
+
+            evs.append(VoxelwiseEV(len(evs), origIdx, title, filename))
 
         # This EV has been convolved with a set of basis
         # functions. A set of N additional EVs have been
@@ -491,7 +491,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
     # have been explicilty defined, the rest of
     # the EVs in the design matrix are confounds,
     # in the following order:
-    # 
+    #
     #   1. Voxelwise confounds
     #   2. Motion parameters
     #   3. Other confounds
@@ -513,7 +513,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
     # order defined in vef.dat.
     voxConfFiles = op.join(featDir, 'vef.dat')
     voxConfLocs  = op.join(featDir, 'ven.dat')
-    
+
     if op.exists(voxConfFiles) and op.exists(voxConfLocs):
 
         with open(voxConfFiles, 'rt') as vcff:
@@ -554,14 +554,14 @@ def getFirstLevelEVs(featDir, settings, designMat):
     # Have motion parameters been added
     # as regressors to the design matrix?
     motion = int(settings['motionevs'])
-    
+
     if   motion == 1: numMotionEVs = 6
     elif motion == 2: numMotionEVs = 24
-    else:             numMotionEVs = 0 
+    else:             numMotionEVs = 0
 
     for i in range(numMotionEVs):
         evs.append(MotionParameterEV(len(evs), i, 'motion'))
-        
+
     # Last step - any columns in the design
     # matrix which have not yet been accounted
     # for are other confounds, specified by
@@ -585,7 +585,7 @@ def getHigherLevelEVs(featDir, settings, designMat):
                     :func:`loadDesignMat`).
 
     :returns: A list of :class:`EV` instances, one for each column in the
-              design matrix. 
+              design matrix.
     """
 
     # TODO Maybe I can give the voxel EVs titles based on their
@@ -598,7 +598,7 @@ def getHigherLevelEVs(featDir, settings, designMat):
     #
     #   - Normal EVs
     #   - Voxelwise EVs
-    # 
+    #
     # evs_orig is the number of normal EVs
     # evs_vox is the number of voxelwise EVs
     # evs_real is the total number of EVs
@@ -623,11 +623,11 @@ def getHigherLevelEVs(featDir, settings, designMat):
     # for each voxelwise EV from its file
     # name.
     for origIdx in range(voxEVs):
-        
+
         filename = settings['evs_vox_{}'.format(origIdx + 1)]
         title    = op.basename(fslimage.removeExt(filename))
         evs.append(VoxelwiseEV(len(evs), origIdx, title, filename))
-        
+
     return evs
 
 
@@ -640,7 +640,7 @@ def loadDesignMat(designmat):
     :arg designmat: Path to the ``design.mat`` file.
     """
 
-    matrix = None 
+    matrix = None
 
     log.debug('Loading FEAT design matrix from {}'.format(designmat))
 

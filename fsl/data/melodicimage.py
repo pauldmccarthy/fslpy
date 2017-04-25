@@ -24,7 +24,7 @@ class MelodicImage(fslimage.Image):
     The ``MelodicImage`` class provides a few MELODIC-specific attributes and
     methods:
 
-    
+
     .. autosummary::
        :nosignatures:
 
@@ -59,8 +59,8 @@ class MelodicImage(fslimage.Image):
 
         if not melanalysis.isMelodicImage(path):
             raise ValueError('{} does not appear to be a '
-                             'MELODIC component file'.format(path)) 
-            
+                             'MELODIC component file'.format(path))
+
         fslimage.Image.__init__(self, path, *args, **kwargs)
 
         meldir            = op.dirname(path)
@@ -73,7 +73,7 @@ class MelodicImage(fslimage.Image):
         # TR value if possible
         dataFile = self.getDataFile()
 
-        if dataFile is not None: 
+        if dataFile is not None:
             dataImage = fslimage.Image(dataFile,
                                        loadData=False,
                                        calcRange=False)
@@ -88,7 +88,7 @@ class MelodicImage(fslimage.Image):
         initialised from the data file (see the :meth:`getDataFile` method).
         """
         return self.__tr
-    
+
 
     @tr.setter
     def tr(self, val):
@@ -101,24 +101,24 @@ class MelodicImage(fslimage.Image):
         if oldval != val:
             self.notify(topic='tr')
 
-        
+
     def getComponentTimeSeries(self, component):
         """Returns the time course for the specified (0-indexed) component. """
         return self.__melmix[:, component]
 
-    
+
     def getComponentPowerSpectrum(self, component):
         """Returns the power spectrum for the time course of the specified
         (0-indexed) component.
         """
-        return self.__melFTmix[:, component] 
+        return self.__melFTmix[:, component]
 
 
     def numComponents(self):
         """Returns the number of components in this ``MelodicImage``. """
         return self.shape[3]
 
-    
+
     def getMelodicDir(self):
         """Returns the melodic output directory in which this image is
         contained.
@@ -131,7 +131,7 @@ class MelodicImage(fslimage.Image):
         :func:`.melodicanalysis.getReportFile`.
         """
         return melanalysis.getReportFile(self.__meldir)
-    
+
 
     def getTopLevelAnalysisDir(self):
         """Returns the top level analysis, if the melodic analysis for this
@@ -155,4 +155,4 @@ class MelodicImage(fslimage.Image):
         ``MelodicImage``. See the :func:`.melodicanalysis.getMeanFile`
         function.
         """
-        return melanalysis.getMeanFile(self.__meldir) 
+        return melanalysis.getMeanFile(self.__meldir)

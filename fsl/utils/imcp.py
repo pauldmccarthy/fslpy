@@ -33,22 +33,22 @@ def imcp(src,
 
     :arg src:           Path to copy. If ``allowedExts`` is provided,
                         the file extension can be omitted.
-    
-    :arg dest:          Destination path. Can be an incomplete file
-                        specification (i.e. without the extension), or a 
-                        directory. 
 
-    :arg overwrite:     If ``True`` this function will overwrite files that 
+    :arg dest:          Destination path. Can be an incomplete file
+                        specification (i.e. without the extension), or a
+                        directory.
+
+    :arg overwrite:     If ``True`` this function will overwrite files that
                         already exist. Defaults to ``False``.
 
     :arg useDefaultExt: Defaults to ``False``. If ``True``, the destination
-                        file type will be set according to the default 
+                        file type will be set according to the default
                         extension, specified by
                         :func:`~fsl.data.image.defaultExt`. If the source
                         file does not have the same type as the default
                         extension, it will be converted. If ``False``, the
                         source file type is not changed.
-    
+
     :arg move:          If ``True``, the files are moved, instead of being
                         copied. See :func:`immv`.
     """
@@ -64,7 +64,7 @@ def imcp(src,
     # src was specified without an
     # extension, or the specified
     # src does not have an allowed
-    # extension. 
+    # extension.
     if srcExt == '':
 
         # Try to resolve the specified src
@@ -73,8 +73,8 @@ def imcp(src,
         # addExt will raise an error
         src = fslimage.addExt(src, mustExist=True)
 
-        # We've resolved src to a 
-        # full filename - split it 
+        # We've resolved src to a
+        # full filename - split it
         # again to get its extension
         srcBase, srcExt = fslimage.splitExt(src)
 
@@ -107,10 +107,10 @@ def imcp(src,
 
     dest = destBase + destExt
 
-    # Give up if we don't have permission. 
+    # Give up if we don't have permission.
     if          not os.access(op.dirname(dest), os.W_OK | os.X_OK):
         raise fslpath.PathError('imcp error - cannot write to {}'.format(dest))
-    
+
     if move and not os.access(op.dirname(src),  os.W_OK | os.X_OK):
         raise fslpath.PathError('imcp error - cannot move from {}'.format(src))
 
@@ -118,7 +118,7 @@ def imcp(src,
     # match the destination file type,
     # we need to perform a conversion.
     #
-    # This is more expensive in terms of 
+    # This is more expensive in terms of
     # io and cpu, but programmatically
     # very easy - nibabel does all the
     # hard work.
@@ -127,7 +127,7 @@ def imcp(src,
         if not overwrite and op.exists(dest):
             raise fslpath.PathError('imcp error - destination already '
                                     'exists ({})'.format(dest))
-         
+
         img = nib.load(src)
         nib.save(img, dest)
 
@@ -140,7 +140,7 @@ def imcp(src,
     # is actually more complicated than
     # converting the file type due to
     # hdr/img pairs ...
-    # 
+    #
     # If the source is part of a file group,
     # e.g. src.img/src.hdr), we need to copy
     # the whole set of files. So here we
@@ -175,12 +175,12 @@ def imcp(src,
     copyDests = [destBase + e for (b, e) in copySrcs]
     copySrcs  = [b        + e for (b, e) in copySrcs]
 
-    # Fail if any of the destination 
+    # Fail if any of the destination
     # paths already exist
     if not overwrite and any([op.exists(d) for d in copyDests]):
         raise fslpath.PathError('imcp error - a destination path already '
                                 'exists ({})'.format(', '.join(copyDests)))
- 
+
     # Do the copy/move
     for src, dest in zip(copySrcs, copyDests):
         if move: shutil.move(src, dest)

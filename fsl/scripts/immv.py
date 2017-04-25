@@ -54,7 +54,7 @@ def main(argv=None):
 
     srcs = fslpath.removeDuplicates(srcs,
                                     allowedExts=fslimage.ALLOWED_EXTENSIONS,
-                                    fileGroups=fslimage.FILE_GROUPS) 
+                                    fileGroups=fslimage.FILE_GROUPS)
 
     for src in srcs:
         imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
