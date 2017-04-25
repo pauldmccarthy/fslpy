@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <paulmc@fmrib.ox.ac.uk>
 #
 """This module defines the ``imcp`` application, for copying NIFTI image
-files. 
+files.
 
 The :func:`main` function is essentially a wrapper around the
 :func:`fsl.utils.imcp.imcp` function - see its documentation for more details.
@@ -56,7 +56,7 @@ def main(argv=None):
                                     fileGroups=fslimage.FILE_GROUPS)
 
     for src in srcs:
-        imcp.imcp(src, dest, useDefaultExt=True, overwrite=True) 
+        imcp.imcp(src, dest, useDefaultExt=True, overwrite=True)
 
 
 if __name__ == '__main__':
@@ -65,4 +65,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(e)
-        sys.exit(1) 
+        sys.exit(1)

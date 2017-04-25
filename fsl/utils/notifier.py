@@ -64,7 +64,7 @@ class _Listener(object):
     def __str__(self):
 
         cb = self.callback
-        
+
         if cb is not None: cbName = getattr(cb, '__name__', '<callable>')
         else:              cbName = '<deleted>'
 
@@ -93,7 +93,7 @@ class Notifier(object):
         """Initialises a dictionary of listeners on a new ``Notifier``
         instance.
         """
-        
+
         new = object.__new__(cls)
 
         # Listeners are stored in this
@@ -113,7 +113,7 @@ class Notifier(object):
 
         return new
 
-        
+
     def register(self, name, callback, topic=None, runOnIdle=False):
         """Register a listener with this ``Notifier``.
 
@@ -148,13 +148,13 @@ class Notifier(object):
 
         if name in self.__listeners[topic]:
             raise Registered('Listener {} is already registered'.format(name))
-        
+
         self.__listeners[topic][name] = listener
         self.__enabled[  topic]       = self.__enabled.get(topic, True)
 
         log.debug('{}: Registered {}'.format(type(self).__name__, listener))
 
-        
+
     def deregister(self, name, topic=None):
         """De-register a listener that has been previously registered with
         this ``Notifier``.
@@ -185,7 +185,7 @@ class Notifier(object):
         if len(listeners) == 0:
             self.__listeners.pop(topic)
             self.__enabled  .pop(topic)
-        
+
         log.debug('{}: De-registered listener {}'.format(
             type(self).__name__, listener))
 
@@ -218,7 +218,7 @@ class Notifier(object):
         """Enable/disable all listeners for the specified topic.
 
         :arg topic: Topic to enable/disable listeners on. If ``None``,
-                    all listeners are enabled/disabled. 
+                    all listeners are enabled/disabled.
 
         :arg state: State to set listeners to.
         """
@@ -230,7 +230,7 @@ class Notifier(object):
             if topic in self.__enabled:
                 self.__enabled[topic] = state
 
-    
+
     def disableAll(self, topic=None):
         """Disable all listeners for the specified topic (or ``None``
         to disable all listeners).
@@ -241,13 +241,13 @@ class Notifier(object):
     def isAllEnabled(self, topic=None):
         """Returns ``True`` if all listeners for the specified topic (or all
         listeners if ``topic=None``) are enabled, ``False`` otherwise.
-        """ 
+        """
         if topic is None:
             topic = DEFAULT_TOPIC
 
         return self.__enabled.get(topic, False)
 
-        
+
     @contextlib.contextmanager
     def skipAll(self, topic=None):
         """Context manager which disables all listeners for the
@@ -267,7 +267,7 @@ class Notifier(object):
 
         try:
             yield
-            
+
         finally:
             for t, s in zip(topics, states):
                 self.enableAll(t, s)
@@ -312,7 +312,7 @@ class Notifier(object):
         finally:
             for topic, state in zip(topics, states):
                 self.enable(name, topic, state)
-        
+
 
     def notify(self, *args, **kwargs):
         """Notify all registered listeners of this ``Notifier``.
@@ -326,7 +326,7 @@ class Notifier(object):
         :arg value: A value passed through to the registered listener
                     functions. If not provided, listeners will be passed
                     a value of ``None``.
-        
+
         All other arguments passed to this method are ignored.
 
         .. note:: Listeners registered with ``runOnIdle=True`` are called
@@ -345,7 +345,7 @@ class Notifier(object):
             stack   = inspect.stack()
             frame   = stack[1]
             srcMod  = '...{}'.format(frame[1][-20:])
-            srcLine = frame[2] 
+            srcLine = frame[2]
 
             log.debug('{}: Notifying {} listeners (topic: {}) [{}:{}]'.format(
                 type(self).__name__,
@@ -355,7 +355,7 @@ class Notifier(object):
                 srcLine))
 
         for listener in listeners:
-                
+
             callback = listener.callback
             name     = listener.name
 

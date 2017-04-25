@@ -48,7 +48,7 @@ class FEATImage(fslimage.Image):
         # is a contrast vector).
         img.fit([1, 1, 1, 1], [23, 30, 42], fullModel=True)
     """
-    
+
 
     def __init__(self, path, **kwargs):
         """Create a ``FEATImage`` instance.
@@ -75,7 +75,7 @@ class FEATImage(fslimage.Image):
         else:
             design      = None
             names, cons = [], []
-        
+
         fslimage.Image.__init__(self, path, **kwargs)
 
         self.__analysisName  = op.splitext(op.basename(featDir))[0]
@@ -126,7 +126,7 @@ class FEATImage(fslimage.Image):
         """Returns the path to the FEAT report - see
         :func:`.featanalysis.getReportFile`.
         """
-        return featanalysis.getReportFile(self.__featDir) 
+        return featanalysis.getReportFile(self.__featDir)
 
 
     def hasStats(self):
@@ -134,30 +134,30 @@ class FEATImage(fslimage.Image):
         a statistical analysis.
         """
         return self.__design is not None
-        
+
 
     def getDesign(self, voxel=None):
         """Returns the analysis design matrix as a :mod:`numpy` array
         with shape :math:`numPoints\\times numEVs`.
         See :meth:`.FEATFSFDesign.getDesign`.
         """
-        
+
         if self.__design is None:
             return None
-        
+
         return self.__design.getDesign(voxel)
-        
-    
+
+
     def numPoints(self):
         """Returns the number of points (e.g. time points, number of
         subjects, etc) in the analysis.
         """
         if self.__design is None:
             return 0
-        
+
         return self.__design.getDesign().shape[0]
 
-    
+
     def numEVs(self):
         """Returns the number of explanatory variables (EVs) in the analysis.
         """
@@ -169,18 +169,18 @@ class FEATImage(fslimage.Image):
 
     def evNames(self):
         """Returns a list containing the name of each EV in the analysis."""
-        
+
         if self.__design is None:
             return []
-        
+
         return [ev.title for ev in self.__design.getEVs()]
 
-    
+
     def numContrasts(self):
         """Returns the number of contrasts in the analysis."""
         return len(self.__contrasts)
 
-    
+
     def contrastNames(self):
         """Returns a list containing the name of each contrast in the analysis.
         """
@@ -231,19 +231,19 @@ class FEATImage(fslimage.Image):
 
     def getResiduals(self):
         """Returns the residuals of the full model fit. """
-        
+
         if self.__residuals is None:
             resfile = featanalysis.getResidualFile(self.__featDir)
             self.__residuals = fslimage.Image(
                 resfile,
                 name='{}: residuals'.format(self.__analysisName))
-        
+
         return self.__residuals
 
-    
+
     def getCOPE(self, con):
         """Returns the COPE image for the given contrast (0-indexed). """
-        
+
         if self.__copes[con] is None:
             copefile = featanalysis.getPEFile(self.__featDir, con)
             self.__copes[con] = fslimage.Image(
@@ -259,7 +259,7 @@ class FEATImage(fslimage.Image):
     def getZStats(self, con):
         """Returns the Z statistic image for the given contrast (0-indexed).
         """
-        
+
         if self.__zstats[con] is None:
             zfile = featanalysis.getZStatFile(self.__featDir, con)
 
@@ -270,13 +270,13 @@ class FEATImage(fslimage.Image):
                     con + 1,
                     self.contrastNames()[con]))
 
-        return self.__zstats[con] 
+        return self.__zstats[con]
 
 
     def getClusterMask(self, con):
         """Returns the cluster mask image for the given contrast (0-indexed).
         """
-        
+
         if self.__clustMasks[con] is None:
             mfile = featanalysis.getClusterMaskFile(self.__featDir, con)
 
@@ -287,8 +287,8 @@ class FEATImage(fslimage.Image):
                     con + 1,
                     self.contrastNames()[con]))
 
-        return self.__clustMasks[con] 
-            
+        return self.__clustMasks[con]
+
 
     def fit(self, contrast, xyz):
         """Calculates the model fit for the given contrast vector
@@ -351,9 +351,9 @@ def modelFit(data, design, contrast, pes, firstLevel=True):
     :returns: The best fit of the model to the data.
     """
 
-    # Here we are basically trying to 
+    # Here we are basically trying to
     # replicate the behaviour of tsplot.
-    # There are some differences though - 
+    # There are some differences though -
     # by default, tsplot weights the
     # data by Z statistics. We're not
     # doing that here.
@@ -383,7 +383,7 @@ def modelFit(data, design, contrast, pes, firstLevel=True):
 
         ev        = design[:, i]
         pe        = pes[i]
-        modelfit += ev * pe * contrast[i] 
+        modelfit += ev * pe * contrast[i]
 
     # Make sure the model fit has an
     # appropriate mean.  The data in

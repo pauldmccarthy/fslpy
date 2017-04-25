@@ -57,8 +57,8 @@ def shallowest(path, suffixes):
     """Finds the shallowest directory which ends with one of the given
     sequence of suffixes, or returns ``None`` if no directories end
     with any of the suffixes.
-    """ 
-    
+    """
+
     path = path.strip()
 
     # We've reached the root of the file system
@@ -74,7 +74,7 @@ def shallowest(path, suffixes):
     if any([path.endswith(s) for s in suffixes]):
         return path
 
-    return None 
+    return None
 
 
 def addExt(prefix,
@@ -84,28 +84,28 @@ def addExt(prefix,
            fileGroups=None):
     """Adds a file extension to the given file ``prefix``.
 
-    If ``mustExist`` is False, and the file does not already have a 
+    If ``mustExist`` is False, and the file does not already have a
     supported extension, the default extension is appended and the new
     file name returned. If the prefix already has a supported extension,
     it is returned unchanged.
 
-    If ``mustExist`` is ``True`` (the default), the function checks to see 
-    if any files exist that have the given prefix, and a supported file 
+    If ``mustExist`` is ``True`` (the default), the function checks to see
+    if any files exist that have the given prefix, and a supported file
     extension.  A :exc:`PathError` is raised if:
 
        - No files exist with the given prefix and a supported extension.
-    
+
        - ``fileGroups`` is ``None``, and more than one file exists with the
-         given prefix, and a supported extension. 
+         given prefix, and a supported extension.
 
     Otherwise the full file name is returned.
 
     :arg prefix:      The file name prefix to modify.
 
     :arg allowedExts: List of allowed file extensions.
-    
+
     :arg mustExist:   Whether the file must exist or not.
-    
+
     :arg defaultExt:  Default file extension to use.
 
     :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
@@ -135,7 +135,7 @@ def addExt(prefix,
     if len(allowedExts) == 0 or \
        any([prefix.endswith(ext) for ext in allowedExts]):
         allPaths = [prefix]
-        
+
     # Otherwise, make a bunch of file names, one per
     # supported extension, and test to see if exactly
     # one of them exists.
@@ -170,8 +170,8 @@ def addExt(prefix,
             raise PathError('More than one file with '
                             'prefix "{}"'.format(prefix))
 
-        # Otherwise, we return a path 
-        # to the file which matches the 
+        # Otherwise, we return a path
+        # to the file which matches the
         # first suffix in the group.
         groupIdx = groupMatches.index(True)
         allPaths = [prefix + fileGroups[groupIdx][0]]
@@ -197,14 +197,14 @@ def splitExt(filename, allowedExts=None):
     """Returns the base name and the extension from the given file name.
 
     If ``allowedExts`` is ``None``, this function is equivalent to using::
-    
+
         os.path.splitext(filename)
 
     If ``allowedExts`` is provided, but the file does not end with an allowed
     extension, a tuple containing ``(filename, '')`` is returned.
 
     :arg filename:    The file name to split.
-    
+
     :arg allowedExts: Allowed/recognised file extensions.
     """
 
@@ -220,7 +220,7 @@ def splitExt(filename, allowedExts=None):
     if not any(extMatches):
         return filename, ''
 
-    # Otherwise split the filename 
+    # Otherwise split the filename
     # into its base and its extension
     extIdx = extMatches.index(True)
     extLen = len(allowedExts[extIdx])
@@ -233,7 +233,7 @@ def getFileGroup(path,
                  fileGroups=None,
                  fullPaths=True,
                  unambiguous=False):
-    """If the given ``path`` is part of a ``fileGroup``, returns a list 
+    """If the given ``path`` is part of a ``fileGroup``, returns a list
     containing the paths to all other files in the group (including the
     ``path`` itself).
 
@@ -241,7 +241,7 @@ def getFileGroup(path,
     be part of an incomplete file group, a list containing only the ``path``
     is returned.
 
-    If the ``path`` does not exist, or appears to be part of more than one 
+    If the ``path`` does not exist, or appears to be part of more than one
     file group, a :exc:`PathError` is raised.
 
     File groups can be used to specify a collection of file suffixes which
@@ -249,10 +249,10 @@ def getFileGroup(path,
     ambiguity when multiple files exist with the same ``prefix`` and supported
     extensions (e.g. ``file.hdr`` and ``file.img``). The file groups are
     specified as a list of sequences, for example::
-    
+
         [('.img',    '.hdr'),
          ('.img.gz', '.hdr.gz')]
-    
+
     If you specify``fileGroups=[('.img', '.hdr')]`` and ``prefix='file'``, and
     both ``file.img`` and ``file.hdr`` exist, the :func:`addExt` function would
     return ``file.img`` (i.e. the file which matches the first extension in
@@ -269,18 +269,18 @@ def getFileGroup(path,
               functions are able to figure out what you mean when you specify
               ``file``, and both ``file.hdr`` and ``file.img`` (or
               ``file.hdr.gz`` and ``file.img.gz``) exist.
-    
+
     :arg path:        Path to the file. Must contain the file extension.
-    
+
     :arg allowedExts: Allowed/recognised file extensions.
-    
+
     :arg fileGroups:  Recognised file groups.
-    
+
     :arg fullPaths:   If ``True`` (the default), full file paths (relative to
                       the ``path``) are returned. Otherwise, only the file
                       extensions in the group are returned.
 
-    :arg unambiguous: Defaults to ``False``. If ``True``, and the path 
+    :arg unambiguous: Defaults to ``False``. If ``True``, and the path
                       is not unambiguouosly part of one group, or part of
                       no groups, a :exc:`PathError` is raised.
                       Otherwise, the path is returned.
@@ -288,7 +288,7 @@ def getFileGroup(path,
 
     path = addExt(path, allowedExts, mustExist=True, fileGroups=fileGroups)
     base, ext = splitExt(path, allowedExts)
- 
+
     if fileGroups is None:
         if fullPaths: return [path]
         else:         return [ext]
@@ -318,8 +318,8 @@ def getFileGroup(path,
         if fullPaths: return [path]
         else:         return [ext]
 
-    # If the given path is part of more 
-    # than one existing file group, we 
+    # If the given path is part of more
+    # than one existing file group, we
     # can't resolve this ambiguity.
     if fullMatches > 1:
         raise PathError('Path is part of multiple '
@@ -345,18 +345,18 @@ def getFileGroup(path,
     elif partialMatches > 0:
         raise PathError('Path is part of an incomplete '
                         'file group: {}'.format(path))
-        
+
     else:
         if fullPaths: return [path]
         else:         return [ext]
 
 
 def removeDuplicates(paths, allowedExts=None, fileGroups=None):
-    """Reduces the list of ``paths`` down to those which are unique with 
+    """Reduces the list of ``paths`` down to those which are unique with
     respect to the specified ``fileGroups``.
 
     For example, if you have a directory containing::
-    
+
         001.hdr
         001.img
         002.hdr
@@ -369,7 +369,7 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
          paths       = ['001.img', '001.hdr',
                         '002.img', '002.hdr',
                         '003.img', '003.hdr']
-    
+
          allowedExts = ['.img',  '.hdr']
          fileGroups  = [('.img', '.hdr')]
 
@@ -384,8 +384,8 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
 
     A :exc:`PathError` will be raised if any of the ``paths`` do not exist,
     or if there are any ambiguities with respect to incomplete paths.
-    
-    :arg paths:       List of paths to reduce. 
+
+    :arg paths:       List of paths to reduce.
 
     :arg allowedExts: Allowed/recognised file extensions.
 
@@ -401,7 +401,7 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
         if len(groupFiles) == 0:
             if path not in unique:
                 unique.append(path)
-                
+
         elif not any([p in unique for p in groupFiles]):
             unique.append(groupFiles[0])
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# atlases.py - API which provides access to the atlas image files contained 
+# atlases.py - API which provides access to the atlas image files contained
 #              in $FSLDIR/data/atlases/
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -68,7 +68,7 @@ class AtlasRegistry(notifier.Notifier):
     ``$FSLDIR/data/atlases``, and builds a list of :class:`AtlasDescription`
     instances, each of which contains information about one atlas.
 
-    
+
     The :meth:`addAtlas` method allows other atlases to be added to the
     registry. Whenever a new atlas is added, the ``AtlasRegistry`` notifies
     any registered listeners via the :class:`.Notifier` interface with the
@@ -81,18 +81,18 @@ class AtlasRegistry(notifier.Notifier):
 
     The ``AtlasRegistry`` stores a list of all known atlases via the
     :mod:`.settings` module. When an ``AtlasRegistry`` is created, it loads
-    in any previously known atlases. Whenever a new atlas is added, this 
+    in any previously known atlases. Whenever a new atlas is added, this
     list is updated. See the :meth:`__getKnownAtlases` and
     :meth:`_saveKnownAtlases` methods.
     """
 
-    
+
     def __init__(self):
         """Create an ``AtlasRegistry``. """
 
         # A list of all AtlasDescription
-        # instances in existence, sorted 
-        # by AtlasDescription.name. 
+        # instances in existence, sorted
+        # by AtlasDescription.name.
         self.__atlasDescs = []
 
 
@@ -105,9 +105,9 @@ class AtlasRegistry(notifier.Notifier):
         log.debug('Initialising atlas registry')
         self.__atlasDescs = []
 
-        # Get $FSLDIR atlases 
+        # Get $FSLDIR atlases
         fslPaths = []
-        if platform.fsldir is not None: 
+        if platform.fsldir is not None:
             fsldir   = op.join(platform.fsldir, 'data', 'atlases')
             fslPaths = sorted(glob.glob(op.join(fsldir, '*.xml')))
 
@@ -115,14 +115,14 @@ class AtlasRegistry(notifier.Notifier):
         # been loaded in the past
         extraIDs, extraPaths = self.__getKnownAtlases()
 
-        # FSLDIR atlases first, any 
+        # FSLDIR atlases first, any
         # other atlases second.
         atlasPaths = list(fslPaths)         + extraPaths
         atlasIDs   = [None] * len(fslPaths) + extraIDs
 
         with self.skipAll():
             for atlasID, atlasPath in zip(atlasIDs, atlasPaths):
-                
+
                 # The FSLDIR atlases are probably
                 # listed twice - from the above glob,
                 # and from the saved extraPaths. So
@@ -137,7 +137,7 @@ class AtlasRegistry(notifier.Notifier):
                                 'specification {}'.format(atlasPath),
                                 exc_info=True)
 
-    
+
     def listAtlases(self):
         """Returns a list containing :class:`AtlasDescription` objects for
         all available atlases. The atlases are ordered in terms of the
@@ -157,17 +157,17 @@ class AtlasRegistry(notifier.Notifier):
         """Returns an :class:`AtlasDescription` instance describing the
         atlas with the given ``atlasID``.
         """
-        
+
         for desc in self.__atlasDescs:
             if desc.atlasID == atlasID:
                 return desc
-            
+
         raise KeyError('Unknown atlas ID: {}'.format(atlasID))
 
 
     def loadAtlas(self, atlasID, loadSummary=False, resolution=None):
         """Loads and returns an :class:`Atlas` instance for the atlas
-        with the given  ``atlasID``. 
+        with the given  ``atlasID``.
 
         :arg loadSummary: If ``True``, a 3D :class:`LabelAtlas` image is
                           loaded. Otherwise, if the atlas is probabilistic,
@@ -203,8 +203,8 @@ class AtlasRegistry(notifier.Notifier):
                        atlas with the given ID already exists, this new atlas
                        is given a unique id.
 
-        :arg save:     If ``True`` (the default), this atlas will be saved 
-                       so that it will be available in future instantiations. 
+        :arg save:     If ``True`` (the default), this atlas will be saved
+                       so that it will be available in future instantiations.
         """
 
         filename = op.abspath(filename)
@@ -233,7 +233,7 @@ class AtlasRegistry(notifier.Notifier):
             self.__saveKnownAtlases()
 
         self.notify(topic='add', value=desc)
-            
+
         return desc
 
 
@@ -248,15 +248,15 @@ class AtlasRegistry(notifier.Notifier):
                 log.debug('Removing atlas from registry: {} / {}'.format(
                     desc.atlasID,
                     desc.specPath))
-                
+
                 self.__atlasDescs.pop(i)
                 break
-        
+
         self.__saveKnownAtlases()
 
         self.notify(topic='remove', value=desc)
 
-    
+
     def __getKnownAtlases(self):
         """Returns a list of tuples containing the IDs and paths of all known
         atlases .
@@ -282,15 +282,15 @@ class AtlasRegistry(notifier.Notifier):
             paths = [e[1] for e in atlases]
 
             return names, paths
-            
+
         except:
             return [], []
 
-    
+
     def __saveKnownAtlases(self):
         """Saves the IDs and paths of all atlases which are currently in
         the registry. The atlases are saved via the :mod:`.settings` module.
-        """ 
+        """
 
         if self.__atlasDescs is None:
             return
@@ -302,10 +302,10 @@ class AtlasRegistry(notifier.Notifier):
 
         atlases = ['{}={}'.format(name, path) for name, path in atlases]
         atlases = op.pathsep.join(atlases)
-        
+
         fslsettings.write('fsl.data.atlases', atlases)
 
-    
+
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
     stored in the FSL XML file that describes a single FSL atlas.  An XML
@@ -325,11 +325,11 @@ class AtlasDescription(object):
                                 # label, Otherwise, if type is
                                 # Label, path to 3D label file
                                 # (identical to the summaryimagefile
-                                # below). The path must be specified 
+                                # below). The path must be specified
                                 # as relative to the location of this
                                 # XML file.
 
-            <summaryimagefile>  # Path to 3D summary file, with each 
+            <summaryimagefile>  # Path to 3D summary file, with each
             </summaryimagefile> # region having value (index + 1)
 
            </images>
@@ -342,7 +342,7 @@ class AtlasDescription(object):
          # index - For probabilistic atlases, index of corresponding volume in
          #         4D image file. For label images, the value of voxels which
          #         are in the corresponding region.
-         # 
+         #
          # x    |
          # y    |- XYZ *voxel* coordinates into the first image of the <images>
          #      |  list
@@ -352,7 +352,7 @@ class AtlasDescription(object):
         </data>
        </atlas>
 
-    
+
     Each ``AtlasDescription`` is assigned an identifier, which is simply the
     XML file name describing the atlas, sans-suffix, and converted to lower
     case.  For exmaple, the atlas described by:
@@ -363,7 +363,7 @@ class AtlasDescription(object):
 
         ``harvardoxford-cortical``
 
-    
+
     This identifier is intended to be unique.
 
 
@@ -371,26 +371,26 @@ class AtlasDescription(object):
 
     ================= ======================================================
     ``atlasID``       The atlas ID, as described above.
-    
+
     ``name``          Name of the atlas.
 
     ``specPath``      Path to the atlas XML specification file.
-    
+
     ``atlasType``     Atlas type - either *probabilistic* or *label*.
-    
+
     ``images``        A list of images available for this atlas - usually
                       :math:`1mm^3` and :math:`2mm^3` images are present.
-    
+
     ``summaryImages`` For probabilistic atlases, a list of *summary* images,
                       which are just 3D labelled variants of the atlas.
-    
+
     ``pixdims``       A list of ``(x, y, z)`` pixdim tuples in mm, one for
                       each image in ``images``.
 
     ``xforms``        A list of affine transformation matrices (as ``4*4``
                       ``numpy`` arrays), one for each image in ``images``,
                       defining the voxel to world coordinate transformations.
-    
+
     ``labels``        A list of ``AtlasLabel`` objects, describing each
                       region / label in the atlas.
     ================= ======================================================
@@ -417,7 +417,7 @@ class AtlasDescription(object):
               MNI152 space).
     """
 
-    
+
     def __init__(self, filename, atlasID=None):
         """Create an ``AtlasDescription`` instance.
 
@@ -440,7 +440,7 @@ class AtlasDescription(object):
         self.specPath  = op.abspath(filename)
         self.name      = header.find('name').text
         self.atlasType = header.find('type').text.lower()
- 
+
         # Spelling error in some of the atlas.xml files.
         if self.atlasType == 'probabalistic':
             self.atlasType = 'probabilistic'
@@ -452,7 +452,7 @@ class AtlasDescription(object):
         self.xforms        = []
 
         atlasDir = op.dirname(self.specPath)
-        
+
         for image in images:
             imagefile        = image.find('imagefile')       .text
             summaryimagefile = image.find('summaryimagefile').text
@@ -485,7 +485,7 @@ class AtlasDescription(object):
         coords = np.zeros((len(labels), 3), dtype=np.float32)
 
         for i, label in enumerate(labels):
-            
+
             al        = AtlasLabel()
             al.name   = label.text
             al.index  = int(  label.attrib['index'])
@@ -502,7 +502,7 @@ class AtlasDescription(object):
         # into world coordinates
         coords = transform.transform(coords, self.xforms[0])
 
-        # Update the coordinates 
+        # Update the coordinates
         # in our label objects
         for i, label in enumerate(self.labels):
 
@@ -514,12 +514,12 @@ class AtlasDescription(object):
         """
         return self.atlasID == other.atlasID
 
-    
+
     def __neq__(self, other):
         """Compares the ``atlasID`` of this ``AtlasDescription`` with another.
         """
-        return self.atlasID != other.atlasID 
-    
+        return self.atlasID != other.atlasID
+
 
     def __cmp__(self, other):
         """Compares this ``AtlasDescription`` with another by their ``name``
@@ -534,11 +534,11 @@ class Atlas(fslimage.Image):
     logic common to both.
     """
 
-    
+
     def __init__(self, atlasDesc, resolution=None, isLabel=False):
         """Initialise an ``Atlas``.
 
-        :arg atlasDesc:  The :class:`AtlasDescription` instance which 
+        :arg atlasDesc:  The :class:`AtlasDescription` instance which
                          describes the atlas.
 
         :arg resolution: Desired isotropic resolution in millimetres.
@@ -552,13 +552,13 @@ class Atlas(fslimage.Image):
         # If a reslution has not been provided,
         # choose the atlas image with the
         # highest resolution.
-        # 
+        #
         # We divide by three to get the atlas
         # image index because there are three
         # pixdim values for each atlas.
         res   = resolution
         reses = np.concatenate(atlasDesc.pixdims)
- 
+
         if resolution is None: imageIdx = np.argmin(reses)               / 3
         else:                  imageIdx = np.argmin(np.abs(reses - res)) / 3
 
@@ -575,7 +575,7 @@ class Atlas(fslimage.Image):
 
         self.desc = atlasDesc
 
-        
+
 class LabelAtlas(Atlas):
     """A 3D atlas which contains integer labels for each region.
 
@@ -593,7 +593,7 @@ class LabelAtlas(Atlas):
         """
         Atlas.__init__(self, atlasDesc, resolution, True)
 
-        
+
     def label(self, worldLoc):
         """Looks up and returns the label of the region at the given world
         location, or ``None`` if the location is out of bounds.
@@ -609,16 +609,16 @@ class LabelAtlas(Atlas):
            voxelLoc[1] >= self.shape[1] or \
            voxelLoc[2] >= self.shape[2]:
             return None
-        
+
         val = self[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
 
         if self.desc.atlasType == 'label':
             return val
-        
+
         elif self.desc.atlasType == 'probabilistic':
             return val - 1
 
-    
+
 class ProbabilisticAtlas(Atlas):
     """A 4D atlas which contains one volume for each region.
 
@@ -633,10 +633,10 @@ class ProbabilisticAtlas(Atlas):
                          the atlas.
 
         :arg resolution: Desired isotropic resolution in millimetres.
-        """ 
+        """
         Atlas.__init__(self, atlasDesc, resolution, False)
 
-        
+
     def proportions(self, worldLoc):
         """Looks up the region probabilities for the given location.
 
@@ -657,7 +657,7 @@ class ProbabilisticAtlas(Atlas):
            voxelLoc[1] >= self.shape[1] or \
            voxelLoc[2] >= self.shape[2]:
             return []
-        
+
         return self[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
 
 

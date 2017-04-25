@@ -41,16 +41,16 @@ class TriangleMesh(object):
 
     A ``TriangleMesh`` instance has the following attributes:
 
-    
+
     ============== ====================================================
     ``name``       A name, typically the file name sans-suffix.
-    
+
     ``dataSource`` Full path to the mesh file (or ``None`` if there is
                    no file associated with this mesh).
-    
+
     ``vertices``   A :math:`N\times 3` ``numpy`` array containing
                    the vertices.
-    
+
     ``indices``    A :meth:`M\times 3` ``numpy`` array containing
                    the vertex indices for :math:`M` triangles
     ============== ====================================================
@@ -67,7 +67,7 @@ class TriangleMesh(object):
        clearVertexData
     """
 
-    
+
     def __init__(self, data, indices=None):
         """Create a ``TriangleMesh`` instance.
 
@@ -93,13 +93,13 @@ class TriangleMesh(object):
         else:
             self.name       = 'TriangleMesh'
             self.dataSource = None
-            
+
         if indices is None:
             indices = np.arange(data.shape[0])
 
         self.vertices     = np.array(data)
         self.indices      = np.array(indices).reshape((-1, 3))
-        
+
         self.__vertexData = {}
         self.__loBounds   = self.vertices.min(axis=0)
         self.__hiBounds   = self.vertices.max(axis=0)
@@ -120,7 +120,7 @@ class TriangleMesh(object):
 
     def getBounds(self):
         """Returns a tuple of values which define a minimal bounding box that
-        will contain all vertices in this ``TriangleMesh`` instance. The 
+        will contain all vertices in this ``TriangleMesh`` instance. The
         bounding box is arranged like so:
 
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
@@ -169,7 +169,7 @@ class TriangleMesh(object):
         try:             return self.__vertexData[dataSource]
         except KeyError: return self.loadVertexData(dataSource)
 
-    
+
     def clearVertexData(self):
         """Clears the internal vertex data cache - see the
         :meth:`loadVertexData` and :meth:`getVertexData`  methods.
@@ -193,14 +193,14 @@ def loadVTKPolydataFile(infile):
     :arg infile: Name of a file to load from.
 
     :returns: a tuple containing three values:
-    
+
                 - A :math:`N\\times 3` ``numpy`` array containing :math:`N`
                   vertices.
                 - A 1D ``numpy`` array containing the lengths of each polygon.
                 - A 1D ``numpy`` array containing the vertex indices for all
                   polygons.
     """
-    
+
     lines = None
 
     with open(infile, 'rt') as f:
@@ -210,11 +210,11 @@ def loadVTKPolydataFile(infile):
 
     if lines[3] != 'DATASET POLYDATA':
         raise ValueError('Only the POLYDATA data type is supported')
-    
+
     nVertices = int(lines[4].split()[1])
     nPolygons = int(lines[5 + nVertices].split()[1])
-    nIndices  = int(lines[5 + nVertices].split()[2]) - nPolygons 
-    
+    nIndices  = int(lines[5 + nVertices].split()[2]) - nPolygons
+
     vertices       = np.zeros((nVertices, 3), dtype=np.float32)
     polygonLengths = np.zeros( nPolygons,     dtype=np.uint32)
     indices        = np.zeros( nIndices,      dtype=np.uint32)

@@ -27,7 +27,7 @@ class CacheItem(object):
         self.value     = value
         self.expiry    = expiry
         self.storetime = time.time()
-        
+
 
 class Cache(object):
     """The ``Cache`` is a simple in-memory cache built on a
@@ -36,7 +36,7 @@ class Cache(object):
 
        - When an item is added to a full cache, the oldest entry is
          automatically dropped.
-    
+
        - Expiration times can be specified for individual items. If a request
          is made to access an expired item, an :class:`Expired` exception is
          raised.
@@ -56,9 +56,9 @@ class Cache(object):
         """Put an item in the cache.
 
         :arg key:    Item identifier (must be hashable).
-        
+
         :arg value:  The item to store.
-        
+
         :arg expiry: Expiry time in seconds. An item with an expiry time of
                      ``0`` will not expire.
         """
@@ -83,7 +83,7 @@ class Cache(object):
         # Default value specified - return
         # it if the key is not in the cache
         if defaultSpecified:
-            
+
             entry = self.__cache.get(key, None)
 
             if entry is None:
@@ -93,12 +93,12 @@ class Cache(object):
         # allow KeyErrors to propagate
         else:
             entry = self.__cache[key]
-            
+
         if entry.expiry > 0:
             if time.time() - entry.storetime > entry.expiry:
 
                 self.__cache.pop(key)
- 
+
                 if defaultSpecified: return default
                 else:                raise Expired(key)
 
@@ -120,10 +120,10 @@ class Cache(object):
         which may be specified as either a positional or keyword argumnet.
 
         :returns: A tuple containing two values:
-        
+
                     - ``True`` if a default argument was specified, ``False``
                       otherwise.
-        
+
                     - The specifeid default value, or ``None`` if it wasn't
                       specified.
         """
@@ -135,7 +135,7 @@ class Cache(object):
         if   nargs == 0: return False, None
         elif nargs != 1: raise ValueError()
 
-        # The default value is either specified as a 
+        # The default value is either specified as a
         # positional argument, or as a keyword argument
         if   len(args)   == 1: return True, args[0]
         elif len(kwargs) == 1: return True, kwargs['default']

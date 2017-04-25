@@ -53,7 +53,7 @@ class VolumeLabels(notifier.Notifier):
        clearComponents
 
     The ``VolumeLabels`` class uses the :class:`.Notifier` interface
-    to notify listeners about changes to the labels. Listeners can be 
+    to notify listeners about changes to the labels. Listeners can be
     registered to be notified on the following topics:
 
       - ``added``:   A new label was added to a component.
@@ -68,7 +68,7 @@ class VolumeLabels(notifier.Notifier):
               accessible via the :meth:`getDisplayLabel` method.
     """
 
-    
+
     def __init__(self, nvolumes):
         """Create a ``VolumeLabels`` instance.
 
@@ -86,7 +86,7 @@ class VolumeLabels(notifier.Notifier):
         # __components is a dictionary of
         #
         #   { label : [component] } mappings
-        # 
+        #
         # containing the same information, but
         # making lookup by label a bit quicker.
         #
@@ -113,7 +113,7 @@ class VolumeLabels(notifier.Notifier):
 
         self.__components = {}
         self.__labels     = [[] for i in range(self.__ncomps)]
-        
+
 
     def load(self, filename):
         """Loads component labels from the specified file. See the
@@ -151,7 +151,7 @@ class VolumeLabels(notifier.Notifier):
                 for label in labels:
                     self.addLabel(i, label)
 
-    
+
     def save(self, filename, dirname=None):
         """Saves the component classifications stored by this ``VolumeLabels``
         instance to the specified file. See the
@@ -185,7 +185,7 @@ class VolumeLabels(notifier.Notifier):
         """
         label = label.lower()
         return label in self.__labels[component]
-    
+
 
     def addLabel(self, component, label, notify=True):
         """Adds the given label to the given component.
@@ -203,7 +203,7 @@ class VolumeLabels(notifier.Notifier):
         label   = label.lower()
         labels  = list(self.__labels[component])
         comps   = list(self.__components.get(label, []))
-        
+
         if label in labels:
             return False
 
@@ -211,7 +211,7 @@ class VolumeLabels(notifier.Notifier):
         comps .append(component)
 
         self.__displayLabels[label]     = display
-        self.__components[   label]     = comps        
+        self.__components[   label]     = comps
         self.__labels[       component] = labels
 
         log.debug('Label added to component: {} <-> {}'.format(component,
@@ -221,12 +221,12 @@ class VolumeLabels(notifier.Notifier):
             self.notify(topic='added', value=[(component, label)])
 
         return True
- 
+
 
     def removeLabel(self, component, label, notify=True):
         """Removes the given label from the given component.
 
-        :returns: ``True`` if the label was removed, ``False`` if the 
+        :returns: ``True`` if the label was removed, ``False`` if the
                   component did not have this label.
         """
 
@@ -258,7 +258,7 @@ class VolumeLabels(notifier.Notifier):
 
     def clearLabels(self, component):
         """Removes all labels from the given component. """
-        
+
         labels  = self.getLabels(component)
         removed = []
 
@@ -271,20 +271,20 @@ class VolumeLabels(notifier.Notifier):
         if len(removed) > 0:
             self.notify(topic='removed', value=removed)
 
-    
+
     def getComponents(self, label):
         """Returns a list of all components which have the given label. """
         label = label.lower()
         return list(self.__components.get(label, []))
 
-    
+
     def hasComponent(self, label, component):
         """Returns ``True`` if the given compoennt has the given label,
         ``False`` otherwise.
         """
         return component in self.getComponents(label)
 
-    
+
     def addComponent(self, label, component):
         """Adds the given label to the given component. """
         return self.addLabel(component, label)
@@ -294,10 +294,10 @@ class VolumeLabels(notifier.Notifier):
         """Removes the given label from the given component. """
         return self.removeLabel(component, label, notify)
 
-    
+
     def clearComponents(self, label):
         """Removes the given label from all components. """
-        
+
         components = self.getComponents(label)
         removed    = []
 

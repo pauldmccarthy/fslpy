@@ -51,7 +51,7 @@ def memoize(func):
             key = [defaultKey]
 
         key = tuple(key)
-        
+
         try:
             result = cache[key]
 
@@ -123,15 +123,15 @@ def skipUnchanged(func):
     """
 
     import numpy as np
-    
+
     cache = {}
-    
+
     def wrapper(name, value, *args, **kwargs):
 
         oldVal = cache.get(name, None)
 
         if oldVal is not None:
-            
+
             oldIsArray = isinstance(oldVal, np.ndarray)
             newIsArray = isinstance(value,  np.ndarray)
             isarray    = oldIsArray or newIsArray
@@ -140,7 +140,7 @@ def skipUnchanged(func):
             else:       nochange =        oldVal == value
 
             if nochange:
-                return False 
+                return False
 
         func(name, value, *args, **kwargs)
 
@@ -165,16 +165,16 @@ class Instanceify(object):
             def set(self, name, value):
                 self.__items[name] = value
 
-    
+
     Given this definition, a single :func:`skipUnchanged` decorator will be
     created and shared amongst all ``Container`` instances. This is not ideal,
     as the value cache created by the :func:`skipUnchanged` decorator should
     be associated with a single ``Container`` instance.
 
-    
+
     By redefining the ``Container`` class definition like so::
 
-    
+
         class Container(object):
 
             def __init__(self):
@@ -188,13 +188,13 @@ class Instanceify(object):
     a separate :func:`skipUnchanged` decorator is created for, and associated
     with, every ``Container`` instance.
 
-    
+
     This is achieved because an ``Instanceify`` instance is a descriptor. When
     first accessed as an instance attribute, an ``Instanceify`` instance will
     create the real decorator function, and replace itself on the instance.
     """
 
-    
+
     def __init__(self, realDecorator):
         """Create an ``Instanceify`` decorator.
 

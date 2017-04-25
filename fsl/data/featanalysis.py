@@ -51,7 +51,7 @@ import fsl.utils.path      as fslpath
 import fsl.utils.transform as transform
 
 from . import image as fslimage
-from . import          featdesign 
+from . import          featdesign
 
 
 log = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def isFEATImage(path):
     dirname  = op.dirname( path)
     filename = op.basename(path)
 
-    return filename.startswith('filtered_func_data') and isFEATDir(dirname) 
+    return filename.startswith('filtered_func_data') and isFEATDir(dirname)
 
 
 def isFEATDir(path):
@@ -88,10 +88,10 @@ def isFEATDir(path):
     """
 
     path = op.abspath(path)
-    
+
     if op.isdir(path): dirname = path
     else:              dirname = op.dirname(path)
-    
+
     if not dirname.endswith('.feat'):
         return False
 
@@ -99,11 +99,11 @@ def isFEATDir(path):
         fslimage.addExt(op.join(dirname, 'filtered_func_data'), mustExist=True)
     except fslimage.PathError:
         return False
-    
+
     if not op.exists(op.join(dirname, 'design.fsf')): return False
     if not op.exists(op.join(dirname, 'design.mat')): return False
     if not op.exists(op.join(dirname, 'design.con')): return False
-        
+
     return True
 
 
@@ -117,7 +117,7 @@ def hasStats(featdir):
         return True
     except:
         return False
-        
+
 
 def hasMelodicDir(featdir):
     """Returns ``True`` if the data for the given FEAT directory has had
@@ -150,7 +150,7 @@ def getReportFile(featdir):
     """Returns the path to the FEAT report index file, or ``None`` if there
     is no report.
     """
-    
+
     report = op.join(featdir, 'report.html')
     if op.exists(report): return report
     else:                 return None
@@ -158,9 +158,9 @@ def getReportFile(featdir):
 
 def loadContrasts(featdir):
     """Loads the contrasts from a FEAT directory. Returns a tuple containing:
-    
+
       - A list of names, one for each contrast.
-    
+
       - A list of contrast vectors (each of which is a list itself).
 
     :arg featdir: A FEAT directory.
@@ -172,7 +172,7 @@ def loadContrasts(featdir):
     designcon    = op.join(featdir, 'design.con')
 
     log.debug('Loading FEAT contrasts from {}'.format(designcon))
-    
+
     with open(designcon, 'rt') as f:
 
         while True:
@@ -183,7 +183,7 @@ def loadContrasts(featdir):
                 num        = [c for c in tkns[0] if c.isdigit()]
                 num        = int(''.join(num))
 
-                # The /ContrastName field may not 
+                # The /ContrastName field may not
                 # actually have a name specified
                 if len(tkns) > 1:
                     name       = tkns[1].strip()
@@ -248,7 +248,7 @@ def loadSettings(featdir):
                 key = key[5:-1]
 
             settings[key] = val
-    
+
     return settings
 
 
@@ -259,7 +259,7 @@ def loadDesign(featdir, settings):
 
     :arg settings: Dictionary containing FEAT settings (see
                    :func:`loadSettings`).
-    
+
     :returns:      a :class:`.FEATFSFDesign` instance which represents the
                    design matrix.
     """
@@ -273,7 +273,7 @@ def getThresholds(settings):
 
     The following keys will be present. Threshold values will be ``None``
     if the respective statistical thresholding was not carried out:
-    
+
       - ``p``: P-value thresholding
       - ``z``: Z-statistic thresholding
 
@@ -378,14 +378,14 @@ def loadClusterResults(featdir, settings, contrast):
     class Cluster(object):
         def __init__(self, **kwargs):
             for name, val in kwargs.items():
-                
+
                 attrName = colmap[name]
                 if val is not None:
                     val = float(val)
-                    
+
                 setattr(self, attrName, val)
 
-    # This dict provides a mapping between 
+    # This dict provides a mapping between
     # Cluster object attribute names, and
     # the corresponding column name in the
     # cluster.txt file.
@@ -484,7 +484,7 @@ def getDataFile(featdir):
 
 
 def getMelodicFile(featdir):
-    """Returns the name of the file in the FEAT results which contains the 
+    """Returns the name of the file in the FEAT results which contains the
     melodic components (if melodic ICA was performed as part of the FEAT
     analysis). This file can be loaded as a :class:`.MelodicImage`.
 
@@ -505,7 +505,7 @@ def getResidualFile(featdir):
     resfile = op.join(featdir, 'stats', 'res4d')
     return fslimage.addExt(resfile, mustExist=True)
 
-    
+
 def getPEFile(featdir, ev):
     """Returns the path of the PE file for the specified EV.
 
@@ -524,7 +524,7 @@ def getCOPEFile(featdir, contrast):
     Raises a :exc:`~fsl.utils.path.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
-    :arg contrast: The contrast number (0-indexed). 
+    :arg contrast: The contrast number (0-indexed).
     """
     copefile = op.join(featdir, 'stats', 'cope{}'.format(contrast + 1))
     return fslimage.addExt(copefile, mustExist=True)
@@ -536,7 +536,7 @@ def getZStatFile(featdir, contrast):
     Raises a :exc:`~fsl.utils.path.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
-    :arg contrast: The contrast number (0-indexed). 
+    :arg contrast: The contrast number (0-indexed).
     """
     zfile = op.join(featdir, 'stats', 'zstat{}'.format(contrast + 1))
     return fslimage.addExt(zfile, mustExist=True)
@@ -548,7 +548,7 @@ def getClusterMaskFile(featdir, contrast):
     Raises a :exc:`~fsl.utils.path.PathError` if the file does not exist.
 
     :arg featdir:  A FEAT directory.
-    :arg contrast: The contrast number (0-indexed). 
+    :arg contrast: The contrast number (0-indexed).
     """
     mfile = op.join(featdir, 'cluster_mask_zstat{}'.format(contrast + 1))
     return fslimage.addExt(mfile, mustExist=True)

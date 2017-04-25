@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """The :mod:`fsl` package is a library which contains convenience classes
-and functions for use by FSL python tools. It is broadly split into the 
+and functions for use by FSL python tools. It is broadly split into the
 following sub-packages:
 
 .. autosummary::

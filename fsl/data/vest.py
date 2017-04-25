@@ -64,6 +64,6 @@ def loadVestLutFile(path, normalise=True):
         cmin = colours.min()
         cmax = colours.max()
         return (colours - cmin) / (cmax - cmin)
-    
+
     else:
         return colours
