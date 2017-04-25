@@ -68,10 +68,16 @@ Coding conventions
  - Clear and accurate documentation is good
 
 
-Configure your text editor to use [pylint](https://www.pylint.org/) and
-[flake8](http://flake8.pycqa.org/en/latest/).
+Configure your text editor to use:
 
-The following violations of the PEP8 standard are accepted (see
+ - [flake8](http://flake8.pycqa.org/en/latest/): This checks your code for adherence
+   to the [PEP8](https://www.python.org/dev/peps/pep-0008/) coding standard.
+   
+ - [pylint](https://www.pylint.org/): This checks that your code follows other
+   good conventions.
+
+Because I like whitespace and vertical alignment more than PEP8 does, the
+following violations of the PEP8 standard are accepted (see
 [here](https://pycodestyle.readthedocs.io/en/latest/intro.html#error-codes)
 for a list of error codes):
 
