@@ -1,6 +1,7 @@
 fslpy
 =====
 
+
 The `fslpy` project is a [FSL](http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/)
 programming library written in Python. It is used by
 [FSLeyes](https://git.fmrib.ox.ac.uk/paulmc/fsleyes/).
@@ -25,6 +26,10 @@ running:
     python setup.py doc
 
 The HTML documentation will be generated and saved in the `doc/html/` directory.
+
+
+If you are interested in contributing to `fslpy`, check out the [contributing
+guide](doc/contributing.rst).
 
 
 Tests
