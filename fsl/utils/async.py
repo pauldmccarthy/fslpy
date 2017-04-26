@@ -96,14 +96,6 @@ except: import Queue as queue
 log = logging.getLogger(__name__)
 
 
-def _haveWX():
-    """Returns ``True`` if we are running within a ``wx`` application,
-    ``False`` otherwise.
-    """
-    import fsl.utils.platform as fslplatform
-    return fslplatform.platform.haveGui
-
-
 def run(task, onFinish=None, onError=None, name=None):
     """Run the given ``task`` in a separate thread.
 
@@ -125,10 +117,12 @@ def run(task, onFinish=None, onError=None, name=None):
               the return value will be ``None``.
     """
 
+    from fsl.utils.platform import platform as fslplatform
+
     if name is None:
         name = getattr(task, '__name__', '<unknown>')
 
-    haveWX = _haveWX()
+    haveWX = fslplatform.haveGui
 
     # Calls the onFinish or onError handler
     def callback(cb, *args, **kwargs):
@@ -397,9 +391,11 @@ def idle(task, *args, **kwargs):
                        argument. If ``True``, and a ``wx.MainLoop`` is not
                        running, the task is enqueued anyway, under the
                        assumption that a ``wx.MainLoop`` will be started in
-                       the future. Note that another  call to ``idle`` must
-                       be made after the ``MainLoop`` has started for the
-                       original task to be executed.
+                       the future. Note that, if ``wx.App`` has not yet been
+                       created, another  call to ``idle`` must be made after
+                       the app has been created for the original task to be
+                       executed. If ``wx`` is not available, this parameter
+                       will be ignored, and the task executed directly.
 
 
     All other arguments are passed through to the task function.
@@ -426,6 +422,8 @@ def idle(task, *args, **kwargs):
               ``alwaysQueue``.
     """
 
+    from fsl.utils.platform import platform as fslplatform
+
     global _idleRegistered
     global _idleTimer
     global _idleQueue
@@ -439,13 +437,29 @@ def idle(task, *args, **kwargs):
     skipIfQueued = kwargs.pop('skipIfQueued', False)
     alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
-    havewx       = _haveWX()
+    canHaveGui = fslplatform.canHaveGui
+    haveGui    = fslplatform.haveGui
 
-    if havewx or alwaysQueue:
+    # If there is no possibility of a
+    # gui being available in the future,
+    # then alwaysQueue is ignored.
+    if haveGui or (alwaysQueue and canHaveGui):
+
         import wx
+        app = wx.GetApp()
 
-        if havewx and (not _idleRegistered):
-            app = wx.GetApp()
+        # Register on the idle event
+        # if an app is available
+        #
+        # n.b. The 'app is not None' test will
+        # potentially fail in scenarios where
+        # multiple wx.Apps have been instantiated,
+        # as it may return a previously created
+        # app.
+        if (not _idleRegistered) and (app is not None):
+
+            log.debug('Registering async idle loop')
+
             app.Bind(wx.EVT_IDLE, _wxIdleLoop)
 
             _idleTimer      = wx.Timer(app)
@@ -546,12 +560,14 @@ def wait(threads, task, *args, **kwargs):
               a keyword argument called ``wait_direct``.
     """
 
+    from fsl.utils.platform import platform as fslplatform
+
     direct = kwargs.pop('wait_direct', False)
 
     if not isinstance(threads, collections.Sequence):
         threads = [threads]
 
-    haveWX = _haveWX()
+    haveWX = fslplatform.haveGui
 
     def joinAll():
         log.debug('Wait thread joining on all targets')
