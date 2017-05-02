@@ -540,7 +540,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
         # above, about the voxelwise
         # confound EV locations, holds
         startIdx = len(evs) + 1
-        if voxConfLocs != range(startIdx, startIdx + len(voxConfFiles)):
+        if voxConfLocs != list(range(startIdx, startIdx + len(voxConfFiles))):
             raise FSFError('Unsupported voxelwise confound ordering '
                            '({} -> {})'.format(startIdx, voxConfLocs))
 
@@ -640,26 +640,11 @@ def loadDesignMat(designmat):
     :arg designmat: Path to the ``design.mat`` file.
     """
 
-    matrix = None
-
     log.debug('Loading FEAT design matrix from {}'.format(designmat))
 
-    with open(designmat, 'rt') as f:
+    matrix = np.loadtxt(designmat, comments='/', ndmin=2)
 
-        while True:
-            line = f.readline()
-
-            # readline returns an empty string at EOF
-            if line == '':
-                break
-
-            # Matrix data starts after "/Matrix"
-            if line.strip() == '/Matrix':
-                break
-
-        matrix = np.loadtxt(f, ndmin=2)
-
-    if matrix is None or matrix.size == 0:
+    if matrix is None or matrix.size == 0 or len(matrix.shape) != 2:
         raise FSFError('{} does not appear to be a '
                        'valid design.mat file'.format(designmat))
 

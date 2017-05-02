@@ -40,6 +40,8 @@ load an atlas image, which will be one of the following atlas-specific
 """
 
 
+from __future__ import division
+
 import xml.etree.ElementTree              as et
 import os.path                            as op
 import                                       glob
@@ -521,11 +523,11 @@ class AtlasDescription(object):
         return self.atlasID != other.atlasID
 
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         """Compares this ``AtlasDescription`` with another by their ``name``
         attribute.
         """
-        return cmp(self.name.lower(), other.name.lower())
+        return self.name.lower() < other.name.lower()
 
 
 class Atlas(fslimage.Image):
@@ -559,8 +561,10 @@ class Atlas(fslimage.Image):
         res   = resolution
         reses = np.concatenate(atlasDesc.pixdims)
 
-        if resolution is None: imageIdx = np.argmin(reses)               / 3
-        else:                  imageIdx = np.argmin(np.abs(reses - res)) / 3
+        if resolution is None: imageIdx = np.argmin(reses)
+        else:                  imageIdx = np.argmin(np.abs(reses - res))
+
+        imageIdx = imageIdx // 3
 
         if isLabel: imageFile = atlasDesc.summaryImages[imageIdx]
         else:       imageFile = atlasDesc.images[       imageIdx]

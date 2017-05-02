@@ -290,8 +290,11 @@ def _wxIdleLoop(ev):
     except queue.Empty:
 
         # Make sure that we get called periodically,
-        # if EVT_IDLE decides to stop firing.
-        _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
+        # if EVT_IDLE decides to stop firing. If
+        # _idleTimer is None, then idleReset has
+        # probably been called.
+        if _idleTimer is not None:
+            _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
         return
 
     now             = time.time()
