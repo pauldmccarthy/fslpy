@@ -68,7 +68,7 @@ with the following commands:
    - 2 temporal derivative EVs
    - 1 voxelwise EV
    - 6 Standard motion parameters
- - 2 contrasts - one on each stimulus EV 
+ - 2 contrasts - one on each stimulus EV
 
 `1stlevel_3.feat`
  - 45 time points
@@ -99,7 +99,7 @@ with the following commands:
  - Shape (10, 10, 10)
  - Three subjects
  - Two copes
- - One main EV - group average 
+ - One main EV - group average
 """
 
 
@@ -145,7 +145,7 @@ for i, featdir in enumerate(featdirs):
 def test_FEATFSFDesign():
 
     for featdir in TEST_ANALYSES.keys():
-        
+
         nev      = TEST_ANALYSES[featdir]['nevs']
         shape    = TEST_ANALYSES[featdir]['shape']
         desshape = TEST_ANALYSES[featdir]['designShape']
@@ -306,15 +306,13 @@ def test_getFirstLevelEVs_3():
                 (featdesign.MotionParameterEV,    {'index' : 29, 'motionIndex' : 23}),
                 (featdesign.ConfoundEV,           {'index' : 30, 'confIndex'   : 0}),
                 (featdesign.ConfoundEV,           {'index' : 31, 'confIndex'   : 1})]
-    
+
 
     evs = featdesign.getFirstLevelEVs(featdir, settings, matrix)
-    
+
     assert len(evs) == 32
 
     for i, (evtype, atts) in enumerate(expected):
-
-        print(i, evs[i])
 
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
@@ -330,17 +328,15 @@ def test_getFirstLevelEVs_realdata():
                 (featdesign.TemporalDerivativeEV, {'index' : 3})]
 
     evs = featdesign.getFirstLevelEVs(featdir, settings, matrix)
-    
+
     assert len(evs) == 4
 
     for i, (evtype, atts) in enumerate(expected):
 
-        print(i, evs[i])
-
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
- 
+
 
 
 def test_getHigherLevelEVs_1():
@@ -355,8 +351,8 @@ def test_getHigherLevelEVs_1():
     assert isinstance(evs[0], featdesign.NormalEV)
     assert evs[0].index     == 0
     assert evs[0].origIndex == 0
- 
-    
+
+
 
 
 def test_getHigherLevelEVs_2():
@@ -386,9 +382,9 @@ def test_loadDesignMat():
         assert mat.shape == shape
 
     nonfile = op.join(datadir, 'non-existent-file')
-    badfile = op.join(datadir, '1stlevel_1.feat', 'design.fsf') 
+    badfile = op.join(datadir, '1stlevel_1.feat', 'design.fsf')
     with pytest.raises(Exception):
         featdesign.loadDesignMat(nonfile)
 
     with pytest.raises(Exception):
-        featdesign.loadDesignMat(badfile) 
+        featdesign.loadDesignMat(badfile)

@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+from __future__ import division
 
 import os.path as op
 
@@ -52,8 +53,8 @@ def _create_dummy_melodic_analysis(basedir,
     # rows=frequencies
     # columns=ICs
     if timepoints % 2: nfreqs = int(np.ceil(timepoints / 2.0))
-    else:              nfreqs = timepoints / 2
-    
+    else:              nfreqs = timepoints // 2
+
     ftmixdata = np.zeros((nfreqs, nics))
 
     for ic in range(nics):
@@ -63,7 +64,7 @@ def _create_dummy_melodic_analysis(basedir,
     np.savetxt(mixfile,   mixdata)
     np.savetxt(ftmixfile, ftmixdata)
     fslimage.Image(icimg).save(icfile)
-    
+
     if with_data:
         dataimg = np.zeros(list(shape4D[:3]) + [timepoints])
         for t in range(timepoints):
@@ -71,7 +72,7 @@ def _create_dummy_melodic_analysis(basedir,
 
         hdr = nib.nifti1.Nifti1Header()
         hdr['pixdim'][4] = tr
-        
+
         img = fslimage.Image(dataimg, header=hdr, xform=np.eye(4))
         img.save(datafile)
 
@@ -105,8 +106,8 @@ def test_MelodicImage_create():
         meldir      = _create_dummy_melodic_analysis(testdir)
         icfile      = op.join(meldir, 'melodic_IC.nii.gz')
         icfilenosuf = op.join(meldir, 'melodic_IC')
-        
-        # Should be able to specify the 
+
+        # Should be able to specify the
         # melodic dir, or the IC image
         meli.MelodicImage(meldir)
         meli.MelodicImage(icfile)
@@ -129,7 +130,7 @@ def test_MelodicImage_atts():
         assert img.getTopLevelAnalysisDir() == mela.getTopLevelAnalysisDir(meldir)
         assert img.getDataFile()            == mela.getDataFile(meldir)
         assert img.getMeanFile()            == mela.getMeanFile(meldir)
-        
+
 
 def test_MelodicImage_componentData():
     with tests.testdir() as testdir:
@@ -153,7 +154,7 @@ def test_MelodicImage_tr():
         img    = meli.MelodicImage(meldir)
 
         assert img.tr == 1
-        
+
     # Otherwise, it should be set to the datafile tr
     with tests.testdir() as testdir:
         meldir = _create_dummy_melodic_analysis(testdir, tr=5)
@@ -166,7 +167,7 @@ def test_MelodicImage_tr():
         cbCalled = [False]
         def trChanged(*a):
             cbCalled[0] = True
-        
+
         meldir = _create_dummy_melodic_analysis(testdir, with_data=False)
         img    = meli.MelodicImage(meldir)
 
