@@ -37,7 +37,7 @@ with open(op.join(basedir, "fsl", "version.py")) as f:
     for line in f:
         if line.startswith('__version__'):
             exec(line, version)
-            break 
+            break
 
 with open(op.join(basedir, 'README.md'), 'rt') as f:
     readme = f.read()
@@ -45,9 +45,9 @@ with open(op.join(basedir, 'README.md'), 'rt') as f:
 
 class doc(Command):
     """Build the API documentation. """
-    
+
     user_options = []
-    
+
     def initialize_options(self):
         pass
 
@@ -64,12 +64,12 @@ class doc(Command):
 
         env   = dict(os.environ)
         ppath = [op.join(pkgutil.get_loader('fsl').filename, '..')]
-        
+
         env['PYTHONPATH'] = op.pathsep.join(ppath)
 
         print('Building documentation [{}]'.format(destdir))
 
-        sp.call(['sphinx-build', docdir, destdir], env=env) 
+        sp.call(['sphinx-build', docdir, destdir], env=env)
 
 
 setup(
@@ -102,7 +102,11 @@ setup(
     install_requires=install_requires,
 
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'mock', 'pytest-cov', 'pytest-runner'],
+    tests_require=['pytest',
+                   'mock',
+                   'pytest-cov',
+                   'pytest-html',
+                   'pytest-runner'],
     test_suite='tests',
 
     cmdclass={'doc' : doc},
