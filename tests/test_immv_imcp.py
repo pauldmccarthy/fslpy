@@ -12,7 +12,7 @@ from __future__ import print_function
 import               os
 import os.path    as op
 import               shutil
-import subprocess as sp 
+import subprocess as sp
 import               tempfile
 import               logging
 
@@ -33,6 +33,12 @@ from . import make_random_image
 from . import make_dummy_file
 from . import looks_like_image
 from . import cleardir
+
+
+real_print = print
+
+def print(*args, **kwargs):
+    pass
 
 
 def makeImage(filename):
@@ -106,18 +112,18 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
 
 
 def test_imcp_script_shouldPass(move=False):
-    
+
 
     # The imcp/immv scripts should honour the
-    # FSLOUTPUTTYPE env var. If it is unset 
+    # FSLOUTPUTTYPE env var. If it is unset
     # or invalid - '' in this case), they
     # should produce .nii.gz
     outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ', '']
- 
+
 
     # Test tuples have the following structure (each
     # item is a string which will be split on spaces):
-    # 
+    #
     #   (files_to_create, imcp_args, files_to_expect)
     #
     # The files_to_expect is a list of
@@ -134,26 +140,26 @@ def test_imcp_script_shouldPass(move=False):
         ('a.nii', 'a     b.nii',    'b'),
         ('a.nii', 'a.nii b.nii',    'b'),
         ('a.nii', 'a     .',        'a'),
-        ('a.nii', 'a.nii .',        'a'), 
+        ('a.nii', 'a.nii .',        'a'),
         ('a.nii', 'a     b.hdr',    'b'),
         ('a.nii', 'a     b.img',    'b'),
         ('a.nii', 'a     b.nii.gz', 'b'),
         ('a.nii', 'a.nii b.hdr',    'b'),
         ('a.nii', 'a.nii b.img',    'b'),
-        ('a.nii', 'a.nii b.nii.gz', 'b'), 
-        
+        ('a.nii', 'a.nii b.nii.gz', 'b'),
+
         ('a.nii.gz', 'a        b',        'b'),
         ('a.nii.gz', 'a.nii.gz b',        'b'),
         ('a.nii.gz', 'a        b.nii.gz', 'b'),
         ('a.nii.gz', 'a.nii.gz b.nii.gz', 'b'),
         ('a.nii.gz', 'a        .',        'a'),
-        ('a.nii.gz', 'a.nii.gz .',        'a'), 
+        ('a.nii.gz', 'a.nii.gz .',        'a'),
         ('a.nii.gz', 'a        b.hdr',    'b'),
         ('a.nii.gz', 'a        b.img',    'b'),
         ('a.nii.gz', 'a        b.nii',    'b'),
         ('a.nii.gz', 'a.nii.gz b.hdr',    'b'),
         ('a.nii.gz', 'a.nii.gz b.img',    'b'),
-        ('a.nii.gz', 'a.nii.gz b.nii',    'b'), 
+        ('a.nii.gz', 'a.nii.gz b.nii',    'b'),
 
         ('a.img', 'a        b',        'b'),
         ('a.img', 'a        b.img',    'b'),
@@ -166,8 +172,8 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img', 'a.hdr    b',        'b'),
         ('a.img', 'a.hdr    b.img',    'b'),
         ('a.img', 'a.hdr    b.hdr',    'b'),
-        ('a.img', 'a.hdr    .',        'a'), 
-        
+        ('a.img', 'a.hdr    .',        'a'),
+
         ('a.img', 'a        b.nii',    'b'),
         ('a.img', 'a        b.nii.gz', 'b'),
         ('a.img', 'a        .',        'a'),
@@ -191,7 +197,7 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img b.img', 'a.img b.hdr .',   'a b'),
         ('a.img b.img', 'a.hdr b     .',   'a b'),
         ('a.img b.img', 'a.hdr b.img .',   'a b'),
-        ('a.img b.img', 'a.hdr b.hdr .',   'a b'), 
+        ('a.img b.img', 'a.hdr b.hdr .',   'a b'),
 
         ('a.nii.gz b.nii.gz', 'a        b        .',   'a b'),
         ('a.nii.gz b.nii.gz', 'a        b.nii.gz .',   'a b'),
@@ -226,7 +232,7 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img',       'a.hdr a                 .', 'a'),
         ('a.img',       'a.hdr a.img             .', 'a'),
         ('a.img',       'a.hdr a.hdr             .', 'a'),
-        
+
         ('a.img b.img', 'a     a     b     b     .', 'a b'),
         ('a.img b.img', 'a     a     b     b.img .', 'a b'),
         ('a.img b.img', 'a     a     b     b.hdr .', 'a b'),
@@ -262,7 +268,7 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img b.img', 'a.img a.hdr b     b.hdr .', 'a b'),
         ('a.img b.img', 'a.img a.hdr b.img b     .', 'a b'),
         ('a.img b.img', 'a.img a.hdr b.img b.img .', 'a b'),
-        ('a.img b.img', 'a.img a.hdr b.img b.hdr .', 'a b'),         
+        ('a.img b.img', 'a.img a.hdr b.img b.hdr .', 'a b'),
         ('a.img b.img', 'a.hdr a     b     b     .', 'a b'),
         ('a.img b.img', 'a.hdr a     b     b.img .', 'a b'),
         ('a.img b.img', 'a.hdr a     b     b.hdr .', 'a b'),
@@ -297,18 +303,18 @@ def test_imcp_script_shouldPass(move=False):
         ('a.img    a.nii.gz a.nii   ', 'a.img    a.nii.gz a.nii    .', 'a'),
         ('a.img    a.nii    a.nii.gz', 'a.img    a.nii    a.nii.gz .', 'a'),
         ('a.nii.gz a.img    a.nii   ', 'a.nii.gz a.img    a.nii    .', 'a'),
-        ('a.nii.gz a.nii    a.img   ', 'a.nii.gz a.nii    a.img    .', 'a'), 
+        ('a.nii.gz a.nii    a.img   ', 'a.nii.gz a.nii    a.img    .', 'a'),
     ]
 
     indir  = tempfile.mkdtemp()
     outdir = tempfile.mkdtemp()
-    
+
     try:
 
         for outputType in outputTypes:
-            
+
             os.environ['FSLOUTPUTTYPE'] = outputType
-            
+
             for files_to_create, imcp_args, files_to_expect in tests:
 
                 imageHashes = []
@@ -333,7 +339,7 @@ def test_imcp_script_shouldPass(move=False):
                 else:    imcp_script.main(imcp_args)
 
                 print('indir after:     ', os.listdir(indir))
-                print('outdir after:    ', os.listdir(outdir)) 
+                print('outdir after:    ', os.listdir(outdir))
 
                 checkFilesToExpect(
                     files_to_expect, outdir, outputType, imageHashes)
@@ -346,11 +352,11 @@ def test_imcp_script_shouldPass(move=False):
                 cleardir(indir)
                 cleardir(outdir)
 
-        
+
     finally:
         shutil.rmtree(indir)
         shutil.rmtree(outdir)
-        
+
 
 
 def test_imcp_script_shouldFail(move=False):
@@ -361,11 +367,11 @@ def test_imcp_script_shouldFail(move=False):
     # - ambiguous inputs
     # - input is incomplete pair (e.g. .hdr
     #   without corresponding .img)
-    
+
     # a.img
     # a.hdr
     # a.nii
-    # 
+    #
     # FAIL: imcp a           dest
 
     # (files_to_create, imcp_args[, preproc])
@@ -397,7 +403,7 @@ def test_imcp_script_shouldFail(move=False):
         ('a.img', 'a.hdr b', 'rm indir/a.hdr'),
         ('a.img', 'a     b', 'rm indir/a.img'),
         ('a.img', 'a.img b', 'rm indir/a.img'),
-        ('a.img', 'a.hdr b', 'rm indir/a.img'), 
+        ('a.img', 'a.hdr b', 'rm indir/a.img'),
     ]
 
     if move:
@@ -410,13 +416,13 @@ def test_imcp_script_shouldFail(move=False):
 
     indir  = tempfile.mkdtemp()
     outdir = tempfile.mkdtemp()
-    
+
     try:
         for test in tests:
 
             files_to_create = test[0]
             imcp_args       = test[1]
-            
+
             if len(test) == 3: preproc = test[2]
             else:              preproc = None
 
@@ -455,9 +461,9 @@ def test_imcp_script_shouldFail(move=False):
 def test_immv_script_shouldPass():
     test_imcp_script_shouldPass(move=True)
 
-    
+
 def test_immv_script_shouldFail():
-    test_imcp_script_shouldFail(move=True) 
+    test_imcp_script_shouldFail(move=True)
 
 
 def test_imcp_shouldPass(move=False):
@@ -473,7 +479,7 @@ def test_imcp_shouldPass(move=False):
     #      imgp src.img dest     -> dest.nii.gz
     #      imgp src.img dest.nii -> dest.nii.gz
 
-    # 
+    #
     # (files_to_create,
     #    [( imcp_args, files_which_should_exist),
     #     ...
@@ -524,9 +530,9 @@ def test_imcp_shouldPass(move=False):
             ('file.nii file.nii', 'file.nii'),
 
             # TODO both img/nii files
-        ]),        
-                
-        
+        ]),
+
+
         ('file.nii', [
             ('file     file',     'file.nii'),
             ('file     file.nii', 'file.nii'),
@@ -545,7 +551,7 @@ def test_imcp_shouldPass(move=False):
             ('file.nii.gz .',           'file.nii.gz'),
         ]),
 
-        
+
         ('file.nii file.blob', [
             ('file     file',     'file.nii'),
             ('file     file.nii', 'file.nii'),
@@ -553,8 +559,8 @@ def test_imcp_shouldPass(move=False):
             ('file.nii file',     'file.nii'),
             ('file.nii file.nii', 'file.nii'),
             ('file.nii .',        'file.nii'),
-        ]), 
-        
+        ]),
+
 
         ('file.nii file.nii.gz', [
             ('file.nii    file',        'file.nii'),
@@ -577,11 +583,11 @@ def test_imcp_shouldPass(move=False):
 
 
         ('001.img 002.img 003.img', [
-            
+
             ('001     002     003     .', '001.img 002.img 003.img'),
             ('001.img 002.img 003.img .', '001.img 002.img 003.img'),
             ('001.hdr 002.hdr 003.hdr .', '001.img 002.img 003.img'),
-                                               
+
             ('001.img 002     003     .', '001.img 002.img 003.img'),
             ('001.hdr 002     003     .', '001.img 002.img 003.img'),
 
@@ -591,13 +597,13 @@ def test_imcp_shouldPass(move=False):
             ('001     003             .', '001.img 003.img'),
             ('001.img 003.img         .', '001.img 003.img'),
             ('001.hdr 003.hdr         .', '001.img 003.img'),
-                                      
+
             ('001.img 003             .', '001.img 003.img'),
             ('001.hdr 003             .', '001.img 003.img'),
 
             ('001.img 003.img         .', '001.img 003.img'),
-            ('001.hdr 003.hdr         .', '001.img 003.img'), 
-        ]),  
+            ('001.hdr 003.hdr         .', '001.img 003.img'),
+        ]),
     ]
 
 
@@ -609,7 +615,7 @@ def test_imcp_shouldPass(move=False):
         for files_to_create, tests in shouldPass:
 
             files_to_create = files_to_create.split()
-            
+
             for imcp_args, should_exist in tests:
 
                 should_exist    = should_exist.split()
@@ -636,7 +642,7 @@ def test_imcp_shouldPass(move=False):
                     print('  src: {}'.format(src))
 
                     src = op.join(indir, src)
-                    
+
                     if move: imcp.immv(src, op.join(outdir, imcp_dest), overwrite=True)
                     else:    imcp.imcp(src, op.join(outdir, imcp_dest), overwrite=True)
 
@@ -655,15 +661,15 @@ def test_imcp_shouldPass(move=False):
                 if move:
                     for f in should_exist:
                          assert not op.exists(op.join(indir, f))
-                         
+
                 for f in os.listdir(indir):
                     try:    os.remove(op.join(indir,  f))
                     except: pass
-                        
+
                 for f in os.listdir(outdir):
                     os.remove(op.join(outdir, f))
-        
-        
+
+
     finally:
         shutil.rmtree(indir)
         shutil.rmtree(outdir)

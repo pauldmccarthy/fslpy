@@ -35,8 +35,10 @@ guide](doc/contributing.rst).
 Tests
 -----
 
-To run the tests, install `pytest` and `pytest-cov`, and then run:
+To run the tests, install `mock`, `pytest`, `pytest-runner`, `pytest-html`,
+and `pytest-cov`, and then run:
 
     python setup.py test
 
-A code coverage report will be generated in `htmlcov/`.
+A test report will be generated at `report.html`, and a code coverage report
+will be generated in `htmlcov/`.

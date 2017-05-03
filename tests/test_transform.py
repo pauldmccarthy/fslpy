@@ -5,10 +5,15 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+
+from __future__ import division
+
 import              glob
 import os.path   as op
 import itertools as it
 import numpy     as np
+
+import six
 
 import pytest
 
@@ -22,9 +27,20 @@ datadir = op.join(op.dirname(__file__), 'testdata')
 def readlines(filename):
     with open(filename, 'rt') as f:
         lines = f.readlines()
-        lines = [l.strip() for l in lines]
-        lines = [l         for l in lines if not l.startswith('#')]
-        lines = [l         for l in lines if l != '']
+        lines = [l.strip()         for l in lines]
+        lines = [l                 for l in lines if not l.startswith('#')]
+        lines = [l                 for l in lines if l != '']
+
+        # numpy.genfromtxt is busted in python 3.
+        # Pass it [str, str, ...], and it complains:
+        #
+        #   TypeError: must be str or None, not bytes
+        #
+        # Pass it [bytes, bytes, ...], and it works
+        # fine.
+        if six.PY3:
+            lines = [l.encode('ascii') for l in lines]
+
     return lines
 
 
@@ -33,7 +49,7 @@ def test_invert():
     testfile = op.join(datadir, 'test_transform_test_invert.txt')
     testdata = np.loadtxt(testfile)
 
-    nmatrices = testdata.shape[0] / 4
+    nmatrices = testdata.shape[0] // 4
 
     for i in range(nmatrices):
 
@@ -45,19 +61,18 @@ def test_invert():
 
 
 def test_concat():
-    
+
     testfile = op.join(datadir, 'test_transform_test_concat.txt')
     lines    = readlines(testfile)
 
 
-    ntests = len(lines) / 4
+    ntests = len(lines) // 4
     tests  = []
 
     for i in range(ntests):
         ilines = lines[i * 4:i * 4 + 4]
-
         data    = np.genfromtxt(ilines)
-        ninputs = data.shape[1] / 4 - 1
+        ninputs = data.shape[1] // 4 - 1
 
         inputs  = []
 
@@ -79,12 +94,12 @@ def test_scaleOffsetXform():
 
     testfile = op.join(datadir, 'test_transform_test_scaleoffsetxform.txt')
     lines    = readlines(testfile)
-    ntests   = len(lines) / 5
+    ntests   = len(lines) // 5
 
     for i in range(ntests):
-        
+
         lineoff         = i * 5
-        scales, offsets = lines[lineoff].split(',')
+        scales, offsets = lines[lineoff].decode('ascii').split(',')
 
         scales  = [float(s) for s in scales .split()]
         offsets = [float(o) for o in offsets.split()]
@@ -102,13 +117,13 @@ def test_compose_and_decompose():
 
     testfile = op.join(datadir, 'test_transform_test_compose.txt')
     lines    = readlines(testfile)
-    ntests   = len(lines) / 4
+    ntests   = len(lines) // 4
 
     for i in range(ntests):
 
         xform                      = lines[i * 4: i * 4 + 4]
         xform                      = np.genfromtxt(xform)
-        
+
         scales, offsets, rotations = transform.decompose(xform)
         result = transform.compose(scales, offsets, rotations)
 
@@ -127,11 +142,11 @@ def test_compose_and_decompose():
 def test_axisBounds():
     testfile = op.join(datadir, 'test_transform_test_axisBounds.txt')
     lines    = readlines(testfile)
-    ntests   = len(lines) / 6
+    ntests   = len(lines) // 6
 
     def readTest(testnum):
         tlines   = lines[testnum * 6: testnum * 6 + 6]
-        params   = [p.strip() for p in tlines[0].split(',')]
+        params   = [p.strip() for p in tlines[0].decode('ascii').split(',')]
         shape    = [int(s) for s in params[0].split()]
         origin   = params[1]
         boundary = None if params[2] == 'None' else params[2]
@@ -140,7 +155,7 @@ def test_axisBounds():
         expected = (expected[:3], expected[3:])
 
         return shape, origin, boundary, xform, expected
-        
+
     allAxes  = list(it.chain(
         range(0, 1, 2),
         it.permutations((0, 1, 2), 1),
@@ -150,11 +165,6 @@ def test_axisBounds():
     for i in range(ntests):
 
         shape, origin, boundary, xform, expected = readTest(i)
-
-        print('Test       {}'.format(i))
-        print('  shape    {}'.format(shape))
-        print('  origin   {}'.format(origin))
-        print('  boundary {}'.format(boundary))
 
         for axes in allAxes:
             result = transform.axisBounds(shape,
@@ -168,7 +178,7 @@ def test_axisBounds():
             assert np.all(np.isclose(exp, result))
 
 
-    # Do some parameter checks on 
+    # Do some parameter checks on
     # the first test in the file
     # which has origin == centre
     for i in range(ntests):
@@ -186,7 +196,7 @@ def test_axisBounds():
     with pytest.raises(ValueError):
         transform.axisBounds(shape, xform, origin='Blag', boundary=boundary)
     with pytest.raises(ValueError):
-        transform.axisBounds(shape, xform, origin=origin, boundary='Blufu') 
+        transform.axisBounds(shape, xform, origin=origin, boundary='Blufu')
 
 
 def test_transform():
@@ -214,19 +224,19 @@ def test_transform():
         it.permutations((0, 1, 2), 1),
         it.permutations((0, 1, 2), 2),
         it.permutations((0, 1, 2), 3)))
-    
+
     for i, testfile in enumerate(testfiles):
-        
+
         lines    = readlines(testfile)
         xform    = np.genfromtxt(lines[:4])
         expected = np.genfromtxt(lines[ 4:])
         result   = transform.transform(testcoords, xform)
- 
+
         assert np.all(np.isclose(expected, result))
 
         if not is_orthogonal(xform):
             continue
-            
+
         for axes in allAxes:
             atestcoords = testcoords[:, axes]
             aexpected   = expected[  :, axes]
@@ -241,26 +251,26 @@ def test_transform():
     coords    = badcoords[:, :3]
 
     with pytest.raises(IndexError):
-        transform.transform(coords, badxform) 
+        transform.transform(coords, badxform)
 
     with pytest.raises(ValueError):
         transform.transform(badcoords, xform)
-        
+
     with pytest.raises(ValueError):
         transform.transform(badcoords.reshape(5, 2, 4), xform)
 
     with pytest.raises(ValueError):
-        transform.transform(badcoords.reshape(5, 2, 4), xform, axes=1) 
+        transform.transform(badcoords.reshape(5, 2, 4), xform, axes=1)
 
     with pytest.raises(ValueError):
         transform.transform(badcoords[:, (1, 2, 3)], xform, axes=[1, 2])
 
 
 def test_flirtMatrixToSform():
-    
+
     testfile = op.join(datadir, 'test_transform_test_flirtMatrixToSform.txt')
     lines    = readlines(testfile)
-    ntests   = len(lines) / 18
+    ntests   = len(lines) // 18
 
     for i in range(ntests):
         tlines    = lines[i * 18: i * 18 + 18]
@@ -282,7 +292,7 @@ def test_flirtMatrixToSform():
 def test_sformToFlirtMatrix():
     testfile = op.join(datadir, 'test_transform_test_flirtMatrixToSform.txt')
     lines    = readlines(testfile)
-    ntests   = len(lines) / 18
+    ntests   = len(lines) // 18
 
     for i in range(ntests):
         tlines      = lines[i * 18: i * 18 + 18]

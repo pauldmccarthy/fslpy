@@ -24,15 +24,14 @@ def testdir(contents=None):
 
     if contents is not None:
         contents = [op.join(*c.split('/')) for c in contents]
-        print(contents)
-    
+
     class ctx(object):
 
         def __init__(self, contents):
             self.contents = contents
-        
+
         def __enter__(self):
-            
+
             self.testdir = tempfile.mkdtemp()
 
             if self.contents is not None:
@@ -55,7 +54,7 @@ def make_dummy_files(paths):
 def make_dummy_file(path, contents=None):
     """Makes a plain text file. Returns a hash of the file contents. """
     dirname = op.dirname(path)
-    
+
     if not op.exists(dirname):
         os.makedirs(dirname)
 
@@ -148,8 +147,8 @@ def make_mock_feat_analysis(featdir,
 
     src     = featdir
     dest    = op.join(testdir, op.basename(featdir))
-    featdir = dest 
-    
+    featdir = dest
+
     shutil.copytree(src, dest)
 
     if indata:
@@ -184,18 +183,18 @@ def make_mock_feat_analysis(featdir,
     if copes:
         files = glob.glob(op.join(featdir, 'stats', 'cope*nii.gz'))
         otherFiles .extend(files)
-        otherShapes.extend([shape] * len(files)) 
+        otherShapes.extend([shape] * len(files))
 
     if zstats:
         files = glob.glob(op.join(featdir, 'stats', 'zstat*nii.gz'))
         otherFiles .extend(files)
-        otherShapes.extend([shape] * len(files)) 
-    
+        otherShapes.extend([shape] * len(files))
+
     if residuals:
         files = glob.glob(op.join(featdir, 'stats', 'res4d.nii.gz'))
         otherFiles .extend(files)
-        otherShapes.extend([shape4D]) 
-    
+        otherShapes.extend([shape4D])
+
     if clustMasks:
         files = glob.glob(op.join(featdir, 'cluster_mask*nii.gz'))
         otherFiles .extend(files)

@@ -19,11 +19,11 @@ import fsl.data.vest as vest
 testfile1 = """%!VEST-LUT
 %%BeginInstance
 <<
-/SavedInstanceClassName /ClassLUT 
-/PseudoColorMinimum 0.00 
-/PseudoColorMaximum 1.00 
-/PseudoColorMinControl /Low 
-/PseudoColorMaxControl /High 
+/SavedInstanceClassName /ClassLUT
+/PseudoColorMinimum 0.00
+/PseudoColorMaximum 1.00
+/PseudoColorMinControl /Low
+/PseudoColorMaxControl /High
 /PseudoColormap [
 <-color{0.00,0.00,0.00}->
 <-color{0.01,0.01,0.01}->
@@ -47,11 +47,11 @@ testfile1Colours = np.array([
 testfile2 = """%!VEST-LUT
 %%BeginInstance
 <<
-/SavedInstanceClassName /ClassLUT 
-/PseudoColorMinimum 0.00 
-/PseudoColorMaximum 1.00 
-/PseudoColorMinControl /Low 
-/PseudoColorMaxControl /High 
+/SavedInstanceClassName /ClassLUT
+/PseudoColorMinimum 0.00
+/PseudoColorMaximum 1.00
+/PseudoColorMinControl /Low
+/PseudoColorMaxControl /High
 /PseudoColormap [
 <-color{0.0,0.0,0.0}->
 ]
@@ -78,16 +78,16 @@ testfile3 = """%!VEST-LUT
 testfile3Colours = np.array([
     [0.0, 0.0, 0.0],
     [0.5, 0.2, 0.6]])
- 
+
 
 testfile4 = """%!VEST-LUT
 %%BeginInstance
 <<
-/SavedInstanceClassName /ClassLUT 
-/PseudoColorMinimum 0.00 
-/PseudoColorMaximum 1.00 
-/PseudoColorMinControl /Low 
-/PseudoColorMaxControl /High 
+/SavedInstanceClassName /ClassLUT
+/PseudoColorMinimum 0.00
+/PseudoColorMaximum 1.00
+/PseudoColorMinControl /Low
+/PseudoColorMaxControl /High
 /PseudoColormap [
 <-color{0.0,1.0,5.0}->
 <-color{1.0,2.0,4.0}->
@@ -119,7 +119,7 @@ def _createFiles(testdir):
     for name, text in zip(names, texts):
         filename = op.join(testdir, '{}.txt'.format(name))
         with open(filename, 'wt') as f:
-            f.write(text)     
+            f.write(text)
 
 
 
@@ -142,7 +142,7 @@ def test_looksLikeVestLutFile():
 
 
 def test_loadVestLutFile():
-    
+
     testdir   = tempfile.mkdtemp()
     testfiles = [
         op.join(testdir, 'testfile1.txt'),

@@ -16,18 +16,18 @@ import fsl.data.image as fslimage
 
 
 def test_image_indexed_threaded(  ): _test_image_indexed(True)
-def test_image_indexed_unthreaded(): _test_image_indexed(False) 
+def test_image_indexed_unthreaded(): _test_image_indexed(False)
 def _test_image_indexed(threaded):
 
     with tests.testdir() as testdir:
-        
+
         filename = op.join(testdir, 'image.nii.gz')
 
         # Data range grows with volume
         data  = np.zeros((100, 100, 100, 50))
         for vol in range(data.shape[-1]):
             data[..., vol] = vol
-        
+
         fslimage.Image(data).save(filename)
 
         img = fslimage.Image(
@@ -45,7 +45,7 @@ def _test_image_indexed(threaded):
 
             if threaded:
                 img.getImageWrapper().getTaskThread().waitUntilIdle()
-            
+
             assert img.dataRange == (0, vol)
         end1 = time.time()
 
@@ -66,7 +66,7 @@ def test_image_indexed_read4D_unthreaded(seed):
 def _test_image_indexed_read4D(threaded):
 
     with tests.testdir() as testdir:
-        
+
         filename = op.join(testdir, 'image.nii.gz')
 
         # Data range grows with volume
@@ -74,7 +74,7 @@ def _test_image_indexed_read4D(threaded):
         data  = np.zeros((50, 50, 50, nvols))
         for vol in range(nvols):
             data[..., vol] = vol
-        
+
         fslimage.Image(data).save(filename)
 
         img = fslimage.Image(
@@ -82,15 +82,15 @@ def _test_image_indexed_read4D(threaded):
             loadData=False,
             calcRange=False,
             indexed=True,
-            threaded=threaded) 
+            threaded=threaded)
 
         # Test reading slice through
         # 4D (e.g. voxel time course)
-        # 
+        #
         # n.b. This is SUPER SLOW!!
         voxels = tests.random_voxels((50, 50, 50), 5)
         for i, xyz in enumerate(voxels):
-            
+
             x, y, z = [int(v) for v in xyz]
             data    = img[x, y, z, :]
 
@@ -98,21 +98,21 @@ def _test_image_indexed_read4D(threaded):
                 img.getImageWrapper().getTaskThread().waitUntilIdle()
 
             assert np.all(data == np.arange(nvols))
-        
+
 
 def test_image_indexed_save_threaded(  ): _test_image_indexed_save(True)
-def test_image_indexed_save_unthreaded(): _test_image_indexed_save(False) 
+def test_image_indexed_save_unthreaded(): _test_image_indexed_save(False)
 def _test_image_indexed_save(threaded):
 
     with tests.testdir() as testdir:
-        
+
         filename = op.join(testdir, 'image.nii.gz')
 
         # Data range grows with volume
         data = np.zeros((100, 100, 100, 50))
         for vol in range(data.shape[-1]):
             data[..., vol] = vol
-        
+
         fslimage.Image(data).save(filename)
 
         img = fslimage.Image(
@@ -149,7 +149,7 @@ def _test_image_indexed_save(threaded):
         # get rebuilt to this point
         img[..., 0]
         img[..., 40]
-        
+
         if threaded:
             img.getImageWrapper().getTaskThread().waitUntilIdle()
 
@@ -162,8 +162,8 @@ def _test_image_indexed_save(threaded):
             img.getImageWrapper().getTaskThread().waitUntilIdle()
 
         # make sure we got the modified data
-        assert img.dataRange == (0, 49) 
-        
+        assert img.dataRange == (0, 49)
+
 
         # Finally, reload, and verify the change
         img = fslimage.Image(filename)
@@ -229,8 +229,8 @@ def _test_image_calcRange(threaded):
     img.calcRange(np.prod(img.shape) * img.dtype.itemsize + 1)
     if threaded:
         img.getImageWrapper().getTaskThread().waitUntilIdle()
-    assert img.dataRange == (0, 10) 
-    
+    assert img.dataRange == (0, 10)
+
     # Check that calcRange(smallnum) will
     # calculate the range of the first slice
     img = fslimage.Image(data, **kwargs)
@@ -252,15 +252,15 @@ def _test_image_calcRange(threaded):
     if threaded:
         img.getImageWrapper().getTaskThread().waitUntilIdle()
     assert img.dataRange == (0, 10)
-    
+
     # Check that calcRange(numBiggerThanImage)
     # will calculate the full range
     img = fslimage.Image(data, **kwargs)
     img.calcRange(np.prod(img.shape) * img.dtype.itemsize + 1)
     if threaded:
         img.getImageWrapper().getTaskThread().waitUntilIdle()
-    assert img.dataRange == (0, 10) 
-    
+    assert img.dataRange == (0, 10)
+
     # Check that calcRange(smallnum) will
     # calculate the range of the first volume
     img = fslimage.Image(data, **kwargs)

@@ -59,7 +59,7 @@ def _run_with_wx(func, *args, **kwargs):
                 frame.Destroy()
                 _wxapp.ExitMainLoop()
             wx.CallLater(finishingDelay, finish)
-    
+
     frame.Show()
 
     wx.CallLater(startingDelay, wrap)
@@ -69,7 +69,7 @@ def _run_with_wx(func, *args, **kwargs):
 
     if raised[0] and propagateRaise:
         raise raised[0]
-        
+
     return result[0]
 
 
@@ -100,8 +100,8 @@ def _test_run():
         taskRun[0] = True
 
     def errtask():
-        taskRun[0] = True 
-        raise Exception('Task crashed!')
+        taskRun[0] = True
+        raise Exception('Task which was supposed to crash crashed!')
 
     def onFinish():
         onFinishCalled[0] = True
@@ -127,7 +127,7 @@ def _test_run():
 
     taskRun[       0] = False
     onFinishCalled[0] = False
-    
+
     t = async.run(errtask, onFinish, onError)
 
     if t is not None:
@@ -157,7 +157,7 @@ def test_idle():
         called[0] = arg == 1 and kwarg1 == 2
 
     def errtask(arg, kwarg1=None):
-        raise Exception('Task crashed!')
+        raise Exception('Task which was supposed to crash crashed!')
 
     assert async.getIdleTimeout() > 0
 
@@ -173,10 +173,10 @@ def test_idle():
 
     # Run a crashing task directly
     with pytest.raises(Exception):
-        async.idle(errtask)
+        async.idle(errtask, 1, kwarg1=2)
 
     # Run a crashing task on idle loop - error should not propagate
-    _run_with_wx(async.idle, errtask)
+    _run_with_wx(async.idle, errtask, 1, kwarg1=2)
 
 
 def test_inidle():
@@ -413,7 +413,7 @@ def _test_wait():
 
         if t is not None:
             t.join()
-        
+
         _wait_for_idle_loop_to_clear()
 
         assert all(threadtaskscalled)
@@ -449,7 +449,7 @@ def test_TaskThread_onFinish():
         taskCalled[0] = True
 
     def onFinish():
-        onFinishCalled[0] = True 
+        onFinishCalled[0] = True
 
     tt = async.TaskThread()
     tt.start()
@@ -488,7 +488,7 @@ def test_TaskThread_isQueued():
     time.sleep(0.3)
 
     tt.stop()
-    tt.join() 
+    tt.join()
 
     assert queued
     assert called[0]
@@ -517,7 +517,7 @@ def test_TaskThread_dequeue():
     time.sleep(0.3)
 
     tt.stop()
-    tt.join() 
+    tt.join()
 
     assert not called[0]
 
@@ -542,7 +542,7 @@ def test_TaskThread_TaskVeto():
     time.sleep(0.5)
 
     tt.stop()
-    tt.join() 
+    tt.join()
 
     assert     taskCalled[0]
     assert not onFinishCalled[0]
@@ -579,7 +579,7 @@ def test_mutex():
         t[0].method2start = None
         t[0].method1end   = None
         t[0].method2end   = None
-        
+
         t1 = threading.Thread(target=thread1)
         t2 = threading.Thread(target=thread2)
 

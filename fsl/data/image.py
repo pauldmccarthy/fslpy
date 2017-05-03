@@ -470,8 +470,8 @@ class Nifti(notifier.Notifier):
             elif qform_code != constants.NIFTI_XFORM_UNKNOWN: code = qform_code
 
         # Invalid values
-        if   code > 4: code = constants.NIFTI_XFORM_UNKNOWN
-        elif code < 0: code = constants.NIFTI_XFORM_UNKNOWN
+        if code not in range(5):
+            code = constants.NIFTI_XFORM_UNKNOWN
 
         return int(code)
 
@@ -836,7 +836,7 @@ class Image(Nifti):
         self.__nibImage     = None
         self.__imageWrapper = None
 
-        if self.__fileobj is not None:
+        if getattr(self, '__fileobj', None) is not None:
             self.__fileobj.close()
 
 

@@ -221,7 +221,6 @@ def loadVTKPolydataFile(infile):
 
     for i in range(nVertices):
         vertLine       = lines[i + 5]
-        vertices[i, :] = map(float, vertLine.split())
         vertices[i, :] = [float(w) for w in vertLine.split()]
 
     indexOffset = 0
@@ -232,7 +231,6 @@ def loadVTKPolydataFile(infile):
 
         start              = indexOffset
         end                = indexOffset + polygonLengths[i]
-        indices[start:end] = map(int, polyLine[1:])
         indices[start:end] = [int(w) for w in polyLine[1:]]
 
         indexOffset        += polygonLengths[i]

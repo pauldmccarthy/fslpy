@@ -415,7 +415,7 @@ class ImageWrapper(notifier.Notifier):
         """
 
         shape  = self.__image.shape
-        slices = zip([0] * len(shape), shape)
+        slices = [[0, s] for s in shape]
         return sliceCovered(slices, self.__coverage)
 
 
