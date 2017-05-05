@@ -146,6 +146,7 @@ class Platform(notifier.Notifier):
         self.isWidgetAlive = isWidgetAlive
 
         self.__inSSHSession = False
+        self.__inVNCSession = False
         self.__glVersion    = None
         self.__glRenderer   = None
         self.__glIsSoftware = None
@@ -163,17 +164,14 @@ class Platform(notifier.Notifier):
         except ImportError:
             self.__canHaveGui = False
 
+        # If one of the SSH_/VNC environment
+        # variables is set, then we're probably
+        # running over SSH/VNC.
+        sshVars = ['SSH_CLIENT', 'SSH_TTY']
+        vncVars = ['VNCDESKTOP', 'X2GO_SESSION', 'NXSESSIONID']
 
-        # If one of the SSH_ environment
-        # variables is set, and we're
-        # not running in a VNC session,
-        # then we're probably running
-        # over SSH.
-        inSSH = 'SSH_CLIENT' in os.environ or \
-                'SSH_TTY'    in os.environ
-        inVNC = 'VNCDESKTOP' in os.environ
-
-        self.__inSSHSession = inSSH and not inVNC
+        self.__inSSHSession = any(s in os.environ for s in sshVars)
+        self.__inVNCSession = any(v in os.environ for v in vncVars)
 
                 
     @property
@@ -220,6 +218,19 @@ class Platform(notifier.Notifier):
         return self.__inSSHSession
 
     
+    @property
+    def inVNCSession(self):
+        """``True`` if this application is running over a VNC (or similar)
+        session, ``False`` otherwise. Currently, the following remote desktop
+        environments are detected:
+
+          - VNC
+          - x2go
+          - NoMachine
+        """
+        return self.__inVNCSession
+
+
     @property
     def wxPlatform(self):
         """One of :data:`WX_UNKNOWN`, :data:`WX_MAC_COCOA`,
