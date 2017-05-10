@@ -1,14 +1,12 @@
-# Keeping this commented out until CI is working 
-#
-# test:2.7:
-#   image: python2.7
-#   script:
-#     - cat requirements.txt | xargs -n 1 pip install
-#     - python setup.py test
+test:2.7:
+  image: wxpython-python2.7:4.0.0a2
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - xvfb-run python setup.py test
 
 
-# test:3.5:
-#   image: python3.5
-#   script:
-#     - cat requirements.txt | xargs -n 1 pip install
-#     - python setup.py test
+test:3.5:
+  image: wxpython-python3.6:4.0.0a2
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - xvfb-run python setup.py test
