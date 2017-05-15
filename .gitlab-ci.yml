@@ -2,6 +2,7 @@ test:2.7:
   image: wxpython-python2.7:4.0.0a2
   script:
     - cat requirements.txt | xargs -n 1 pip install
+    - pip install scipy
     - xvfb-run python setup.py test
     - coverage report -m
 
@@ -9,5 +10,6 @@ test:3.5:
   image: wxpython-python3.6:4.0.0a2
   script:
     - cat requirements.txt | xargs -n 1 pip install
+    - pip install scipy
     - xvfb-run python setup.py test
     - coverage report -m
