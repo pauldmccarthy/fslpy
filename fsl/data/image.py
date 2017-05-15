@@ -662,7 +662,8 @@ class Image(Nifti):
                  loadData=True,
                  calcRange=True,
                  indexed=False,
-                 threaded=False):
+                 threaded=False,
+                 **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:     A string containing the name of an image file to load,
@@ -706,6 +707,9 @@ class Image(Nifti):
         :arg threaded:  If ``True``, the :class:`.ImageWrapper` will use a
                         separate thread for data range calculation. Defaults
                         to ``False``. Ignored if ``loadData`` is ``True``.
+
+        All other arguments are passed through to the ``nibabel.load`` function
+        (if it is called).
         """
 
         nibImage   = None
@@ -735,7 +739,7 @@ class Image(Nifti):
             # Otherwise we let nibabel
             # manage the file reference(s)
             else:
-                nibImage  = nib.load(image)
+                nibImage  = nib.load(image, **kwargs)
 
             dataSource = image
 
