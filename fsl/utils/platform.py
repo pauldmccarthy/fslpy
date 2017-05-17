@@ -84,27 +84,26 @@ def isWidgetAlive(widget):
     """Returns ``True`` if the given ``wx.Window`` object is "alive" (i.e.
     has not been destroyed), ``False`` otherwise. Works in both wxPython
     and wxPython/Phoenix.
+
+    .. warning:: Don't try to test whether a ``wx.MenuItem`` has been
+                 destroyed, as it will probably result in segmentation
+                 faults. Check the parent ``wx.Menu`` instead.
     """
 
     import wx
 
-    if platform.wxFlavour == WX_PHOENIX:
-        return bool(widget)
 
-    elif platform.wxFlavour == WX_PYTHON:
-        try:
-            # GetId seems to be available on all wx
-            # objects, despite not being documented.
-            #
-            # I was originally calling IsEnabled,
-            # but this causes segfaults if called
-            # on a wx.MenuItem from within an
-            # event handler on that menu item!
-            widget.GetId()
-            return True
+    if platform.wxFlavour == platform.WX_PHOENIX:
+        excType = RuntimeError
+    elif platform.wxFlavour == platform.WX_PYTHON:
+        excType = wx.PyDeadObjectError
 
-        except wx.PyDeadObjectError:
-            return False
+    try:
+        widget.GetParent()
+        return True
+
+    except excType:
+        return False
 
 
 class Platform(notifier.Notifier):
