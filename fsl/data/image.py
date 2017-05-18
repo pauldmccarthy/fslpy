@@ -315,7 +315,7 @@ class Nifti(notifier.Notifier):
 
         val = val.decode('ascii')
 
-        return ''.join([c for c in val if c in string.printable])
+        return ''.join([c for c in val if c in string.printable]).strip()
 
 
     @property
