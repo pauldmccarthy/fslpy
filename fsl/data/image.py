@@ -34,6 +34,7 @@ and file names:
 
 import                      os
 import os.path           as op
+import                      string
 import                      logging
 
 import                      six
@@ -288,6 +289,33 @@ class Nifti(notifier.Notifier):
         pixdims = pixdims[:len(shape)]
 
         return origShape, shape, pixdims
+
+
+    def strval(self, key):
+        """Returns the specified NIFTI header field, converted to a python
+        string, correctly null-terminated, and with non-printable characters
+        removed.
+
+        This method is used to sanitise some NIFTI header fields. The default
+        Python behaviour for converting a sequence of bytes to a string is to
+        strip all termination characters (bytes with value of ``0x00``) from
+        the end of the sequence.
+
+        This default behaviour does not handle the case where a sequence of
+        bytes which did contain a long string is subsequently overwritten with
+        a shorter string - the short string will be terminated, but that
+        termination character will be followed by the remainder of the
+        original string.
+        """
+
+        val = self.header[key]
+
+        try:    val = bytes(val).partition(b'\0')[0]
+        except: val = bytes(val)
+
+        val = val.decode('ascii')
+
+        return ''.join([c for c in val if c in string.printable])
 
 
     @property
