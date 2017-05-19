@@ -28,7 +28,11 @@ def setup_module():
 
 # mock subprocess.check_output command
 # which expects 'fslstats -m filename'
+# or 'fslinfo ...'
 def mock_check_output(args):
+    if args[0].endswith('fslinfo'):
+        return 'info'
+
     img = nib.load(args[-2])
     return str(img.get_data().mean())
 
@@ -49,11 +53,11 @@ def test_callfsl():
                         mock_check_output):
             result = callfsl.callFSL(cmd)
 
-        assert np.isclose(float(result), img.mean())
+            assert np.isclose(float(result), img.mean())
 
-        # Or pass a list of args
-        result = callfsl.callFSL(*cmd.split())
-        assert np.isclose(float(result), img.mean())
+            # Or pass a list of args
+            result = callfsl.callFSL(*cmd.split())
+            assert np.isclose(float(result), img.mean())
 
         # Bad commands
         badcmds = ['fslblob', 'fslstats notafile']
@@ -64,7 +68,9 @@ def test_callfsl():
 
         # No FSL - should crash
         cmd = 'fslinfo {}'.format(fname)
-        callfsl.callFSL(cmd)
+        with mock.patch('fsl.utils.callfsl.sp.check_output',
+                        mock_check_output):
+            callfsl.callFSL(cmd)
         fslplatform.fsldir = None
         with pytest.raises(Exception):
             callfsl.callFSL(cmd)
