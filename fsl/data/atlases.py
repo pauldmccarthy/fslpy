@@ -308,6 +308,58 @@ class AtlasRegistry(notifier.Notifier):
         fslsettings.write('fsl.data.atlases', atlases)
 
 
+class AtlasLabel(object):
+    """The ``AtlasLabel`` class is used by the :class:`AtlasDescription` class
+    as a container object used for storing atlas label information.
+
+    An ``AtlasLabel`` instance contains the following attributes:
+
+    ========= ==============================================================
+    ``name``  Region name
+    ``index`` For probabilistic atlases, the volume index into the 4D atlas
+              image that corresponds to this region. For label atlases, the
+              value of voxels that are in this region. For summary images of
+              probabilistic atlases, add 1 to this value to get the
+              corresponding voxel values.
+    ``x``     X coordinate of the region in world space
+    ``y``     Y coordinate of the region in world space
+    ``z``     Z coordinate of the region in world space
+    ========= ==============================================================
+
+    .. note:: The ``x``, ``y`` and ``z`` label coordinates are pre-calculated
+              centre-of-gravity coordinates, as listed in the atlas xml file.
+              They are in the coordinate system defined by the transformation
+              matrix for the first image in the ``images`` list of the atlas
+              XML file (typically MNI152 space).
+    """
+
+    def __init__(self, name, index, x, y, z):
+        self.name  = name
+        self.index = index
+        self.x     = x
+        self.y     = y
+        self.z     = z
+
+
+    def __eq__(self, other):
+        """Compares the ``index`` of this ``AtlasLabel`` with another.
+        """
+        return self.index == other.index
+
+
+    def __neq__(self, other):
+        """Compares the ``index`` of this ``AtlasLabel`` with another.
+        """
+        return self.index != other.index
+
+
+    def __lt__(self, other):
+        """Compares this ``AtlasLabel`` with another by their ``index``
+        attribute.
+        """
+        return self.index < other.index
+
+
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
     stored in the FSL XML file that describes a single FSL atlas.  An XML
@@ -393,30 +445,9 @@ class AtlasDescription(object):
                       ``numpy`` arrays), one for each image in ``images``,
                       defining the voxel to world coordinate transformations.
 
-    ``labels``        A list of ``AtlasLabel`` objects, describing each
+    ``labels``        A list of :class`AtlasLabel` objects, describing each
                       region / label in the atlas.
     ================= ======================================================
-
-    Each ``AtlasLabel`` instance in the ``labels`` list contains the
-    following attributes:
-
-    ========= ==============================================================
-    ``name``  Region name
-    ``index`` For probabilistic atlases, the volume index into the 4D atlas
-              image that corresponds to this region. For label atlases, the
-              value of voxels that are in this region. For summary images of
-              probabilistic atlases, add 1 to this value to get the
-              corresponding voxel values.
-    ``x``     X coordinate of the region in world space
-    ``y``     Y coordinate of the region in world space
-    ``z``     Z coordinate of the region in world space
-    ========= ==============================================================
-
-    .. note:: The ``x``, ``y`` and ``z`` label coordinates are pre-calculated
-              centre-of-gravity coordinates, as listed in the atlas xml file.
-              They are in the coordinate system defined by the transformation
-              matrix for the first image in the ``images`` list.(typically
-              MNI152 space).
     """
 
 
@@ -471,11 +502,6 @@ class AtlasDescription(object):
             self.pixdims      .append(i.pixdim[:3])
             self.xforms       .append(i.voxToWorldMat)
 
-        # A container object used for
-        # storing atlas label information
-        class AtlasLabel(object):
-            pass
-
         labels      = data.findall('label')
         self.labels = []
 
@@ -488,14 +514,14 @@ class AtlasDescription(object):
 
         for i, label in enumerate(labels):
 
-            al        = AtlasLabel()
-            al.name   = label.text
-            al.index  = int(  label.attrib['index'])
-            al.x      = float(label.attrib['x'])
-            al.y      = float(label.attrib['y'])
-            al.z      = float(label.attrib['z'])
+            name  = label.text
+            index = int(  label.attrib['index'])
+            x     = float(label.attrib['x'])
+            y     = float(label.attrib['y'])
+            z     = float(label.attrib['z'])
+            al    = AtlasLabel(name, index, x, y, z)
 
-            coords[i] = (al.x, al.y, al.z)
+            coords[i] = (x, y, z)
 
             self.labels.append(al)
 
@@ -507,7 +533,6 @@ class AtlasDescription(object):
         # Update the coordinates
         # in our label objects
         for i, label in enumerate(self.labels):
-
             label.x, label.y, label.z = coords[i]
 
 
