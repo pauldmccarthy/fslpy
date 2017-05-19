@@ -3,7 +3,7 @@ test:2.7:
   script:
     - cat requirements.txt | xargs -n 1 pip install
     - pip install scipy
-    - xvfb-run python setup.py test
+    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
     - coverage report -m
 
 test:3.6:
@@ -11,5 +11,5 @@ test:3.6:
   script:
     - cat requirements.txt | xargs -n 1 pip install
     - pip install scipy
-    - xvfb-run python setup.py test
+    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
     - coverage report -m
