@@ -364,9 +364,6 @@ class Platform(notifier.Notifier):
         # necessary.
         self.__glIsSoftware = any((
             'software' in value,
-            'mesa'     in value,
-            'gallium'  in value,
-            'llvmpipe' in value,
             'chromium' in value,
         ))
 
