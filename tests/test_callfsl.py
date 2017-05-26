@@ -10,7 +10,9 @@ import os.path    as op
 import subprocess as sp
 
 import numpy      as np
+import nibabel    as nib
 
+import mock
 import pytest
 
 import fsl.utils.callfsl                  as callfsl
@@ -24,6 +26,17 @@ def setup_module():
         raise Exception('FSLDIR is not set - callfsl tests cannot be run')
 
 
+# mock subprocess.check_output command
+# which expects 'fslstats -m filename'
+# or 'fslinfo ...'
+def mock_check_output(args):
+    if args[0].endswith('fslinfo'):
+        return 'info'
+
+    img = nib.load(args[-2])
+    return str(img.get_data().mean())
+
+
 def test_callfsl():
 
     with tests.testdir() as testdir:
@@ -35,12 +48,16 @@ def test_callfsl():
 
         # Pass a single string
         cmd    = 'fslstats {} -m'.format(fname)
-        result = callfsl.callFSL(cmd)
-        assert np.isclose(float(result), img.mean())
 
-        # Or pass a list of args
-        result = callfsl.callFSL(*cmd.split())
-        assert np.isclose(float(result), img.mean())
+        with mock.patch('fsl.utils.callfsl.sp.check_output',
+                        mock_check_output):
+            result = callfsl.callFSL(cmd)
+
+            assert np.isclose(float(result), img.mean())
+
+            # Or pass a list of args
+            result = callfsl.callFSL(*cmd.split())
+            assert np.isclose(float(result), img.mean())
 
         # Bad commands
         badcmds = ['fslblob', 'fslstats notafile']
@@ -51,7 +68,9 @@ def test_callfsl():
 
         # No FSL - should crash
         cmd = 'fslinfo {}'.format(fname)
-        callfsl.callFSL(cmd)
+        with mock.patch('fsl.utils.callfsl.sp.check_output',
+                        mock_check_output):
+            callfsl.callFSL(cmd)
         fslplatform.fsldir = None
         with pytest.raises(Exception):
             callfsl.callFSL(cmd)

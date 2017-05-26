@@ -373,9 +373,9 @@ class Settings(object):
             with open(configFile, 'rb') as f:
                 return pickle.load(f)
         except:
-            log.warning('Unable to load stored {} configuration file '
-                        '{}'.format(self.__configID, configFile),
-                        exc_info=True)
+            log.debug('Unable to load stored {} configuration file '
+                      '{}'.format(self.__configID, configFile),
+                      exc_info=True)
             return {}
 
 

@@ -16,15 +16,16 @@ Development model
   developers are free to choose their own development workflow in their own
   repositories.
 
-- A separate branch is created for each release. Hotfixes may be added to
-  these release branches.
-
 - Merge requests will not be accepted unless:
-   
+
  - All existing tests pass (or have been updated as needed).
  - New tests have been written to cover newly added features.
  - Code coverage is as close to 100% as possible.
  - Coding conventions are adhered to (unless there is good reason not to).
+
+- A separate branch is created for each release. Hotfixes may be added to
+  these release branches. Hotfixes should be merged into the master branch,
+  and then cherry-picked onto the release branch(es).
 
 
 Version number
@@ -40,12 +41,15 @@ numbers::
 
 - The ``patch`` number is incremented on bugfixes and minor
   (backwards-compatible) changes.
-   
+
 - The ``minor`` number is incremented on feature additions and/or
   backwards-compatible changes.
 
 - The ``major`` number is incremented on major feature additions, and
   backwards-incompatible changes.
+
+Additionally, a single letter (``a``, ``b``, ``c``, etc) may be appended
+to the version number, indicating a hotfix release.
 
 
 Testing
@@ -78,7 +82,7 @@ Configure your text editor to use:
 - `flake8 <http://flake8.pycqa.org/en/latest/>`_: This checks your code for
   adherence to the `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ coding
   standard.
-   
+
 - `pylint <https://www.pylint.org/>`_: This checks that your code follows
   other good conventions.
 

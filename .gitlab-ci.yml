@@ -1,14 +1,17 @@
-# Keeping this commented out until CI is working 
-#
-# test:2.7:
-#   image: python2.7
-#   script:
-#     - cat requirements.txt | xargs -n 1 pip install
-#     - python setup.py test
+test:2.7:
+  image: fsleyes-py27
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - pip install scipy
+    - pip install coverage
+    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
+    - coverage report -m
 
-
-# test:3.5:
-#   image: python3.5
-#   script:
-#     - cat requirements.txt | xargs -n 1 pip install
-#     - python setup.py test
+test:3.6:
+  image: fsleyes-py36
+  script:
+    - cat requirements.txt | xargs -n 1 pip install
+    - pip install scipy
+    - pip install coverage
+    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
+    - coverage report -m
