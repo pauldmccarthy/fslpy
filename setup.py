@@ -62,8 +62,11 @@ class doc(Command):
         if op.exists(destdir):
             shutil.rmtree(destdir)
 
-        env   = dict(os.environ)
-        ppath = [op.join(pkgutil.get_loader('fsl').filename, '..')]
+        env     = dict(os.environ)
+        dirname = pkgutil.get_loader('fsl').get_filename()
+        dirname = op.dirname(dirname)
+        dirname = op.abspath(op.join(dirname, '..'))
+        ppath   = [dirname]
 
         env['PYTHONPATH'] = op.pathsep.join(ppath)
 
