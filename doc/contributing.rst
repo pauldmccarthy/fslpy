@@ -23,9 +23,21 @@ Development model
  - Code coverage is as close to 100% as possible.
  - Coding conventions are adhered to (unless there is good reason not to).
 
-- A separate branch is created for each release. Hotfixes may be added to
-  these release branches. Hotfixes should be merged into the master branch,
-  and then cherry-picked onto the release branch(es).
+
+Releases
+--------
+
+
+A separate branch is created for each release. The name of the branch is
+``v[release]``, where ``[release]`` is the version number (see below). For
+example, the branch name for release ``1.0.0`` would be ``v1.0.0``.  Hotfixes
+may be added to these release branches. Hotfixes should be merged into the
+master branch, and then cherry-picked onto the release branch(es).
+
+
+Every release (including hotfixes) is also tagged with its version number.
+For example, the first commit in the ``v1.0.0`` branch would also be tagged
+with ``1.0.0``.
 
 
 Version number
