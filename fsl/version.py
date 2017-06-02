@@ -32,7 +32,7 @@ which roughly obeys the Semantic Versioning conventions (http://semver.org/):
 import string
 
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 """Current version number, as a string. """
 
 

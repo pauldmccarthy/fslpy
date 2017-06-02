@@ -20,8 +20,7 @@ Documentation
 -------------
 
 `fslpy` is documented using [sphinx](http://http://sphinx-doc.org/). You can
-build the API documentation by installing `sphinx` and `sphinx-rtd-theme`, and
-running:
+build the API documentation by running:
 
     python setup.py doc
 
@@ -35,8 +34,7 @@ guide](doc/contributing.rst).
 Tests
 -----
 
-To run the tests, install `mock`, `pytest`, `pytest-runner`, `pytest-html`,
-and `pytest-cov`, and then run:
+Run the test suite via:
 
     python setup.py test
 
