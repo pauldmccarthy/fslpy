@@ -8,11 +8,8 @@
 
 from __future__ import print_function
 
-import               os
-import os.path    as op
-import subprocess as sp
-import               shutil
-import               pkgutil
+import os.path as op
+import            shutil
 
 from setuptools import setup
 from setuptools import find_packages
@@ -38,6 +35,7 @@ with open(op.join(basedir, "fsl", "version.py")) as f:
         if line.startswith('__version__'):
             exec(line, version)
             break
+version = version['__version__']
 
 with open(op.join(basedir, 'README.md'), 'rt') as f:
     readme = f.read()
@@ -62,34 +60,37 @@ class doc(Command):
         if op.exists(destdir):
             shutil.rmtree(destdir)
 
-        env     = dict(os.environ)
-        dirname = pkgutil.get_loader('fsl').get_filename()
-        dirname = op.dirname(dirname)
-        dirname = op.abspath(op.join(dirname, '..'))
-        ppath   = [dirname]
-
-        env['PYTHONPATH'] = op.pathsep.join(ppath)
-
         print('Building documentation [{}]'.format(destdir))
 
-        sp.call(['sphinx-build', docdir, destdir], env=env)
+        import sphinx
+
+        try:
+            import unittest.mock as mock
+        except:
+            import mock
+
+        mockedModules = [
+            'nibabel',
+            'nibabel.fileslice',
+            'numpy',
+            'numpy.linalg']
+
+        mockobj       = mock.MagicMock()
+        mockedModules = { m : mockobj for m in mockedModules}
+
+        with mock.patch.dict('sys.modules', **mockedModules):
+            sphinx.main(['sphinx-build', docdir, destdir])
 
 
 setup(
 
     name='fslpy',
-
-    version=version['__version__'],
-
+    version=version,
     description='FSL Python library',
     long_description=readme,
-
     url='https://git.fmrib.ox.ac.uk/fsl/fslpy',
-
     author='Paul McCarthy',
-
     author_email='pauldmccarthy@gmail.com',
-
     license='Apache License Version 2.0',
 
     classifiers=[
@@ -101,10 +102,9 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
     packages=packages,
-
     install_requires=install_requires,
+    setup_requires=['pytest-runner', 'sphinx', 'sphinx-rtd-theme', 'mock'],
 
-    setup_requires=['pytest-runner'],
     tests_require=['mock',
                    'pytest-cov',
                    'pytest-html',
@@ -113,11 +113,4 @@ setup(
     test_suite='tests',
 
     cmdclass={'doc' : doc},
-
-    entry_points={
-        'console_scripts' : [
-            'fslpy_imcp = fsl.scripts.imcp:main',
-            'fslpy_immv = fsl.scripts.immv:main'
-        ]
-    }
 )

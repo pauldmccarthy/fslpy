@@ -2,5 +2,7 @@ include           LICENSE
 include           COPYRIGHT
 include           README.md
 include           requirements.txt
-recursive-include doc *
-recursive-include tests *
+include           pytest.ini
+recursive-include doc      *
+recursive-exclude doc/html *
+recursive-include tests    *
