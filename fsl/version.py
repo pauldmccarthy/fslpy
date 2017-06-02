@@ -32,7 +32,7 @@ which roughly obeys the Semantic Versioning conventions (http://semver.org/):
 import string
 
 
-__version__ = '1.0.1'
+__version__ = 'dev'
 """Current version number, as a string. """
 
 
@@ -43,6 +43,9 @@ def parseVersionString(versionString):
 
     An error is raised if the ``versionString`` is invalid.
     """
+
+    if versionString == 'dev':
+        return 9999, 9999, 9999
 
     components = versionString.split('.')
 
