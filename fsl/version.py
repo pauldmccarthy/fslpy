@@ -28,6 +28,10 @@ which roughly obeys the Semantic Versioning conventions (http://semver.org/):
     which primarily involve bug-fixes and minor changes.
 """
 
+
+import string
+
+
 __version__ = '1.0.0'
 """Current version number, as a string. """
 
@@ -44,9 +48,16 @@ def parseVersionString(versionString):
 
     # Major, minor, and point
     # version are always numeric
-    major, minor, point = [int(c) for c in components]
+    major, minor, point = [c for c in components]
 
-    return major, minor, point
+    # Early versions of FSLeyes
+    # used a letter at the end
+    # to denote a hotfix release.
+    # Don't break if we get one
+    # of these old version numbers.
+    point = point.strip(string.ascii_letters)
+
+    return [int(c) for c in [major, minor, point]]
 
 
 def compareVersions(v1, v2, ignorePoint=False):
