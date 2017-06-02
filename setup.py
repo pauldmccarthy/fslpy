@@ -8,11 +8,8 @@
 
 from __future__ import print_function
 
-import               os
-import os.path    as op
-import subprocess as sp
-import               shutil
-import               pkgutil
+import os.path as op
+import            shutil
 
 from setuptools import setup
 from setuptools import find_packages
