@@ -24,27 +24,11 @@ Development model
  - Coding conventions are adhered to (unless there is good reason not to).
 
 
-Releases
---------
-
-
-A separate branch is created for each release. The name of the branch is
-``v[release]``, where ``[release]`` is the version number (see below). For
-example, the branch name for release ``1.0.0`` would be ``v1.0.0``.  Hotfixes
-may be added to these release branches. Hotfixes should be merged into the
-master branch, and then cherry-picked onto the release branch(es).
-
-
-Every release (including hotfixes) is also tagged with its version number.
-For example, the first commit in the ``v1.0.0`` branch would also be tagged
-with ``1.0.0``.
-
-
 Version number
 --------------
 
 
-The ``fslpy`` version number follows `semantic versioning
+The ``fslpy`` version number roughly follows `semantic versioning
 <http://semver.org/>`_ rules, so that dependant projects are able to perform
 compatibility testing.  The full version number string consists of three
 numbers::
@@ -60,8 +44,27 @@ numbers::
 - The ``major`` number is incremented on major feature additions, and
   backwards-incompatible changes.
 
-Additionally, a single letter (``a``, ``b``, ``c``, etc) may be appended
-to the version number, indicating a hotfix release.
+
+Releases
+--------
+
+
+A separate branch is created for each **minor** release. The name of the
+branch is ``v[major.minor]``, where ``[major.minor]`` is the first two
+components of the release version number (see above). For example, the branch
+name for minor release ``1.0`` would be ``v1.0``.
+
+
+Patches and bugfixes may be added to these release branches as ``point``
+releases.  These changes should be made on the master branch like any other
+change (i.e. via merge requests), and then cherry-picked onto the relevant
+release branch(es).
+
+
+Every release commit is also tagged with its full version number.  For
+example, the first release off the ``v1.0`` branch would be tagged with
+``1.0.0``.  Point releases to the ``v1.0`` branch would be tagged with
+``1.0.1``, ``1.0.2``, etc.
 
 
 Testing
