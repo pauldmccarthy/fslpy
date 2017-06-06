@@ -204,11 +204,15 @@ variables:
         git merge --no-commit --no-ff upstream/master;
       fi;
 
+    # I am currently assuming that we are
+    # running a debian 8/jessie container
+    # (the python:2.7 and 3.6 images are
+    # based on this).
+    #
     # Linux builds for wxPython are currently
     # not on pypi, but are available at this
-    # url. I am currently assuming that the
-    # test docker images are based on debian
-    # 8/jessie.
+    # url.
+    - apt-get install xvfb
     - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
 
     # All other deps can be installed as normal
