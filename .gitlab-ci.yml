@@ -1,17 +1,311 @@
-test:2.7:
-  image: fsleyes-py27
+###########################################################################
+# This file defines the build process for fslpy, as hosted at:
+#
+#    https://git.fmrib.ox.ac.uk/fsl/fslpy
+#
+# The build pipeline comprises four stages:
+#
+#    1. test:   Unit tests
+#
+#    2. doc:    Building API documentation
+#
+#    3. build:  Building source distributions and wheels
+#
+#    4. deploy: Uploading the build outputs to pypi, and the documentation
+#               to a hosting server.
+#
+# The test stage is executed on all branches of upstream and fork
+# repositories.
+#
+# The doc stage, and the deploy-doc job, is executed on all branches of the
+# upstream repository.
+#
+# The build stage, and the remaining jobs in the  deploy stage, are only
+# executed on the upstream repository, and only for release tags.
+#
+# The deploy stages are manually instantiated.
+###########################################################################
+
+
+stages:
+ - test
+ - doc
+ - build
+ - deploy
+
+
+###############################################################################
+# A number of variables must be set for the jobs to work. The following
+# variables are implicitly defined in any gitlab CI job:
+#
+#   - CI_PROJECT_PATH    - gitlab namespace/project
+#   - CI_COMMIT_REF_NAME - branch name, provided by gitlab
+#   - CI_COMMIT_TAG      - present if build is running on a tag
+#
+# These variables must be explicitly set as "secret" variables:
+#
+#   - SSH_PRIVATE_KEY_GIT            - private key for git login to remote host
+#
+#   - SSH_PRIVATE_KEY_DOC_DEPLOY     - private key for rsyncing documentation
+#                                      to remote host
+#
+#   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
+#
+#   - TWINE_PASSWORD:                - Password to use when uploading to pypi
+###############################################################################
+
+
+variables:
+  UPSTREAM_PROJECT:     "fsl/fslpy"
+  UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
+  DOC_HOST:             "paulmc@jalapeno.fmrib.ox.ac.uk"
+  TWINE_USERNAME:       "pauldmccarthy"
+  TWINE_REPOSITORY_URL: "https://testpypi.python.org/pypi"
+
+
+####################################
+# These anchors are used to restrict
+# when and where jobs are executed.
+####################################
+
+
+.only_upstream: &only_upstream
+  only:
+    - branches@fsl/fslpy
+
+
+.only_master: &only_master
+  only:
+    - master@fsl/fslpy
+
+
+.only_releases: &only_releases
+  only:
+    - tags@fsl/fslpy
+
+
+.except_releases: &except_releases
+  except:
+    - tags
+
+
+##########################################################
+# The setup_ssh anchor contains a before_script section
+# which does the following:
+#
+#  - Sets up key-based SSH login, and
+#    installs the private keys, so
+#    we can connect to servers.
+#
+#  - Configures git, and adds the
+#    upstream repo as a remote
+#
+# (see https://docs.gitlab.com/ce/ci/ssh_keys/README.html)
+#
+# NOTE: It is assumed that non-docker
+#       executors are already configured
+#       (or don't need any configuration).
+##########################################################
+
+
+.setup_ssh: &setup_ssh
+  before_script:
+
+    - if [[ -f /.dockerenv ]]; then
+
+        apt-get update -y                 || yum -y check-update           || true;
+        apt-get install -y openssh-client || yum install -y openssh-client || true;
+        apt-get install -y rsync          || yum install -y rsync          || true;
+
+        eval $(ssh-agent -s);
+        mkdir -p $HOME/.ssh;
+
+        echo "$SSH_PRIVATE_KEY_GIT" > $HOME/.ssh/id_git;
+
+        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
+          echo "$SSH_PRIVATE_KEY_DOC_DEPLOY" > $HOME/.ssh/id_doc_deploy;
+        fi;
+
+        chmod go-rwx $HOME/.ssh/id_*;
+
+        ssh-add $HOME/.ssh/id_git;
+
+        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
+          ssh-add $HOME/.ssh/id_doc_deploy;
+        fi;
+
+        echo "$SSH_SERVER_HOSTKEYS" > $HOME/.ssh/known_hosts;
+
+        touch $HOME/.ssh/config;
+
+        echo "Host ${UPSTREAM_URL##*@}"                  >> $HOME/.ssh/config;
+        echo "    User ${UPSTREAM_URL%@*}"               >> $HOME/.ssh/config;
+        echo "    IdentityFile ~/.ssh/id_git"            >> $HOME/.ssh/config;
+
+        echo "Host docdeploy"                            >> $HOME/.ssh/config;
+        echo "    HostName ${DOC_HOST##*@}"              >> $HOME/.ssh/config;
+        echo "    User ${DOC_HOST%@*}"                   >> $HOME/.ssh/config;
+        echo "    IdentityFile ~/.ssh/id_doc_deploy"     >> $HOME/.ssh/config;
+
+        echo "Host *"                                    >> $HOME/.ssh/config;
+        echo "    IdentitiesOnly yes"                    >> $HOME/.ssh/config;
+
+        git config --global user.name  "Gitlab CI";
+        git config --global user.email "gitlabci@localhost";
+
+        if [[ `git remote -v` == *"upstream"* ]]; then
+            git remote remove upstream;
+        fi;
+        git remote add upstream "$UPSTREAM_URL:$UPSTREAM_PROJECT";
+      fi
+
+
+###################################################
+# The patch_version anchor contains a before_script
+# section which is run on release builds, and makes
+# sure that the version in the code is up to date
+# (i.e. equal to the tag name).
+###################################################
+
+
+.patch_version: &patch_version
+  before_script:
+
+    - if [ -n ${CI_COMMIT_TAG+set} ]; then
+        python -c "import fsl.version as v; v.patchVersion('fsl/version.py', '$CI_COMMIT_REF_NAME')";
+      fi
+
+
+############
+# Test stage
+############
+
+
+.test: &test_template
+  stage: test
+  <<: *setup_ssh
+
+  # Releases are just tags on a release
+  # branch, so we don't need to test them.
+  <<: *except_releases
+
+  tags:
+    - docker
+
   script:
-    - cat requirements.txt | xargs -n 1 pip install
-    - pip install scipy
-    - pip install coverage
+
+    # If running on a fork repository, we merge in the
+    # upstream/master branch. This is done so that merge
+    # requests from fork to the parent repository will
+    # have unit tests run on the merged code, something
+    # which gitlab CE does not currently do for us.
+    - if [[ "$CI_PROJECT_PATH" != "$UPSTREAM_PROJECT" ]]; then
+        git fetch upstream;
+        git merge --no-commit --no-ff upstream/master;
+      fi;
+
+    # Linux builds for wxPython are currently
+    # not on pypi, but are available at this
+    # url. I am currently assuming that the
+    # test docker images are based on debian
+    # 8/jessie.
+    - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
+
+    # All other deps can be installed as normal
+    - pip install -r requirements.txt
     - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
     - coverage report -m
 
-test:3.6:
-  image: fsleyes-py36
+
+test:2.7:
+  <<: *test_template
+  image: python:2.7
+
+
+test:3.5:
+  <<: *test_template
+  image: python:3.5
+
+
+###########
+# Doc stage
+###########
+
+build-doc:
+  <<: *only_upstream
+  <<: *patch_version
+
+  tags:
+   - docker
+
+  stage: doc
+  image: python:3.5
+
   script:
-    - cat requirements.txt | xargs -n 1 pip install
-    - pip install scipy
-    - pip install coverage
-    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
-    - coverage report -m
+    - python setup.py doc
+    - mv doc/html doc/"$CI_COMMIT_REF_NAME"
+  artifacts:
+    paths:
+      - doc/$CI_COMMIT_REF_NAME
+
+
+#############
+# Build stage
+#############
+
+
+build-dist:
+  <<: *only_releases
+  <<: *patch_version
+
+  stage: build
+  image: python:3.5
+
+  script:
+   - pip install wheel
+   - python setup.py sdist
+   - python setup.py bdist_wheel
+
+  artifacts:
+    paths:
+      - dist/*
+
+
+##############
+# Deploy stage
+##############
+
+
+deploy-doc:
+  <<: *only_upstream
+  <<: *setup_ssh
+  stage: deploy
+  when:  manual
+
+  tags:
+    - docker
+
+  dependencies:
+    - build-doc
+
+  script:
+    - rsync -rv doc/"$CI_COMMIT_REF_NAME" "docdeploy:"
+
+
+deploy-pypi:
+  <<: *only_releases
+  <<: *setup_ssh
+  stage: deploy
+  when:  manual
+  image: python:3.5
+
+  tags:
+    - docker
+
+  dependencies:
+    - build-dist
+
+  script:
+    - pip install setuptools wheel twine
+    - ls dist/*
+    - echo "twine upload dist/*"
