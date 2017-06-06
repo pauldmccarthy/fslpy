@@ -106,6 +106,7 @@ setup(
     setup_requires=['pytest-runner', 'sphinx', 'sphinx-rtd-theme', 'mock'],
 
     tests_require=['mock',
+                   'coverage',
                    'pytest-cov',
                    'pytest-html',
                    'pytest-runner',
