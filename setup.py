@@ -37,7 +37,7 @@ with open(op.join(basedir, "fsl", "version.py")) as f:
             break
 version = version['__version__']
 
-with open(op.join(basedir, 'README.md'), 'rt') as f:
+with open(op.join(basedir, 'README.rst'), 'rt') as f:
     readme = f.read()
 
 

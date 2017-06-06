@@ -212,7 +212,7 @@ variables:
     # Linux builds for wxPython are currently
     # not on pypi, but are available at this
     # url.
-    - apt-get install xvfb
+    - apt-get install -y xvfb
     - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
 
     # All other deps can be installed as normal
