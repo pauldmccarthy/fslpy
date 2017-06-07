@@ -1,9 +1,0 @@
-[run]
-source =
-  fsl
-
-# async.py is not currently covered because
-# it otherwise causes async unit tests to
-# hang when running in docker/python 3.x/xvfb-run!
-omit =
-  fsl/utils/async.py

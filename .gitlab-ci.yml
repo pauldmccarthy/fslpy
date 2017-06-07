@@ -248,15 +248,26 @@ variables:
     - mkdir -p $FSLDIR/data/
     - rsync -rv "fsldownload:data/atlases/" "$FSLDIR/data/atlases/"
 
-    # Finally, run the damned tests. We run
-    # as the nobody user because some tests
-    # expect permission denied errors when
-    # looking at files, and root never gets
-    # denied.
-    #
-    # We also run under xvfb-run because
-    # some tests invoke wx.
-    - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
+    # Finally, run the damned tests.
+
+    # We run some tests under xvfb-run
+    # because they invoke wx. Sleep in
+    # between, otherwise xvfb gets upset.
+    - xvfb-run python setup.py test --addopts="tests/test_async.py"
+    - sleep 5
+    - xvfb-run python setup.py test --addopts="tests/test_platform.py"
+
+    # We run the immv/imcpy tests as the nobody
+    # user because some tests expect permission
+    # denied errors when looking at files, and
+    # root never gets denied. Make everything in
+    # this directory writable by anybody (which,
+    # unintuitively, includes nobody)
+    - chmod -R a+w `pwd`
+    - su -s /bin/bash -c "python setup.py test --addopts='tests/test_immv_imcp.py'" nobody
+
+    # All other tests can be run as normal
+    - python setup.py test --addopts="--ignore=tests/test_async.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py"
     - python -m coverage report
 
 
