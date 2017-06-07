@@ -127,19 +127,13 @@ variables:
 
         echo "$SSH_PRIVATE_KEY_GIT"          > $HOME/.ssh/id_git;
         echo "$SSH_PRIVATE_KEY_FSL_DOWNLOAD" > $HOME/.ssh/id_fsl_download;
-
-        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
-          echo "$SSH_PRIVATE_KEY_DOC_DEPLOY" > $HOME/.ssh/id_doc_deploy;
-        fi;
+        echo "$SSH_PRIVATE_KEY_DOC_DEPLOY"   > $HOME/.ssh/id_doc_deploy;
 
         chmod go-rwx $HOME/.ssh/id_*;
 
         ssh-add $HOME/.ssh/id_git;
         ssh-add $HOME/.ssh/id_fsl_download;
-
-        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
-          ssh-add $HOME/.ssh/id_doc_deploy;
-        fi;
+        ssh-add $HOME/.ssh/id_doc_deploy;
 
         echo "$SSH_SERVER_HOSTKEYS" > $HOME/.ssh/known_hosts;
 
@@ -184,6 +178,7 @@ variables:
   before_script:
 
     - if [ -n ${CI_COMMIT_TAG+set} ]; then
+        echo "Release detected - patching version - $CI_COMMIT_REF_NAME";
         python -c "import fsl.version as v; v.patchVersion('fsl/version.py', '$CI_COMMIT_REF_NAME')";
       fi
 
