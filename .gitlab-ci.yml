@@ -45,9 +45,13 @@ stages:
 # These variables must be explicitly set as "secret" variables:
 #
 #   - SSH_PRIVATE_KEY_GIT            - private key for git login to remote host
+#                                      (UPSTREAM_URL)
+#
+#   - SSH_PRIVATE_KEY_FSL_DOWNLOAD   - private key for downloading some FSL
+#                                      files from a remote server (FSL_HOST)
 #
 #   - SSH_PRIVATE_KEY_DOC_DEPLOY     - private key for rsyncing documentation
-#                                      to remote host
+#                                      to remote host (DOC_HOST)
 #
 #   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
 #
@@ -59,6 +63,7 @@ variables:
   UPSTREAM_PROJECT:     "fsl/fslpy"
   UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
   DOC_HOST:             "paulmc@jalapeno.fmrib.ox.ac.uk"
+  FSL_HOST:             "paulmc@jalapeno.fmrib.ox.ac.uk"
   TWINE_USERNAME:       "pauldmccarthy"
   TWINE_REPOSITORY_URL: "https://testpypi.python.org/pypi"
 
@@ -120,7 +125,8 @@ variables:
         eval $(ssh-agent -s);
         mkdir -p $HOME/.ssh;
 
-        echo "$SSH_PRIVATE_KEY_GIT" > $HOME/.ssh/id_git;
+        echo "$SSH_PRIVATE_KEY_GIT"          > $HOME/.ssh/id_git;
+        echo "$SSH_PRIVATE_KEY_FSL_DOWNLOAD" > $HOME/.ssh/id_fsl_download;
 
         if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
           echo "$SSH_PRIVATE_KEY_DOC_DEPLOY" > $HOME/.ssh/id_doc_deploy;
@@ -129,6 +135,7 @@ variables:
         chmod go-rwx $HOME/.ssh/id_*;
 
         ssh-add $HOME/.ssh/id_git;
+        ssh-add $HOME/.ssh/id_fsl_download;
 
         if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
           ssh-add $HOME/.ssh/id_doc_deploy;
@@ -146,6 +153,11 @@ variables:
         echo "    HostName ${DOC_HOST##*@}"              >> $HOME/.ssh/config;
         echo "    User ${DOC_HOST%@*}"                   >> $HOME/.ssh/config;
         echo "    IdentityFile ~/.ssh/id_doc_deploy"     >> $HOME/.ssh/config;
+
+        echo "Host fsldownload"                          >> $HOME/.ssh/config;
+        echo "    HostName ${FSL_HOST##*@}"              >> $HOME/.ssh/config;
+        echo "    User ${FSL_HOST%@*}"                   >> $HOME/.ssh/config;
+        echo "    IdentityFile ~/.ssh/id_fsl_download    >> $HOME/.ssh/config;
 
         echo "Host *"                                    >> $HOME/.ssh/config;
         echo "    IdentitiesOnly yes"                    >> $HOME/.ssh/config;
@@ -208,15 +220,31 @@ variables:
     # running a debian 8/jessie container
     # (the python:2.7 and 3.6 images are
     # based on this).
-    #
-    # Linux builds for wxPython are currently
-    # not on pypi, but are available at this
-    # url.
-    - apt-get install -y xvfb
+    # We need to install xvfb, and all of
+    # the wxpython dependencies.
+    - apt-get update  -y
+    - apt-get install -y xvfb freeglut libwebkitgtk
+    - apt-get install -y libjpeg libtiff libsdl1.2
+    - apt-get install -y libgstreamer-plugins-base1.0
+    - apt-get install -y libnotify libgtk-3-0
+
+    # Linux builds for wxPython are currently not
+    # on pypi, but are available at thisd url.
     - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
 
-    # All other deps can be installed as normal
+    # All other deps can be installed as
+    # normal. scipy is required by nibabel,
+    # but not listed in its requirements.
     - pip install -r requirements.txt
+    - pip install scipy
+
+    # We need the FSL atlases for the atlas
+    # tests, and need $FSLDIR to be defined
+    - export FSLDIR=/fsl/
+    - mkdir -p $FSLDIR/data/atlases/
+    - rsync -rv "fsldownload:data/atlases/" "$FSLDIR/data/atlases/"
+
+    # Finally, run the damned tests.
     - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
     - coverage report -m
 
