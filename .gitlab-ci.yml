@@ -145,22 +145,22 @@ variables:
 
         touch $HOME/.ssh/config;
 
-        echo "Host ${UPSTREAM_URL##*@}"                  >> $HOME/.ssh/config;
-        echo "    User ${UPSTREAM_URL%@*}"               >> $HOME/.ssh/config;
-        echo "    IdentityFile ~/.ssh/id_git"            >> $HOME/.ssh/config;
+        echo "Host ${UPSTREAM_URL##*@}"                    >> $HOME/.ssh/config;
+        echo "    User ${UPSTREAM_URL%@*}"                 >> $HOME/.ssh/config;
+        echo "    IdentityFile $HOME/.ssh/id_git"          >> $HOME/.ssh/config;
 
-        echo "Host docdeploy"                            >> $HOME/.ssh/config;
-        echo "    HostName ${DOC_HOST##*@}"              >> $HOME/.ssh/config;
-        echo "    User ${DOC_HOST%@*}"                   >> $HOME/.ssh/config;
-        echo "    IdentityFile ~/.ssh/id_doc_deploy"     >> $HOME/.ssh/config;
+        echo "Host docdeploy"                              >> $HOME/.ssh/config;
+        echo "    HostName ${DOC_HOST##*@}"                >> $HOME/.ssh/config;
+        echo "    User ${DOC_HOST%@*}"                     >> $HOME/.ssh/config;
+        echo "    IdentityFile $HOME/.ssh/id_doc_deploy"   >> $HOME/.ssh/config;
 
-        echo "Host fsldownload"                          >> $HOME/.ssh/config;
-        echo "    HostName ${FSL_HOST##*@}"              >> $HOME/.ssh/config;
-        echo "    User ${FSL_HOST%@*}"                   >> $HOME/.ssh/config;
-        echo "    IdentityFile ~/.ssh/id_fsl_download"   >> $HOME/.ssh/config;
+        echo "Host fsldownload"                            >> $HOME/.ssh/config;
+        echo "    HostName ${FSL_HOST##*@}"                >> $HOME/.ssh/config;
+        echo "    User ${FSL_HOST%@*}"                     >> $HOME/.ssh/config;
+        echo "    IdentityFile $HOME/.ssh/id_fsl_download" >> $HOME/.ssh/config;
 
-        echo "Host *"                                    >> $HOME/.ssh/config;
-        echo "    IdentitiesOnly yes"                    >> $HOME/.ssh/config;
+        echo "Host *"                                      >> $HOME/.ssh/config;
+        echo "    IdentitiesOnly yes"                      >> $HOME/.ssh/config;
 
         git config --global user.name  "Gitlab CI";
         git config --global user.email "gitlabci@localhost";
@@ -240,7 +240,7 @@ variables:
     # We need the FSL atlases for the atlas
     # tests, and need $FSLDIR to be defined
     - export FSLDIR=/fsl/
-    - mkdir -p $FSLDIR/data/atlases/
+    - mkdir -p $FSLDIR/data/
     - rsync -rv "fsldownload:data/atlases/" "$FSLDIR/data/atlases/"
 
     # Finally, run the damned tests.
