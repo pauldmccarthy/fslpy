@@ -253,9 +253,23 @@ test:2.7:
   image: python:2.7
 
 
-test:3.5:
+test:3.4:
   <<: *test_template
-  image: python:3.5
+  image: python:3.4
+
+
+# a wxphoenix/3.5 build
+# is not yet available
+# test:3.5:
+#   <<: *test_template
+#   image: python:3.5
+
+
+# a wxphoenix/3.6 build
+# is not yet available
+# test:3.6:
+#   <<: *test_template
+#   image: python:3.6
 
 
 ###########
