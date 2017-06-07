@@ -157,7 +157,7 @@ variables:
         echo "Host fsldownload"                          >> $HOME/.ssh/config;
         echo "    HostName ${FSL_HOST##*@}"              >> $HOME/.ssh/config;
         echo "    User ${FSL_HOST%@*}"                   >> $HOME/.ssh/config;
-        echo "    IdentityFile ~/.ssh/id_fsl_download    >> $HOME/.ssh/config;
+        echo "    IdentityFile ~/.ssh/id_fsl_download"   >> $HOME/.ssh/config;
 
         echo "Host *"                                    >> $HOME/.ssh/config;
         echo "    IdentitiesOnly yes"                    >> $HOME/.ssh/config;
