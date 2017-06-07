@@ -344,6 +344,7 @@ deploy-doc:
   <<: *setup_ssh
   stage: deploy
   when:  manual
+  image: python:3.5
 
   tags:
     - docker
@@ -370,5 +371,4 @@ deploy-pypi:
 
   script:
     - pip install setuptools wheel twine
-    - ls dist/*
-    - echo "twine upload dist/*"
+    - twine upload dist/*
