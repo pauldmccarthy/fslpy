@@ -223,10 +223,9 @@ variables:
     # We need to install xvfb, and all of
     # the wxpython dependencies.
     - apt-get update  -y
-    - apt-get install -y xvfb freeglut libwebkitgtk
-    - apt-get install -y libjpeg libtiff libsdl1.2
-    - apt-get install -y libgstreamer-plugins-base1.0
-    - apt-get install -y libnotify libgtk-3-0
+    - apt-get install -y xvfb libnotify libgtk-3-0
+    - apt-get install -y freeglut3 libsdl1.2debian
+    - apt-get install -y libwebkitgtk libgstreamer-plugins-base1.0
 
     # Linux builds for wxPython are currently not
     # on pypi, but are available at thisd url.
