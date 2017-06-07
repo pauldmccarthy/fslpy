@@ -227,7 +227,7 @@ variables:
     - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
 
     # Linux builds for wxPython are currently not
-    # on pypi, but are available at thisd url.
+    # on pypi, but are available at this url.
     - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
 
     # All other deps can be installed as
@@ -248,7 +248,14 @@ variables:
     - mkdir -p $FSLDIR/data/
     - rsync -rv "fsldownload:data/atlases/" "$FSLDIR/data/atlases/"
 
-    # Finally, run the damned tests.
+    # Finally, run the damned tests. We run
+    # as the nobody user because some tests
+    # expect permission denied errors when
+    # looking at files, and root never gets
+    # denied.
+    #
+    # We also run under xvfb-run because
+    # some tests invoke wx.
     - su -s /bin/bash -c "xvfb-run python setup.py test" nobody
     - python -m coverage report
 
