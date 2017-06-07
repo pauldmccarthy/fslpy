@@ -223,7 +223,7 @@ variables:
     # We need to install xvfb, and all of
     # the wxpython dependencies.
     - apt-get update  -y
-    - apt-get install -y xvfb libnotify libgtk-3-0
+    - apt-get install -y xvfb libnotify4 libgtk-3-0
     - apt-get install -y freeglut3 libsdl1.2debian
     - apt-get install -y libwebkitgtk libgstreamer-plugins-base1.0
 
