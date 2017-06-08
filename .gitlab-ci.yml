@@ -127,13 +127,19 @@ variables:
 
         echo "$SSH_PRIVATE_KEY_GIT"          > $HOME/.ssh/id_git;
         echo "$SSH_PRIVATE_KEY_FSL_DOWNLOAD" > $HOME/.ssh/id_fsl_download;
-        echo "$SSH_PRIVATE_KEY_DOC_DEPLOY"   > $HOME/.ssh/id_doc_deploy;
+
+        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
+          echo "$SSH_PRIVATE_KEY_DOC_DEPLOY" > $HOME/.ssh/id_doc_deploy;
+        fi;
 
         chmod go-rwx $HOME/.ssh/id_*;
 
         ssh-add $HOME/.ssh/id_git;
         ssh-add $HOME/.ssh/id_fsl_download;
-        ssh-add $HOME/.ssh/id_doc_deploy;
+
+        if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
+          ssh-add $HOME/.ssh/id_doc_deploy;
+        fi
 
         echo "$SSH_SERVER_HOSTKEYS" > $HOME/.ssh/known_hosts;
 
