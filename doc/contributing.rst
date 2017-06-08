@@ -45,6 +45,12 @@ numbers::
   backwards-incompatible changes.
 
 
+The version number in the ``master`` branch should be of the form
+``major.minor.patch.dev``, to indicate that any releases made from this branch
+are development releases (although development releases are not part of the
+release model).
+
+
 Releases
 --------
 
@@ -72,12 +78,10 @@ Testing
 
 
 Unit and integration tests are currently run with ``py.test`` and
-``coverage``. We don't have CI configured yet, so tests have to be run
-manually.
+``coverage``.
 
 - Aim for 100% code coverage.
-- Tests must pass on both python 2.7 and 3.5
-- Tests must pass on both wxPython 3.0.2.0 and 4.0.0
+- Tests must pass on python 2.7, 3.4, 3.5, and 3.6
 
 
 Coding conventions

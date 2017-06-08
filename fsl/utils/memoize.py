@@ -55,14 +55,14 @@ def memoize(func):
         try:
             result = cache[key]
 
-            log.debug('Retrieved from cache[{}]: {}'.format(key, result))
+            log.debug(u'Retrieved from cache[{}]: {}'.format(key, result))
 
         except KeyError:
 
             result     = func(*a, **kwa)
             cache[key] = result
 
-            log.debug('Adding to cache[{}]: {}'.format(key, result))
+            log.debug(u'Adding to cache[{}]: {}'.format(key, result))
 
         return result
     return wrapper
@@ -82,8 +82,15 @@ def memoizeMD5(func):
 
         hashobj = hashlib.md5()
 
+        # Convert each arg to a string
+        # representation, then encode
+        # it into a sequence of (utf-8
+        # compatible) bytes , and take
+        # the hash of those bytes.
         for arg in args:
-            arg = six.u(str(arg)).encode('utf-8')
+            if not isinstance(arg, six.string_types):
+                arg = str(arg)
+            arg = arg.encode('utf-8')
             hashobj.update(arg)
 
         digest = hashobj.hexdigest()
@@ -94,7 +101,7 @@ def memoizeMD5(func):
 
         result = func(*args, **kwargs)
 
-        log.debug('Adding to MD5 cache[{}]: {}'.format(
+        log.debug(u'Adding to MD5 cache[{}]: {}'.format(
             digest, result))
 
         cache[digest] = result

@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import six
 
 import numpy as np
 
@@ -17,13 +18,12 @@ def test_memoize():
 
     def thefunc(*args, **kwargs):
         timesCalled[0] += 1
-        
+
         if   len(args) + len(kwargs) == 0: return 0
         elif len(args)               == 1: return args[0]         * 5
         else:                              return kwargs['value'] * 5
 
     memoized = memoize.memoize(thefunc)
-
 
     # No args
     for i in range(5):
@@ -42,6 +42,13 @@ def test_memoize():
             assert memoized(value=i) == i * 5
         assert timesCalled[0] == 6
 
+    # Unicode arg
+    s = six.u('\u25B2')
+    assert memoized(s) == s * 5
+    assert timesCalled[0] == 7
+    assert memoized(s) == s * 5
+    assert timesCalled[0] == 7
+
 
 def test_memoizeMD5():
     timesCalled = [0]
@@ -50,7 +57,7 @@ def test_memoizeMD5():
         timesCalled[0] += 1
         if   len(args) + len(kwargs) == 0: return 0
         elif len(args)               == 1: return args[0]         * 5
-        else:                              return kwargs['value'] * 5 
+        else:                              return kwargs['value'] * 5
 
     memoized = memoize.memoizeMD5(thefunc)
 
@@ -69,7 +76,14 @@ def test_memoizeMD5():
     for i in range(3):
         for i in range(5):
             assert memoized(value=i) == i * 5
-        assert timesCalled[0] == 6 
+        assert timesCalled[0] == 6
+
+    # Unicode arg (and return value)
+    s = six.u('\u25B2')
+    assert memoized(s) == s * 5
+    assert timesCalled[0] == 7
+    assert memoized(s) == s * 5
+    assert timesCalled[0] == 7
 
 
 def test_skipUnchanged():
@@ -90,66 +104,66 @@ def test_skipUnchanged():
     wrapped('key1', 11)
     wrapped('key2', 12)
     wrapped('key3', 13)
-    
+
     assert timesCalled['key1'] == 1
     assert timesCalled['key2'] == 1
     assert timesCalled['key3'] == 1
-    
+
     wrapped('key1', 11)
     wrapped('key2', 12)
     wrapped('key3', 13)
-    
+
     assert timesCalled['key1'] == 1
     assert timesCalled['key2'] == 1
-    assert timesCalled['key3'] == 1 
+    assert timesCalled['key3'] == 1
 
     wrapped('key1', 14)
     wrapped('key2', 15)
     wrapped('key3', 16)
-    
-    assert timesCalled['key1'] == 2
-    assert timesCalled['key2'] == 2
-    assert timesCalled['key3'] == 2 
- 
-    wrapped('key1', 14)
-    wrapped('key2', 15)
-    wrapped('key3', 16)
-    
+
     assert timesCalled['key1'] == 2
     assert timesCalled['key2'] == 2
     assert timesCalled['key3'] == 2
- 
+
+    wrapped('key1', 14)
+    wrapped('key2', 15)
+    wrapped('key3', 16)
+
+    assert timesCalled['key1'] == 2
+    assert timesCalled['key2'] == 2
+    assert timesCalled['key3'] == 2
+
     wrapped('key1', 11)
     wrapped('key2', 12)
     wrapped('key3', 13)
-    
+
     assert timesCalled['key1'] == 3
     assert timesCalled['key2'] == 3
-    assert timesCalled['key3'] == 3 
- 
+    assert timesCalled['key3'] == 3
+
     wrapped('key1', np.array([11, 12]))
     wrapped('key2', np.array([13, 14]))
     wrapped('key3', np.array([15, 16]))
-    
+
     assert timesCalled['key1'] == 4
     assert timesCalled['key2'] == 4
-    assert timesCalled['key3'] == 4 
+    assert timesCalled['key3'] == 4
 
     wrapped('key1', np.array([12, 11]))
     wrapped('key2', np.array([14, 13]))
     wrapped('key3', np.array([16, 15]))
-    
+
     assert timesCalled['key1'] == 5
     assert timesCalled['key2'] == 5
-    assert timesCalled['key3'] == 5 
+    assert timesCalled['key3'] == 5
 
     wrapped('key1', np.array([12, 11]))
     wrapped('key2', np.array([14, 13]))
     wrapped('key3', np.array([16, 15]))
-    
+
     assert timesCalled['key1'] == 5
     assert timesCalled['key2'] == 5
-    assert timesCalled['key3'] == 5 
+    assert timesCalled['key3'] == 5
 
 
 def test_Instanceify():
@@ -169,7 +183,7 @@ def test_Instanceify():
         @memoize.Instanceify(memoize.skipUnchanged)
         def setter2(self, name, value):
             self.setter2Called += 1
-        
+
         @memoize.Instanceify(memoize.memoize)
         def func1(self, arg):
             self.func1Called += 1
@@ -196,41 +210,41 @@ def test_Instanceify():
         c1.setter1('blob', 120)
         c1.check(1, 0, 0, 0)
         c2.check(0, 0, 0, 0)
-        
+
     for i in range(3):
         c1.setter1('blob', 150)
         c1.check(2, 0, 0, 0)
-        c2.check(0, 0, 0, 0) 
-        
+        c2.check(0, 0, 0, 0)
+
     for i in range(3):
         c1.setter1('flob', 200)
         c1.check(3, 0, 0, 0)
         c2.check(0, 0, 0, 0)
-        
+
     for i in range(3):
         c1.setter1('flob', 180)
         c1.check(4, 0, 0, 0)
         c2.check(0, 0, 0, 0)
-        
+
     for i in range(3):
         c2.setter1('blob', 120)
         c1.check(4, 0, 0, 0)
         c2.check(1, 0, 0, 0)
-        
+
     for i in range(3):
         c2.setter1('blob', 150)
         c1.check(4, 0, 0, 0)
-        c2.check(2, 0, 0, 0) 
-        
+        c2.check(2, 0, 0, 0)
+
     for i in range(3):
         c2.setter1('flob', 200)
         c1.check(4, 0, 0, 0)
         c2.check(3, 0, 0, 0)
-        
+
     for i in range(3):
         c2.setter1('flob', 180)
         c1.check(4, 0, 0, 0)
-        c2.check(4, 0, 0, 0) 
+        c2.check(4, 0, 0, 0)
 
     # Call setter2 on one instance,
     # ...
@@ -238,63 +252,63 @@ def test_Instanceify():
         c1.setter2('blob', 120)
         c1.check(4, 1, 0, 0)
         c2.check(4, 0, 0, 0)
-        
+
     for i in range(3):
         c1.setter2('blob', 150)
         c1.check(4, 2, 0, 0)
-        c2.check(4, 0, 0, 0) 
-        
+        c2.check(4, 0, 0, 0)
+
     for i in range(3):
         c1.setter2('flob', 200)
         c1.check(4, 3, 0, 0)
         c2.check(4, 0, 0, 0)
-        
+
     for i in range(3):
         c1.setter2('flob', 180)
         c1.check(4, 4, 0, 0)
         c2.check(4, 0, 0, 0)
-        
+
     for i in range(3):
         c2.setter2('blob', 120)
         c1.check(4, 4, 0, 0)
         c2.check(4, 1, 0, 0)
-        
+
     for i in range(3):
         c2.setter2('blob', 150)
         c1.check(4, 4, 0, 0)
-        c2.check(4, 2, 0, 0) 
-        
+        c2.check(4, 2, 0, 0)
+
     for i in range(3):
         c2.setter2('flob', 200)
         c1.check(4, 4, 0, 0)
         c2.check(4, 3, 0, 0)
-        
+
     for i in range(3):
         c2.setter2('flob', 180)
         c1.check(4, 4, 0, 0)
-        c2.check(4, 4, 0, 0) 
-         
+        c2.check(4, 4, 0, 0)
+
     # Call func1 on one instance,
     # ...
     for i in range(3):
         assert c1.func1(123) == 246
         c1.check(4, 4, 1, 0)
         c2.check(4, 4, 0, 0)
-        
+
     for i in range(3):
         assert c1.func1(456) == 912
         c1.check(4, 4, 2, 0)
-        c2.check(4, 4, 0, 0) 
-        
+        c2.check(4, 4, 0, 0)
+
     for i in range(3):
         assert c2.func1(123) == 246
         c1.check(4, 4, 2, 0)
         c2.check(4, 4, 1, 0)
-        
+
     for i in range(3):
         assert c2.func1(456) == 912
         c1.check(4, 4, 2, 0)
-        c2.check(4, 4, 2, 0) 
+        c2.check(4, 4, 2, 0)
 
     # Call func2 on one instance,
     # ...
@@ -302,16 +316,16 @@ def test_Instanceify():
         assert c1.func2(123) == 492
         c1.check(4, 4, 2, 1)
         c2.check(4, 4, 2, 0)
-        
+
     for i in range(3):
         assert c1.func2(456) == 1824
-        
+
     for i in range(3):
         assert c2.func2(123) == 492
         c1.check(4, 4, 2, 2)
         c2.check(4, 4, 2, 1)
-        
+
     for i in range(3):
         assert c2.func2(456) == 1824
         c1.check(4, 4, 2, 2)
-        c2.check(4, 4, 2, 2) 
+        c2.check(4, 4, 2, 2)
