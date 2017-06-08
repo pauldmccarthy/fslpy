@@ -329,6 +329,9 @@ build-dist:
 
   stage: build
   image: python:3.5
+  
+  tags:
+    - docker
 
   script:
    - pip install wheel
