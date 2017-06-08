@@ -2,6 +2,13 @@ fslpy
 =====
 
 
+.. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/build.svg
+   :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
+
+.. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/coverage.svg
+   :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
+
+
 The ``fslpy`` project is a `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_
 programming library written in Python. It is used by `FSLeyes
 <https://git.fmrib.ox.ac.uk/paulmc/fsleyes/>`_.
