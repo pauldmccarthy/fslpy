@@ -34,7 +34,7 @@ stages:
  - deploy
 
 
-###############################################################################
+#################################################################################
 # A number of variables must be set for the jobs to work. The following
 # variables are implicitly defined in any gitlab CI job:
 #
@@ -55,17 +55,23 @@ stages:
 #
 #   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
 #
+#   - DOC_HOST:                      - Username@host to upload documentation to
+#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
+#
+#   - FSL_HOST:                      - Username@host to download FSL data from
+#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
+#
+#   - TWINE_USERNAME:                - Username to use when uploading to pypi
+#
 #   - TWINE_PASSWORD:                - Password to use when uploading to pypi
+#
+#   - TWINE_REPOSITORY_URL:          - Pypi repository to upload to
 ###############################################################################
 
 
 variables:
   UPSTREAM_PROJECT:     "fsl/fslpy"
   UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
-  DOC_HOST:             "paulmc@jalapeno.fmrib.ox.ac.uk"
-  FSL_HOST:             "paulmc@jalapeno.fmrib.ox.ac.uk"
-  TWINE_USERNAME:       "pauldmccarthy"
-  TWINE_REPOSITORY_URL: "https://testpypi.python.org/pypi"
 
 
 ####################################
