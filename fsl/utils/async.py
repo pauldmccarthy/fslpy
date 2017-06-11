@@ -77,13 +77,11 @@ Other facilities
 The ``async`` module also defines the :func:`mutex` decorator, which is
 intended to be used to mark the methods of a class as being mutually exclusive.
 The ``mutex`` decorator uses the :class:`MutexFactory` class to do its work.
-
-
-.. todo:: You could possibly use ``props.callqueue`` to drive the idle loop.
 """
 
 
 import time
+import atexit
 import logging
 import functools
 import threading
@@ -213,11 +211,19 @@ def idleReset():
     global _idleTimer
     global _idleCallRate
 
+    if _idleTimer is not None:
+        _idleTimer.Stop()
+
     _idleRegistered = False
     _idleQueue      = queue.Queue()
     _idleQueueDict  = {}
     _idleTimer      = None
     _idleCallRate   = 200
+
+
+# Call idleReset on exit, in
+# case the idleTimer is active.
+atexit.register(idleReset)
 
 
 def getIdleTimeout():
@@ -306,7 +312,7 @@ def _wxIdleLoop(ev):
     if taskName is None: taskName = funcName
     else:                taskName = '{} [{}]'.format(taskName, funcName)
 
-    # Has enouggh time elapsed
+    # Has enough time elapsed
     # since the task was scheduled?
     # If not, re-queue the task.
     # If this is the only task on the
@@ -333,8 +339,15 @@ def _wxIdleLoop(ev):
             try:             _idleQueueDict.pop(task.name)
             except KeyError: pass
 
+    # More tasks on the queue?
+    # Request anotherd event
     if _idleQueue.qsize() > queueSizeOffset:
         ev.RequestMore()
+
+    # Otherwise use the idle
+    # timer to make sure that
+    # the loop keeps ticking
+    # over
     else:
         _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
 
