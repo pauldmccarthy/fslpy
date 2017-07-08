@@ -62,6 +62,8 @@ def scaleOffsetXform(scales, offsets):
 
     if not isinstance(scales,  collections.Sequence): scales  = [scales]
     if not isinstance(offsets, collections.Sequence): offsets = [offsets]
+    if not isinstance(scales,  list):                 scales  = list(scales)
+    if not isinstance(offsets, list):                 offsets = list(offsets)
 
     lens = len(scales)
     leno = len(offsets)
