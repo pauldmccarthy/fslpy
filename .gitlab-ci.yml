@@ -235,7 +235,7 @@ variables:
 
     # Linux builds for wxPython are currently not
     # on pypi, but are available at this url.
-    - pip install -f https://wxpython.org/Phoenix/release-extras/linux/gtk3/debian-8/ wxpython
+    - pip install --only-binary wxpython -f https://wxpython.org/Phoenix/snapshot-builds/linux/gtk3/debian-8/ wxpython
 
     # All other deps can be installed as
     # normal. scipy is required by nibabel,
