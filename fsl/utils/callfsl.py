@@ -42,7 +42,7 @@ def callFSL(*args):
 
     log.debug('callfsl: {}'.format(' '.join(args)))
 
-    result = sp.check_output(args)
+    result = sp.check_output(args).decode('utf-8')
 
     log.debug('result: {}'.format(result))
 
