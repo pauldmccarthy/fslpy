@@ -149,8 +149,8 @@ def test_compose_and_decompose():
     of = np.array(of)
     rot = np.array(rot)
 
-    assert np.all(sc == [1, 1, 1])
-    assert np.all(of == [0, 0, 0])
+    assert np.all(np.isclose(sc,  [1, 1, 1]))
+    assert np.all(np.isclose(of,  [0, 0, 0]))
     assert np.all(np.isclose(rot, rots))
 
 
