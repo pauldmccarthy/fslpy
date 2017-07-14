@@ -388,6 +388,4 @@ deploy-pypi:
 
   script:
     - pip install setuptools wheel twine
-    - twine register dist/*whl
-    - twine register dist/*tar.gz
     - twine upload dist/*
