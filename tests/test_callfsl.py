@@ -31,10 +31,10 @@ def setup_module():
 # or 'fslinfo ...'
 def mock_check_output(args):
     if args[0].endswith('fslinfo'):
-        return 'info'
+        return 'info'.encode('utf-8')
 
     img = nib.load(args[-2])
-    return str(img.get_data().mean())
+    return str(img.get_data().mean()).encode('utf-8')
 
 
 def test_callfsl():

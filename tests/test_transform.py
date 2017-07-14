@@ -108,9 +108,11 @@ def test_scaleOffsetXform():
         expected = [[float(v) for v in l.split()] for l in expected]
         expected = np.array(expected)
 
-        result = transform.scaleOffsetXform(scales, offsets)
+        result1 = transform.scaleOffsetXform(      scales,        offsets)
+        result2 = transform.scaleOffsetXform(tuple(scales), tuple(offsets))
 
-        assert np.all(np.isclose(result, expected))
+        assert np.all(np.isclose(result1, expected))
+        assert np.all(np.isclose(result2, expected))
 
 
 def test_compose_and_decompose():
@@ -137,6 +139,19 @@ def test_compose_and_decompose():
         result = transform.compose(scales, offsets, rotations, [0, 0, 0])
 
         assert np.all(np.isclose(xform, result, atol=1e-5))
+
+    # compose should also accept a rotation matrix
+    rots = [np.pi / 5, np.pi / 4, np.pi / 3]
+    rmat  = transform.axisAnglesToRotMat(*rots)
+    xform = transform.compose([1, 1, 1], [0, 0, 0], rmat)
+    sc, of, rot = transform.decompose(xform)
+    sc = np.array(sc)
+    of = np.array(of)
+    rot = np.array(rot)
+
+    assert np.all(sc == [1, 1, 1])
+    assert np.all(of == [0, 0, 0])
+    assert np.all(np.isclose(rot, rots))
 
 
 def test_axisBounds():
