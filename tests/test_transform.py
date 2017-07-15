@@ -92,6 +92,7 @@ def test_concat():
 
 def test_scaleOffsetXform():
 
+    # Test numerically
     testfile = op.join(datadir, 'test_transform_test_scaleoffsetxform.txt')
     lines    = readlines(testfile)
     ntests   = len(lines) // 5
@@ -108,11 +109,51 @@ def test_scaleOffsetXform():
         expected = [[float(v) for v in l.split()] for l in expected]
         expected = np.array(expected)
 
-        result1 = transform.scaleOffsetXform(      scales,        offsets)
-        result2 = transform.scaleOffsetXform(tuple(scales), tuple(offsets))
+        result = transform.scaleOffsetXform(scales, offsets)
 
-        assert np.all(np.isclose(result1, expected))
-        assert np.all(np.isclose(result2, expected))
+        assert np.all(np.isclose(result, expected))
+
+    # Test that different input types work:
+    #   - scalars
+    #   - lists/tuples of length <= 3
+    #   - numpy arrays
+    a = np.array
+    stests = [
+        (5,            [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5],          [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5,),         [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5]),       [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6],       [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5, 6),       [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5, 6]),    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6, 7],    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+        ((5, 6, 7),    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+        (a([5, 6, 7]), [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+    ]
+    otests = [
+        (5,            [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5],          [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5,),         [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5]),       [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6],       [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5, 6),       [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5, 6]),    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6, 7],    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+        ((5, 6, 7),    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+        (a([5, 6, 7]), [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+    ]
+
+    for (scale, expected) in stests:
+        expected = np.array(expected).reshape(4, 4)
+        result   = transform.scaleOffsetXform(scale, 0)
+        assert np.all(np.isclose(result, expected))
+    for (offset, expected) in otests:
+        expected = np.array(expected).reshape(4, 4)
+        result   = transform.scaleOffsetXform(1, offset)
+        assert np.all(np.isclose(result, expected))
+
+
+
 
 
 def test_compose_and_decompose():
