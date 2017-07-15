@@ -53,6 +53,12 @@ class TriangleMesh(object):
 
     ``indices``    A :meth:`M\times 3` ``numpy`` array containing
                    the vertex indices for :math:`M` triangles
+
+    ``normals``    A :math:`M\times 3` ``numpy`` array containing
+                   face normals.
+
+    ``vnormals``   A :math:`N\times 3` ``numpy`` array containing
+                   vertex normals.
     ============== ====================================================
 
 
@@ -101,8 +107,10 @@ class TriangleMesh(object):
         self.indices      = np.array(indices).reshape((-1, 3))
 
         self.__vertexData = {}
-        self.__loBounds   = self.vertices.min(axis=0)
-        self.__hiBounds   = self.vertices.max(axis=0)
+        self.__faceNormals = None
+        self.__vertNormals = None
+        self.__loBounds    = self.vertices.min(axis=0)
+        self.__hiBounds    = self.vertices.max(axis=0)
 
 
     def __repr__(self):
@@ -116,6 +124,64 @@ class TriangleMesh(object):
         """Returns a string representation of this ``TriangleMesh`` instance.
         """
         return self.__repr__()
+
+
+    @property
+    def normals(self):
+        """Returns a ``(M, 3)`` array containing normals for every triangle
+        in the mesh.
+        """
+        if self.__faceNormals is not None:
+            return self.__faceNormals
+
+        v1 = self.vertices[self.indices[:, 0]]
+        v2 = self.vertices[self.indices[:, 1]]
+
+        fnormals = np.cross(v1, v2)
+
+        # TODO make fast, and make sure that this actually works.
+        for i in range(self.indices.shape[0]):
+
+            p0, p1, p2 = self.vertices[self.indices[i], :]
+            n          = fnormals[i, :]
+
+            if np.dot(n, np.cross(p1 - p0, p2 - p0)) > 0:
+                fnormals[i, :] *= -1
+
+        self.__faceNormals = fnormals
+
+        return self.__faceNormals
+
+
+    @property
+    def vnormals(self):
+        """Returns a ``(N, 3)`` array containing normals for every vertex
+        in the mesh.
+        """
+        if self.__vertNormals is not None:
+            return self.__vertNormals
+
+        # per-face normals
+        fnormals = self.normals
+
+        vnormals = np.zeros((self.vertices.shape[0], 3), dtype=np.float)
+
+        # TODO make fast
+        for i in range(self.indices.shape[0]):
+
+            v0, v1, v2 = self.indices[i]
+
+            vnormals[v0, :] += fnormals[i]
+            vnormals[v1, :] += fnormals[i]
+            vnormals[v2, :] += fnormals[i]
+
+        # normalise to unit length
+        lens = np.sqrt(np.sum(vnormals * vnormals, axis=1))
+        vnormals = (vnormals.T / lens).T
+
+        self.__vertNormals = vnormals
+
+        return self.__vertNormals
 
 
     def getBounds(self):
