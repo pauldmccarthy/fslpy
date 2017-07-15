@@ -16,6 +16,7 @@ spaces. The following functions are provided:
    concat
    compose
    decompose
+   rotMatToAffine
    rotMatToAxisAngles
    axisAnglesToRotMat
    axisBounds
@@ -60,10 +61,12 @@ def scaleOffsetXform(scales, offsets):
     :returns:     A ``numpy.float32`` array of size :math:`4 \\times 4`.
     """
 
-    if not isinstance(scales,  collections.Sequence): scales  = [scales]
-    if not isinstance(offsets, collections.Sequence): offsets = [offsets]
-    if not isinstance(scales,  list):                 scales  = list(scales)
-    if not isinstance(offsets, list):                 offsets = list(offsets)
+    oktypes = (collections.Sequence, np.ndarray)
+
+    if not isinstance(scales,  oktypes): scales  = [scales]
+    if not isinstance(offsets, oktypes): offsets = [offsets]
+    if not isinstance(scales,  list):    scales  = list(scales)
+    if not isinstance(offsets, list):    offsets = list(offsets)
 
     lens = len(scales)
     leno = len(offsets)
@@ -131,7 +134,7 @@ def compose(scales, offsets, rotations, origin=None):
     return concat(offset, postRotate, rotate, preRotate, scale)
 
 
-def decompose(xform):
+def decompose(xform, angles=True):
     """Decomposes the given transformation matrix into separate offsets,
     scales, and rotations, according to the algorithm described in:
 
@@ -142,12 +145,17 @@ def decompose(xform):
     It is assumed that the given transform has no perspective components. Any
     shears in the affine are discarded.
 
-    :arg xform: A ``(4, 4)`` affine transformation matrix.
+    :arg xform:  A ``(4, 4)`` affine transformation matrix.
+
+    :arg angles: If ``True`` (the default), the rotations are returned
+                 as axis-angles, in radians. Otherwise, the rotation matrix
+                 is returned.
 
     :returns: The following:
                 - A sequence of three scales
                 - A sequence of three translations
-                - A sequence of three rotations, in radians
+                - A sequence of three rotations, in radians. Or, if
+                  ``angles is False``, a rotation matrix.
     """
 
     # The inline comments in the code below are taken verbatim from
@@ -216,9 +224,17 @@ def decompose(xform):
     # Finally, we need to decompose the rotation matrix into a sequence
     # of rotations about the x, y, and z axes. [This is done in the
     # rotMatToAxisAngles function]
-    rx, ry, rz = rotMatToAxisAngles(R.T)
+    if angles: rotations = rotMatToAxisAngles(R.T)
+    else:      rotations = R.T
 
-    return [sx, sy, sz], translations, [rx, ry, rz]
+    return [sx, sy, sz], translations, rotations
+
+
+def rotMatToAffine(rotmat, origin=None):
+    """Convenience function which encodes the given ``(3, 3)`` rotation
+    matrix into a ``(4, 4)`` affine.
+    """
+    return compose([1, 1, 1], [0, 0, 0], rotmat, origin)
 
 
 def rotMatToAxisAngles(rotmat):
