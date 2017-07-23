@@ -412,24 +412,28 @@ def axisBounds(shape,
     else:      return (lo,    hi)
 
 
-def transform(p, xform, axes=None):
+def transform(p, xform, axes=None, vector=False):
     """Transforms the given set of points ``p`` according to the given affine
     transformation ``xform``.
 
 
-    :arg p:     A sequence or array of points of shape :math:`N \\times  3`.
+    :arg p:      A sequence or array of points of shape :math:`N \\times  3`.
 
-    :arg xform: An affine transformation matrix with which to transform the
-                points in ``p``.
+    :arg xform:  An affine transformation matrix with which to transform the
+                 points in ``p``.
 
-    :arg axes:  If you are only interested in one or two axes, and the source
-                axes are orthogonal to the target axes (see the note below),
-                you may pass in a 1D, ``N*1``, or ``N*2`` array as ``p``, and
-                use this argument to specify which axis/axes that the data in
-                ``p`` correspond to.
+    :arg axes:   If you are only interested in one or two axes, and the source
+                 axes are orthogonal to the target axes (see the note below),
+                 you may pass in a 1D, ``N*1``, or ``N*2`` array as ``p``, and
+                 use this argument to specify which axis/axes that the data in
+                 ``p`` correspond to.
 
-    :returns:   The points in ``p``, transformed by ``xform``, as a ``numpy``
-                array with the same data type as the input.
+    :arg vector: Defaults to ``False``. If ``True``, the points are treated
+                 as vectors - the translation component of the transformation
+                 is not applied.
+
+    :returns:    The points in ``p``, transformed by ``xform``, as a ``numpy``
+                 array with the same data type as the input.
 
 
     .. note:: The ``axes`` argument should only be used if the source
@@ -442,7 +446,10 @@ def transform(p, xform, axes=None):
     """
 
     p  = _fillPoints(p, axes)
-    t  = np.dot(xform[:3, :3], p.T).T + xform[:3, 3]
+    t  = np.dot(xform[:3, :3], p.T).T
+
+    if not vector:
+        t = t + xform[:3, 3]
 
     if axes is not None:
         t = t[:, axes]
