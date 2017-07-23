@@ -322,6 +322,28 @@ def test_transform():
         transform.transform(badcoords[:, (1, 2, 3)], xform, axes=[1, 2])
 
 
+def test_transform_vector(seed):
+
+    # Some transform with a
+    # translation component
+    xform = transform.compose([1, 2, 3],
+                              [5, 10, 15],
+                              [np.pi / 2, np.pi / 2, 0])
+
+    vecs = np.random.random((20, 3))
+
+    for v in vecs:
+
+        vecExpected = np.dot(xform, list(v) + [0])[:3]
+        ptExpected  = np.dot(xform, list(v) + [1])[:3]
+
+        vecResult = transform.transform(v, xform, vector=True)
+        ptResult  = transform.transform(v, xform, vector=False)
+
+        assert np.all(np.isclose(vecExpected, vecResult))
+        assert np.all(np.isclose(ptExpected,  ptResult))
+
+
 def test_flirtMatrixToSform():
 
     testfile = op.join(datadir, 'test_transform_test_flirtMatrixToSform.txt')
