@@ -22,6 +22,14 @@ spaces. The following functions are provided:
    axisBounds
    flirtMatrixToSform
    sformToFlirtMatrix
+
+And a few more functions are provided for working with vectors:
+
+.. autosummary::
+   :nosignatures:
+
+   veclength
+   normalise
 """
 
 import numpy        as np
@@ -43,6 +51,16 @@ def concat(*xforms):
         result = np.dot(result, xforms[i])
 
     return result
+
+
+def veclength(vec):
+    """Returns the length of the given vector. """
+    return np.sqrt(np.dot(vec, vec))
+
+
+def normalise(vec):
+    """Normalises the given vector to unit length. """
+    return vec / veclength(vec)
 
 
 def scaleOffsetXform(scales, offsets):
