@@ -392,3 +392,35 @@ def test_sformToFlirtMatrix():
 
         assert np.all(np.isclose(result1, expected))
         assert np.all(np.isclose(result2, expected))
+
+
+
+def test_normalise(seed):
+
+    vectors = -100 + 200 * np.random.random((50, 3))
+
+    def parallel(v1, v2):
+        v1 = v1 / transform.veclength(v1)
+        v2 = v2 / transform.veclength(v2)
+
+        return np.isclose(np.dot(v1, v2), 1)
+
+    for v in vectors:
+        vn = transform.normalise(v)
+        vl = transform.veclength(vn)
+
+        assert np.isclose(vl, 1.0)
+        assert parallel(v, vn)
+
+
+def test_veclength(seed):
+
+    def l(v):
+        x, y, z = v
+        l       = x * x + y * y + z * z
+        return np.sqrt(l)
+
+    vectors = -100 + 200 * np.random.random((50, 3))
+
+    for v in vectors:
+        assert np.isclose(transform.veclength(v), l(v))
