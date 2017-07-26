@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import collections
 import six
 
 import numpy as np
@@ -90,11 +91,7 @@ def test_skipUnchanged():
     """
     """
 
-    timesCalled = {
-        'key1' : 0,
-        'key2' : 0,
-        'key3' : 0,
-    }
+    timesCalled = collections.defaultdict(lambda: 0)
 
     def setter(name, value):
         timesCalled[name] = timesCalled[name] + 1
@@ -164,6 +161,22 @@ def test_skipUnchanged():
     assert timesCalled['key1'] == 5
     assert timesCalled['key2'] == 5
     assert timesCalled['key3'] == 5
+
+    # Regression - zero
+    # sized numpy arrays
+    # could previously be
+    # tested incorrectly
+    # because e.g.
+    #
+    # np.all(np.zeros((0, 3)), np.ones((1, 3))
+    #
+    # evaluates to True
+    wrapped('key4', np.zeros((0, 4)))
+    assert timesCalled['key4'] == 1
+    wrapped('key4', np.zeros((1, 4)))
+    assert timesCalled['key4'] == 2
+
+
 
 
 def test_Instanceify():
