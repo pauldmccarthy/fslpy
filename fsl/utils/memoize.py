@@ -143,8 +143,13 @@ def skipUnchanged(func):
             newIsArray = isinstance(value,  np.ndarray)
             isarray    = oldIsArray or newIsArray
 
-            if isarray: nochange = np.all(oldVal == value)
-            else:       nochange =        oldVal == value
+            if isarray:
+                a = np.array(oldVal, copy=False)
+                b = np.array(value,  copy=False)
+
+                nochange = (a.shape == b.shape) and np.allclose(a, b)
+            else:
+                nochange = oldVal == value
 
             if nochange:
                 return False
