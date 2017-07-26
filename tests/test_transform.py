@@ -8,10 +8,11 @@
 
 from __future__ import division
 
-import              glob
-import os.path   as op
-import itertools as it
-import numpy     as np
+import                 glob
+import os.path      as op
+import itertools    as it
+import numpy        as np
+import numpy.linalg as npla
 
 import six
 
@@ -337,10 +338,12 @@ def test_transform_vector(seed):
         vecExpected = np.dot(xform, list(v) + [0])[:3]
         ptExpected  = np.dot(xform, list(v) + [1])[:3]
 
-        vecResult = transform.transform(v, xform, vector=True)
-        ptResult  = transform.transform(v, xform, vector=False)
+        vecResult   = transform.transform(v, xform,         vector=True)
+        vec33Result = transform.transform(v, xform[:3, :3], vector=True)
+        ptResult    = transform.transform(v, xform,         vector=False)
 
         assert np.all(np.isclose(vecExpected, vecResult))
+        assert np.all(np.isclose(vecExpected, vec33Result))
         assert np.all(np.isclose(ptExpected,  ptResult))
 
 
@@ -424,3 +427,30 @@ def test_veclength(seed):
 
     for v in vectors:
         assert np.isclose(transform.veclength(v), l(v))
+
+
+def test_transformNormal(seed):
+
+    normals = -100 + 200 * np.random.random((50, 3))
+
+    def tn(n, xform):
+
+        xform = npla.inv(xform[:3, :3]).T
+        return np.dot(xform, n)
+
+    for n in normals:
+
+        scales    = -10    + np.random.random(3) * 10
+        offsets   = -100   + np.random.random(3) * 200
+        rotations = -np.pi + np.random.random(3) * 2 * np.pi
+        origin    = -100   + np.random.random(3) * 200
+
+        xform = transform.compose(scales,
+                                  offsets,
+                                  rotations,
+                                  origin)
+
+        expected = tn(n, xform)
+        result   = transform.transformNormal(n, xform)
+
+        assert np.all(np.isclose(expected, result))
