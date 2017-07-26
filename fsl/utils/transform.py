@@ -11,6 +11,7 @@ spaces. The following functions are provided:
    :nosignatures:
 
    transform
+   transformNormal
    scaleOffsetXform
    invert
    concat
@@ -437,8 +438,8 @@ def transform(p, xform, axes=None, vector=False):
 
     :arg p:      A sequence or array of points of shape :math:`N \\times  3`.
 
-    :arg xform:  An affine transformation matrix with which to transform the
-                 points in ``p``.
+    :arg xform:  A ``(4, 4)`` affine transformation matrix with which to
+                 transform the points in ``p``.
 
     :arg axes:   If you are only interested in one or two axes, and the source
                  axes are orthogonal to the target axes (see the note below),
@@ -448,7 +449,8 @@ def transform(p, xform, axes=None, vector=False):
 
     :arg vector: Defaults to ``False``. If ``True``, the points are treated
                  as vectors - the translation component of the transformation
-                 is not applied.
+                 is not applied. If you set this flag, you pass in a ``(3, 3)``
+                 transformation matrix.
 
     :returns:    The points in ``p``, transformed by ``xform``, as a ``numpy``
                  array with the same data type as the input.
@@ -474,6 +476,14 @@ def transform(p, xform, axes=None, vector=False):
 
     if t.size == 1: return t[0]
     else:           return t
+
+
+def transformNormal(p, xform, axes=None):
+    """Transforms the given point(s), under the assumption that they
+    are normal vectors. In this case, the points are transformed by
+    ``invert(xform[:3, :3]).T``.
+    """
+    return transform(p, invert(xform[:3, :3]).T, axes, vector=True)
 
 
 def _fillPoints(p, axes):
