@@ -10,6 +10,8 @@ a function:
  .. autosummary::
     :nosignatures:
 
+    memoize
+    Memoize
     Instanceify
     memoizeMD5
     skipUnchanged
@@ -17,7 +19,6 @@ a function:
 
 
 import logging
-
 import hashlib
 import functools
 import six
@@ -25,20 +26,91 @@ import six
 log = logging.getLogger(__name__)
 
 
-# TODO Make this a class, and add
-#      a "clearCache" method to it.
-def memoize(func):
+def memoize(func=None):
     """Memoize the given function by the value of the input arguments.
+
+    This function simply returns a :class:`Memoize` instance.
+    """
+
+    return Memoize(func)
+
+
+class Memoize(object):
+    """Decorator which can be used to memoize a function or method. Use like
+    so::
+
+        @memoize
+        def myfunc(*a, **kwa):
+            ...
+
+        @memoize()
+        def otherfunc(*a, **kwax):
+            ...
+
+    A ``Memoize`` instance maintains a cache which contains ``{args : value}``
+    mappings, where ``args`` are the input arguments to the function, and
+    ``value`` is the value that the function returned for those arguments.
+    When a memoized function is called with arguments that are present in the
+    cache, the cached values are returned, and the function itself is not
+    called.
+
+
+    The :meth:`invalidate` method may be used to clear the internal cache.
+
 
     Note that the arguments used for memoization must be hashable, as they are
     used as keys in a dictionary.
     """
 
-    cache      = {}
-    defaultKey = '_memoize_noargs_'
 
-    def wrapper(*a, **kwa):
+    def __init__(self, *args, **kwargs):
+        """Create a ``Memoize`` object.
+        """
 
+        self.__cache      = {}
+        self.__func       = None
+        self.__defaultKey = '_memoize_noargs_'
+
+        self.__setFunction(*args, **kwargs)
+
+
+    def invalidate(self, *args, **kwargs):
+        """Clears the internal cache. If no arguments are given, the entire
+        cache is cleared. Otherwise, only the cached value for the provided
+        arguments is cleared.
+        """
+
+        if len(args) + len(kwargs) == 0:
+            self.__cache = {}
+
+        else:
+            key = self.__makeKey(*args, **kwargs)
+
+            try:
+                self.__cache.pop(key)
+            except KeyError:
+                pass
+
+
+    def __setFunction(self, *args, **kwargs):
+        """Used internally to set the memoized function. """
+
+        if self.__func is not None:
+            return False
+
+        # A no-brackets style
+        # decorator was used
+        isfunc = (len(kwargs) == 0 and len(args) == 1 and callable(args[0]))
+
+        if isfunc:
+            self.__func = args[0]
+
+        return isfunc
+
+
+    def __makeKey(self, *a, **kwa):
+        """Constructs a key for use with the cache from the given arguments.
+        """
         key = []
 
         if a   is not None: key += list(a)
@@ -48,24 +120,35 @@ def memoize(func):
         # any arguments specified - use the
         # default cache key.
         if len(key) == 0:
-            key = [defaultKey]
+            key = [self.__defaultKey]
 
-        key = tuple(key)
+        return tuple(key)
+
+
+    def __call__(self, *a, **kwa):
+        """Checks the cache against the given arguments. If a cached value
+        is present, it is returned. Otherwise the memoized function is called,
+        and its value is cached and returned.
+        """
+
+        if self.__setFunction(*a, **kwa):
+            return self
+
+        key = self.__makeKey(*a, **kwa)
 
         try:
-            result = cache[key]
+            result = self.__cache[key]
 
             log.debug(u'Retrieved from cache[{}]: {}'.format(key, result))
 
         except KeyError:
 
-            result     = func(*a, **kwa)
-            cache[key] = result
+            result            = self.__func(*a, **kwa)
+            self.__cache[key] = result
 
             log.debug(u'Adding to cache[{}]: {}'.format(key, result))
 
         return result
-    return wrapper
 
 
 def memoizeMD5(func):
