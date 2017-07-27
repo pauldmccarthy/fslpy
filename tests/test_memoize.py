@@ -51,6 +51,72 @@ def test_memoize():
     assert timesCalled[0] == 7
 
 
+def test_memoize_create():
+
+    timesCalled = {
+        'without_brackets' : 0,
+        'with_brackets'    : 0
+    }
+
+    @memoize.memoize
+    def without_brackets():
+        timesCalled['without_brackets'] += 1
+        return 5
+
+    @memoize.memoize()
+    def with_brackets():
+        timesCalled['with_brackets'] += 1
+        return 10
+
+
+    for i in range(10):
+        assert without_brackets()              == 5
+        assert with_brackets()                 == 10
+        assert timesCalled['without_brackets'] == 1
+        assert timesCalled['with_brackets']    == 1
+
+
+def test_memoize_invalidate():
+
+    timesCalled = collections.defaultdict(lambda: 0)
+
+    @memoize.memoize
+    def func(arg):
+        timesCalled[arg] += 1
+        return arg * 5
+
+
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 1
+        assert timesCalled[10] == 1
+
+    func.invalidate()
+
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 2
+        assert timesCalled[10] == 2
+
+    func.invalidate(5)
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 3
+        assert timesCalled[10] == 2
+
+    func.invalidate(10)
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 3
+        assert timesCalled[10] == 3
+
+
+
+
 def test_memoizeMD5():
     timesCalled = [0]
 
