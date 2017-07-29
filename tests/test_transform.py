@@ -8,6 +8,7 @@
 
 from __future__ import division
 
+import                 random
 import                 glob
 import os.path      as op
 import itertools    as it
@@ -400,7 +401,7 @@ def test_sformToFlirtMatrix():
 
 def test_normalise(seed):
 
-    vectors = -100 + 200 * np.random.random((50, 3))
+    vectors = -100 + 200 * np.random.random((200, 3))
 
     def parallel(v1, v2):
         v1 = v1 / transform.veclength(v1)
@@ -409,24 +410,54 @@ def test_normalise(seed):
         return np.isclose(np.dot(v1, v2), 1)
 
     for v in vectors:
-        vn = transform.normalise(v)
-        vl = transform.veclength(vn)
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+        vn    = transform.normalise(v)
+        vl    = transform.veclength(vn)
 
         assert np.isclose(vl, 1.0)
         assert parallel(v, vn)
+
+    # normalise should also be able
+    # to do multiple vectors at once
+    results = transform.normalise(vectors)
+    lengths = transform.veclength(results)
+    pars    = np.zeros(200)
+    for i in range(200):
+
+        v = vectors[i]
+        r = results[i]
+
+        pars[i] = parallel(v, r)
+
+    assert np.all(np.isclose(lengths, 1))
+    assert np.all(pars)
 
 
 def test_veclength(seed):
 
     def l(v):
-        x, y, z = v
-        l       = x * x + y * y + z * z
+        v = np.array(v, copy=False).reshape((-1, 3))
+        x = v[:, 0]
+        y = v[:, 1]
+        z = v[:, 2]
+        l = x * x + y * y + z * z
         return np.sqrt(l)
 
-    vectors = -100 + 200 * np.random.random((50, 3))
+    vectors = -100 + 200 * np.random.random((200, 3))
 
     for v in vectors:
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+
         assert np.isclose(transform.veclength(v), l(v))
+
+    # Multiple vectors in parallel
+    result   = transform.veclength(vectors)
+    expected = l(vectors)
+    assert np.all(np.isclose(result, expected))
 
 
 def test_transformNormal(seed):
