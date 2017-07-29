@@ -55,13 +55,26 @@ def concat(*xforms):
 
 
 def veclength(vec):
-    """Returns the length of the given vector. """
-    return np.sqrt(np.dot(vec, vec))
+    """Returns the length of the given vector(s).
+
+    Multiple vectors may be passed in, with a shape of ``(n, 3)``.
+    """
+    vec = np.array(vec, copy=False).reshape(-1, 3)
+    return np.sqrt(np.einsum('ij,ij->i', vec, vec))
 
 
 def normalise(vec):
-    """Normalises the given vector to unit length. """
-    return vec / veclength(vec)
+    """Normalises the given vector(s) to unit length.
+
+    Multiple vectors may be passed in, with a shape of ``(n, 3)``.
+    """
+    vec = np.array(vec, copy=False).reshape(-1, 3)
+    n   = (vec.T / veclength(vec)).T
+
+    if n.size == 3:
+        n = n[0]
+
+    return n
 
 
 def scaleOffsetXform(scales, offsets):
