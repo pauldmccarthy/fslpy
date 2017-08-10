@@ -11,16 +11,26 @@ spaces. The following functions are provided:
    :nosignatures:
 
    transform
+   transformNormal
    scaleOffsetXform
    invert
    concat
    compose
    decompose
+   rotMatToAffine
    rotMatToAxisAngles
    axisAnglesToRotMat
    axisBounds
    flirtMatrixToSform
    sformToFlirtMatrix
+
+And a few more functions are provided for working with vectors:
+
+.. autosummary::
+   :nosignatures:
+
+   veclength
+   normalise
 """
 
 import numpy        as np
@@ -44,6 +54,29 @@ def concat(*xforms):
     return result
 
 
+def veclength(vec):
+    """Returns the length of the given vector(s).
+
+    Multiple vectors may be passed in, with a shape of ``(n, 3)``.
+    """
+    vec = np.array(vec, copy=False).reshape(-1, 3)
+    return np.sqrt(np.einsum('ij,ij->i', vec, vec))
+
+
+def normalise(vec):
+    """Normalises the given vector(s) to unit length.
+
+    Multiple vectors may be passed in, with a shape of ``(n, 3)``.
+    """
+    vec = np.array(vec, copy=False).reshape(-1, 3)
+    n   = (vec.T / veclength(vec)).T
+
+    if n.size == 3:
+        n = n[0]
+
+    return n
+
+
 def scaleOffsetXform(scales, offsets):
     """Creates and returns an affine transformation matrix which encodes
     the specified scale(s) and offset(s).
@@ -60,10 +93,12 @@ def scaleOffsetXform(scales, offsets):
     :returns:     A ``numpy.float32`` array of size :math:`4 \\times 4`.
     """
 
-    if not isinstance(scales,  collections.Sequence): scales  = [scales]
-    if not isinstance(offsets, collections.Sequence): offsets = [offsets]
-    if not isinstance(scales,  list):                 scales  = list(scales)
-    if not isinstance(offsets, list):                 offsets = list(offsets)
+    oktypes = (collections.Sequence, np.ndarray)
+
+    if not isinstance(scales,  oktypes): scales  = [scales]
+    if not isinstance(offsets, oktypes): offsets = [offsets]
+    if not isinstance(scales,  list):    scales  = list(scales)
+    if not isinstance(offsets, list):    offsets = list(offsets)
 
     lens = len(scales)
     leno = len(offsets)
@@ -131,7 +166,7 @@ def compose(scales, offsets, rotations, origin=None):
     return concat(offset, postRotate, rotate, preRotate, scale)
 
 
-def decompose(xform):
+def decompose(xform, angles=True):
     """Decomposes the given transformation matrix into separate offsets,
     scales, and rotations, according to the algorithm described in:
 
@@ -142,12 +177,17 @@ def decompose(xform):
     It is assumed that the given transform has no perspective components. Any
     shears in the affine are discarded.
 
-    :arg xform: A ``(4, 4)`` affine transformation matrix.
+    :arg xform:  A ``(4, 4)`` affine transformation matrix.
+
+    :arg angles: If ``True`` (the default), the rotations are returned
+                 as axis-angles, in radians. Otherwise, the rotation matrix
+                 is returned.
 
     :returns: The following:
                 - A sequence of three scales
                 - A sequence of three translations
-                - A sequence of three rotations, in radians
+                - A sequence of three rotations, in radians. Or, if
+                  ``angles is False``, a rotation matrix.
     """
 
     # The inline comments in the code below are taken verbatim from
@@ -216,9 +256,17 @@ def decompose(xform):
     # Finally, we need to decompose the rotation matrix into a sequence
     # of rotations about the x, y, and z axes. [This is done in the
     # rotMatToAxisAngles function]
-    rx, ry, rz = rotMatToAxisAngles(R.T)
+    if angles: rotations = rotMatToAxisAngles(R.T)
+    else:      rotations = R.T
 
-    return [sx, sy, sz], translations, [rx, ry, rz]
+    return [sx, sy, sz], translations, rotations
+
+
+def rotMatToAffine(rotmat, origin=None):
+    """Convenience function which encodes the given ``(3, 3)`` rotation
+    matrix into a ``(4, 4)`` affine.
+    """
+    return compose([1, 1, 1], [0, 0, 0], rotmat, origin)
 
 
 def rotMatToAxisAngles(rotmat):
@@ -396,24 +444,29 @@ def axisBounds(shape,
     else:      return (lo,    hi)
 
 
-def transform(p, xform, axes=None):
+def transform(p, xform, axes=None, vector=False):
     """Transforms the given set of points ``p`` according to the given affine
     transformation ``xform``.
 
 
-    :arg p:     A sequence or array of points of shape :math:`N \\times  3`.
+    :arg p:      A sequence or array of points of shape :math:`N \\times  3`.
 
-    :arg xform: An affine transformation matrix with which to transform the
-                points in ``p``.
+    :arg xform:  A ``(4, 4)`` affine transformation matrix with which to
+                 transform the points in ``p``.
 
-    :arg axes:  If you are only interested in one or two axes, and the source
-                axes are orthogonal to the target axes (see the note below),
-                you may pass in a 1D, ``N*1``, or ``N*2`` array as ``p``, and
-                use this argument to specify which axis/axes that the data in
-                ``p`` correspond to.
+    :arg axes:   If you are only interested in one or two axes, and the source
+                 axes are orthogonal to the target axes (see the note below),
+                 you may pass in a 1D, ``N*1``, or ``N*2`` array as ``p``, and
+                 use this argument to specify which axis/axes that the data in
+                 ``p`` correspond to.
 
-    :returns:   The points in ``p``, transformed by ``xform``, as a ``numpy``
-                array with the same data type as the input.
+    :arg vector: Defaults to ``False``. If ``True``, the points are treated
+                 as vectors - the translation component of the transformation
+                 is not applied. If you set this flag, you pass in a ``(3, 3)``
+                 transformation matrix.
+
+    :returns:    The points in ``p``, transformed by ``xform``, as a ``numpy``
+                 array with the same data type as the input.
 
 
     .. note:: The ``axes`` argument should only be used if the source
@@ -426,13 +479,24 @@ def transform(p, xform, axes=None):
     """
 
     p  = _fillPoints(p, axes)
-    t  = np.dot(xform[:3, :3], p.T).T + xform[:3, 3]
+    t  = np.dot(xform[:3, :3], p.T).T
+
+    if not vector:
+        t = t + xform[:3, 3]
 
     if axes is not None:
         t = t[:, axes]
 
     if t.size == 1: return t[0]
     else:           return t
+
+
+def transformNormal(p, xform, axes=None):
+    """Transforms the given point(s), under the assumption that they
+    are normal vectors. In this case, the points are transformed by
+    ``invert(xform[:3, :3]).T``.
+    """
+    return transform(p, invert(xform[:3, :3]).T, axes, vector=True)
 
 
 def _fillPoints(p, axes):

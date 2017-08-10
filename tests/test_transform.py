@@ -8,10 +8,12 @@
 
 from __future__ import division
 
-import              glob
-import os.path   as op
-import itertools as it
-import numpy     as np
+import                 random
+import                 glob
+import os.path      as op
+import itertools    as it
+import numpy        as np
+import numpy.linalg as npla
 
 import six
 
@@ -92,6 +94,7 @@ def test_concat():
 
 def test_scaleOffsetXform():
 
+    # Test numerically
     testfile = op.join(datadir, 'test_transform_test_scaleoffsetxform.txt')
     lines    = readlines(testfile)
     ntests   = len(lines) // 5
@@ -108,11 +111,51 @@ def test_scaleOffsetXform():
         expected = [[float(v) for v in l.split()] for l in expected]
         expected = np.array(expected)
 
-        result1 = transform.scaleOffsetXform(      scales,        offsets)
-        result2 = transform.scaleOffsetXform(tuple(scales), tuple(offsets))
+        result = transform.scaleOffsetXform(scales, offsets)
 
-        assert np.all(np.isclose(result1, expected))
-        assert np.all(np.isclose(result2, expected))
+        assert np.all(np.isclose(result, expected))
+
+    # Test that different input types work:
+    #   - scalars
+    #   - lists/tuples of length <= 3
+    #   - numpy arrays
+    a = np.array
+    stests = [
+        (5,            [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5],          [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5,),         [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5]),       [5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6],       [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5, 6),       [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5, 6]),    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6, 7],    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+        ((5, 6, 7),    [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+        (a([5, 6, 7]), [5, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1]),
+    ]
+    otests = [
+        (5,            [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5],          [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5,),         [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5]),       [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6],       [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ((5, 6),       [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        (a([5, 6]),    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 0, 0, 0, 0, 1]),
+        ([5, 6, 7],    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+        ((5, 6, 7),    [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+        (a([5, 6, 7]), [1, 0, 0, 5, 0, 1, 0, 6, 0, 0, 1, 7, 0, 0, 0, 1]),
+    ]
+
+    for (scale, expected) in stests:
+        expected = np.array(expected).reshape(4, 4)
+        result   = transform.scaleOffsetXform(scale, 0)
+        assert np.all(np.isclose(result, expected))
+    for (offset, expected) in otests:
+        expected = np.array(expected).reshape(4, 4)
+        result   = transform.scaleOffsetXform(1, offset)
+        assert np.all(np.isclose(result, expected))
+
+
+
 
 
 def test_compose_and_decompose():
@@ -281,6 +324,30 @@ def test_transform():
         transform.transform(badcoords[:, (1, 2, 3)], xform, axes=[1, 2])
 
 
+def test_transform_vector(seed):
+
+    # Some transform with a
+    # translation component
+    xform = transform.compose([1, 2, 3],
+                              [5, 10, 15],
+                              [np.pi / 2, np.pi / 2, 0])
+
+    vecs = np.random.random((20, 3))
+
+    for v in vecs:
+
+        vecExpected = np.dot(xform, list(v) + [0])[:3]
+        ptExpected  = np.dot(xform, list(v) + [1])[:3]
+
+        vecResult   = transform.transform(v, xform,         vector=True)
+        vec33Result = transform.transform(v, xform[:3, :3], vector=True)
+        ptResult    = transform.transform(v, xform,         vector=False)
+
+        assert np.all(np.isclose(vecExpected, vecResult))
+        assert np.all(np.isclose(vecExpected, vec33Result))
+        assert np.all(np.isclose(ptExpected,  ptResult))
+
+
 def test_flirtMatrixToSform():
 
     testfile = op.join(datadir, 'test_transform_test_flirtMatrixToSform.txt')
@@ -329,3 +396,92 @@ def test_sformToFlirtMatrix():
 
         assert np.all(np.isclose(result1, expected))
         assert np.all(np.isclose(result2, expected))
+
+
+
+def test_normalise(seed):
+
+    vectors = -100 + 200 * np.random.random((200, 3))
+
+    def parallel(v1, v2):
+        v1 = v1 / transform.veclength(v1)
+        v2 = v2 / transform.veclength(v2)
+
+        return np.isclose(np.dot(v1, v2), 1)
+
+    for v in vectors:
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+        vn    = transform.normalise(v)
+        vl    = transform.veclength(vn)
+
+        assert np.isclose(vl, 1.0)
+        assert parallel(v, vn)
+
+    # normalise should also be able
+    # to do multiple vectors at once
+    results = transform.normalise(vectors)
+    lengths = transform.veclength(results)
+    pars    = np.zeros(200)
+    for i in range(200):
+
+        v = vectors[i]
+        r = results[i]
+
+        pars[i] = parallel(v, r)
+
+    assert np.all(np.isclose(lengths, 1))
+    assert np.all(pars)
+
+
+def test_veclength(seed):
+
+    def l(v):
+        v = np.array(v, copy=False).reshape((-1, 3))
+        x = v[:, 0]
+        y = v[:, 1]
+        z = v[:, 2]
+        l = x * x + y * y + z * z
+        return np.sqrt(l)
+
+    vectors = -100 + 200 * np.random.random((200, 3))
+
+    for v in vectors:
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+
+        assert np.isclose(transform.veclength(v), l(v))
+
+    # Multiple vectors in parallel
+    result   = transform.veclength(vectors)
+    expected = l(vectors)
+    assert np.all(np.isclose(result, expected))
+
+
+def test_transformNormal(seed):
+
+    normals = -100 + 200 * np.random.random((50, 3))
+
+    def tn(n, xform):
+
+        xform = npla.inv(xform[:3, :3]).T
+        return np.dot(xform, n)
+
+    for n in normals:
+
+        scales    = -10    + np.random.random(3) * 10
+        offsets   = -100   + np.random.random(3) * 200
+        rotations = -np.pi + np.random.random(3) * 2 * np.pi
+        origin    = -100   + np.random.random(3) * 200
+
+        xform = transform.compose(scales,
+                                  offsets,
+                                  rotations,
+                                  origin)
+
+        expected = tn(n, xform)
+        result   = transform.transformNormal(n, xform)
+
+        assert np.all(np.isclose(expected, result))

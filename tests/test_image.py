@@ -723,9 +723,9 @@ def _test_Image_changeData(imgtype):
         assert img.saveState
         assert np.all(np.isclose(img.dataRange, (dmin, dmax)))
 
-        randval    = dmin + np.random.random() * drange
-        rx, ry, rz = randvox()
-
+        # random value within the existing data range
+        randval         = dmin + np.random.random() * drange
+        rx, ry, rz      = randvox()
         img[rx, ry, rz] = randval
 
         assert np.isclose(img[rx, ry, rz], randval)
@@ -738,23 +738,29 @@ def _test_Image_changeData(imgtype):
         newdmin = dmin - 100
         newdmax = dmax + 100
 
-        rx, ry, rz = randvox()
-        img[rx, ry, rz] = newdmin
+        # random value below the data range
+        minx, miny, minz = randvox()
+        img[minx, miny, minz] = newdmin
 
         assert notified.get('data',      False)
         assert notified.get('dataRange', False)
-        assert np.isclose(img[rx, ry, rz], newdmin)
+        assert np.isclose(img[minx, miny, minz], newdmin)
         assert np.all(np.isclose(img.dataRange, (newdmin, dmax)))
 
         notified.pop('data')
         notified.pop('dataRange')
 
-        rx, ry, rz = randvox()
-        img[rx, ry, rz] = newdmax
+        # random value above the data range
+        maxx, maxy, maxz = randvox()
+
+        while (maxx, maxy, maxz) == (minx, miny, minz):
+            maxx, maxy, maxz = randvox()
+
+        img[maxx, maxy, maxz] = newdmax
 
         assert notified.get('data',      False)
         assert notified.get('dataRange', False)
-        assert np.isclose(img[rx, ry, rz], newdmax)
+        assert np.isclose(img[maxx, maxy, maxz], newdmax)
         assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
 
     finally:
