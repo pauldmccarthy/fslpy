@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import collections
 import six
 
 import numpy as np
@@ -50,6 +51,72 @@ def test_memoize():
     assert timesCalled[0] == 7
 
 
+def test_memoize_create():
+
+    timesCalled = {
+        'without_brackets' : 0,
+        'with_brackets'    : 0
+    }
+
+    @memoize.memoize
+    def without_brackets():
+        timesCalled['without_brackets'] += 1
+        return 5
+
+    @memoize.memoize()
+    def with_brackets():
+        timesCalled['with_brackets'] += 1
+        return 10
+
+
+    for i in range(10):
+        assert without_brackets()              == 5
+        assert with_brackets()                 == 10
+        assert timesCalled['without_brackets'] == 1
+        assert timesCalled['with_brackets']    == 1
+
+
+def test_memoize_invalidate():
+
+    timesCalled = collections.defaultdict(lambda: 0)
+
+    @memoize.memoize
+    def func(arg):
+        timesCalled[arg] += 1
+        return arg * 5
+
+
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 1
+        assert timesCalled[10] == 1
+
+    func.invalidate()
+
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 2
+        assert timesCalled[10] == 2
+
+    func.invalidate(5)
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 3
+        assert timesCalled[10] == 2
+
+    func.invalidate(10)
+    for i in range(5):
+        assert func(5)         == 25
+        assert func(10)        == 50
+        assert timesCalled[5]  == 3
+        assert timesCalled[10] == 3
+
+
+
+
 def test_memoizeMD5():
     timesCalled = [0]
 
@@ -90,11 +157,7 @@ def test_skipUnchanged():
     """
     """
 
-    timesCalled = {
-        'key1' : 0,
-        'key2' : 0,
-        'key3' : 0,
-    }
+    timesCalled = collections.defaultdict(lambda: 0)
 
     def setter(name, value):
         timesCalled[name] = timesCalled[name] + 1
@@ -164,6 +227,22 @@ def test_skipUnchanged():
     assert timesCalled['key1'] == 5
     assert timesCalled['key2'] == 5
     assert timesCalled['key3'] == 5
+
+    # Regression - zero
+    # sized numpy arrays
+    # could previously be
+    # tested incorrectly
+    # because e.g.
+    #
+    # np.all(np.zeros((0, 3)), np.ones((1, 3))
+    #
+    # evaluates to True
+    wrapped('key4', np.zeros((0, 4)))
+    assert timesCalled['key4'] == 1
+    wrapped('key4', np.zeros((1, 4)))
+    assert timesCalled['key4'] == 2
+
+
 
 
 def test_Instanceify():

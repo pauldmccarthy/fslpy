@@ -49,7 +49,7 @@ class GiftiSurface(mesh.TriangleMesh):
     """
 
 
-    def __init__(self, infile):
+    def __init__(self, infile, fixWinding=False):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
         data using the  :func:`loadGiftiSurface` function.
 
@@ -61,7 +61,7 @@ class GiftiSurface(mesh.TriangleMesh):
 
         surfimg, vertices, indices = loadGiftiSurface(infile)
 
-        mesh.TriangleMesh.__init__(self, vertices, indices)
+        mesh.TriangleMesh.__init__(self, vertices, indices, fixWinding)
 
         name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
         infile = op.abspath(infile)
