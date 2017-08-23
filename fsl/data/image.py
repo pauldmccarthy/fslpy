@@ -6,7 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :class:`Nifti` and :class:`Image` classes, for
-representing 3D/4D NIFTI1 and NIFTI2 images. The ``nibabel`` package is used
+representing NIFTI1 and NIFTI2 images. The ``nibabel`` package is used
 for file I/O.
 
 
@@ -186,9 +186,6 @@ class Nifti(notifier.Notifier):
 
         header                   = header
         origShape, shape, pixdim = self.__determineShape(header)
-
-        if len(shape) < 3 or len(shape) > 4:
-            raise RuntimeError('Only 3D or 4D images are supported')
 
         voxToWorldMat = self.__determineTransform(header)
         worldToVoxMat = transform.invert(voxToWorldMat)
@@ -451,10 +448,14 @@ class Nifti(notifier.Notifier):
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
 
 
-    # TODO: Remove this method, and use the shape attribute directly
-    def is4DImage(self):
-        """Returns ``True`` if this image is 4D, ``False`` otherwise. """
-        return len(self.__shape) > 3 and self.__shape[3] > 1
+    @property
+    def ndims(self):
+        """Returns the number of dimensions in this image. This number may not
+        match the number of dimensions specified in the NIFTI header, as
+        trailing dimensions of length 1 are ignored. But it is guaranteed to be
+        at least 3.
+        """
+        return len(self.__shape)
 
 
     def getXFormCode(self, code=None):
@@ -626,7 +627,7 @@ class Nifti(notifier.Notifier):
 
 
 class Image(Nifti):
-    """Class which represents a 3D/4D NIFTI image. Internally, the image is
+    """Class which represents a NIFTI image. Internally, the image is
     loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image` or
     :mod:`nibabel.nifti2.Nifti2Image`, and data access managed by a
     :class:`.ImageWrapper`.
@@ -1001,8 +1002,7 @@ class Image(Nifti):
             # Otherwise if the number of values in the
             # image is bigger than the size threshold,
             # we'll calculate the range from a sample:
-            if len(self.shape) == 3: self.__imageWrapper[:, :, 0]
-            else:                    self.__imageWrapper[:, :, :, 0]
+            self.__imageWrapper[..., 0]
 
 
     def loadData(self):
