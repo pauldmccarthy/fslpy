@@ -819,7 +819,7 @@ class Image(Nifti):
             else:
                 name = 'Nibabel image'
 
-        Nifti.__init__(self, nibImage.get_header())
+        Nifti.__init__(self, nibImage.header)
 
         self.name                = name
         self.__lName             = '{}_{}'.format(id(self), self.name)

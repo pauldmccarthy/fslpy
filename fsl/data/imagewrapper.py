@@ -314,7 +314,7 @@ class ImageWrapper(notifier.Notifier):
         # header (which may or may not contain
         # useful values).
         low, high = self.__range
-        hdr       = self.__image.get_header()
+        hdr       = self.__image.header
 
         if low  is None: low  = float(hdr['cal_min'])
         if high is None: high = float(hdr['cal_max'])
