@@ -187,6 +187,11 @@ class ImageWrapper(notifier.Notifier):
             if d == 1: self.__numRealDims -= 1
             else:      break
 
+        # Degenerate case - if every
+        # dimension has length 1
+        if self.__numRealDims == 0:
+            self.__numRealDims = len(image.shape)
+
         # And save the number of
         # 'padding' dimensions too.
         self.__numPadDims = len(image.shape) - self.__numRealDims
