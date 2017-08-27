@@ -599,7 +599,7 @@ class Atlas(fslimage.Image):
         # Even though all the FSL atlases
         # are in MNI152 space, not all of
         # their sform_codes are correctly set
-        self.nibImage.get_header().set_sform(
+        self.nibImage.header.set_sform(
             None, code=constants.NIFTI_XFORM_MNI_152)
 
         self.desc = atlasDesc

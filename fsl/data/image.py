@@ -1065,7 +1065,7 @@ class Image(Nifti):
             nib.save(self.__nibImage, filename)
             self.__fileobj.close()
             self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
-            self.header = self.__nibImage.get_header()
+            self.header = self.__nibImage.header
 
             # We have to create a new ImageWrapper
             # instance too, as we have just destroyed
