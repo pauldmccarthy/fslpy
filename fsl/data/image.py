@@ -38,6 +38,7 @@ import                      string
 import                      logging
 
 import                      six
+import                      deprecation
 import numpy             as np
 
 import nibabel           as nib
@@ -456,6 +457,14 @@ class Nifti(notifier.Notifier):
         at least 3.
         """
         return len(self.__shape)
+
+
+    @deprecation.deprecated(deprecated_in='1.1.0',
+                            removed_in='1.2.0',
+                            details='Use ndims instead')
+    def is4DImage(self):
+        """Returns ``True`` if this image is 4D, ``False`` otherwise. """
+        return len(self.__shape) > 3 and self.__shape[3] > 1
 
 
     def getXFormCode(self, code=None):
