@@ -233,7 +233,7 @@ variables:
     # We need to install xvfb, and all of
     # the wxpython dependencies.
     - apt-get update  -y
-    - apt-get install -y xvfb libgtk-3-0
+    - apt-get install -y xvfb libgtk-2-0
     - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
 
     # Linux builds for wxPython are currently not
