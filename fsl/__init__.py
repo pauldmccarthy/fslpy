@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# __init__.py -
+# __init__.py - The fslpy library.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
