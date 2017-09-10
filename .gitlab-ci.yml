@@ -66,6 +66,9 @@ stages:
 #   - TWINE_PASSWORD:                - Password to use when uploading to pypi
 #
 #   - TWINE_REPOSITORY_URL:          - Pypi repository to upload to
+#
+#   - WXPYTHON_DEBIAN8_URL:          - Url to a location containg binary wheels
+#                                      for wxPython/debian 8
 ###############################################################################
 
 
@@ -230,12 +233,12 @@ variables:
     # We need to install xvfb, and all of
     # the wxpython dependencies.
     - apt-get update  -y
-    - apt-get install -y xvfb libgtk-3-0
+    - apt-get install -y xvfb libgtk-2-0
     - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
 
     # Linux builds for wxPython are currently not
     # on pypi, but are available at this url.
-    - pip install --only-binary wxpython -f https://wxpython.org/Phoenix/snapshot-builds/linux/gtk3/debian-8/ wxpython
+    - pip install --only-binary wxpython -f $WXPYTHON_DEBIAN8_URL wxpython
 
     # All other deps can be installed as
     # normal. scipy is required by nibabel,

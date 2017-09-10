@@ -22,12 +22,14 @@ import nibabel      as nib
 
 from nibabel.spatialimages import ImageFileError
 
-import fsl.data.constants as constants
-import fsl.data.image     as fslimage
-import fsl.utils.path     as fslpath
+import fsl.data.constants    as constants
+import fsl.data.image        as fslimage
+import fsl.data.imagewrapper as imagewrapper
+import fsl.utils.path        as fslpath
 
 from . import make_random_image
 from . import make_dummy_file
+from . import testdir
 
 
 def make_image(filename=None,
@@ -54,7 +56,7 @@ def make_image(filename=None,
     hdr.set_zooms([abs(p) for p in pixdims])
 
     xform = np.eye(4)
-    for i, p in enumerate(pixdims):
+    for i, p in enumerate(pixdims[:3]):
         xform[i, i] = p
 
     data  = np.array(np.random.random(dims) * 100, dtype=dtype)
@@ -239,15 +241,20 @@ def _test_Image_atts(imgtype):
 
     # (file, dims, pixdims, dtype)
     dtypes = [np.uint8, np.int16, np.int32, np.float32, np.double]
-    dims   = [(10,  1,  1),
+    dims   = [(1,   1,  1),
+              (10,  1,  1),
               (1,  10,  1),
               (1,  1,  10),
               (10,  10, 1),
               (10,  1, 10),
               (1,  10, 10),
               (10, 10, 10),
-              (1,   1,  1, 5),
-              (10,  10, 1, 5),
+              (1,   1,  1, 1),
+              (10,  1,  1, 1),
+              (1,  10,  1, 1),
+              (1,   1, 10, 1),
+              (10, 10,  1, 1),
+              (10, 10, 1, 5),
               (10,  1, 10, 5),
               (1,  10, 10, 5),
               (10, 10, 10, 5)]
@@ -276,17 +283,21 @@ def _test_Image_atts(imgtype):
 
             dims, pixdims, dtype = atts
 
-            ndims   = len(dims)
-            pixdims = pixdims[:ndims]
+            expdims    = imagewrapper.canonicalShape(dims)
+            expndims   = len(expdims)
+            ndims      = len(dims)
+            pixdims    = pixdims[:ndims]
+            exppixdims = pixdims[:expndims]
 
             path = op.abspath(op.join(testdir, path))
             i    = fslimage.Image(path)
 
-            assert tuple(i.shape)                       == tuple(dims)
-            assert tuple(i.pixdim)                      == tuple(pixdims)
+            assert tuple(i.shape)                       == tuple(expdims)
+            assert tuple(i.pixdim)                      == tuple(exppixdims)
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
+            assert i.ndims      == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
             assert i.dataSource == fslpath.addExt(path,
@@ -815,6 +826,34 @@ def _test_Image_2D(imgtype):
 
     finally:
         shutil.rmtree(testdir)
+
+
+def  test_Image_5D_analyze(): _test_Image_5D(0)
+def  test_Image_5D_nifti1():  _test_Image_5D(1)
+def  test_Image_5D_nifti2():  _test_Image_5D(2)
+def _test_Image_5D(imgtype):
+
+    testdims = [
+        ( 1,  1,  1, 1, 5),
+        (10, 10,  1, 1, 5),
+        (10, 10, 10, 1, 5),
+        ( 1,  1,  1, 4, 5),
+        (10, 10,  1, 4, 5),
+        (10, 10, 10, 4, 5),
+    ]
+
+    for dims in testdims:
+
+        with testdir() as td:
+
+            path = op.join(td, 'test.nii')
+
+            make_image(path, imgtype, dims, [1] * len(dims))
+
+            img = fslimage.Image(path)
+
+            assert img.shape == dims
+            assert img.ndims == 5
 
 
 def test_Image_voxelsToScaledVoxels():

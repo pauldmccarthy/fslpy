@@ -187,6 +187,11 @@ class ImageWrapper(notifier.Notifier):
             if d == 1: self.__numRealDims -= 1
             else:      break
 
+        # Degenerate case - if every
+        # dimension has length 1
+        if self.__numRealDims == 0:
+            self.__numRealDims = len(image.shape)
+
         # And save the number of
         # 'padding' dimensions too.
         self.__numPadDims = len(image.shape) - self.__numRealDims
@@ -314,7 +319,7 @@ class ImageWrapper(notifier.Notifier):
         # header (which may or may not contain
         # useful values).
         low, high = self.__range
-        hdr       = self.__image.get_header()
+        hdr       = self.__image.header
 
         if low  is None: low  = float(hdr['cal_min'])
         if high is None: high = float(hdr['cal_max'])
