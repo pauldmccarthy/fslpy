@@ -555,10 +555,10 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
     :arg refImage: Reference :class:`.Image`
     """
 
-    srcScaledVoxelMat    = srcImage.voxelsToScaledVoxels()
-    refScaledVoxelMat    = refImage.voxelsToScaledVoxels()
+    srcScaledVoxelMat    = srcImage.voxToScaledVoxMat
+    refInvScaledVoxelMat = refImage.voxToScaledVoxMat
+    refInvScaledVoxelMat = refImage.scaledVoxToVoxMat
     refVoxToWorldMat     = refImage.voxToWorldMat
-    refInvScaledVoxelMat = invert(refScaledVoxelMat)
 
     return concat(refVoxToWorldMat,
                   refInvScaledVoxelMat,
@@ -581,15 +581,15 @@ def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
                    :attr:`.Nifti.voxToWorldMat`
     """
 
-    srcScaledVoxelsToVoxelsMat = invert(srcImage.voxelsToScaledVoxels())
-    srcVoxToWorldMat           =        srcImage.voxToWorldMat
-    refWorldToVoxMat           = invert(refImage.voxToWorldMat)
-    refVoxelsToScaledVoxelsMat =        refImage.voxelsToScaledVoxels()
+    srcScaledVoxToVoxMat = srcImage.scaledVoxToVoxMat
+    srcVoxToWorldMat     = srcImage.voxToWorldMat
+    refWorldToVoxMat     = refImage.worldToVoxMat
+    refVoxToScaledVoxMat = refImage.voxToScaledVoxMat
 
     if srcXform is not None:
         srcVoxToWorldMat = srcXform
 
-    return concat(refVoxelsToScaledVoxelsMat,
+    return concat(refVoxToScaledVoxMat,
                   refWorldToVoxMat,
                   srcVoxToWorldMat,
-                  srcScaledVoxelsToVoxelsMat)
+                  srcScaledVoxToVoxMat)
