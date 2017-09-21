@@ -12,7 +12,6 @@ import os.path   as op
 import itertools as it
 import              tempfile
 import              shutil
-import              glob
 
 import pytest
 
@@ -856,9 +855,12 @@ def _test_Image_5D(imgtype):
             assert img.ndims == 5
 
 
-def test_Image_voxelsToScaledVoxels():
+def test_Image_voxToScaledVox_analyze(): _test_Image_voxToScaledVox(0)
+def test_Image_voxToScaledVox_nifti1():  _test_Image_voxToScaledVox(1)
+def test_Image_voxToScaledVox_nifti2():  _test_Image_voxToScaledVox(2)
 
-    imgTypes = [0, 1, 2]
+def _test_Image_voxToScaledVox(imgtype):
+
     dims     = [(10, 10, 10)]
     pixdims  = [(-1, 1, 1),
                 ( 1, 1, 1),
@@ -879,14 +881,15 @@ def test_Image_voxelsToScaledVoxels():
 
         return xf
 
-    for imgType, dim, pixdim in it.product(imgTypes, dims, pixdims):
-        nimg = make_image(imgtype=imgType, dims=dim, pixdims=pixdim)
+    for dim, pixdim in it.product(dims, pixdims):
+        nimg = make_image(imgtype=imgtype, dims=dim, pixdims=pixdim)
         img  = fslimage.Image(nimg)
 
-        expected = expect(imgType, dim, pixdim)
-        result   = img.voxelsToScaledVoxels()
+        expected    = expect(imgtype, dim, pixdim)
+        invexpected = npla.inv(expected)
 
-        assert np.all(np.isclose(result, expected))
+        assert np.all(np.isclose(expected,    img.voxToScaledVoxMat))
+        assert np.all(np.isclose(invexpected, img.scaledVoxToVoxMat))
 
 
 def test_Image_sameSpace():

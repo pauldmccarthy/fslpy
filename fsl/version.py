@@ -41,7 +41,7 @@ import            re
 import            string
 
 
-__version__ = '1.1.1.dev'
+__version__ = '1.2.0.dev'
 """Current version number, as a string. """
 
 

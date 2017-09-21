@@ -92,6 +92,67 @@ def test_concat():
         assert np.all(np.isclose(result, expected))
 
 
+def test_veclength(seed):
+
+    def l(v):
+        v = np.array(v, copy=False).reshape((-1, 3))
+        x = v[:, 0]
+        y = v[:, 1]
+        z = v[:, 2]
+        l = x * x + y * y + z * z
+        return np.sqrt(l)
+
+    vectors = -100 + 200 * np.random.random((200, 3))
+
+    for v in vectors:
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+
+        assert np.isclose(transform.veclength(v), l(v))
+
+    # Multiple vectors in parallel
+    result   = transform.veclength(vectors)
+    expected = l(vectors)
+    assert np.all(np.isclose(result, expected))
+
+
+def test_normalise(seed):
+
+    vectors = -100 + 200 * np.random.random((200, 3))
+
+    def parallel(v1, v2):
+        v1 = v1 / transform.veclength(v1)
+        v2 = v2 / transform.veclength(v2)
+
+        return np.isclose(np.dot(v1, v2), 1)
+
+    for v in vectors:
+
+        vtype = random.choice((list, tuple, np.array))
+        v     = vtype(v)
+        vn    = transform.normalise(v)
+        vl    = transform.veclength(vn)
+
+        assert np.isclose(vl, 1.0)
+        assert parallel(v, vn)
+
+    # normalise should also be able
+    # to do multiple vectors at once
+    results = transform.normalise(vectors)
+    lengths = transform.veclength(results)
+    pars    = np.zeros(200)
+    for i in range(200):
+
+        v = vectors[i]
+        r = results[i]
+
+        pars[i] = parallel(v, r)
+
+    assert np.all(np.isclose(lengths, 1))
+    assert np.all(pars)
+
+
 def test_scaleOffsetXform():
 
     # Test numerically
@@ -155,9 +216,6 @@ def test_scaleOffsetXform():
         assert np.all(np.isclose(result, expected))
 
 
-
-
-
 def test_compose_and_decompose():
 
     testfile = op.join(datadir, 'test_transform_test_compose.txt')
@@ -187,14 +245,70 @@ def test_compose_and_decompose():
     rots = [np.pi / 5, np.pi / 4, np.pi / 3]
     rmat  = transform.axisAnglesToRotMat(*rots)
     xform = transform.compose([1, 1, 1], [0, 0, 0], rmat)
-    sc, of, rot = transform.decompose(xform)
-    sc = np.array(sc)
-    of = np.array(of)
-    rot = np.array(rot)
 
-    assert np.all(np.isclose(sc,  [1, 1, 1]))
-    assert np.all(np.isclose(of,  [0, 0, 0]))
-    assert np.all(np.isclose(rot, rots))
+    # And the angles flag should cause decompose
+    # to return the rotation matrix, instead of
+    # the axis angls
+    sc,   of,   rot   = transform.decompose(xform)
+    scat, ofat, rotat = transform.decompose(xform, angles=True)
+    scaf, ofaf, rotaf = transform.decompose(xform, angles=False)
+
+    sc,   of,   rot   = np.array(sc),   np.array(of),   np.array(rot)
+    scat, ofat, rotat = np.array(scat), np.array(ofat), np.array(rotat)
+    scaf, ofaf, rotaf = np.array(scaf), np.array(ofaf), np.array(rotaf)
+
+    assert np.all(np.isclose(sc,    [1, 1, 1]))
+    assert np.all(np.isclose(of,    [0, 0, 0]))
+    assert np.all(np.isclose(scat,  [1, 1, 1]))
+    assert np.all(np.isclose(ofat,  [0, 0, 0]))
+    assert np.all(np.isclose(scaf,  [1, 1, 1]))
+    assert np.all(np.isclose(ofaf,  [0, 0, 0]))
+
+    assert np.all(np.isclose(rot,   rots))
+    assert np.all(np.isclose(rotat, rots))
+    assert np.all(np.isclose(rotaf, rmat))
+
+
+def test_rotMatToAxisAngles(seed):
+
+    pi  = np.pi
+    pi2 = pi / 2
+
+    for i in range(100):
+
+        rots = [-pi  + 2 * pi  * np.random.random(),
+                -pi2 + 2 * pi2 * np.random.random(),
+                -pi  + 2 * pi  * np.random.random()]
+
+        rmat    = transform.axisAnglesToRotMat(*rots)
+        gotrots = transform.rotMatToAxisAngles(rmat)
+
+        assert np.all(np.isclose(rots, gotrots))
+
+
+def test_rotMatToAffine(seed):
+
+    pi  = np.pi
+    pi2 = pi / 2
+
+    for i in range(100):
+
+        rots = [-pi  + 2 * pi  * np.random.random(),
+                -pi2 + 2 * pi2 * np.random.random(),
+                -pi  + 2 * pi  * np.random.random()]
+
+        if np.random.random() < 0.5: origin = None
+        else:                        origin = np.random.random(3)
+
+        rmat   = transform.axisAnglesToRotMat(*rots)
+        mataff = transform.rotMatToAffine(rmat, origin)
+        rotaff = transform.rotMatToAffine(rots, origin)
+
+        exp         = np.eye(4)
+        exp[:3, :3] = rmat
+        exp[:3,  3] = origin
+
+        assert np.all(np.isclose(mataff, rotaff))
 
 
 def test_axisBounds():
@@ -348,6 +462,33 @@ def test_transform_vector(seed):
         assert np.all(np.isclose(ptExpected,  ptResult))
 
 
+def test_transformNormal(seed):
+
+    normals = -100 + 200 * np.random.random((50, 3))
+
+    def tn(n, xform):
+
+        xform = npla.inv(xform[:3, :3]).T
+        return np.dot(xform, n)
+
+    for n in normals:
+
+        scales    = -10    + np.random.random(3) * 10
+        offsets   = -100   + np.random.random(3) * 200
+        rotations = -np.pi + np.random.random(3) * 2 * np.pi
+        origin    = -100   + np.random.random(3) * 200
+
+        xform = transform.compose(scales,
+                                  offsets,
+                                  rotations,
+                                  origin)
+
+        expected = tn(n, xform)
+        result   = transform.transformNormal(n, xform)
+
+        assert np.all(np.isclose(expected, result))
+
+
 def test_flirtMatrixToSform():
 
     testfile = op.join(datadir, 'test_transform_test_flirtMatrixToSform.txt')
@@ -396,92 +537,3 @@ def test_sformToFlirtMatrix():
 
         assert np.all(np.isclose(result1, expected))
         assert np.all(np.isclose(result2, expected))
-
-
-
-def test_normalise(seed):
-
-    vectors = -100 + 200 * np.random.random((200, 3))
-
-    def parallel(v1, v2):
-        v1 = v1 / transform.veclength(v1)
-        v2 = v2 / transform.veclength(v2)
-
-        return np.isclose(np.dot(v1, v2), 1)
-
-    for v in vectors:
-
-        vtype = random.choice((list, tuple, np.array))
-        v     = vtype(v)
-        vn    = transform.normalise(v)
-        vl    = transform.veclength(vn)
-
-        assert np.isclose(vl, 1.0)
-        assert parallel(v, vn)
-
-    # normalise should also be able
-    # to do multiple vectors at once
-    results = transform.normalise(vectors)
-    lengths = transform.veclength(results)
-    pars    = np.zeros(200)
-    for i in range(200):
-
-        v = vectors[i]
-        r = results[i]
-
-        pars[i] = parallel(v, r)
-
-    assert np.all(np.isclose(lengths, 1))
-    assert np.all(pars)
-
-
-def test_veclength(seed):
-
-    def l(v):
-        v = np.array(v, copy=False).reshape((-1, 3))
-        x = v[:, 0]
-        y = v[:, 1]
-        z = v[:, 2]
-        l = x * x + y * y + z * z
-        return np.sqrt(l)
-
-    vectors = -100 + 200 * np.random.random((200, 3))
-
-    for v in vectors:
-
-        vtype = random.choice((list, tuple, np.array))
-        v     = vtype(v)
-
-        assert np.isclose(transform.veclength(v), l(v))
-
-    # Multiple vectors in parallel
-    result   = transform.veclength(vectors)
-    expected = l(vectors)
-    assert np.all(np.isclose(result, expected))
-
-
-def test_transformNormal(seed):
-
-    normals = -100 + 200 * np.random.random((50, 3))
-
-    def tn(n, xform):
-
-        xform = npla.inv(xform[:3, :3]).T
-        return np.dot(xform, n)
-
-    for n in normals:
-
-        scales    = -10    + np.random.random(3) * 10
-        offsets   = -100   + np.random.random(3) * 200
-        rotations = -np.pi + np.random.random(3) * 2 * np.pi
-        origin    = -100   + np.random.random(3) * 200
-
-        xform = transform.compose(scales,
-                                  offsets,
-                                  rotations,
-                                  origin)
-
-        expected = tn(n, xform)
-        result   = transform.transformNormal(n, xform)
-
-        assert np.all(np.isclose(expected, result))

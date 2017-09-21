@@ -460,7 +460,7 @@ class Nifti(notifier.Notifier):
 
 
     @deprecation.deprecated(deprecated_in='1.1.0',
-                            removed_in='1.2.0',
+                            removed_in='2.0.0',
                             details='Use ndims instead')
     def is4DImage(self):
         """Returns ``True`` if this image is 4D, ``False`` otherwise. """
@@ -554,7 +554,16 @@ class Nifti(notifier.Notifier):
 
 
     @memoize.Instanceify(memoize.memoize)
+    @deprecation.deprecated(deprecated_in='1.2.0',
+                            removed_in='2.0.0',
+                            details='Use voxToScaledVoxMat instead')
     def voxelsToScaledVoxels(self):
+        """See :meth:`voxToScaledVoxMat`."""
+        return self.voxToScaledVoxMat
+
+
+    @property
+    def voxToScaledVoxMat(self):
         """Returns a transformation matrix which transforms from voxel
         coordinates into scaled voxel coordinates, with a left-right flip
         if the image appears to be stored in neurological order.
@@ -563,6 +572,12 @@ class Nifti(notifier.Notifier):
         _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
         _the_transformation_parameters.3F
         """
+        return self.__voxToScaledVoxMat()
+
+
+    @memoize.Instanceify(memoize.memoize)
+    def __voxToScaledVoxMat(self):
+        """See :meth:`voxToScaledVoxMat`. """
 
         shape          = list(self.shape[ :3])
         pixdim         = list(self.pixdim[:3])
@@ -574,6 +589,20 @@ class Nifti(notifier.Notifier):
             voxToPixdimMat = transform.concat(flip, voxToPixdimMat)
 
         return voxToPixdimMat
+
+
+    @property
+    def scaledVoxToVoxMat(self):
+        """Returns a transformation matrix which transforms from scaled voxels
+        into voxels, the inverse of the :meth:`voxToScaledVoxMat` transform.
+        """
+        return self.__scaledVoxToVoxMat()
+
+
+    @memoize.Instanceify(memoize.memoize)
+    def __scaledVoxToVoxMat(self):
+        """See :meth:`scaledVoxToVoxMat`. """
+        return transform.invert(self.voxToScaledVoxMat)
 
 
     def sameSpace(self, other):
