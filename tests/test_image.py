@@ -1000,3 +1000,36 @@ def _test_Image_save(imgtype):
 
     finally:
         shutil.rmtree(testdir)
+
+
+def test_image_resample(seed):
+
+    with testdir() as td:
+
+        fname = op.join(td, 'test.nii')
+
+        # Random base image shapes
+        for i in range(50):
+
+            shape = np.random.randint(5, 100, 3)
+            make_random_image(fname, shape)
+            img = fslimage.Image(fname)
+
+            # resampling to the same shape should be a no-op
+            assert np.all(img.resample(shape) == img[:])
+
+            # Random resampled image shapes
+            for i in range(10):
+
+                rshape = np.random.randint(5, 100, 3)
+                resampled = img.resample(rshape)
+
+                assert tuple(resampled.shape) == tuple(rshape)
+
+        # Test a 4D image
+        make_random_image(fname, (10, 10, 10, 10))
+        img = fslimage.Image(fname)
+        slc = (slice(None), slice(None), slice(None), 3)
+
+        assert np.all(img.resample(img.shape[:3], slc) == img[..., 3])
+        assert tuple(img.resample((15, 15, 15), slc).shape) == (15, 15, 15)
