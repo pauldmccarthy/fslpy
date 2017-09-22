@@ -1128,6 +1128,9 @@ class Image(Nifti):
 
         All other arguments are passed through to the ``scipy.ndimage.zoom``
         function.
+
+        :returns: A ``numpy`` array of shape ``shape``, containing an
+                  interpolated copy of the data in this ``Image``.
         """
 
         if sliceobj is None:
@@ -1137,6 +1140,7 @@ class Image(Nifti):
         data  = self[sliceobj]
 
         if tuple(data.shape) != tuple(shape):
+            data  = np.array(data, dtype=np.float, copy=False)
             zooms = [float(shape[i]) / data.shape[i] for i in range(ndims)]
             data  = ndimage.zoom(data, zooms, **kwargs)
 
