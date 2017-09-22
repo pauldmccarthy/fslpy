@@ -40,6 +40,7 @@ import                      logging
 import                      six
 import                      deprecation
 import numpy             as np
+import scipy.ndimage     as ndimage
 
 import nibabel           as nib
 import nibabel.fileslice as fileslice
@@ -1113,6 +1114,33 @@ class Image(Nifti):
         self.__saveState  = True
 
         self.notify(topic='saveState')
+
+
+    def resample(self, shape, sliceobj=None, **kwargs):
+        """Returns a copy of the data in this ``Image``, resampled to the
+        specified ``shape``.
+
+        :arg shape:    Desired shape
+
+        :arg sliceobj: Slice into this ``Image``. If ``None``, the whole
+                       image is resampled, and it is assumed that it has the
+                       same number of dimensions as  ``shape``.
+
+        All other arguments are passed through to the ``scipy.ndimage.zoom``
+        function.
+        """
+
+        if sliceobj is None:
+            sliceobj = slice(None)
+
+        ndims = len(shape)
+        data  = self[sliceobj]
+
+        if tuple(data.shape) != tuple(shape):
+            zooms = [float(shape[i]) / data.shape[i] for i in range(ndims)]
+            data  = ndimage.zoom(data, zooms, **kwargs)
+
+        return data
 
 
     def __getitem__(self, sliceobj):
