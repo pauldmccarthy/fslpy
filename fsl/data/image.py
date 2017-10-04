@@ -1116,11 +1116,14 @@ class Image(Nifti):
         self.notify(topic='saveState')
 
 
-    def resample(self, shape, sliceobj=None, **kwargs):
+    def resample(self, shape, sliceobj=None, dtype=None, **kwargs):
         """Returns a copy of the data in this ``Image``, resampled to the
         specified ``shape``.
 
         :arg shape:    Desired shape
+
+        :arg dtype:    ``numpy`` data type of the resampled data. If ``None``,
+                       the :meth:`dtype` of this ``Image`` is used.
 
         :arg sliceobj: Slice into this ``Image``. If ``None``, the whole
                        image is resampled, and it is assumed that it has the
@@ -1133,14 +1136,14 @@ class Image(Nifti):
                   interpolated copy of the data in this ``Image``.
         """
 
-        if sliceobj is None:
-            sliceobj = slice(None)
+        if sliceobj is None: sliceobj = slice(None)
+        if dtype    is None: dtype    = self.dtype
 
         ndims = len(shape)
         data  = self[sliceobj]
 
         if tuple(data.shape) != tuple(shape):
-            data  = np.array(data, dtype=np.float, copy=False)
+            data  = np.array(data, dtype=dtype, copy=False)
             zooms = [float(shape[i]) / data.shape[i] for i in range(ndims)]
             data  = ndimage.zoom(data, zooms, **kwargs)
 
