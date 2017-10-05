@@ -711,7 +711,7 @@ class LabelAtlas(Atlas):
         # the mask, and their corresponding
         # mask weights
         vals    = self[boolmask]
-        weights = vals * mask[boolmask]
+        weights = mask[boolmask]
         labels  = np.unique(vals)
         props   = []
 
