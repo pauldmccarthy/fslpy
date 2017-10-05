@@ -1141,9 +1141,9 @@ class Image(Nifti):
 
         ndims = len(shape)
         data  = self[sliceobj]
+        data  = np.array(data, dtype=dtype, copy=False)
 
         if tuple(data.shape) != tuple(shape):
-            data  = np.array(data, dtype=dtype, copy=False)
             zooms = [float(shape[i]) / data.shape[i] for i in range(ndims)]
             data  = ndimage.zoom(data, zooms, **kwargs)
 
