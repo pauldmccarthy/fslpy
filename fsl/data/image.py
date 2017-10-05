@@ -1132,8 +1132,14 @@ class Image(Nifti):
         All other arguments are passed through to the ``scipy.ndimage.zoom``
         function.
 
-        :returns: A ``numpy`` array of shape ``shape``, containing an
-                  interpolated copy of the data in this ``Image``.
+        :returns: A tuple containing:
+
+                   - A ``numpy`` array of shape ``shape``, containing an
+                     interpolated copy of the data in this ``Image``.
+
+                   - A ``numpy`` array of shape ``(4, 4``), containing the
+                     adjusted voxel-to-world transformation for the resampled
+                     data.
         """
 
         if sliceobj is None: sliceobj = slice(None)
@@ -1144,10 +1150,20 @@ class Image(Nifti):
         data  = np.array(data, dtype=dtype, copy=False)
 
         if tuple(data.shape) != tuple(shape):
-            zooms = [float(shape[i]) / data.shape[i] for i in range(ndims)]
-            data  = ndimage.zoom(data, zooms, **kwargs)
 
-        return data
+            oldShape = data.shape
+            zooms    = [float(shape[i]) / data.shape[i] for i in range(ndims)]
+            data     = ndimage.zoom(data, zooms, **kwargs)
+
+            newShape = data.shape
+            scale    = [os / float(ns) for os, ns in zip(oldShape, newShape)]
+            offset   = [(s - 1) / 2.0  for s in scale]
+            scale    = transform.scaleOffsetXform(scale, offset)
+            xform    = transform.concat(self.voxToWorldMat, scale)
+        else:
+            xform = self.voxToWorldMat
+
+        return data, xform
 
 
     def __getitem__(self, sliceobj):
