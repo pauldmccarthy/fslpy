@@ -825,16 +825,18 @@ class ProbabilisticAtlas(Atlas):
 
         # Make sure that the mask has the same
         # number of voxels as the atlas image
-        mask     = mask.resample(self.shape[:3], order=1)
+        mask     = mask.resample(self.shape[:3], dtype=np.float32, order=1)[0]
         boolmask = mask > 0
 
         for label in range(self.shape[3]):
 
-            vals = self[..., label]
-            vals = vals[boolmask] * mask[boolmask]
-            prop = vals.mean()
+            weights = mask[boolmask]
+            vals    = self[..., label]
+            vals    = vals[boolmask] * weights
+            prop    = vals.sum() / weights.sum()
 
-            if prop != 0:
+            if not np.isclose(prop, 0):
+
                 labels.append(label)
                 props .append(prop)
 
