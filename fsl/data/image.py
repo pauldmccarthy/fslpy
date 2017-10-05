@@ -1137,7 +1137,7 @@ class Image(Nifti):
                    - A ``numpy`` array of shape ``shape``, containing an
                      interpolated copy of the data in this ``Image``.
 
-                   - A ``numpy`` array of shape ``(4, 4``), containing the
+                   - A ``numpy`` array of shape ``(4, 4)``, containing the
                      adjusted voxel-to-world transformation for the resampled
                      data.
         """
@@ -1152,13 +1152,21 @@ class Image(Nifti):
         if tuple(data.shape) != tuple(shape):
 
             oldShape = data.shape
-            zooms    = [float(shape[i]) / data.shape[i] for i in range(ndims)]
-            data     = ndimage.zoom(data, zooms, **kwargs)
+            zooms    = [float(data.shape[i]) / shape[i] for i in range(ndims)]
+            zooms    = np.diag(zooms)
 
+            data = ndimage.affine_transform(data,
+                                            zooms,
+                                            output_shape=shape,
+                                            **kwargs)
+
+            # Construct an affine transform which
+            # puts the resampled image into the
+            # same world coordinate system as this
+            # image.
             newShape = data.shape
             scale    = [os / float(ns) for os, ns in zip(oldShape, newShape)]
-            offset   = [(s - 1) / 2.0  for s in scale]
-            scale    = transform.scaleOffsetXform(scale, offset)
+            scale    = transform.scaleOffsetXform(scale, 0)
             xform    = transform.concat(self.voxToWorldMat, scale)
         else:
             xform = self.voxToWorldMat
