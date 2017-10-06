@@ -1179,8 +1179,8 @@ class Image(Nifti):
         data = self[sliceobj]
         data = np.array(data, dtype=dtype, copy=False)
 
-        oldShape = np.array(data.shape)
-        newShape = np.array(newShape)
+        oldShape = np.array(data.shape, dtype=np.float)
+        newShape = np.array(newShape,   dtype=np.float)
 
         if not np.all(np.isclose(oldShape, newShape)):
 
