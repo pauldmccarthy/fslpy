@@ -236,7 +236,8 @@ def test_label_atlas_coord():
         ([  6, -78,  50], 862)]
 
     for coords, expected in taltests:
-        assert atlas.label(coords) == expected
+        assert atlas.label(     coords) == expected
+        assert atlas.coordLabel(coords) == expected
 
     assert atlas.label([ 999,  999,  999]) is None
     assert atlas.label([-999, -999, -999]) is None
@@ -251,7 +252,8 @@ def test_label_atlas_coord():
         ([ 54, -44, -27], 15)]
 
     for coords, expected in hoctests:
-        assert atlas.label(coords) == expected
+        assert atlas.label(     coords) == expected
+        assert atlas.coordLabel(coords) == expected
 
     assert atlas.label([ 999,  999,  999]) is None
     assert atlas.label([-999, -999, -999]) is None
@@ -318,3 +320,31 @@ def test_prob_atlas_mask():
         assert np.all(np.isclose(props,  expprops))
 
 
+def test_label_atlas_mask():
+    # Test the maskLabel function
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    taltests = [
+        'test_atlases_tal_mask_1mm',
+        'test_atlases_tal_mask_2mm'
+    ]
+    resolutions = [1, 2]
+
+    for prefix, res in it.product(taltests, resolutions):
+        maskfile    = op.join(datadir, '{}.nii.gz'   .format(prefix))
+        resultsfile = op.join(datadir, '{}_res{}.txt'.format(prefix, res))
+        atlas       = reg.loadAtlas('talairach', resolution=res)
+        mask        = fslimage.Image(maskfile)
+
+        labels, props   = atlas.maskLabel(mask)
+        labels2, props2 = atlas.label(mask)
+
+        expected  = np.loadtxt(resultsfile)
+        explabels = expected[:, 0]
+        expprops  = expected[:, 1]
+
+        assert np.all(np.isclose(labels, labels2))
+        assert np.all(np.isclose(props,  props2))
+        assert np.all(np.isclose(labels, explabels))
+        assert np.all(np.isclose(props,  expprops))
