@@ -788,6 +788,15 @@ class Image(Nifti):
             indexed  = False
             threaded = False
 
+        # Take a copy of the header if one has
+        # been provided
+        #
+        # NOTE: Nifti extensions are copied by
+        # reference, which may cause issues in
+        # the future.
+        if header is not None:
+            header = header.copy()
+
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
 
@@ -825,6 +834,12 @@ class Image(Nifti):
             # FSL is not yet NIFTI2 compatible.
             if header is None:
                 ctr = nib.nifti1.Nifti1Image
+
+            # make sure that the data type is correct,
+            # in case this header was passed in from
+            # a different image
+            if header is not None:
+                header.set_data_dtype(image.dtype)
 
             # But if a nibabel header has been provided,
             # we use the corresponding image type
