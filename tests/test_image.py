@@ -25,6 +25,7 @@ import fsl.data.constants    as constants
 import fsl.data.image        as fslimage
 import fsl.data.imagewrapper as imagewrapper
 import fsl.utils.path        as fslpath
+import fsl.utils.transform   as transform
 
 from . import make_random_image
 from . import make_dummy_file
@@ -1016,20 +1017,67 @@ def test_image_resample(seed):
             img = fslimage.Image(fname)
 
             # resampling to the same shape should be a no-op
-            assert np.all(img.resample(shape) == img[:])
+            samei, samex = img.resample(shape)
+            assert np.all(samei == img[:])
+            assert np.all(samex == img.voxToWorldMat)
 
             # Random resampled image shapes
-            for i in range(10):
+            for j in range(10):
 
-                rshape = np.random.randint(5, 100, 3)
-                resampled = img.resample(rshape)
+                rshape        = np.random.randint(5, 100, 3)
+                resampled, xf = img.resample(rshape, order=0)
+
+                img.save('base.nii.gz')
+                fslimage.Image(resampled, xform=xf).save('res.nii.gz')
 
                 assert tuple(resampled.shape) == tuple(rshape)
+
+                # We used nearest neighbour interp, so the
+                # values in the resampled image should match
+                # corresponding values in the original. Let's
+                # check some whynot.
+                restestcoords = np.array([
+                    np.random.randint(0, rshape[0], 100),
+                    np.random.randint(0, rshape[1], 100),
+                    np.random.randint(0, rshape[2], 100)]).T
+
+                resx,  resy,  resz  = restestcoords.T
+                resvals  = resampled[resx, resy, resz]
+
+                res2orig = transform.concat(img.worldToVoxMat, xf)
+
+                origtestcoords = transform.transform(restestcoords, res2orig)
+
+                # remove any coordinates which are out of
+                # bounds in the original image space, or
+                # are right on a voxel boundary (where the
+                # nn interp could have gone either way), or
+                # have value == 0 in the resampled space.
+                out = ((origtestcoords < 0)            |
+                       (origtestcoords >= shape - 0.5) |
+                       (np.isclose(np.modf(origtestcoords)[0], 0.5)))
+                out = np.any(out, axis=1) | (resvals == 0)
+
+                origtestcoords = np.array(origtestcoords.round(), dtype=np.int)
+
+                origtestcoords = origtestcoords[~out, :]
+                restestcoords  = restestcoords[ ~out, :]
+
+                resx,  resy,  resz  = restestcoords.T
+                origx, origy, origz = origtestcoords.T
+
+                origvals = img[:][origx, origy, origz]
+                resvals  = resampled[resx, resy, resz]
+
+                assert np.all(np.isclose(resvals, origvals))
 
         # Test a 4D image
         make_random_image(fname, (10, 10, 10, 10))
         img = fslimage.Image(fname)
         slc = (slice(None), slice(None), slice(None), 3)
 
-        assert np.all(img.resample(img.shape[:3], slc) == img[..., 3])
-        assert tuple(img.resample((15, 15, 15), slc).shape) == (15, 15, 15)
+        resampled = img.resample(img.shape[:3], slc)[0]
+        assert np.all(resampled == img[..., 3])
+
+        resampled = img.resample((15, 15, 15), slc)[0]
+        assert tuple(resampled.shape) == (15, 15, 15)
