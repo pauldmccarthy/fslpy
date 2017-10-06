@@ -698,33 +698,43 @@ class LabelAtlas(Atlas):
 
                      - A sequence of all labels which are present in the mask
                      - A sequence containing the proportion, within the mask,
-                       of each present label.
+                       of each present label. The proportions are returned as
+                       values between 0 and 100.
+
         """
 
-        # Make sure that the mask has the
-        # same number of voxels as the
-        # atlas image
-        mask     = mask.resample(self.shape[:3], order=1)
+        # Make sure that the mask has the same
+        # number of voxels as the atlas image.
+        # Use nearest neighbour interpolation
+        # for resampling, as it is most likely
+        # that the mask is binary.
+        mask     = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
         boolmask = mask > 0
+
+        fslimage.Image(mask, xform=self.voxToWorldMat).save('blag.nii.gz')
 
         # Extract the labels that are in
         # the mask, and their corresponding
         # mask weights
-        vals    = self[boolmask]
-        weights = mask[boolmask]
-        labels  = np.unique(vals)
-        props   = []
+        vals      = self[boolmask]
+        weights   = mask[boolmask]
+        weightsum = weights.sum()
+        labels    = np.unique(vals)
+        props     = []
 
         for label in labels:
 
             # Figure out the number of all voxels
             # in the mask with this label, weighted
-            # by the mask
-            prop = ((vals == label) * weights).sum()
+            # by the mask.
+            prop = weights[vals == label].sum()
 
             # Normalise it to be a proportion
-            # of all voxels in the mask
-            props.append(prop / float(len(vals)))
+            # of all voxels in the mask. We
+            # multiply by 100 because the FSL
+            # probabilistic atlases store their
+            # probabilities as percentages.
+            props.append(100 * prop / weightsum)
 
         return labels, props
 
@@ -817,7 +827,8 @@ class ProbabilisticAtlas(Atlas):
 
                      - A sequence of all labels which are present in the mask
                      - A sequence containing the proportion, within the mask,
-                       of each present label.
+                       of each present label. The proportions are returned as
+                       values between 0 and 100.
         """
 
         labels = []
@@ -825,18 +836,18 @@ class ProbabilisticAtlas(Atlas):
 
         # Make sure that the mask has the same
         # number of voxels as the atlas image
-        mask     = mask.resample(self.shape[:3], dtype=np.float32, order=1)[0]
-        boolmask = mask > 0
+        mask      = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
+        boolmask  = mask > 0
+        weights   = mask[boolmask]
+        weightsum = weights.sum()
 
         for label in range(self.shape[3]):
 
-            weights = mask[boolmask]
-            vals    = self[..., label]
-            vals    = vals[boolmask] * weights
-            prop    = vals.sum() / weights.sum()
+            vals = self[..., label]
+            vals = vals[boolmask] * weights
+            prop = vals.sum() / weightsum
 
             if not np.isclose(prop, 0):
-
                 labels.append(label)
                 props .append(prop)
 
