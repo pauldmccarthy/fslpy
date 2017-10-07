@@ -40,6 +40,7 @@ import                      logging
 import                      six
 import                      deprecation
 import numpy             as np
+import scipy.ndimage     as ndimage
 
 import nibabel           as nib
 import nibabel.fileslice as fileslice
@@ -787,6 +788,15 @@ class Image(Nifti):
             indexed  = False
             threaded = False
 
+        # Take a copy of the header if one has
+        # been provided
+        #
+        # NOTE: Nifti extensions are copied by
+        # reference, which may cause issues in
+        # the future.
+        if header is not None:
+            header = header.copy()
+
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
 
@@ -824,6 +834,12 @@ class Image(Nifti):
             # FSL is not yet NIFTI2 compatible.
             if header is None:
                 ctr = nib.nifti1.Nifti1Image
+
+            # make sure that the data type is correct,
+            # in case this header was passed in from
+            # a different image
+            if header is not None:
+                header.set_data_dtype(image.dtype)
 
             # But if a nibabel header has been provided,
             # we use the corresponding image type
@@ -1113,6 +1129,93 @@ class Image(Nifti):
         self.__saveState  = True
 
         self.notify(topic='saveState')
+
+
+    def resample(self,
+                 newShape,
+                 sliceobj=None,
+                 dtype=None,
+                 order=1,
+                 smooth=True):
+        """Returns a copy of the data in this ``Image``, resampled to the
+        specified ``shape``.
+
+        :arg newShape: Desired shape. May containg floating point values,
+                       in which case the resampled image will have shape
+                       ``round(newShape)``, but the voxel sizes will
+                       have scales ``self.shape / newShape``.
+
+        :arg sliceobj: Slice into this ``Image``. If ``None``, the whole
+                       image is resampled, and it is assumed that it has the
+                       same number of dimensions as  ``shape``.
+
+        :arg dtype:    ``numpy`` data type of the resampled data. If ``None``,
+                       the :meth:`dtype` of this ``Image`` is used.
+
+        :arg order:    Spline interpolation order, passed through to the
+                       ``scipy.ndimage.affine_transform`` function - ``0``
+                       corresponds to nearest neighbour interpolation, ``1``
+                       (the default) to linear interpolation, and ``3`` to
+                       cubic interpolation.
+
+        :arg smooth:   If ``True`` (the default), the data is smoothed before
+                       being resampled, but only along axes which are being
+                       down-sampled (i.e. where
+                       ``newShape[i] < self.shape[i]``).
+
+        :returns: A tuple containing:
+
+                   - A ``numpy`` array of shape ``shape``, containing an
+                     interpolated copy of the data in this ``Image``.
+
+                   - A ``numpy`` array of shape ``(4, 4)``, containing the
+                     adjusted voxel-to-world transformation for the resampled
+                     data.
+        """
+
+        if sliceobj is None: sliceobj = slice(None)
+        if dtype    is None: dtype    = self.dtype
+
+        data = self[sliceobj]
+        data = np.array(data, dtype=dtype, copy=False)
+
+        oldShape = np.array(data.shape, dtype=np.float)
+        newShape = np.array(newShape,   dtype=np.float)
+
+        if not np.all(np.isclose(oldShape, newShape)):
+
+            ratio    = oldShape / newShape
+            newShape = np.array(np.round(newShape), dtype=np.int)
+            scale    = transform.scaleOffsetXform(ratio, 0)
+
+            # If interpolating and smoothing, we apply a
+            # gaussian filter along axes with a resampling
+            # ratio greater than 1.1. We do this so that
+            # interpolation has an effect when down-sampling
+            # to a resolution where the voxel centres are
+            # aligned (as otherwise any interpolation regime
+            # will be equivalent to nearest neighbour). This
+            # more-or-less mimics the behaviour of FLIRT.
+            if order > 0 and smooth:
+                sigma                = np.array(ratio)
+                sigma[ratio <  1.1]  = 0
+                sigma[ratio >= 1.1] *= 0.425
+                data = ndimage.gaussian_filter(data, sigma)
+
+            data = ndimage.affine_transform(data,
+                                            scale[:3, :3],
+                                            output_shape=newShape,
+                                            order=order)
+
+            # Construct an affine transform which
+            # puts the resampled image into the
+            # same world coordinate system as this
+            # image.
+            xform = transform.concat(self.voxToWorldMat, scale)
+        else:
+            xform = self.voxToWorldMat
+
+        return data, xform
 
 
     def __getitem__(self, sliceobj):
