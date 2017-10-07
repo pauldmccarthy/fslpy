@@ -719,22 +719,30 @@ class LabelAtlas(Atlas):
         vals      = self[boolmask]
         weights   = mask[boolmask]
         weightsum = weights.sum()
-        labels    = np.unique(vals)
+        gotLabels = np.unique(vals)
+        labels    = []
         props     = []
 
-        for label in labels:
+        # Only consider labels that
+        # this atlas is aware of
+        for label in self.desc.labels:
 
-            # Figure out the number of all voxels
-            # in the mask with this label, weighted
-            # by the mask.
-            prop = weights[vals == label].sum()
+            label = label.index + 1
 
-            # Normalise it to be a proportion
-            # of all voxels in the mask. We
-            # multiply by 100 because the FSL
-            # probabilistic atlases store their
-            # probabilities as percentages.
-            props.append(100 * prop / weightsum)
+            if label in gotLabels:
+
+                # Figure out the number of all voxels
+                # in the mask with this label, weighted
+                # by the mask.
+                prop = weights[vals == label].sum()
+
+                # Normalise it to be a proportion
+                # of all voxels in the mask. We
+                # multiply by 100 because the FSL
+                # probabilistic atlases store their
+                # probabilities as percentages.
+                labels.append(label)
+                props .append(100 * prop / weightsum)
 
         return labels, props
 
@@ -812,7 +820,11 @@ class ProbabilisticAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return []
 
-        return self[loc[0], loc[1], loc[2], :]
+        # We only return labels for this atlas
+        props = self[loc[0], loc[1], loc[2], :]
+        props = [props[l.index] for l in self.desc.labels]
+
+        return props
 
 
     def maskProportions(self, mask):
@@ -841,11 +853,12 @@ class ProbabilisticAtlas(Atlas):
         weights   = mask[boolmask]
         weightsum = weights.sum()
 
-        for label in range(self.shape[3]):
+        for label in self.desc.labels:
 
-            vals = self[..., label]
-            vals = vals[boolmask] * weights
-            prop = vals.sum() / weightsum
+            label = label.index
+            vals  = self[..., label]
+            vals  = vals[boolmask] * weights
+            prop  = vals.sum() / weightsum
 
             if not np.isclose(prop, 0):
                 labels.append(label)
