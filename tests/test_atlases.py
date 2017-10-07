@@ -6,9 +6,10 @@
 #
 
 
-import            os
-import os.path as op
-import numpy   as np
+import              os
+import os.path   as op
+import itertools as it
+import numpy     as np
 
 import mock
 import pytest
@@ -18,12 +19,14 @@ import fsl.data.atlases as atlases
 import fsl.data.image   as fslimage
 
 
+datadir = op.join(op.dirname(__file__), 'testdata')
+
+
 def setup_module():
     if os.environ.get('FSLDIR', None) is None:
         raise Exception('FSLDIR is not set - atlas tests cannot be run')
 
 
-    
 
 dummy_atlas_desc = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <atlas version="1.0">
@@ -52,7 +55,7 @@ def _make_dummy_atlas(savedir, name, shortName, filename):
     data[6, 6, 6] = 2
 
     img = fslimage.Image(data, xform=np.eye(4))
-            
+
     os.makedirs(mladir)
     img.save(mlaimgfile)
 
@@ -69,12 +72,12 @@ def _make_dummy_atlas(savedir, name, shortName, filename):
 def test_registry():
     registry = atlases.registry
     registry.rescanAtlases()
-    
+
     assert len(registry.listAtlases()) > 0
     assert registry.hasAtlas('harvardoxford-cortical')
 
     adesc = registry.getAtlasDescription('harvardoxford-cortical')
-    
+
     assert isinstance(adesc, atlases.AtlasDescription)
 
 
@@ -87,7 +90,7 @@ def test_AtlasDescription():
     registry.rescanAtlases()
 
     tal  = registry.getAtlasDescription('talairach')
-    cort = registry.getAtlasDescription('harvardoxford-cortical') 
+    cort = registry.getAtlasDescription('harvardoxford-cortical')
 
 
     assert tal.atlasID == 'talairach'
@@ -107,7 +110,7 @@ def test_AtlasDescription():
         lbl.x
         lbl.y
         lbl.z
-    
+
     assert cort.atlasID == 'harvardoxford-cortical'
     assert cort.name    == 'Harvard-Oxford Cortical Structural Atlas'
     assert cort.specPath
@@ -124,7 +127,7 @@ def test_AtlasDescription():
         lbl.index
         lbl.x
         lbl.y
-        lbl.z 
+        lbl.z
 
     with pytest.raises(Exception):
         registry.getAtlasDescription('non-existent-atlas')
@@ -151,7 +154,7 @@ def test_add_remove_atlas():
             assert r is reg
             assert topic == 'remove'
             assert val.atlasID == 'mla'
-            removed[0] = True 
+            removed[0] = True
 
         xmlfile = _make_dummy_atlas(testdir, 'My Little Atlas', 'MLA', 'MyLittleAtlas')
 
@@ -183,7 +186,7 @@ def test_extra_atlases():
         badspec = op.join(testdir, 'badSpec.xml')
         with open(badspec, 'wt') as f:
             f.write('Bwahahahah!')
-        
+
         extraAtlases = ':'.join([
             'myatlas1={}'.format(atlas1spec),
             'myatlas2={}'.format(atlas2spec),
@@ -217,7 +220,7 @@ def test_load_atlas():
     assert isinstance(lblatlas,     atlases.LabelAtlas)
 
 
-def test_label_atlas():
+def test_label_atlas_coord():
     reg = atlases.registry
     reg.rescanAtlases()
 
@@ -233,7 +236,8 @@ def test_label_atlas():
         ([  6, -78,  50], 862)]
 
     for coords, expected in taltests:
-        assert atlas.label(coords) == expected
+        assert atlas.label(     coords) == expected
+        assert atlas.coordLabel(coords) == expected
 
     assert atlas.label([ 999,  999,  999]) is None
     assert atlas.label([-999, -999, -999]) is None
@@ -248,13 +252,14 @@ def test_label_atlas():
         ([ 54, -44, -27], 15)]
 
     for coords, expected in hoctests:
-        assert atlas.label(coords) == expected
+        assert atlas.label(     coords) == expected
+        assert atlas.coordLabel(coords) == expected
 
     assert atlas.label([ 999,  999,  999]) is None
     assert atlas.label([-999, -999, -999]) is None
 
 
-def test_prob_atlas():
+def test_prob_atlas_coord():
     reg = atlases.registry
     reg.rescanAtlases()
 
@@ -273,13 +278,73 @@ def test_prob_atlas():
         ([-29, -42, -11], [(34, 21), (35, 23), (37, 26), (38, 24)])]
 
     for coords, expected in hoctests:
-        
+
         result  = atlas.proportions(coords)
         expidxs = [e[0] for e in expected]
-        
+
         for i in range(len(result)):
             if i not in expidxs:
                 assert result[i] == 0
 
         for expidx, expprob in expected:
             assert result[expidx] == expprob
+
+
+def test_prob_atlas_mask():
+    # test the maskProportions function
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    hotests = [
+        'test_atlases_ho_mask_1mm',
+        'test_atlases_ho_mask_2mm'
+    ]
+    resolutions = [1, 2]
+
+    for prefix, res in it.product(hotests, resolutions):
+        maskfile    = op.join(datadir, '{}.nii.gz'   .format(prefix))
+        resultsfile = op.join(datadir, '{}_res{}.txt'.format(prefix, res))
+        atlas       = reg.loadAtlas('harvardoxford-cortical', resolution=res)
+        mask        = fslimage.Image(maskfile)
+
+        labels, props   = atlas.maskProportions(mask)
+        labels2, props2 = atlas.proportions(mask)
+
+        expected  = np.loadtxt(resultsfile)
+        explabels = expected[:, 0]
+        expprops  = expected[:, 1]
+
+        assert np.all(np.isclose(labels, labels2))
+        assert np.all(np.isclose(props,  props2))
+        assert np.all(np.isclose(labels, explabels))
+        assert np.all(np.isclose(props,  expprops))
+
+
+def test_label_atlas_mask():
+    # Test the maskLabel function
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    taltests = [
+        'test_atlases_tal_mask_1mm',
+        'test_atlases_tal_mask_2mm'
+    ]
+    resolutions = [1, 2]
+
+    for prefix, res in it.product(taltests, resolutions):
+        maskfile    = op.join(datadir, '{}.nii.gz'   .format(prefix))
+        resultsfile = op.join(datadir, '{}_res{}.txt'.format(prefix, res))
+        atlas       = reg.loadAtlas('talairach', resolution=res)
+        mask        = fslimage.Image(maskfile)
+
+        labels, props   = atlas.maskLabel(mask)
+        labels2, props2 = atlas.label(mask)
+
+        expected  = np.loadtxt(resultsfile)
+        explabels = expected[:, 0]
+        expprops  = expected[:, 1]
+
+        assert np.all(np.isclose(labels, labels2))
+        assert np.all(np.isclose(props,  props2))
+        assert np.all(np.isclose(labels, explabels))
+        assert np.all(np.isclose(props,  expprops))

@@ -623,29 +623,120 @@ class LabelAtlas(Atlas):
         Atlas.__init__(self, atlasDesc, resolution, True)
 
 
-    def label(self, worldLoc):
-        """Looks up and returns the label of the region at the given world
-        location, or ``None`` if the location is out of bounds.
+    def label(self, location, *args, **kwargs):
+        """Looks up and returns the label of the region at the given
+        location.
+
+        :arg location: Can be one of the following:
+
+                        - A sequence of three values, interpreted as
+                          atlas coordinates. In this case, :meth:`coordLabel`
+                          is called.
+
+                        - An :class:`.Image` which is interpreted as a
+                          weighted mask. In this case, :meth:`maskLabel` is
+                          called.
+
+        All other arguments are passed through to the :meth:`coordLabel` or
+        :meth:`maskLabel` methods.
+
+
+        :returns: The return value of either :meth:`coordLabel` or
+                  :meth:`maskLabel`.
         """
 
-        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat)[0]
-        voxelLoc = [int(v) for v in voxelLoc.round()]
+        if isinstance(location, fslimage.Image):
+            return self.maskLabel(location, *args, **kwargs)
+        else:
+            return self.coordLabel(location, *args, **kwargs)
 
-        if voxelLoc[0] <  0             or \
-           voxelLoc[1] <  0             or \
-           voxelLoc[2] <  0             or \
-           voxelLoc[0] >= self.shape[0] or \
-           voxelLoc[1] >= self.shape[1] or \
-           voxelLoc[2] >= self.shape[2]:
+
+    def coordLabel(self, loc, voxel=False):
+        """Looks up and returns the label at the given location.
+
+        :arg loc:   A sequence of three values, interpreted as atlas
+                    coordinates. In this case, :meth:`coordLabel` is called.
+
+        :arg voxel: Defaults to ``False``. If ``True``, the ``location``
+                    is interpreted as voxel coordinates.
+
+        :returns:   The label at the given coordinates, or ``None`` if the
+                    coordinates are out of bounds.
+        """
+
+        if not voxel:
+            loc = transform.transform([loc], self.worldToVoxMat)[0]
+            loc = [int(v) for v in loc.round()]
+
+        if loc[0] <  0             or \
+           loc[1] <  0             or \
+           loc[2] <  0             or \
+           loc[0] >= self.shape[0] or \
+           loc[1] >= self.shape[1] or \
+           loc[2] >= self.shape[2]:
             return None
 
-        val = self[voxelLoc[0], voxelLoc[1], voxelLoc[2]]
+        val = self[loc[0], loc[1], loc[2]]
 
         if self.desc.atlasType == 'label':
             return val
 
         elif self.desc.atlasType == 'probabilistic':
             return val - 1
+
+
+    def maskLabel(self, mask):
+        """Looks up and returns the proportions of all regions that are present
+        in the given ``mask``.
+
+        :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
+                   mask. If the ``mask`` shape does not match that of this
+                   ``LabelAtlas``, it is resampled using
+                   :meth:`.Image.resample`, with linear interpolation.
+
+        :returns:  A tuple containing:
+
+                     - A sequence of all labels which are present in the mask
+                     - A sequence containing the proportion, within the mask,
+                       of each present label. The proportions are returned as
+                       values between 0 and 100.
+
+        """
+
+        # Make sure that the mask has the same
+        # number of voxels as the atlas image.
+        # Use nearest neighbour interpolation
+        # for resampling, as it is most likely
+        # that the mask is binary.
+        mask     = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
+        boolmask = mask > 0
+
+        fslimage.Image(mask, xform=self.voxToWorldMat).save('blag.nii.gz')
+
+        # Extract the labels that are in
+        # the mask, and their corresponding
+        # mask weights
+        vals      = self[boolmask]
+        weights   = mask[boolmask]
+        weightsum = weights.sum()
+        labels    = np.unique(vals)
+        props     = []
+
+        for label in labels:
+
+            # Figure out the number of all voxels
+            # in the mask with this label, weighted
+            # by the mask.
+            prop = weights[vals == label].sum()
+
+            # Normalise it to be a proportion
+            # of all voxels in the mask. We
+            # multiply by 100 because the FSL
+            # probabilistic atlases store their
+            # probabilities as percentages.
+            props.append(100 * prop / weightsum)
+
+        return labels, props
 
 
 class ProbabilisticAtlas(Atlas):
@@ -666,28 +757,101 @@ class ProbabilisticAtlas(Atlas):
         Atlas.__init__(self, atlasDesc, resolution, False)
 
 
-    def proportions(self, worldLoc):
+    def proportions(self, location, *args, **kwargs):
+        """Looks up and returns the proportions of of all regions at the given
+        location.
+
+        :arg location: Can be one of the following:
+
+                        - A sequence of three values, interpreted as atlas
+                          coordinates. In this case, :meth:`coordProportions`
+                          is called.
+
+                        - An :class:`.Image` which is interpreted as a
+                          weighted mask. In this case, :meth:`maskProportions`
+                          is called.
+
+        All other arguments are passed through to the :meth:`coordProportions`
+        or :meth:`maskProportions` methods.
+
+
+        :returns: The return value of either :meth:`coordProportions` or
+                  :meth:`maskProportions`.
+        """
+
+        if isinstance(location, fslimage.Image):
+            return self.maskProportions(location, *args, **kwargs)
+        else:
+            return self.coordProportions(location, *args, **kwargs)
+
+
+    def coordProportions(self, loc, voxel=False):
         """Looks up the region probabilities for the given location.
 
-        :arg worldLoc: Location in the world coordinate system.
+        :arg loc:   A sequence of three values, interpreted as atlas
+                    world or voxel coordinates.
+
+        :arg voxel: Defaults to ``False``. If ``True``, the ``loc``
+                    argument is interpreted as voxel coordinates.
 
         :returns: a list of values, one per region, which represent
                   the probability of each region for the specified
                   location. Returns an empty list if the given
                   location is out of bounds.
         """
-        voxelLoc = transform.transform([worldLoc], self.worldToVoxMat)[0]
-        voxelLoc = [int(v) for v in voxelLoc.round()]
 
-        if voxelLoc[0] <  0             or \
-           voxelLoc[1] <  0             or \
-           voxelLoc[2] <  0             or \
-           voxelLoc[0] >= self.shape[0] or \
-           voxelLoc[1] >= self.shape[1] or \
-           voxelLoc[2] >= self.shape[2]:
+        if not voxel:
+            loc = transform.transform([loc], self.worldToVoxMat)[0]
+            loc = [int(v) for v in loc.round()]
+
+        if loc[0] <  0             or \
+           loc[1] <  0             or \
+           loc[2] <  0             or \
+           loc[0] >= self.shape[0] or \
+           loc[1] >= self.shape[1] or \
+           loc[2] >= self.shape[2]:
             return []
 
-        return self[voxelLoc[0], voxelLoc[1], voxelLoc[2], :]
+        return self[loc[0], loc[1], loc[2], :]
+
+
+    def maskProportions(self, mask):
+        """Looks up the probabilities of all regions in the given ``mask``.
+
+        :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
+                   mask. If the ``mask`` shape does not match that of this
+                   ``ProbabilisticAtlas``, it is resampled using
+                   :meth:`.Image.resample`, with linear interpolation.
+
+        :returns:  A tuple containing:
+
+                     - A sequence of all labels which are present in the mask
+                     - A sequence containing the proportion, within the mask,
+                       of each present label. The proportions are returned as
+                       values between 0 and 100.
+        """
+
+        labels = []
+        props  = []
+
+        # Make sure that the mask has the same
+        # number of voxels as the atlas image
+        mask      = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
+        boolmask  = mask > 0
+        weights   = mask[boolmask]
+        weightsum = weights.sum()
+
+        for label in range(self.shape[3]):
+
+            vals = self[..., label]
+            vals = vals[boolmask] * weights
+            prop = vals.sum() / weightsum
+
+            if not np.isclose(prop, 0):
+                labels.append(label)
+                props .append(prop)
+
+        return labels, props
 
 
 registry            = AtlasRegistry()

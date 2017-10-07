@@ -31,7 +31,7 @@ is compatible with PEP 440 (https://www.python.org/dev/peps/pep-0440/):
     which primarily involve bug-fixes and minor changes.
 
 
-The sole exception to the above convention are evelopment versions, which end
+The sole exception to the above convention are development versions, which end
 in ``'.dev'``.
 """
 
@@ -41,7 +41,7 @@ import            re
 import            string
 
 
-__version__ = '1.2.0'
+__version__ = '1.2.1.dev'
 """Current version number, as a string. """
 
 
@@ -56,7 +56,7 @@ def parseVersionString(versionString):
     components = versionString.split('.')
 
     # Truncate after three elements -
-    # a development (unreleased0 version
+    # a development (unreleased version
     # number will end with '.dev', but
     # we ignore this for the purposes of
     # comparison.
@@ -89,7 +89,7 @@ def compareVersions(v1, v2, ignorePoint=False):
 
                 - -1 if ``v1`` < ``v2`` (i.e. ``v1`` is older than ``v2``)
                 -  0 if ``v1`` == ``v2``
-                -  0 if ``v1`` > ``v2``
+                -  1 if ``v1`` > ``v2``
     """
 
     v1 = parseVersionString(v1)
