@@ -662,6 +662,10 @@ class LabelAtlas(Atlas):
 
         :returns:   The label at the given coordinates, or ``None`` if the
                     coordinates are out of bounds.
+
+        .. note:: If this is a summary image of a probabilistic atlas, you need
+                  to subtract one from the result to get the region volume
+                  index into the probabilistic atlas.
         """
 
         if not voxel:
@@ -676,13 +680,7 @@ class LabelAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return None
 
-        val = self[loc[0], loc[1], loc[2]]
-
-        if self.desc.atlasType == 'label':
-            return val
-
-        elif self.desc.atlasType == 'probabilistic':
-            return val - 1
+        return self[loc[0], loc[1], loc[2]]
 
 
     def maskLabel(self, mask):
@@ -692,7 +690,8 @@ class LabelAtlas(Atlas):
         :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
                    mask. If the ``mask`` shape does not match that of this
                    ``LabelAtlas``, it is resampled using
-                   :meth:`.Image.resample`, with linear interpolation.
+                   :meth:`.Image.resample`, with nearest-neighbour
+                   interpolation.
 
         :returns:  A tuple containing:
 
@@ -701,6 +700,10 @@ class LabelAtlas(Atlas):
                        of each present label. The proportions are returned as
                        values between 0 and 100.
 
+        .. note:: If this is a summary image of a probabilistic atlas, you need
+                  to subtract one from the returned label values to get the
+                  corresponding region volume indices into the probabilistic
+                  atlas.
         """
 
         # Make sure that the mask has the same
@@ -727,7 +730,12 @@ class LabelAtlas(Atlas):
         # this atlas is aware of
         for label in self.desc.labels:
 
-            label = label.index + 1
+            # For probabilistic images, the label index
+            # is the index of the volume corresponding
+            # to the region. We need to add 1 to this
+            # to get its value in the summary image.
+            if self.desc.atlasType == 'label': label = label.index
+            else:                              label = label.index + 1
 
             if label in gotLabels:
 
@@ -833,18 +841,15 @@ class ProbabilisticAtlas(Atlas):
         :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
                    mask. If the ``mask`` shape does not match that of this
                    ``ProbabilisticAtlas``, it is resampled using
-                   :meth:`.Image.resample`, with linear interpolation.
+                   :meth:`.Image.resample`, with nearest-neighbour
+                   interpolation.
 
-        :returns:  A tuple containing:
-
-                     - A sequence of all labels which are present in the mask
-                     - A sequence containing the proportion, within the mask,
-                       of each present label. The proportions are returned as
-                       values between 0 and 100.
+        :returns:  A sequence containing the proportion, within the mask,
+                   of all regions in the atlas. The proportions are returned as
+                   values between 0 and 100.
         """
 
-        labels = []
-        props  = []
+        props = []
 
         # Make sure that the mask has the same
         # number of voxels as the atlas image
@@ -855,16 +860,13 @@ class ProbabilisticAtlas(Atlas):
 
         for label in self.desc.labels:
 
-            label = label.index
-            vals  = self[..., label]
+            vals  = self[..., label.index]
             vals  = vals[boolmask] * weights
             prop  = vals.sum() / weightsum
 
-            if not np.isclose(prop, 0):
-                labels.append(label)
-                props .append(prop)
+            props.append(prop)
 
-        return labels, props
+        return props
 
 
 registry            = AtlasRegistry()
