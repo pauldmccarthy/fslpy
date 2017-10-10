@@ -492,8 +492,8 @@ class AtlasDescription(object):
 
             # Assuming that the path
             # names begin with a slash
-            imagefile        = op.join(atlasDir, '.' + imagefile)
-            summaryimagefile = op.join(atlasDir, '.' + summaryimagefile)
+            imagefile        = op.normpath(atlasDir + imagefile)
+            summaryimagefile = op.normpath(atlasDir + summaryimagefile)
 
             i = fslimage.Image(imagefile, loadData=False, calcRange=False)
 
