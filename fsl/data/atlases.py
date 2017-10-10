@@ -714,8 +714,6 @@ class LabelAtlas(Atlas):
         mask     = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
         boolmask = mask > 0
 
-        fslimage.Image(mask, xform=self.voxToWorldMat).save('blag.nii.gz')
-
         # Extract the labels that are in
         # the mask, and their corresponding
         # mask weights
