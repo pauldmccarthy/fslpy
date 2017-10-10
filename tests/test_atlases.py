@@ -156,7 +156,10 @@ def test_add_remove_atlas():
             assert val.atlasID == 'mla'
             removed[0] = True
 
-        xmlfile = _make_dummy_atlas(testdir, 'My Little Atlas', 'MLA', 'MyLittleAtlas')
+        xmlfile = _make_dummy_atlas(testdir,
+                                    'My Little Atlas',
+                                    'MLA',
+                                    'MyLittleAtlas')
 
         reg.register('added',   atlas_added,   topic='add')
         reg.register('removed', atlas_removed, topic='remove')
@@ -180,8 +183,10 @@ def test_extra_atlases():
 
     with tests.testdir() as testdir:
 
-        atlas1spec = _make_dummy_atlas(testdir, 'My atlas 1', 'myatlas1', 'MyAtlas1')
-        atlas2spec = _make_dummy_atlas(testdir, 'My atlas 2', 'myatlas2', 'MyAtlas2')
+        atlas1spec = _make_dummy_atlas(
+            testdir, 'My atlas 1', 'myatlas1', 'MyAtlas1')
+        atlas2spec = _make_dummy_atlas(
+            testdir, 'My atlas 2', 'myatlas2', 'MyAtlas2')
 
         badspec = op.join(testdir, 'badSpec.xml')
         with open(badspec, 'wt') as f:
@@ -194,8 +199,10 @@ def test_extra_atlases():
             'badatlas2={}'.format(badspec)
         ])
 
-        with mock.patch('fsl.data.atlases.fslsettings.read',  return_value=extraAtlases), \
-             mock.patch('fsl.data.atlases.fslsettings.write', return_value=None):
+        with mock.patch('fsl.data.atlases.fslsettings.read',
+                        return_value=extraAtlases), \
+             mock.patch('fsl.data.atlases.fslsettings.write',
+                        return_value=None):
 
             reg = atlases.registry
             reg.rescanAtlases()
@@ -245,11 +252,11 @@ def test_label_atlas_coord():
     # Summary atlas (a thresholded probabilistic atlas)
     atlas    = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     hoctests = [
-        ([-23,  58,  20], 0),
-        ([-23,  27, -20], 32),
-        ([-37, -75,  29], 21),
-        ([ -1,  37,   6], 28),
-        ([ 54, -44, -27], 15)]
+        ([-23,  58,  20], 1),
+        ([-23,  27, -20], 33),
+        ([-37, -75,  29], 22),
+        ([ -1,  37,   6], 29),
+        ([ 54, -44, -27], 16)]
 
     for coords, expected in hoctests:
         assert atlas.label(     coords) == expected
@@ -307,17 +314,20 @@ def test_prob_atlas_mask():
         atlas       = reg.loadAtlas('harvardoxford-cortical', resolution=res)
         mask        = fslimage.Image(maskfile)
 
-        labels, props   = atlas.maskProportions(mask)
-        labels2, props2 = atlas.proportions(mask)
+        props  = atlas.maskProportions(mask)
+        props2 = atlas.proportions(mask)
 
-        expected  = np.loadtxt(resultsfile)
-        explabels = expected[:, 0]
-        expprops  = expected[:, 1]
+        expected = np.loadtxt(resultsfile)
+        expvols  = list(expected[:, 0])
+        expprops = list(expected[:, 1])
 
-        assert np.all(np.isclose(labels, labels2))
         assert np.all(np.isclose(props,  props2))
-        assert np.all(np.isclose(labels, explabels))
-        assert np.all(np.isclose(props,  expprops))
+        for i in range(len(props)):
+            try:
+                expi = expvols.index(i)
+                assert np.isclose(props[i], expprops[expi])
+            except ValueError:
+                assert np.isclose(props[i], 0)
 
 
 def test_label_atlas_mask():
