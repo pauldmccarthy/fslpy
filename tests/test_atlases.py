@@ -330,6 +330,40 @@ def test_prob_atlas_mask():
                 assert np.isclose(props[i], 0)
 
 
+
+def test_summary_atlas_mask():
+    # test the maskLabels function on a probabilistic label atlas
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    hotests = [
+        'test_atlases_ho_mask_1mm',
+        'test_atlases_ho_mask_2mm'
+    ]
+    resolutions = [1, 2]
+
+    for prefix, res in it.product(hotests, resolutions):
+        maskfile    = op.join(datadir, '{}.nii.gz'           .format(prefix))
+        resultsfile = op.join(datadir, '{}_res{}_summary.txt'.format(prefix,
+                                                                     res))
+        atlas       = reg.loadAtlas('harvardoxford-cortical',
+                                    loadSummary=True,
+                                    resolution=res)
+        mask        = fslimage.Image(maskfile)
+
+        labels,  props  = atlas.maskLabel(mask)
+        labels2, props2 = atlas.label(    mask)
+
+        expected  = np.loadtxt(resultsfile)
+        explabels = list(expected[:, 0])
+        expprops  = list(expected[:, 1])
+
+        assert np.all(np.isclose(labels, labels2))
+        assert np.all(np.isclose(props,  props2))
+        assert np.all(np.isclose(labels, explabels))
+        assert np.all(np.isclose(props,  expprops))
+
+
 def test_label_atlas_mask():
     # Test the maskLabel function
     reg = atlases.registry
