@@ -227,6 +227,38 @@ def test_load_atlas():
     assert isinstance(lblatlas,     atlases.LabelAtlas)
 
 
+def test_find():
+
+    reg = atlases.registry
+    reg.rescanAtlases
+
+    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
+    lblatlas     = reg.loadAtlas('talairach')
+
+    for atlas in [probatlas, probsumatlas, lblatlas]:
+        labels = atlas.desc.labels
+
+        for label in labels:
+
+            assert atlas     .find(value=label.value) == label
+            assert atlas     .find(index=label.index) == label
+            assert atlas.desc.find(value=label.value) == label
+            assert atlas.desc.find(index=label.index) == label
+
+        with pytest.raises(ValueError):
+            atlas.find()
+        with pytest.raises(ValueError):
+            atlas.find(index=1, value=1)
+
+        with pytest.raises(IndexError):
+            atlas.find(index=len(labels))
+
+        maxval = max([l.value for l in labels])
+        with pytest.raises(KeyError):
+            atlas.find(value=maxval + 1)
+
+
 def test_label_atlas_coord():
     reg = atlases.registry
     reg.rescanAtlases()
