@@ -570,7 +570,9 @@ class AtlasDescription(object):
         """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
 
         Exactly one of ``index`` or ``value`` may be specified - a
-        ``ValueError`` is raised otherwise.
+        ``ValueError`` is raised otherwise. If an invalid ``index`` or
+        ``value`` is specified, an ``IndexError`` or ``KeyError`` will be
+        raised.
         """
         if (index is     None and value is     None) or \
            (index is not None and value is not None):
