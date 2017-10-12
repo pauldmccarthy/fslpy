@@ -711,12 +711,16 @@ class LabelAtlas(Atlas):
         # Use nearest neighbour interpolation
         # for resampling, as it is most likely
         # that the mask is binary.
-        mask     = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
-        boolmask = mask > 0
+        mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
+
+        if not fslimage.Image(mask, xform=xform).sameSpace(self):
+            raise ValueError('Mask is not in the same space as atlas')
+
 
         # Extract the labels that are in
         # the mask, and their corresponding
         # mask weights
+        boolmask  = mask > 0
         vals      = self[boolmask]
         weights   = mask[boolmask]
         weightsum = weights.sum()
@@ -851,7 +855,11 @@ class ProbabilisticAtlas(Atlas):
 
         # Make sure that the mask has the same
         # number of voxels as the atlas image
-        mask      = mask.resample(self.shape[:3], dtype=np.float32, order=0)[0]
+        mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
+
+        if not fslimage.Image(mask, xform=xform).sameSpace(self):
+            raise ValueError('Mask is not in the same space as atlas')
+
         boolmask  = mask > 0
         weights   = mask[boolmask]
         weightsum = weights.sum()
