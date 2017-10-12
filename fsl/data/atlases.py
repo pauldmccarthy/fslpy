@@ -605,6 +605,14 @@ class Atlas(fslimage.Image):
         self.desc = atlasDesc
 
 
+class MaskError(Exception):
+    """Exception raised by the :meth:`LabelAtlas.maskLabel` and
+    :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
+    does not match the atlas space.
+    """
+    pass
+
+
 class LabelAtlas(Atlas):
     """A 3D atlas which contains integer labels for each region.
 
@@ -714,7 +722,8 @@ class LabelAtlas(Atlas):
         mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
 
         if not fslimage.Image(mask, xform=xform).sameSpace(self):
-            raise ValueError('Mask is not in the same space as atlas')
+            raise MaskError('Mask is not in the same space as atlas')
+
 
 
         # Extract the labels that are in
@@ -858,7 +867,7 @@ class ProbabilisticAtlas(Atlas):
         mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
 
         if not fslimage.Image(mask, xform=xform).sameSpace(self):
-            raise ValueError('Mask is not in the same space as atlas')
+            raise MaskError('Mask is not in the same space as atlas')
 
         boolmask  = mask > 0
         weights   = mask[boolmask]
