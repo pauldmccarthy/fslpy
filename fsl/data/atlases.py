@@ -314,17 +314,18 @@ class AtlasLabel(object):
 
     An ``AtlasLabel`` instance contains the following attributes:
 
-    ========= ==============================================================
+    ========= ================================================================
     ``name``  Region name
-    ``index`` For probabilistic atlases, the volume index into the 4D atlas
-              image that corresponds to this region. For label atlases, the
-              value of voxels that are in this region. For summary images of
-              probabilistic atlases, add 1 to this value to get the
-              corresponding voxel values.
+    ``index`` The index of this label into the list of all labels in the
+              ``AtlasDescription`` that owns it. For probabilistic atlases,
+              this is also the index into the 4D atlas image of the volume
+              that corresponds to this region.
+    ``value`` For label atlases and summary images, the value of voxels that
+              are in this region.
     ``x``     X coordinate of the region in world space
     ``y``     Y coordinate of the region in world space
     ``z``     Z coordinate of the region in world space
-    ========= ==============================================================
+    ========= ================================================================
 
     .. note:: The ``x``, ``y`` and ``z`` label coordinates are pre-calculated
               centre-of-gravity coordinates, as listed in the atlas xml file.
@@ -333,9 +334,10 @@ class AtlasLabel(object):
               XML file (typically MNI152 space).
     """
 
-    def __init__(self, name, index, x, y, z):
+    def __init__(self, name, index, value, x, y, z):
         self.name  = name
         self.index = index
+        self.value = value
         self.x     = x
         self.y     = y
         self.z     = z
@@ -383,8 +385,11 @@ class AtlasDescription(object):
                                 # as relative to the location of this
                                 # XML file.
 
-            <summaryimagefile>  # Path to 3D summary file, with each
-            </summaryimagefile> # region having value (index + 1)
+            <summaryimagefile>  # Path to 3D label summary file,
+            </summaryimagefile> # Every <image> must be accompanied
+                                # by a <summaryimage> - for label
+                                # atlases, they will typically refer
+                                # to the same image file.
 
            </images>
            ...                  # More images - generally both
@@ -395,7 +400,10 @@ class AtlasDescription(object):
 
          # index - For probabilistic atlases, index of corresponding volume in
          #         4D image file. For label images, the value of voxels which
-         #         are in the corresponding region.
+         #         are in the corresponding region. For probabilistic atlases,
+         #         it is assumed that the value for each region in the  summary
+         #         image(s) are equal to ``index + 1``.
+         #
          #
          # x    |
          # y    |- XYZ *voxel* coordinates into the first image of the <images>
@@ -487,6 +495,8 @@ class AtlasDescription(object):
         atlasDir = op.dirname(self.specPath)
 
         for image in images:
+
+            # Every image must also have a summary image
             imagefile        = image.find('imagefile')       .text
             summaryimagefile = image.find('summaryimagefile').text
 
@@ -505,6 +515,11 @@ class AtlasDescription(object):
         labels      = data.findall('label')
         self.labels = []
 
+        # Refs to AtlasLabel objects
+        # indexed by their value.
+        # Used by the find method.
+        self.__labelsByValue = {}
+
         # The xyz coordinates for each label are in terms
         # of the voxel space of the first images element
         # in the header. For convenience, we're going to
@@ -519,11 +534,26 @@ class AtlasDescription(object):
             x     = float(label.attrib['x'])
             y     = float(label.attrib['y'])
             z     = float(label.attrib['z'])
-            al    = AtlasLabel(name, index, x, y, z)
 
+            # For label images, the index field
+            # contains the region value
+            if self.atlasType == 'label':
+                value = index
+                index = i
+
+            # For probablistic images, the index
+            # field specifies the volume in the
+            # 4D atlas corresponding to the region.
+            # It is assumed that the summary value
+            # for each region is index + 1
+            else:
+                value = index + 1
+
+            al        = AtlasLabel(name, index, value, x, y, z)
             coords[i] = (x, y, z)
 
             self.labels.append(al)
+            self.__labelsByValue[value] = al
 
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
@@ -534,6 +564,20 @@ class AtlasDescription(object):
         # in our label objects
         for i, label in enumerate(self.labels):
             label.x, label.y, label.z = coords[i]
+
+
+    def find(self, index=None, value=None):
+        """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
+
+        Exactly one of ``index`` or ``value`` may be specified - a
+        ``ValueError`` is raised otherwise.
+        """
+        if (index is     None and value is     None) or \
+           (index is not None and value is not None):
+            raise ValueError('Only one of index or value may be specified')
+
+        if index is not None: return self.labels[         index]
+        else:                 return self.__labelsByValue[value]
 
 
     def __eq__(self, other):
@@ -605,6 +649,13 @@ class Atlas(fslimage.Image):
         self.desc = atlasDesc
 
 
+    def find(self, *args, **kwargs):
+        """Find an ``AtlasLabel`` - see the :meth:`AtlasDescription.find`
+        method.
+        """
+        return self.desc.find(*args, **kwargs)
+
+
 class MaskError(Exception):
     """Exception raised by the :meth:`LabelAtlas.maskLabel` and
     :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
@@ -671,9 +722,8 @@ class LabelAtlas(Atlas):
         :returns:   The label at the given coordinates, or ``None`` if the
                     coordinates are out of bounds.
 
-        .. note:: If this is a summary image of a probabilistic atlas, you need
-                  to subtract one from the result to get the region volume
-                  index into the probabilistic atlas.
+        .. note:: Use the :meth:`find` method to retrieve the ``AtlasLabel``
+                  associated with each returned value.
         """
 
         if not voxel:
@@ -703,15 +753,13 @@ class LabelAtlas(Atlas):
 
         :returns:  A tuple containing:
 
-                     - A sequence of all labels which are present in the mask
+                     - A sequence of all values  which are present in the mask
                      - A sequence containing the proportion, within the mask,
-                       of each present label. The proportions are returned as
+                       of each present value. The proportions are returned as
                        values between 0 and 100.
 
-        .. note:: If this is a summary image of a probabilistic atlas, you need
-                  to subtract one from the returned label values to get the
-                  corresponding region volume indices into the probabilistic
-                  atlas.
+        .. note:: Use the :meth:`find` method to retrieve the ``AtlasLabel``
+                  associated with each returned value.
         """
 
         # Make sure that the mask has the same
@@ -726,44 +774,36 @@ class LabelAtlas(Atlas):
 
 
 
-        # Extract the labels that are in
+        # Extract the values that are in
         # the mask, and their corresponding
         # mask weights
         boolmask  = mask > 0
         vals      = self[boolmask]
         weights   = mask[boolmask]
         weightsum = weights.sum()
-        gotLabels = np.unique(vals)
-        labels    = []
+        gotValues = np.unique(vals)
+        values    = []
         props     = []
 
         # Only consider labels that
         # this atlas is aware of
         for label in self.desc.labels:
-
-            # For probabilistic images, the label index
-            # is the index of the volume corresponding
-            # to the region. We need to add 1 to this
-            # to get its value in the summary image.
-            if self.desc.atlasType == 'label': label = label.index
-            else:                              label = label.index + 1
-
-            if label in gotLabels:
+            if label.value in gotValues:
 
                 # Figure out the number of all voxels
-                # in the mask with this label, weighted
+                # in the mask with this value, weighted
                 # by the mask.
-                prop = weights[vals == label].sum()
+                prop = weights[vals == label.value].sum()
 
                 # Normalise it to be a proportion
                 # of all voxels in the mask. We
                 # multiply by 100 because the FSL
                 # probabilistic atlases store their
                 # probabilities as percentages.
-                labels.append(label)
+                values.append(label.value)
                 props .append(100 * prop / weightsum)
 
-        return labels, props
+        return values, props
 
 
 class ProbabilisticAtlas(Atlas):
@@ -839,11 +879,13 @@ class ProbabilisticAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return []
 
-        # We only return labels for this atlas
-        props = self[loc[0], loc[1], loc[2], :]
-        props = [props[l.index] for l in self.desc.labels]
 
-        return props
+        props = self[loc[0], loc[1], loc[2], :]
+
+        # We only return labels for this atlas -
+        # the underlying image may have more
+        # volumes than this atlas has labels.
+        return [props[l.index] for l in self.desc.labels]
 
 
     def maskProportions(self, mask):
