@@ -565,6 +565,9 @@ class AtlasDescription(object):
         for i, label in enumerate(self.labels):
             label.x, label.y, label.z = coords[i]
 
+        # Make sure the labels are sorted by index
+        self.labels = list(sorted(self.labels))
+
 
     def find(self, index=None, value=None):
         """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
@@ -579,7 +582,7 @@ class AtlasDescription(object):
             raise ValueError('Only one of index or value may be specified')
 
         if index is not None: return self.labels[         index]
-        else:                 return self.__labelsByValue[value]
+        else:                 return self.__labelsByValue[int(value)]
 
 
     def __eq__(self, other):
@@ -881,7 +884,6 @@ class ProbabilisticAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return []
 
-
         props = self[loc[0], loc[1], loc[2], :]
 
         # We only return labels for this atlas -
@@ -916,6 +918,9 @@ class ProbabilisticAtlas(Atlas):
         boolmask  = mask > 0
         weights   = mask[boolmask]
         weightsum = weights.sum()
+
+        if weightsum == 0:
+            return [0.0] * len(self.desc.labels)
 
         for label in self.desc.labels:
 
