@@ -576,6 +576,10 @@ class AtlasDescription(object):
         ``ValueError`` is raised otherwise. If an invalid ``index`` or
         ``value`` is specified, an ``IndexError`` or ``KeyError`` will be
         raised.
+
+        .. note:: A 4D ``ProbabilisticAtlas`` may have more volumes than
+                  labels, and a 3D ``LabelAtlas`` may have more values
+                  than labels.
         """
         if (index is     None and value is     None) or \
            (index is not None and value is not None):
