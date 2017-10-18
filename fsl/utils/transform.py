@@ -556,7 +556,6 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
     """
 
     srcScaledVoxelMat    = srcImage.voxToScaledVoxMat
-    refInvScaledVoxelMat = refImage.voxToScaledVoxMat
     refInvScaledVoxelMat = refImage.scaledVoxToVoxMat
     refVoxToWorldMat     = refImage.voxToWorldMat
 
