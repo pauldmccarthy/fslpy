@@ -8,14 +8,6 @@
 of information about the current platform we are running on. A single
 ``Platform`` instance is created when this module is first imported, and
 is available as a module attribute called :attr:`platform`.
-
-This module is also home to the following utility functions which abstract
-away various platform differences:
-
-.. autosummary::
-   :nosignatures:
-
-   isWidgetAlive
 """
 
 
@@ -25,6 +17,7 @@ import os
 import os.path as op
 import sys
 import importlib
+import deprecation
 
 import fsl.utils.notifier as notifier
 
@@ -80,6 +73,9 @@ are running the Linux/GTK wx build.
 """
 
 
+@deprecation.deprecated(deprecated_in='1.2.2',
+                        removed_in='2.0.0',
+                        details='Use fsleyes_widgets.isalive instead')
 def isWidgetAlive(widget):
     """Returns ``True`` if the given ``wx.Window`` object is "alive" (i.e.
     has not been destroyed), ``False`` otherwise. Works in both wxPython
