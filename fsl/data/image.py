@@ -1457,6 +1457,9 @@ def read_segments(fileobj, segments, n_bytes):
     return bytes
 
 
-# Monkey-patch the above implementation into nibabel
-fileslice.orig_read_segments = fileslice.read_segments
-fileslice.read_segments      = read_segments
+# Monkey-patch the above implementation into
+# nibabel. FSLeyes requires at least 2.1.0 -
+# newer versions do not need to be patched.
+if nib.__version__ == '2.1.0':
+    fileslice.orig_read_segments = fileslice.read_segments
+    fileslice.read_segments      = read_segments
