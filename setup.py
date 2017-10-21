@@ -69,17 +69,17 @@ class doc(Command):
         except:
             import mock
 
-        mockedModules = [
-            'nibabel',
-            'nibabel.fileslice',
-            'numpy',
-            'numpy.linalg']
-
         mockobj       = mock.MagicMock()
-        mockedModules = { m : mockobj for m in mockedModules}
+        mockobj.__version__ = '2.2.0'
+        mockedModules = open(op.join(docdir, 'mock_modules.txt')).readlines()
+        mockedModules = [l.strip()   for l in mockedModules]
+        mockedModules = {m : mockobj for m in mockedModules}
 
-        with mock.patch.dict('sys.modules', **mockedModules):
-            sphinx.main(['sphinx-build', docdir, destdir])
+        patches = [mock.patch.dict('sys.modules', **mockedModules)]
+
+        [p.start() for p in patches]
+        sphinx.main(['sphinx-build', docdir, destdir])
+        [p.stop() for p in patches]
 
 
 setup(

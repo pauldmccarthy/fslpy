@@ -1,0 +1,6 @@
+nibabel
+nibabel.fileslice
+numpy
+numpy.linalg
+scipy
+scipy.ndimage
