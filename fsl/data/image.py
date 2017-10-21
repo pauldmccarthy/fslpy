@@ -1396,6 +1396,9 @@ def loadIndexedImageFile(filename):
     return image, fobj
 
 
+@deprecation.deprecated(deprecated_in='1.3.0',
+                        removed_in='2.0.0',
+                        details='Upgrade to nibabel 2.2.0')
 def read_segments(fileobj, segments, n_bytes):
     """This function is used in place of the
     ``nibabel.fileslice.read_segments`` function to ensure thread-safe read
@@ -1411,6 +1414,9 @@ def read_segments(fileobj, segments, n_bytes):
     This implementation protects the seek/read pairs with a
     ``threading.Lock``, which is added to ``IndexedGzipFile`` instances that
     are created in the :func:`loadIndexedImageFile` function.
+
+    .. note:: This patch is not required in nibabel 2.2.0 and newer. It will
+              be removed from ``fslpy`` in version 2.0.0.
     """
 
     from mmap import mmap
