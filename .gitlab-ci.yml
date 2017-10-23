@@ -221,6 +221,18 @@ variables:
 
   script:
 
+    # Install $PYTHON_VERSION
+    - apt-get update -y || true
+    - apt-get install -y git wget software-properties-common python-software-properties
+    - add-apt-repository -y ppa:deadsnakes/ppa
+    - apt-get update -y || true
+    - apt-get install -y "$PYTHON_VERSION"
+    - alias python="$PYTHON_VERSION"
+    - wget https://bootstrap.pypa.io/get-pip.py
+    - python get-pip.py
+    - python -V
+    - pip -V
+
     # If running on a fork repository, we merge in the
     # upstream/master branch. This is done so that merge
     # requests from fork to the parent repository will
@@ -282,37 +294,20 @@ variables:
     - python -m coverage report
 
 
-.install_python: &install_python
-  before_script:
-    - apt-get update -y || true
-    - apt-get install -y wget software-properties-common python-software-properties
-    - add-apt-repository -y ppa:deadsnakes/ppa
-    - apt-get update -y || true
-    - apt-get install -y "$PYTHON_VERSION"
-    - alias python="$PYTHON_VERSION"
-    - wget https://bootstrap.pypa.io/get-pip.py
-    - python get-pip.py
-    - python -V
-    - pip -V
-
-
 test:2.7:
   <<: *test_template
-  <<: *install_python
   variables:
     PYTHON_VERSION: "python2.7"
 
 
 test:3.5:
   <<: *test_template
-  <<: *install_python
   variables:
     PYTHON_VERSION: "python3.5"
 
 
 test:3.6:
   <<: *test_template
-  <<: *install_python
   variables:
     PYTHON_VERSION: "python3.6"
 
