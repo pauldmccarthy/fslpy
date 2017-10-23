@@ -15,6 +15,7 @@ import                    pytest
 import fsl.data.atlases    as fslatlases
 import fsl.data.image      as fslimage
 import fsl.utils.transform as transform
+import fsl.utils.cache     as cache
 
 from . import (testdir, make_random_mask)
 
@@ -33,15 +34,18 @@ def _repeat(iterator, n):
             yield elem
 
 
-# atype: (label|prob)
-_atlases = {}
+# We can't cache all atlases, because CI
+# jobs will take up too much memory and
+# be killed
+_atlases = cache.Cache(3)
 def _get_atlas(atlasID, res, summary=False):
-    atlas = _atlases.get((atlasID, res, summary))
+    atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
         atlas = fslatlases.loadAtlas(atlasID,
                                      loadSummary=summary,
                                      resolution=res)
-        _atlases[atlasID, res, summary] = atlas
+        _atlases.put((atlasID, res, summary), atlas)
+
     return atlas
 
 def _random_atlas(atype, res, summary=False):
