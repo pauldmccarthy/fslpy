@@ -300,21 +300,21 @@ test:2.7:
   <<: *test_template
   <<: *install_python
   variables:
-    - PYTHON_VERSION: "python2.7"
+    PYTHON_VERSION: "python2.7"
 
 
 test:3.5:
   <<: *test_template
   <<: *install_python
   variables:
-    - PYTHON_VERSION: "python3.5"
+    PYTHON_VERSION: "python3.5"
 
 
 test:3.6:
   <<: *test_template
   <<: *install_python
   variables:
-    - PYTHON_VERSION: "python3.6"
+    PYTHON_VERSION: "python3.6"
 
 
 #############
