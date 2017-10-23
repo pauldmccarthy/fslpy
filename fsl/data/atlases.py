@@ -134,7 +134,7 @@ class AtlasRegistry(notifier.Notifier):
 
                 try:
                     self.addAtlas(atlasPath, atlasID, save=False)
-                except:
+                except Exception:
                     log.warning('Failed to load atlas '
                                 'specification {}'.format(atlasPath),
                                 exc_info=True)
@@ -244,6 +244,8 @@ class AtlasRegistry(notifier.Notifier):
         ``AtlasRegistry``.
         """
 
+        remove = None
+
         for i, desc in enumerate(self.__atlasDescs):
             if desc.atlasID == atlasID:
 
@@ -252,11 +254,13 @@ class AtlasRegistry(notifier.Notifier):
                     desc.specPath))
 
                 self.__atlasDescs.pop(i)
+                remove = desc
                 break
 
         self.__saveKnownAtlases()
 
-        self.notify(topic='remove', value=desc)
+        if remove is not None:
+            self.notify(topic='remove', value=remove)
 
 
     def __getKnownAtlases(self):
@@ -285,7 +289,7 @@ class AtlasRegistry(notifier.Notifier):
 
             return names, paths
 
-        except:
+        except Exception:
             return [], []
 
 
