@@ -112,7 +112,7 @@ def _test_query(qtype, atype, summary=False):
 
     for qin, res, maskres in tests:
 
-        atlas = _random_atlas('prob', res=res, summary=summary)
+        atlas = _random_atlas(atype, res=res, summary=summary)
 
         with testdir():
 
@@ -268,9 +268,11 @@ def _eval_mask_query(atlas, query, qtype, qin):
     res     = atlas.pixdim[0]
 
     if maskres == res:
-        rmask = mask[:]
+        mask = mask[:]
     else:
-        rmask = mask.resample(atlas.shape[:3], dtype=np.float32, order=0)[0]
+        mask = mask.resample(atlas.shape[:3], dtype=np.float32, order=0)[0]
+
+    mask = np.array(mask, dtype=np.bool)
 
     def evalLabel():
 
@@ -281,7 +283,7 @@ def _eval_mask_query(atlas, query, qtype, qin):
 
         if qin == 'in':
 
-            voxels    = np.array(np.where(rmask)).T
+            voxels    = np.array(np.where(mask)).T
             valcounts = defaultdict(lambda : 0.0)
             nvoxels   = voxels.shape[0]
 
