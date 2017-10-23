@@ -3,18 +3,20 @@
 #
 #    https://git.fmrib.ox.ac.uk/fsl/fslpy
 #
-# The build pipeline comprises four stages:
+# The build pipeline comprises the following stages:
 #
 #    1. test:   Unit tests
 #
-#    2. doc:    Building API documentation
+#    2. style:  Check coding style
 #
-#    3. build:  Building source distributions and wheels
+#    3. doc:    Building API documentation
 #
-#    4. deploy: Uploading the build outputs to pypi, and the documentation
+#    4. build:  Building source distributions and wheels
+#
+#    5. deploy: Uploading the build outputs to pypi, and the documentation
 #               to a hosting server.
 #
-# The test stage is executed on all branches of upstream and fork
+# The test and style stages are executed on all branches of upstream and fork
 # repositories.
 #
 # The doc stage, and the deploy-doc job, is executed on all branches of the
@@ -29,6 +31,7 @@
 
 stages:
  - test
+ - style
  - doc
  - build
  - deploy
@@ -76,6 +79,8 @@ variables:
   UPSTREAM_PROJECT:     "fsl/fslpy"
   UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
   TEST_OPTS:            "--cov-report= --cov-append"
+  FLAKE8_OPTS:          "--ignore=E127,E201,E203,E221,E222,E241,E271,E272,E301,E302,E303,E701"
+  PYLINT_OPTS:          "--extension-pkg-whitelist=numpy,wx --generated-members=np.int8,np.uint8,np.int16,np.uint16,np.int32,np.uint32,np.int64,np.uint64,np.float32,np.float64,np.float128,wx.PyDeadObjectError --disable=R,C,W0511,W0703,W1202"
 
 
 ####################################
@@ -292,6 +297,8 @@ test:3.4:
   image: python:3.4
 
 
+
+
 # a wxphoenix/3.5 build
 # is not yet available
 # test:3.5:
@@ -304,6 +311,25 @@ test:3.4:
 # test:3.6:
 #   <<: *test_template
 #   image: python:3.6
+
+
+#############
+# Style stage
+#############
+
+
+style:
+  stage: style
+
+  tags:
+    - docker
+
+  image: python:3.5
+
+  script:
+    - pip install flake8 pylint
+    - flake8 $FLAKE8_OPTS                           fsl || true
+    - pylint $PYLINT_OPTS --output-format=colorized fsl || true
 
 
 ###########
