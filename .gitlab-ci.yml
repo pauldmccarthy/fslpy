@@ -70,8 +70,8 @@ stages:
 #
 #   - TWINE_REPOSITORY_URL:          - Pypi repository to upload to
 #
-#   - WXPYTHON_DEBIAN8_URL:          - Url to a location containg binary wheels
-#                                      for wxPython/debian 8
+#   - WXPYTHON_UBUNTU1604_URL:       - Url to a location containg binary wheels
+#                                      for wxPython/ubuntu 16.04
 ###############################################################################
 
 
@@ -209,6 +209,7 @@ variables:
 
 .test: &test_template
   stage: test
+  image: ubuntu:16.04
   <<: *setup_ssh
 
   # Releases are just tags on a release
@@ -230,19 +231,15 @@ variables:
         git merge --no-commit --no-ff upstream/master;
       fi;
 
-    # I am currently assuming that we are
-    # running a debian 8/jessie container
-    # (the python:2.7 and 3.6 images are
-    # based on this).
     # We need to install xvfb, and all of
     # the wxpython dependencies.
-    - apt-get update  -y
+    - apt-get update  -y || true
     - apt-get install -y xvfb libgtk2.0-0
     - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
 
     # Linux builds for wxPython are currently not
     # on pypi, but are available at this url.
-    - pip install --only-binary wxpython -f $WXPYTHON_DEBIAN8_URL wxpython
+    - pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython
 
     # All other deps can be installed as
     # normal. scipy is required by nibabel,
@@ -285,30 +282,39 @@ variables:
     - python -m coverage report
 
 
+.install_python: &install_python
+  before_script:
+    - apt-get update -y || true
+    - apt-get install wget software-properties-common python-software-properties
+    - add-apt-repository -y ppa:deadsnakes/ppa
+    - apt-get update -y || true
+    - apt-get install -y "$PYTHON_VERSION"
+    - alias python="$PYTHON_VERSION"
+    - wget https://bootstrap.pypa.io/get-pip.py
+    - python get-pip.py
+    - python -V
+    - pip -V
+
+
 test:2.7:
   <<: *test_template
-  image: python:2.7
+  <<: *install_python
+  variables:
+    - PYTHON_VERSION: "python2.7"
 
 
-test:3.4:
+test:3.5:
   <<: *test_template
-  image: python:3.4
+  <<: *install_python
+  variables:
+    - PYTHON_VERSION: "python3.5"
 
 
-
-
-# a wxphoenix/3.5 build
-# is not yet available
-# test:3.5:
-#   <<: *test_template
-#   image: python:3.5
-
-
-# a wxphoenix/3.6 build
-# is not yet available
-# test:3.6:
-#   <<: *test_template
-#   image: python:3.6
+test:3.6:
+  <<: *test_template
+  <<: *install_python
+  variables:
+    - PYTHON_VERSION: "python3.6"
 
 
 #############
