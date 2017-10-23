@@ -79,8 +79,6 @@ variables:
   UPSTREAM_PROJECT:     "fsl/fslpy"
   UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
   TEST_OPTS:            "--cov-report= --cov-append"
-  FLAKE8_OPTS:          "--ignore=E127,E201,E203,E221,E222,E241,E271,E272,E301,E302,E303,E701"
-  PYLINT_OPTS:          "--extension-pkg-whitelist=numpy,wx --generated-members=np.int8,np.uint8,np.int16,np.uint16,np.int32,np.uint32,np.int64,np.uint64,np.float32,np.float64,np.float128,wx.PyDeadObjectError --disable=R,C,W0511,W0703,W1202"
 
 
 ####################################
@@ -328,8 +326,8 @@ style:
 
   script:
     - pip install flake8 pylint
-    - flake8 $FLAKE8_OPTS                           fsl || true
-    - pylint $PYLINT_OPTS --output-format=colorized fsl || true
+    - flake8                           fsl || true
+    - pylint --output-format=colorized fsl || true
 
 
 ###########
