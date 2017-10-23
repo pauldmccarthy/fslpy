@@ -123,3 +123,24 @@ for a list of error codes):
 - E302: expected 2 blank lines, found 0
 - E303: too many blank lines (3)
 - E701: multiple statements on one line (colon)
+
+The ``pylint`` tool checks many of the same things as ``flake8`,` and can be
+*very* opinionated about other things. So I disable all refactoring and
+convention messages, and a few select warnings (type ``pylint --list-msgs``
+for a full list of codes):
+
+- W0511 (``fixme``): Warn about ``TODO`` and ``FIXME`` comments
+
+- W0703 (``broad-except``): Warn about too-general ``except`` blocks (e.g.
+  ``except Exception:``)
+
+- W1202 (``logging-format-interpolation``): Warn about using ``format``
+  when calling a log function, instead of using ``%`` string formatting.
+
+To check code with ``flake8`` and ``pylint``, I use the following commands::
+
+
+  flake8 --ignore=E127,E201,E203,E221,E222,E241,E271,E272,E301,E302,E303,E701 fsl
+  pylint --extension-pkg-whitelist=numpy,wx \
+         --generated-members=np.int8,np.uint8,np.int16,np.uint16,np.int32,np.uint32,np.int64,np.uint64,np.float32,np.float64,np.float128,wx.PyDeadObjectError \
+         --disable=R,C,W0511,W0703,W1202 fsl
