@@ -220,18 +220,14 @@ variables:
 
   script:
 
-    # Install $PYTHON_VERSION
+    # Install $PY_VERSION
     - apt-get update -y || true
     - apt-get install -y wget software-properties-common python-software-properties
     - add-apt-repository -y ppa:deadsnakes/ppa
     - apt-get update -y || true
-    - apt-get install -y "$PYTHON_VERSION"
-    - rm -f /usr/bin/python
-    - ln -s /usr/bin/"$PYTHON_VERSION" /usr/bin/python
-    - wget https://bootstrap.pypa.io/get-pip.py
-    - python get-pip.py
-    - python -V
-    - pip -V
+    - apt-get install -y $PY_VERSION $PY_PACKAGES
+    - $PY_VENV test.venv
+    - source test.venv/bin/activate
 
     # If running on a fork repository, we merge in the
     # upstream/master branch. This is done so that merge
@@ -246,8 +242,7 @@ variables:
     # We need to install xvfb, and all of
     # the wxpython dependencies.
     - apt-get update  -y || true
-    - apt-get install -y xvfb libgtk2.0-0
-    - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
+    - apt-get install -y xvfb libgtk2.0-0 libnotify4 freeglut3 libsdl1.2debian
 
     # Linux builds for wxPython are currently not
     # on pypi, but are available at this url.
@@ -297,19 +292,25 @@ variables:
 test:2.7:
   <<: *test_template
   variables:
-    PYTHON_VERSION: "python2.7"
+    PY_VERSION:  "python2.7"
+    PY_PACKAGES: "python-pip python-virtualenv"
+    PY_VENV:     "virtualenv"
 
 
 test:3.5:
   <<: *test_template
   variables:
-    PYTHON_VERSION: "python3.5"
+    PY_VERSION:  "python3.5"
+    PY_PACKAGES: "python3-pip python3-virtualenv"
+    PY_VENV:     "python3.5 -m venv"
 
 
 test:3.6:
   <<: *test_template
   variables:
-    PYTHON_VERSION: "python3.6"
+    PY_VERSION:  "python3.6"
+    PY_PACKAGES: "python3-pip python3-virtualenv"
+    PY_VENV:     "python3.6 -m venv"
 
 
 #############
