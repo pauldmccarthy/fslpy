@@ -115,6 +115,16 @@ class Cache(object):
         return len(self.__cache)
 
 
+    def __getitem__(self, key):
+        """Get an item from the cache. """
+        return self.get(key)
+
+
+    def __setitem__(self, key, value):
+        """Add an item to the cache. """
+        return self.put(key, value)
+
+
     def __parseDefault(self, *args, **kwargs):
         """Used by the :meth:`get` method. Parses the ``default`` argument,
         which may be specified as either a positional or keyword argumnet.
