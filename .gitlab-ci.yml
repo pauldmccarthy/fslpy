@@ -134,6 +134,7 @@ variables:
         apt-get update -y                 || yum -y check-update           || true;
         apt-get install -y openssh-client || yum install -y openssh-client || true;
         apt-get install -y rsync          || yum install -y rsync          || true;
+        apt-get install -y git            || yum install -y git            || true;
 
         eval $(ssh-agent -s);
         mkdir -p $HOME/.ssh;
@@ -223,7 +224,7 @@ variables:
 
     # Install $PYTHON_VERSION
     - apt-get update -y || true
-    - apt-get install -y git wget software-properties-common python-software-properties
+    - apt-get install -y wget software-properties-common python-software-properties
     - add-apt-repository -y ppa:deadsnakes/ppa
     - apt-get update -y || true
     - apt-get install -y "$PYTHON_VERSION"
