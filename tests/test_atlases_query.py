@@ -280,7 +280,6 @@ def _eval_mask_query(atlas, query, qtype, qin):
 
     rmask = np.array(rmask, dtype=np.bool)
 
-    @profile
     def evalLabel():
 
         if qin == 'out':
