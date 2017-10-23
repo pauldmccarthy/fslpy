@@ -167,7 +167,7 @@ class AtlasRegistry(notifier.Notifier):
         raise KeyError('Unknown atlas ID: {}'.format(atlasID))
 
 
-    def loadAtlas(self, atlasID, loadSummary=False, resolution=None):
+    def loadAtlas(self, atlasID, loadSummary=False, resolution=None, **kwargs):
         """Loads and returns an :class:`Atlas` instance for the atlas
         with the given  ``atlasID``.
 
@@ -189,10 +189,10 @@ class AtlasRegistry(notifier.Notifier):
         if atlasDesc.atlasType == 'label':
             loadSummary = True
 
-        if loadSummary: atlas = LabelAtlas(        atlasDesc, resolution)
-        else:           atlas = ProbabilisticAtlas(atlasDesc, resolution)
+        if loadSummary: atype = LabelAtlas
+        else:           atype = ProbabilisticAtlas
 
-        return atlas
+        return atype(atlasDesc, resolution, **kwargs)
 
 
     def addAtlas(self, filename, atlasID=None, save=True):
@@ -619,7 +619,11 @@ class Atlas(fslimage.Image):
     """
 
 
-    def __init__(self, atlasDesc, resolution=None, isLabel=False):
+    def __init__(self,
+                 atlasDesc,
+                 resolution=None,
+                 isLabel=False,
+                 **kwargs):
         """Initialise an ``Atlas``.
 
         :arg atlasDesc:  The :class:`AtlasDescription` instance which
@@ -629,6 +633,8 @@ class Atlas(fslimage.Image):
 
         :arg isLabel:    Pass in ``True`` for label atlases, ``False`` for
                          probabilistic atlases.
+
+        All other arguments are passed to :meth:`.Image.__init__`.
         """
 
         # Get the index of the atlas with the
@@ -651,7 +657,7 @@ class Atlas(fslimage.Image):
         if isLabel: imageFile = atlasDesc.summaryImages[imageIdx]
         else:       imageFile = atlasDesc.images[       imageIdx]
 
-        fslimage.Image.__init__(self, imageFile)
+        fslimage.Image.__init__(self, imageFile, **kwargs)
 
         # Even though all the FSL atlases
         # are in MNI152 space, not all of
@@ -684,7 +690,7 @@ class LabelAtlas(Atlas):
     makes looking up the label at a location easy.
     """
 
-    def __init__(self, atlasDesc, resolution=None):
+    def __init__(self, atlasDesc, resolution=None, **kwargs):
         """Create a ``LabelAtlas`` instance.
 
         :arg atlasDesc:  The :class:`AtlasDescription` instance describing
@@ -692,7 +698,7 @@ class LabelAtlas(Atlas):
 
         :arg resolution: Desired isotropic resolution in millimetres.
         """
-        Atlas.__init__(self, atlasDesc, resolution, True)
+        Atlas.__init__(self, atlasDesc, resolution, True, **kwargs)
 
 
     def label(self, location, *args, **kwargs):
@@ -785,6 +791,8 @@ class LabelAtlas(Atlas):
         if not fslimage.Image(mask, xform=xform).sameSpace(self):
             raise MaskError('Mask is not in the same space as atlas')
 
+        # TODO allow non-aligned mask - as long as it overlaps
+        #      in world coordinates, it should be allowed
 
 
         # Extract the values that are in
@@ -826,7 +834,7 @@ class ProbabilisticAtlas(Atlas):
     which makes looking up region probabilities easy.
     """
 
-    def __init__(self, atlasDesc, resolution=None):
+    def __init__(self, atlasDesc, resolution=None, **kwargs):
         """Create a ``ProbabilisticAtlas`` instance.
 
         :arg atlasDesc:  The :class:`AtlasDescription` instance describing
@@ -834,7 +842,7 @@ class ProbabilisticAtlas(Atlas):
 
         :arg resolution: Desired isotropic resolution in millimetres.
         """
-        Atlas.__init__(self, atlasDesc, resolution, False)
+        Atlas.__init__(self, atlasDesc, resolution, False, **kwargs)
 
 
     def proportions(self, location, *args, **kwargs):
