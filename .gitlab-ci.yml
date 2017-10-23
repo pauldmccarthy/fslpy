@@ -301,7 +301,7 @@ test:3.5:
   <<: *test_template
   variables:
     PY_VERSION:  "python3.5"
-    PY_PACKAGES: "python3-pip python3-virtualenv"
+    PY_PACKAGES: "python3-pip python3-venv"
     PY_VENV:     "python3.5 -m venv"
 
 
@@ -309,7 +309,7 @@ test:3.6:
   <<: *test_template
   variables:
     PY_VERSION:  "python3.6"
-    PY_PACKAGES: "python3-pip python3-virtualenv"
+    PY_PACKAGES: "python3-pip python3-venv"
     PY_VENV:     "python3.6 -m venv"
 
 
