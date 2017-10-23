@@ -34,16 +34,17 @@ def _repeat(iterator, n):
             yield elem
 
 
-# We can't cache all atlases, because CI
-# jobs will take up too much memory and
-# be killed
-_atlases = cache.Cache(3)
+
+_atlases = cache.Cache()
 def _get_atlas(atlasID, res, summary=False):
     atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
         atlas = fslatlases.loadAtlas(atlasID,
                                      loadSummary=summary,
-                                     resolution=res)
+                                     resolution=res,
+                                     loadData=False,
+                                     calcRange=False,
+                                     indexed=True)
         _atlases.put((atlasID, res, summary), atlas)
 
     return atlas
@@ -75,7 +76,12 @@ def _get_zero_mask(aimg):
         if isinstance(aimg, fslatlases.LabelAtlas):
             zmask = aimg[:] == 0
         elif isinstance(aimg, fslatlases.ProbabilisticAtlas):
-            zmask = np.all(aimg[:] == 0, axis=-1)
+
+            # Keep memory usage down
+            zmask = np.ones(aimg.shape[:3], dtype=np.bool)
+            for vol in range(aimg.shape[-1]):
+                zmask = np.logical_and(zmask, aimg[..., vol] == 0)
+
         _zero_masks[atlasID, summary, res] = zmask
 
     return zmask
