@@ -37,7 +37,6 @@ def _repeat(iterator, n):
 
 _atlases = cache.Cache()
 def _get_atlas(atlasID, res, summary=False):
-    atlasID = 'striatum-structural'
     atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
         if summary or atlasID in ('talairach', 'striatum-structural', 'jhu-labels'):
