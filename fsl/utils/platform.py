@@ -146,6 +146,7 @@ class Platform(notifier.Notifier):
         self.__glRenderer   = None
         self.__glIsSoftware = None
         self.__fslVersion   = None
+        self.__fsldir       = None
         self.fsldir         = os.environ.get('FSLDIR', None)
 
         # Determine if a display is available. We do
@@ -239,18 +240,16 @@ class Platform(notifier.Notifier):
 
         pi = [t.lower() for t in wx.PlatformInfo]
 
-        for tag in pi:
+        if   any(['cocoa'  in p for p in pi]): plat = WX_MAC_COCOA
+        elif any(['carbon' in p for p in pi]): plat = WX_MAC_CARBON
+        elif any(['gtk'    in p for p in pi]): plat = WX_GTK
+        else:                                  plat = WX_UNKNOWN
 
-            if   any(['cocoa'  in p for p in pi]): platform = WX_MAC_COCOA
-            elif any(['carbon' in p for p in pi]): platform = WX_MAC_CARBON
-            elif any(['gtk'    in p for p in pi]): platform = WX_GTK
-            else:                                  platform = WX_UNKNOWN
+        if platform is WX_UNKNOWN:
+            log.warning('Could not determine wx platform from '
+                        'information: {}'.format(pi))
 
-            if platform is WX_UNKNOWN:
-                log.warning('Could not determine wx platform from '
-                            'information: {}'.format(pi))
-
-        return platform
+        return plat
 
 
     @property

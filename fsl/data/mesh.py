@@ -380,7 +380,7 @@ def findReferenceImage(modelfile):
 
         dirname  = op.dirname(modelfile)
         prefixes = [getFIRSTPrefix(modelfile)]
-    except:
+    except ValueError:
         return None
 
     if prefixes[0].endswith('_first'):
@@ -389,7 +389,7 @@ def findReferenceImage(modelfile):
     for p in prefixes:
         try:
             return fslimage.addExt(op.join(dirname, p), mustExist=True)
-        except:
+        except fslimage.PathError:
             continue
 
     return None

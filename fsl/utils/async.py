@@ -87,8 +87,8 @@ import functools
 import threading
 import collections
 
-try:    import queue
-except: import Queue as queue
+try:                import queue
+except ImportError: import Queue as queue
 
 
 log = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ def run(task, onFinish=None, onError=None, name=None):
 
         except Exception as e:
 
-            log.warn('Task "{}" crashed'.format(name), exc_info=True)
+            log.warning('Task "{}" crashed'.format(name), exc_info=True)
             callback(onError, e)
 
     # If WX, run on a thread
@@ -759,7 +759,7 @@ class TaskThread(threading.Thread):
             # Any other error typically indicates
             # that this is a daemon thread, and
             # the TaskThread object has been GC'd
-            except:
+            except Exception:
                 break
 
             finally:

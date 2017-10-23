@@ -222,6 +222,8 @@ class Nifti(notifier.Notifier):
         #          qform  = header.get('qform_code',  -1)
         #          sform  = header.get('sform_code',  -1)
         #
+        # TODO Change this in fslpy 2.0.0
+        #
         if isinstance(header, nib.nifti1.Nifti1Header):
             intent = header['intent_code']
             qform  = header['qform_code']
@@ -309,8 +311,8 @@ class Nifti(notifier.Notifier):
 
         val = self.header[key]
 
-        try:    val = bytes(val).partition(b'\0')[0]
-        except: val = bytes(val)
+        try:              val = bytes(val).partition(b'\0')[0]
+        except Exception: val = bytes(val)
 
         val = val.decode('ascii')
 
@@ -611,12 +613,12 @@ class Nifti(notifier.Notifier):
         :class:`Nifti` instance) has the same dimensions and is in the
         same space as this image.
         """
-        return np.all(np.isclose(self .__shape[:3],
-                                 other.__shape[:3]))  and \
-               np.all(np.isclose(self .__pixdim[:3],
-                                 other.__pixdim[:3])) and \
-               np.all(np.isclose(self .__voxToWorldMat,
-                                 other.__voxToWorldMat))
+        return np.all(np.isclose(self .shape[:3],
+                                 other.shape[:3]))  and \
+               np.all(np.isclose(self .pixdim[:3],
+                                 other.pixdim[:3])) and \
+               np.all(np.isclose(self .voxToWorldMat,
+                                 other.voxToWorldMat))
 
 
     def getOrientation(self, axis, xform):
@@ -1426,7 +1428,7 @@ def read_segments(fileobj, segments, n_bytes):
         # actual file is available via the fobj attribute
         lock = getattr(fileobj.fobj, '_arrayproxy_lock')
 
-    except:
+    except AttributeError:
         return fileslice.orig_read_segments(fileobj, segments, n_bytes)
 
     if len(segments) == 0:
