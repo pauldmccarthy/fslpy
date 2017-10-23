@@ -66,7 +66,18 @@ def test_clear():
     for i in range(sz):
         with pytest.raises(KeyError):
             c.get(i)
-    
+
+
+def test_getitem_setitem():
+    c = cache.Cache()
+    c['abc'] = 123
+    assert c.get('abc') == 123
+    c.put(123, 'abc')
+    assert c[123] == 'abc'
+
+    with pytest.raises(KeyError):
+        c['notakey']
+
 
 def test_getdefault():
     c = cache.Cache()
@@ -81,7 +92,7 @@ def test_getdefault():
         c.get('non_existent', 'default',        'badarg')
         c.get('non_existent', 'default', badarg='badarg')
         c.get('non_existent', 'badarg', default='default')
-        c.get('non_existent', default='default', badarg='badarg') 
+        c.get('non_existent', default='default', badarg='badarg')
 
 
 def test_expiry():
