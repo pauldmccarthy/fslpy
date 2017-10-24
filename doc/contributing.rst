@@ -61,7 +61,7 @@ components of the release version number (see above). For example, the branch
 name for minor release ``1.0`` would be ``v1.0``.
 
 
-Patches and bugfixes may be added to these release branches as ``point``
+Patches and bugfixes may be added to these release branches as ``patch``
 releases.  These changes should be made on the master branch like any other
 change (i.e. via merge requests), and then cherry-picked onto the relevant
 release branch(es).
@@ -69,7 +69,7 @@ release branch(es).
 
 Every release commit is also tagged with its full version number.  For
 example, the first release off the ``v1.0`` branch would be tagged with
-``1.0.0``.  Point releases to the ``v1.0`` branch would be tagged with
+``1.0.0``.  Patch releases to the ``v1.0`` branch would be tagged with
 ``1.0.1``, ``1.0.2``, etc.
 
 
@@ -124,10 +124,11 @@ for a list of error codes):
 - E303: too many blank lines (3)
 - E701: multiple statements on one line (colon)
 
-The ``pylint`` tool checks many of the same things as ``flake8`,` and can be
-*very* opinionated about other things. So I disable all refactoring and
-convention messages, and a few select warnings (type ``pylint --list-msgs``
-for a full list of codes):
+
+The ``pylint`` tool can be *very* opinionated about how you write your code,
+and also checks many of the same things as ``flake8``. So I disable all
+refactoring and convention messages, and a few select warnings (type ``pylint
+--list-msgs`` for a full list of codes):
 
 - W0511 (``fixme``): Warn about ``TODO`` and ``FIXME`` comments
 

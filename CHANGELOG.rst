@@ -1,5 +1,5 @@
- ``fslpy`` release history
-==========================
+This document contains the ``fslpy`` release history in reverse chronological
+order.
 
 
 1.3.0 (under development)
@@ -26,7 +26,7 @@
 1.2.1 (Saturday October 7th 2017)
 ---------------------------------
 
-*
+
 * If an :class:`.Image` is passed an existing ``nibabel`` header object,
   it creates a copy, rather than using the original.
 * New :meth:`.Image.resample` method, which resamples the image data to a
@@ -43,7 +43,7 @@
 
 
 * :meth:`fsl.data.image.Nifti.voxelsToScaledVoxels` method deprecated in
-  favour of new :meth:``.Nifti.voxToScaledVoxMat` and
+  favour of new :meth:`.Nifti.voxToScaledVoxMat` and
   :meth:`Nifti.scaledVoxToVoxMat` properties.
 
 
@@ -65,16 +65,18 @@
 
 
 * New functions and further adjustments in :mod:`fsl.utils.transform` module:
-  - :func:`.transform.rotMatToAffine` converts a ``(3, 3)`` rotation matrix
-    into a ``(4, 4)`` affine.
-  - :func:`.transform.transformNormal` applies an affine transform to one or
-    more vectors.
-  - :func:`.transform.veclength` calculates the length of a vector
-  - :func:`.transform.normalise` normalises a vector
-  - :func:`.transform.scaleOffsetXform` adjusted to have more flexibility with
-    respect to inputs.
-  - :func:`.transform.decompose` can return rotations either as three
-    axis-angles, or as a rotation matrix
+
+ - :func:`.transform.rotMatToAffine` converts a ``(3, 3)`` rotation matrix
+   into a ``(4, 4)`` affine.
+ - :func:`.transform.transformNormal` applies an affine transform to one or
+   more vectors.
+ - :func:`.transform.veclength` calculates the length of a vector
+ - :func:`.transform.normalise` normalises a vector
+ - :func:`.transform.scaleOffsetXform` adjusted to have more flexibility with
+   respect to inputs.
+ - :func:`.transform.decompose` can return rotations either as three
+   axis-angles, or as a rotation matrix
+
 * Updates to :class:`fsl.data.mesh.TriangleMesh` - ``vertices`` and ``indices``
   are now ``property`` attributes. New lazily generated ``normals`` and
   ``vnormals`` properties (face and vertex normals respectively). Option

@@ -12,3 +12,4 @@ by |fsleyes_apidoc|_.
    self
    fsl
    contributing
+   changelog
