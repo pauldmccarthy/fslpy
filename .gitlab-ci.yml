@@ -223,7 +223,7 @@ variables:
   script:
 
     # Install $PY_VERSION, xvfb, and all
-    # of the wxpython dependencies. We
+    # of the wxpython dependencies.
     - apt-get update -y || true
     - apt-get install -y software-properties-common python-software-properties xvfb libgtk2.0-0 libnotify4 freeglut3 libsdl1.2debian
     - add-apt-repository -y ppa:deadsnakes/ppa
@@ -231,6 +231,7 @@ variables:
     - apt-get install -y $PY_VERSION "$PY_VERSION"-dev $PY_PACKAGES
     - $PY_VENV test.venv
     - source test.venv/bin/activate
+    - pip install --upgrade pip setuptools
 
     # If running on a fork repository, we merge in the
     # upstream/master branch. This is done so that merge
@@ -251,7 +252,6 @@ variables:
     # pip, because if we let setuptools do
     # it, it will build/install everything
     # from source, rather than using wheels.
-    - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install scipy
     - pip install sphinx sphinx-rtd-theme
