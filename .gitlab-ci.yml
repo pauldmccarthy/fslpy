@@ -251,6 +251,7 @@ variables:
     # pip, because if we let setuptools do
     # it, it will build/install everything
     # from source, rather than using wheels.
+    - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install scipy
     - pip install sphinx sphinx-rtd-theme
