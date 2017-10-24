@@ -252,7 +252,6 @@ variables:
     # it, it will build/install everything
     # from source, rather than using wheels.
     - pip install -r requirements.txt
-    - pip install scipy
     - pip install sphinx sphinx-rtd-theme
     - pip install pytest pytest-cov pytest-html pytest-runner mock coverage
 
@@ -346,15 +345,14 @@ test:3.6:
 
 style:
   stage: style
-  image: ubuntu:14.04
+  image: ubuntu:16.04
   <<: *test_template
   variables:
     PY_VERSION:  "python3.5"
     PY_PACKAGES: "python3-pip python3-venv"
     PY_VENV:     "python3.5 -m venv"
-    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1404_URL wxpython"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
     TEST_STYLE:  "true"
-
 
 
 ###########
