@@ -210,7 +210,6 @@ variables:
 
 
 .test: &test_template
-  stage: test
   <<: *setup_ssh
 
   # Releases are just tags on a release
@@ -257,6 +256,14 @@ variables:
     - pip install sphinx sphinx-rtd-theme
     - pip install pytest pytest-cov pytest-html pytest-runner mock coverage
 
+    # style test
+    - if [ "$TEST_STYLE"x != "x" ]; then
+        pip install pylint flake8;
+        flake8                           fsl || true;
+        pylint --output-format=colorized fsl || true;
+        exit 0;
+      fi
+
     # We need the FSL atlases for the atlas
     # tests, and need $FSLDIR to be defined
     - export FSLDIR=/fsl/
@@ -287,6 +294,7 @@ variables:
 
 
 test:2.7:
+  stage: test
   image: ubuntu:16.04
   <<: *test_template
   variables:
@@ -299,6 +307,7 @@ test:2.7:
 # we use ubuntu:14.04 for python 3.4, because
 # wxpython is not available for 16.04/3.4
 test:3.4:
+  stage: test
   image: ubuntu:14.04
   <<: *test_template
   variables:
@@ -309,6 +318,7 @@ test:3.4:
 
 
 test:3.5:
+  stage: test
   image: ubuntu:16.04
   <<: *test_template
   variables:
@@ -319,6 +329,7 @@ test:3.5:
 
 
 test:3.6:
+  stage: test
   image: ubuntu:16.04
   <<: *test_template
   variables:
@@ -335,16 +346,15 @@ test:3.6:
 
 style:
   stage: style
+  image: ubuntu:14.04
+  <<: *test_template
+  variables:
+    PY_VERSION:  "python3.5"
+    PY_PACKAGES: "python3-pip python3-venv"
+    PY_VENV:     "python3.5 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1404_URL wxpython"
+    TEST_STYLE:  "true"
 
-  tags:
-    - docker
-
-  image: python:3.5
-
-  script:
-    - pip install flake8 pylint
-    - flake8                           fsl || true
-    - pylint --output-format=colorized fsl || true
 
 
 ###########
