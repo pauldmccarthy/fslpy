@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 class TriangleMesh(object):
     """The ``TriangleMesh`` class represents a 3D model. A mesh is defined by a
     collection of ``N`` vertices, and ``M`` triangles.  The triangles are
-    defined by ``(M, 3)) indices into the list of vertices.
+    defined by ``(M, 3)`` indices into the list of vertices.
 
 
     A ``TriangleMesh`` instance has the following attributes:
