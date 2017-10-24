@@ -70,6 +70,9 @@ stages:
 #
 #   - TWINE_REPOSITORY_URL:          - Pypi repository to upload to
 #
+#   - WXPYTHON_UBUNTU1404_URL:       - Url to a location containg binary wheels
+#                                      for wxPython/ubuntu 14.04
+#
 #   - WXPYTHON_UBUNTU1604_URL:       - Url to a location containg binary wheels
 #                                      for wxPython/ubuntu 16.04
 ###############################################################################
@@ -208,7 +211,6 @@ variables:
 
 .test: &test_template
   stage: test
-  image: ubuntu:16.04
   <<: *setup_ssh
 
   # Releases are just tags on a release
@@ -240,9 +242,7 @@ variables:
         git merge --no-commit --no-ff upstream/master;
       fi;
 
-    # Linux builds for wxPython are currently not
-    # on pypi, but are available at this url.
-    - pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython
+    - $INSTALL_WX
 
     # All other deps can be installed as
     # normal. scipy is required by nibabel,
@@ -286,27 +286,45 @@ variables:
 
 
 test:2.7:
+  image: ubuntu:16.04
   <<: *test_template
   variables:
     PY_VERSION:  "python2.7"
     PY_PACKAGES: "python-pip python-virtualenv"
     PY_VENV:     "virtualenv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
+
+
+# we use ubuntu:14.04 for python 3.4, because
+# wxpython is not available for 16.04/3.4
+test:3.4:
+  image: ubuntu:14.04
+  <<: *test_template
+  variables:
+    PY_VERSION:  "python3.4"
+    PY_PACKAGES: "python3-pip python3.4-venv"
+    PY_VENV:     "python3.4 -m venv"
+    INSTALL_WX:  "pip install --pre -f $WXPYTHON_UBUNTU1404_URL wxpython"
 
 
 test:3.5:
+  image: ubuntu:16.04
   <<: *test_template
   variables:
     PY_VERSION:  "python3.5"
     PY_PACKAGES: "python3-pip python3-venv"
     PY_VENV:     "python3.5 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
 
 
 test:3.6:
+  image: ubuntu:16.04
   <<: *test_template
   variables:
     PY_VERSION:  "python3.6"
     PY_PACKAGES: "python3-pip python3.6-venv"
     PY_VENV:     "python3.6 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
 
 
 #############
