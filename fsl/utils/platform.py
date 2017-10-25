@@ -233,7 +233,7 @@ class Platform(notifier.Notifier):
         :data:`WX_MAC_CARBON`, or :data:`WX_GTK`, indicating the wx platform.
         """
 
-        if not self.haveGui:
+        if not self.canHaveGui:
             return WX_UNKNOWN
 
         import wx
@@ -245,7 +245,7 @@ class Platform(notifier.Notifier):
         elif any(['gtk'    in p for p in pi]): plat = WX_GTK
         else:                                  plat = WX_UNKNOWN
 
-        if platform is WX_UNKNOWN:
+        if plat is WX_UNKNOWN:
             log.warning('Could not determine wx platform from '
                         'information: {}'.format(pi))
 
@@ -258,7 +258,7 @@ class Platform(notifier.Notifier):
         indicating the wx flavour.
         """
 
-        if not self.haveGui:
+        if not self.canHaveGui:
             return WX_UNKNOWN
 
         import wx
