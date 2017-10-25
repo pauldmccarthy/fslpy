@@ -9,10 +9,12 @@ order.
 * :class:`.Atlas` classes can now pass ``kwargs`` through to the
   :class:`.Image` constructor.
 * :class:`.Cache` now implements ``__getitem__`` and ``__setitem__``
-* :func:`.image.read_segments` function (monkey-patched into ``nibabel``)
-  is deprecatedm as it is no longer necessary as of ``nibabel`` 2.2.0.
+* The :func:`.image.read_segments` function (monkey-patched into ``nibabel``)
+  is deprecated, as it is no longer necessary as of ``nibabel`` 2.2.0.
 * :func:`.platform.isWidgetAlive` is deprecated in favour of an equivalent
   function in the ``fsleyes-widgets`` library.
+* ``scipy`` is now explicitly listed as a requirement (this should have been
+  done in 1.2.1).
 
 
 
@@ -20,7 +22,8 @@ order.
 ----------------------------------
 
 
-* Fix to :mod:`fsl.data.image` to work with both `nibabel` 2.1.0 and 2.2.0
+* The :func:`.image.read_segments` function is only monkey-patched into
+  ``nibabel`` 2.1.0, as it breaks when used with 2.2.0.
 
 
 1.2.1 (Saturday October 7th 2017)
