@@ -6,20 +6,26 @@
 #
 
 
+
 import pkgutil
+import importlib
+import fsl
 
 
 def test_importall():
-    import fsl         as fsl
-    import fsl.data    as data
-    import fsl.utils   as utils
-    import fsl.scripts as scripts
 
-    for _, module, _ in pkgutil.iter_modules(fsl.__path__, 'fsl.'):
-        __import__(module) 
-    for _, module, _ in pkgutil.iter_modules(data.__path__, 'fsl.data.'):
-        __import__(module)
-    for _, module, _ in pkgutil.iter_modules(utils.__path__, 'fsl.utils.'):
-        __import__(module)
-    for _, module, _ in pkgutil.iter_modules(scripts.__path__, 'fsl.scripts.'):
-        __import__(module) 
+
+    def recurse(module):
+
+        path    = module.__path__
+        name    = module.__name__
+        submods = list(pkgutil.iter_modules(path, '{}.'.format(name)))
+
+        for i, (spath, smodname, ispkg) in enumerate(submods):
+
+            submod = importlib.import_module(smodname)
+
+            if ispkg:
+                recurse(submod)
+
+    recurse(fsl)
