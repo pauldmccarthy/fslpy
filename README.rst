@@ -8,6 +8,9 @@ fslpy
 .. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/coverage.svg
    :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
 
+.. image:: https://img.shields.io/pypi/v/fslpy.svg
+   :target: https://pypi.python.org/pypi/fslpy/)
+
 
 The ``fslpy`` project is a `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_
 programming library written in Python. It is used by `FSLeyes
