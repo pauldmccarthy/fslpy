@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.3.0 (under development)
--------------------------
+1.3.0 (Wednesday 25th October 2017)
+-----------------------------------
 
 
 * :class:`.Atlas` classes can now pass ``kwargs`` through to the
