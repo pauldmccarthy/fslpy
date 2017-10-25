@@ -2,6 +2,14 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.3.1 (Wednesday 25th October 2017)
+-----------------------------------
+
+
+* Fixed bug in :meth:`.Platform.wxPlatform` causing it to always return
+  ``WX_UNKNOWN``.
+
+
 1.3.0 (Wednesday 25th October 2017)
 -----------------------------------
 
