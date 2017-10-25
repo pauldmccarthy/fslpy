@@ -16,10 +16,12 @@ import os.path   as op
 import numpy     as np
 import nibabel   as nib
 
+import fsl.data.image as fslimage
+
 
 def testdir(contents=None):
-    """Returnsa context manager which creates and returns a temporary
-    directory, and then deletes it on exit.
+    """Returnsa context manager which creates, changes to, and returns a
+    temporary directory, and then deletes it on exit.
     """
 
     if contents is not None:
@@ -33,6 +35,9 @@ def testdir(contents=None):
         def __enter__(self):
 
             self.testdir = tempfile.mkdtemp()
+            self.prevdir = os.getcwd()
+
+            os.chdir(self.testdir)
 
             if self.contents is not None:
                 contents = [op.join(self.testdir, c) for c in self.contents]
@@ -41,6 +46,7 @@ def testdir(contents=None):
             return self.testdir
 
         def __exit__(self, *a, **kwa):
+            os.chdir(self.prevdir)
             shutil.rmtree(self.testdir)
 
     return ctx(contents)
@@ -104,7 +110,8 @@ def cleardir(dir):
 
 
 def random_voxels(shape, nvoxels=1):
-    randVoxels = np.vstack([np.random.randint(0, s, nvoxels) for s in shape[:3]]).T
+    randVoxels = np.vstack(
+        [np.random.randint(0, s, nvoxels) for s in shape[:3]]).T
 
     if nvoxels == 1:
         return randVoxels[0]
@@ -204,3 +211,31 @@ def make_mock_feat_analysis(featdir,
         make_random_image(f, s, xform)
 
     return featdir
+
+
+
+def make_random_mask(filename, shape, xform, premask=None):
+    """Make a random binary mask image. """
+
+    mask = np.zeros(shape, dtype=np.uint8)
+
+    if premask is None:
+        numones = np.random.randint(1, np.prod(shape) / 100)
+        xc      = np.random.randint(0, shape[0], numones)
+        yc      = np.random.randint(0, shape[1], numones)
+        zc      = np.random.randint(0, shape[2], numones)
+        mask[xc, yc, zc] = 1
+    else:
+        xc, yc, zc = np.where(premask)
+        numones    = np.random.randint(1, len(xc))
+        idxs       = np.random.randint(1, len(xc), numones)
+        xc         = xc[idxs]
+        yc         = yc[idxs]
+        zc         = zc[idxs]
+
+        mask[xc, yc, zc] = 1
+
+    img = fslimage.Image(mask, xform=xform)
+    img.save(filename)
+
+    return img

@@ -64,7 +64,7 @@ def isFEATImage(path):
 
     try:
         path = fslimage.addExt(path, mustExist=True)
-    except:
+    except fslimage.PathError:
         return False
 
     dirname  = op.dirname( path)
@@ -115,7 +115,7 @@ def hasStats(featdir):
     try:
         getZStatFile(featdir, 0)
         return True
-    except:
+    except fslimage.PathError:
         return False
 
 

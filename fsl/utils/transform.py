@@ -184,10 +184,11 @@ def decompose(xform, angles=True):
                  is returned.
 
     :returns: The following:
-                - A sequence of three scales
-                - A sequence of three translations
-                - A sequence of three rotations, in radians. Or, if
-                  ``angles is False``, a rotation matrix.
+
+               - A sequence of three scales
+               - A sequence of three translations
+               - A sequence of three rotations, in radians. Or, if
+                 ``angles is False``, a rotation matrix.
     """
 
     # The inline comments in the code below are taken verbatim from
@@ -556,7 +557,6 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
     """
 
     srcScaledVoxelMat    = srcImage.voxToScaledVoxMat
-    refInvScaledVoxelMat = refImage.voxToScaledVoxMat
     refInvScaledVoxelMat = refImage.scaledVoxToVoxMat
     refVoxToWorldMat     = refImage.voxToWorldMat
 

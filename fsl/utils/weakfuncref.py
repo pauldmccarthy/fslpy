@@ -148,9 +148,9 @@ class WeakFunctionRef(object):
         obj = self.obj()
 
         # Return the bound method object
-        try:    return getattr(obj, self.funcName)
+        try: return getattr(obj, self.funcName)
 
         # If the function is a bound private method,
         # its name on the instance will have been
         # mangled, so we need to search for it
-        except: return self.__findPrivateMethod()
+        except AttributeError: return self.__findPrivateMethod()

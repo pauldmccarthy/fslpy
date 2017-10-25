@@ -49,7 +49,7 @@ def isMelodicImage(path):
 
     try:
         path = fslimage.addExt(path, mustExist=True)
-    except:
+    except fslimage.PathError:
         return False
 
     dirname  = op.dirname( path)

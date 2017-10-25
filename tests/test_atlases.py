@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# test_atlases.py -
+# test_atlases.py - Unit tests for fsl.data.atlases. This module tests
+#                   atlas management - see test_atlases_query.py for
+#                   atlas query tests.
+#
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -156,7 +159,10 @@ def test_add_remove_atlas():
             assert val.atlasID == 'mla'
             removed[0] = True
 
-        xmlfile = _make_dummy_atlas(testdir, 'My Little Atlas', 'MLA', 'MyLittleAtlas')
+        xmlfile = _make_dummy_atlas(testdir,
+                                    'My Little Atlas',
+                                    'MLA',
+                                    'MyLittleAtlas')
 
         reg.register('added',   atlas_added,   topic='add')
         reg.register('removed', atlas_removed, topic='remove')
@@ -180,8 +186,10 @@ def test_extra_atlases():
 
     with tests.testdir() as testdir:
 
-        atlas1spec = _make_dummy_atlas(testdir, 'My atlas 1', 'myatlas1', 'MyAtlas1')
-        atlas2spec = _make_dummy_atlas(testdir, 'My atlas 2', 'myatlas2', 'MyAtlas2')
+        atlas1spec = _make_dummy_atlas(
+            testdir, 'My atlas 1', 'myatlas1', 'MyAtlas1')
+        atlas2spec = _make_dummy_atlas(
+            testdir, 'My atlas 2', 'myatlas2', 'MyAtlas2')
 
         badspec = op.join(testdir, 'badSpec.xml')
         with open(badspec, 'wt') as f:
@@ -194,8 +202,10 @@ def test_extra_atlases():
             'badatlas2={}'.format(badspec)
         ])
 
-        with mock.patch('fsl.data.atlases.fslsettings.read',  return_value=extraAtlases), \
-             mock.patch('fsl.data.atlases.fslsettings.write', return_value=None):
+        with mock.patch('fsl.data.atlases.fslsettings.read',
+                        return_value=extraAtlases), \
+             mock.patch('fsl.data.atlases.fslsettings.write',
+                        return_value=None):
 
             reg = atlases.registry
             reg.rescanAtlases()
@@ -220,131 +230,33 @@ def test_load_atlas():
     assert isinstance(lblatlas,     atlases.LabelAtlas)
 
 
-def test_label_atlas_coord():
+def test_find():
+
     reg = atlases.registry
-    reg.rescanAtlases()
+    reg.rescanAtlases
 
-    # Label atlas (i.e. not a probabilistic atlas)
-    atlas = reg.loadAtlas('talairach')
+    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
+    lblatlas     = reg.loadAtlas('talairach')
 
-    # coordinates are MNI152
-    taltests = [
-        ([ 23, -37, -22], 89),
-        ([-29, -78, -22], 157),
-        ([ 48,  39, -22], 196),
-        ([  6,  56,  37], 1034),
-        ([  6, -78,  50], 862)]
+    for atlas in [probatlas, probsumatlas, lblatlas]:
+        labels = atlas.desc.labels
 
-    for coords, expected in taltests:
-        assert atlas.label(     coords) == expected
-        assert atlas.coordLabel(coords) == expected
+        for label in labels:
 
-    assert atlas.label([ 999,  999,  999]) is None
-    assert atlas.label([-999, -999, -999]) is None
+            assert atlas     .find(value=label.value) == label
+            assert atlas     .find(index=label.index) == label
+            assert atlas.desc.find(value=label.value) == label
+            assert atlas.desc.find(index=label.index) == label
 
-    # Summary atlas (a thresholded probabilistic atlas)
-    atlas    = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
-    hoctests = [
-        ([-23,  58,  20], 0),
-        ([-23,  27, -20], 32),
-        ([-37, -75,  29], 21),
-        ([ -1,  37,   6], 28),
-        ([ 54, -44, -27], 15)]
+        with pytest.raises(ValueError):
+            atlas.find()
+        with pytest.raises(ValueError):
+            atlas.find(index=1, value=1)
 
-    for coords, expected in hoctests:
-        assert atlas.label(     coords) == expected
-        assert atlas.coordLabel(coords) == expected
+        with pytest.raises(IndexError):
+            atlas.find(index=len(labels))
 
-    assert atlas.label([ 999,  999,  999]) is None
-    assert atlas.label([-999, -999, -999]) is None
-
-
-def test_prob_atlas_coord():
-    reg = atlases.registry
-    reg.rescanAtlases()
-
-    atlas = reg.loadAtlas('harvardoxford-cortical')
-
-    assert len(atlas.proportions([ 999,  999,  999])) == 0
-    assert len(atlas.proportions([-999, -999, -999])) == 0
-
-    # Coordinates are MNI152
-    # Expected proportions are lists of (volume, proportion) tuples
-    hoctests = [
-        ([ 41, -14,  18], [( 1,  5), (41, 74), (42, 10)]),
-        ([ 41, -72,  34], [(21, 72)]),
-        ([-39, -21,  58], [(6,  39), (16, 19)]),
-        ([-37, -28,  13], [(42,  4), (44, 48), (45, 19)]),
-        ([-29, -42, -11], [(34, 21), (35, 23), (37, 26), (38, 24)])]
-
-    for coords, expected in hoctests:
-
-        result  = atlas.proportions(coords)
-        expidxs = [e[0] for e in expected]
-
-        for i in range(len(result)):
-            if i not in expidxs:
-                assert result[i] == 0
-
-        for expidx, expprob in expected:
-            assert result[expidx] == expprob
-
-
-def test_prob_atlas_mask():
-    # test the maskProportions function
-    reg = atlases.registry
-    reg.rescanAtlases()
-
-    hotests = [
-        'test_atlases_ho_mask_1mm',
-        'test_atlases_ho_mask_2mm'
-    ]
-    resolutions = [1, 2]
-
-    for prefix, res in it.product(hotests, resolutions):
-        maskfile    = op.join(datadir, '{}.nii.gz'   .format(prefix))
-        resultsfile = op.join(datadir, '{}_res{}.txt'.format(prefix, res))
-        atlas       = reg.loadAtlas('harvardoxford-cortical', resolution=res)
-        mask        = fslimage.Image(maskfile)
-
-        labels, props   = atlas.maskProportions(mask)
-        labels2, props2 = atlas.proportions(mask)
-
-        expected  = np.loadtxt(resultsfile)
-        explabels = expected[:, 0]
-        expprops  = expected[:, 1]
-
-        assert np.all(np.isclose(labels, labels2))
-        assert np.all(np.isclose(props,  props2))
-        assert np.all(np.isclose(labels, explabels))
-        assert np.all(np.isclose(props,  expprops))
-
-
-def test_label_atlas_mask():
-    # Test the maskLabel function
-    reg = atlases.registry
-    reg.rescanAtlases()
-
-    taltests = [
-        'test_atlases_tal_mask_1mm',
-        'test_atlases_tal_mask_2mm'
-    ]
-    resolutions = [1, 2]
-
-    for prefix, res in it.product(taltests, resolutions):
-        maskfile    = op.join(datadir, '{}.nii.gz'   .format(prefix))
-        resultsfile = op.join(datadir, '{}_res{}.txt'.format(prefix, res))
-        atlas       = reg.loadAtlas('talairach', resolution=res)
-        mask        = fslimage.Image(maskfile)
-
-        labels, props   = atlas.maskLabel(mask)
-        labels2, props2 = atlas.label(mask)
-
-        expected  = np.loadtxt(resultsfile)
-        explabels = expected[:, 0]
-        expprops  = expected[:, 1]
-
-        assert np.all(np.isclose(labels, labels2))
-        assert np.all(np.isclose(props,  props2))
-        assert np.all(np.isclose(labels, explabels))
-        assert np.all(np.isclose(props,  expprops))
+        maxval = max([l.value for l in labels])
+        with pytest.raises(KeyError):
+            atlas.find(value=maxval + 1)

@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 class TriangleMesh(object):
     """The ``TriangleMesh`` class represents a 3D model. A mesh is defined by a
     collection of ``N`` vertices, and ``M`` triangles.  The triangles are
-    defined by ``(M, 3)) indices into the list of vertices.
+    defined by ``(M, 3)`` indices into the list of vertices.
 
 
     A ``TriangleMesh`` instance has the following attributes:
@@ -380,7 +380,7 @@ def findReferenceImage(modelfile):
 
         dirname  = op.dirname(modelfile)
         prefixes = [getFIRSTPrefix(modelfile)]
-    except:
+    except ValueError:
         return None
 
     if prefixes[0].endswith('_first'):
@@ -389,7 +389,7 @@ def findReferenceImage(modelfile):
     for p in prefixes:
         try:
             return fslimage.addExt(op.join(dirname, p), mustExist=True)
-        except:
+        except fslimage.PathError:
             continue
 
     return None

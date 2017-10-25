@@ -8,14 +8,6 @@
 of information about the current platform we are running on. A single
 ``Platform`` instance is created when this module is first imported, and
 is available as a module attribute called :attr:`platform`.
-
-This module is also home to the following utility functions which abstract
-away various platform differences:
-
-.. autosummary::
-   :nosignatures:
-
-   isWidgetAlive
 """
 
 
@@ -25,6 +17,7 @@ import os
 import os.path as op
 import sys
 import importlib
+import deprecation
 
 import fsl.utils.notifier as notifier
 
@@ -80,6 +73,9 @@ are running the Linux/GTK wx build.
 """
 
 
+@deprecation.deprecated(deprecated_in='1.2.2',
+                        removed_in='2.0.0',
+                        details='Use fsleyes_widgets.isalive instead')
 def isWidgetAlive(widget):
     """Returns ``True`` if the given ``wx.Window`` object is "alive" (i.e.
     has not been destroyed), ``False`` otherwise. Works in both wxPython
@@ -150,6 +146,7 @@ class Platform(notifier.Notifier):
         self.__glRenderer   = None
         self.__glIsSoftware = None
         self.__fslVersion   = None
+        self.__fsldir       = None
         self.fsldir         = os.environ.get('FSLDIR', None)
 
         # Determine if a display is available. We do
@@ -243,18 +240,16 @@ class Platform(notifier.Notifier):
 
         pi = [t.lower() for t in wx.PlatformInfo]
 
-        for tag in pi:
+        if   any(['cocoa'  in p for p in pi]): plat = WX_MAC_COCOA
+        elif any(['carbon' in p for p in pi]): plat = WX_MAC_CARBON
+        elif any(['gtk'    in p for p in pi]): plat = WX_GTK
+        else:                                  plat = WX_UNKNOWN
 
-            if   any(['cocoa'  in p for p in pi]): platform = WX_MAC_COCOA
-            elif any(['carbon' in p for p in pi]): platform = WX_MAC_CARBON
-            elif any(['gtk'    in p for p in pi]): platform = WX_GTK
-            else:                                  platform = WX_UNKNOWN
+        if platform is WX_UNKNOWN:
+            log.warning('Could not determine wx platform from '
+                        'information: {}'.format(pi))
 
-            if platform is WX_UNKNOWN:
-                log.warning('Could not determine wx platform from '
-                            'information: {}'.format(pi))
-
-        return platform
+        return plat
 
 
     @property

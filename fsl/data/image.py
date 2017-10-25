@@ -222,6 +222,8 @@ class Nifti(notifier.Notifier):
         #          qform  = header.get('qform_code',  -1)
         #          sform  = header.get('sform_code',  -1)
         #
+        # TODO Change this in fslpy 2.0.0
+        #
         if isinstance(header, nib.nifti1.Nifti1Header):
             intent = header['intent_code']
             qform  = header['qform_code']
@@ -309,8 +311,8 @@ class Nifti(notifier.Notifier):
 
         val = self.header[key]
 
-        try:    val = bytes(val).partition(b'\0')[0]
-        except: val = bytes(val)
+        try:              val = bytes(val).partition(b'\0')[0]
+        except Exception: val = bytes(val)
 
         val = val.decode('ascii')
 
@@ -611,12 +613,12 @@ class Nifti(notifier.Notifier):
         :class:`Nifti` instance) has the same dimensions and is in the
         same space as this image.
         """
-        return np.all(np.isclose(self .__shape[:3],
-                                 other.__shape[:3]))  and \
-               np.all(np.isclose(self .__pixdim[:3],
-                                 other.__pixdim[:3])) and \
-               np.all(np.isclose(self .__voxToWorldMat,
-                                 other.__voxToWorldMat))
+        return np.all(np.isclose(self .shape[:3],
+                                 other.shape[:3]))  and \
+               np.all(np.isclose(self .pixdim[:3],
+                                 other.pixdim[:3])) and \
+               np.all(np.isclose(self .voxToWorldMat,
+                                 other.voxToWorldMat))
 
 
     def getOrientation(self, axis, xform):
@@ -1396,6 +1398,9 @@ def loadIndexedImageFile(filename):
     return image, fobj
 
 
+@deprecation.deprecated(deprecated_in='1.3.0',
+                        removed_in='2.0.0',
+                        details='Upgrade to nibabel 2.2.0')
 def read_segments(fileobj, segments, n_bytes):
     """This function is used in place of the
     ``nibabel.fileslice.read_segments`` function to ensure thread-safe read
@@ -1411,6 +1416,9 @@ def read_segments(fileobj, segments, n_bytes):
     This implementation protects the seek/read pairs with a
     ``threading.Lock``, which is added to ``IndexedGzipFile`` instances that
     are created in the :func:`loadIndexedImageFile` function.
+
+    .. note:: This patch is not required in nibabel 2.2.0 and newer. It will
+              be removed from ``fslpy`` in version 2.0.0.
     """
 
     from mmap import mmap
@@ -1420,7 +1428,7 @@ def read_segments(fileobj, segments, n_bytes):
         # actual file is available via the fobj attribute
         lock = getattr(fileobj.fobj, '_arrayproxy_lock')
 
-    except:
+    except AttributeError:
         return fileslice.orig_read_segments(fileobj, segments, n_bytes)
 
     if len(segments) == 0:
@@ -1457,6 +1465,9 @@ def read_segments(fileobj, segments, n_bytes):
     return bytes
 
 
-# Monkey-patch the above implementation into nibabel
-fileslice.orig_read_segments = fileslice.read_segments
-fileslice.read_segments      = read_segments
+# Monkey-patch the above implementation into
+# nibabel. FSLeyes requires at least 2.1.0 -
+# newer versions do not need to be patched.
+if nib.__version__ == '2.1.0':
+    fileslice.orig_read_segments = fileslice.read_segments
+    fileslice.read_segments      = read_segments

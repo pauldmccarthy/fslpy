@@ -326,7 +326,8 @@ class VoxelwiseEV(NormalEV):
         if op.exists(filename):
             self.filename = filename
         else:
-            log.warning('Voxelwise EV file does not exist: '.format(filename))
+            log.warning('Voxelwise EV file does not '
+                        'exist: {}'.format(filename))
             self.filename = None
 
 
@@ -406,8 +407,8 @@ class VoxelwiseConfoundEV(EV):
         if op.exists(filename):
             self.filename = filename
         else:
-            log.warning('Voxelwise confound EV file '
-                        'does not exist: '.format(filename))
+            log.warning('Voxelwise confound EV file does '
+                        'not exist: {}'.format(filename))
             self.filename = None
 
 
@@ -547,7 +548,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
         # Create the voxelwise confound EVs.
         # We make a name for the EV from the
         # file name.
-        for i, (f, l) in enumerate(zip(voxConfFiles, voxConfLocs)):
+        for i, f in enumerate(voxConfFiles):
             title = op.basename(fslimage.removeExt(f))
             evs.append(VoxelwiseConfoundEV(len(evs), i, title, f))
 

@@ -3,18 +3,20 @@
 #
 #    https://git.fmrib.ox.ac.uk/fsl/fslpy
 #
-# The build pipeline comprises four stages:
+# The build pipeline comprises the following stages:
 #
 #    1. test:   Unit tests
 #
-#    2. doc:    Building API documentation
+#    2. style:  Check coding style
 #
-#    3. build:  Building source distributions and wheels
+#    3. doc:    Building API documentation
 #
-#    4. deploy: Uploading the build outputs to pypi, and the documentation
+#    4. build:  Building source distributions and wheels
+#
+#    5. deploy: Uploading the build outputs to pypi, and the documentation
 #               to a hosting server.
 #
-# The test stage is executed on all branches of upstream and fork
+# The test and style stages are executed on all branches of upstream and fork
 # repositories.
 #
 # The doc stage, and the deploy-doc job, is executed on all branches of the
@@ -29,6 +31,7 @@
 
 stages:
  - test
+ - style
  - doc
  - build
  - deploy
@@ -67,14 +70,18 @@ stages:
 #
 #   - TWINE_REPOSITORY_URL:          - Pypi repository to upload to
 #
-#   - WXPYTHON_DEBIAN8_URL:          - Url to a location containg binary wheels
-#                                      for wxPython/debian 8
+#   - WXPYTHON_UBUNTU1404_URL:       - Url to a location containg binary wheels
+#                                      for wxPython/ubuntu 14.04
+#
+#   - WXPYTHON_UBUNTU1604_URL:       - Url to a location containg binary wheels
+#                                      for wxPython/ubuntu 16.04
 ###############################################################################
 
 
 variables:
   UPSTREAM_PROJECT:     "fsl/fslpy"
   UPSTREAM_URL:         "git@git.fmrib.ox.ac.uk"
+  TEST_OPTS:            "--cov-report= --cov-append"
 
 
 ####################################
@@ -127,9 +134,8 @@ variables:
 
     - if [[ -f /.dockerenv ]]; then
 
-        apt-get update -y                 || yum -y check-update           || true;
-        apt-get install -y openssh-client || yum install -y openssh-client || true;
-        apt-get install -y rsync          || yum install -y rsync          || true;
+        apt-get update -y                           || yum -y check-update                     || true;
+        apt-get install -y openssh-client rsync git || yum install -y openssh-client rsync git || true;
 
         eval $(ssh-agent -s);
         mkdir -p $HOME/.ssh;
@@ -204,7 +210,6 @@ variables:
 
 
 .test: &test_template
-  stage: test
   <<: *setup_ssh
 
   # Releases are just tags on a release
@@ -216,6 +221,17 @@ variables:
 
   script:
 
+    # Install $PY_VERSION, xvfb, and all
+    # of the wxpython dependencies.
+    - apt-get update -y || true
+    - apt-get install -y software-properties-common python-software-properties xvfb libgtk2.0-0 libnotify4 freeglut3 libsdl1.2debian
+    - add-apt-repository -y ppa:deadsnakes/ppa
+    - apt-get update -y || true
+    - apt-get install -y $PY_VERSION "$PY_VERSION"-dev $PY_PACKAGES
+    - $PY_VENV test.venv
+    - source test.venv/bin/activate
+    - pip install --upgrade pip setuptools
+
     # If running on a fork repository, we merge in the
     # upstream/master branch. This is done so that merge
     # requests from fork to the parent repository will
@@ -226,31 +242,22 @@ variables:
         git merge --no-commit --no-ff upstream/master;
       fi;
 
-    # I am currently assuming that we are
-    # running a debian 8/jessie container
-    # (the python:2.7 and 3.6 images are
-    # based on this).
-    # We need to install xvfb, and all of
-    # the wxpython dependencies.
-    - apt-get update  -y
-    - apt-get install -y xvfb libgtk2.0-0
-    - apt-get install -y libnotify4 freeglut3 libsdl1.2debian
+    - $INSTALL_WX
 
-    # Linux builds for wxPython are currently not
-    # on pypi, but are available at this url.
-    - pip install --only-binary wxpython -f $WXPYTHON_DEBIAN8_URL wxpython
-
-    # All other deps can be installed as
-    # normal. scipy is required by nibabel,
-    # but not listed in its requirements.
-    # We install test dependencies through
-    # pip, because if we let setuptools do
-    # it, it will build/install everything
-    # from source, rather than using wheels.
+    # All other deps can be installed as normal.
+    # We install test dependenciesd through pip,
+    # because if we let setuptools do it, it
+    # will build/install everything from source,
+    # rather than using wheels.
     - pip install -r requirements.txt
-    - pip install scipy
     - pip install sphinx sphinx-rtd-theme
     - pip install pytest pytest-cov pytest-html pytest-runner mock coverage
+
+    # style stage
+    - if [ "$TEST_STYLE"x != "x" ]; then pip install pylint flake8; fi;
+    - if [ "$TEST_STYLE"x != "x" ]; then flake8                           fsl || true; fi;
+    - if [ "$TEST_STYLE"x != "x" ]; then pylint --output-format=colorized fsl || true; fi;
+    - if [ "$TEST_STYLE"x != "x" ]; then exit 0; fi
 
     # We need the FSL atlases for the atlas
     # tests, and need $FSLDIR to be defined
@@ -263,9 +270,9 @@ variables:
     # We run some tests under xvfb-run
     # because they invoke wx. Sleep in
     # between, otherwise xvfb gets upset.
-    - xvfb-run python setup.py test --addopts="tests/test_async.py"
+    - xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_async.py"
     - sleep 5
-    - xvfb-run python setup.py test --addopts="tests/test_platform.py"
+    - xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
 
     # We run the immv/imcpy tests as the nobody
     # user because some tests expect permission
@@ -274,35 +281,74 @@ variables:
     # this directory writable by anybody (which,
     # unintuitively, includes nobody)
     - chmod -R a+w `pwd`
-    - su -s /bin/bash -c "python setup.py test --addopts='tests/test_immv_imcp.py'" nobody
+    - su -s /bin/bash -c 'source test.venv/bin/activate && python setup.py test --addopts="$TEST_OPTS tests/test_immv_imcp.py"' nobody
 
     # All other tests can be run as normal
-    - python setup.py test --addopts="--ignore=tests/test_async.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py"
+    - python setup.py test --addopts="$TEST_OPTS --ignore=tests/test_async.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py"
     - python -m coverage report
 
 
 test:2.7:
+  stage: test
+  image: ubuntu:16.04
   <<: *test_template
-  image: python:2.7
+  variables:
+    PY_VERSION:  "python2.7"
+    PY_PACKAGES: "python-pip python-virtualenv"
+    PY_VENV:     "virtualenv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
 
 
+# we use ubuntu:14.04 for python 3.4, because
+# wxpython is not available for 16.04/3.4
 test:3.4:
+  stage: test
+  image: ubuntu:14.04
   <<: *test_template
-  image: python:3.4
+  variables:
+    PY_VERSION:  "python3.4"
+    PY_PACKAGES: "python3-pip python3.4-venv"
+    PY_VENV:     "python3.4 -m venv"
+    INSTALL_WX:  "pip install --pre -f $WXPYTHON_UBUNTU1404_URL wxpython"
 
 
-# a wxphoenix/3.5 build
-# is not yet available
-# test:3.5:
-#   <<: *test_template
-#   image: python:3.5
+test:3.5:
+  stage: test
+  image: ubuntu:16.04
+  <<: *test_template
+  variables:
+    PY_VERSION:  "python3.5"
+    PY_PACKAGES: "python3-pip python3-venv"
+    PY_VENV:     "python3.5 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
 
 
-# a wxphoenix/3.6 build
-# is not yet available
-# test:3.6:
-#   <<: *test_template
-#   image: python:3.6
+test:3.6:
+  stage: test
+  image: ubuntu:16.04
+  <<: *test_template
+  variables:
+    PY_VERSION:  "python3.6"
+    PY_PACKAGES: "python3-pip python3.6-venv"
+    PY_VENV:     "python3.6 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
+
+
+#############
+# Style stage
+#############
+
+
+style:
+  stage: style
+  image: ubuntu:16.04
+  <<: *test_template
+  variables:
+    PY_VERSION:  "python3.5"
+    PY_PACKAGES: "python3-pip python3-venv"
+    PY_VENV:     "python3.5 -m venv"
+    INSTALL_WX:  "pip install --only-binary wxpython -f $WXPYTHON_UBUNTU1604_URL wxpython"
+    TEST_STYLE:  "true"
 
 
 ###########

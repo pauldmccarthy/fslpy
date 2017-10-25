@@ -341,7 +341,7 @@ class Settings(object):
         if not op.exists(cfgdir):
             try:
                 os.makedirs(cfgdir)
-            except:
+            except OSError:
                 log.warning(
                     'Unable to create {} configuration '
                     'directory: {}'.format(cid, cfgdir),
@@ -372,7 +372,7 @@ class Settings(object):
         try:
             with open(configFile, 'rb') as f:
                 return pickle.load(f)
-        except:
+        except (IOError, pickle.UnpicklingError):
             log.debug('Unable to load stored {} configuration file '
                       '{}'.format(self.__configID, configFile),
                       exc_info=True)
@@ -391,7 +391,7 @@ class Settings(object):
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f)
-        except:
+        except (IOError, pickle.PicklingError):
             log.warning('Unable to save {} configuration file '
                         '{}'.format(self.__configID, configFile),
                         exc_info=True)

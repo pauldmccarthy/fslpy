@@ -231,7 +231,7 @@ class ImageWrapper(notifier.Notifier):
         self.__image = None
         if self.__taskThread is not None:
             self.__taskThread.stop()
-            self.__taskThraed = None
+            self.__taskThread = None
 
 
     def getTaskThread(self):
@@ -459,7 +459,7 @@ class ImageWrapper(notifier.Notifier):
         # the min/max per volume/expansion, and
         # iteratively update the stored per-volume
         # coverage and data range.
-        for i, exp in enumerate(expansions):
+        for exp in expansions:
 
             data = self.__getData(exp, isTuple=True)
             data = data.squeeze(squeezeDims)
@@ -750,7 +750,7 @@ def naninfrange(data):
     # finite values in the array
     try:
         return data[finite].min(), data[finite].max()
-    except:
+    except Exception:
         return np.nan, np.nan
 
 
@@ -1097,7 +1097,7 @@ def calcExpansion(slices, coverage):
     # 'padding' dimensions of size 1.
     def finishExpansion(exp, vol):
         exp.append((vol, vol + 1))
-        for i in range(padDims):
+        for _ in range(padDims):
             exp.append((0, 1))
         return exp
 
