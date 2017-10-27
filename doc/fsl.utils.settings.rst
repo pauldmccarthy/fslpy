@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.settings module
-=========================
+``fsl.utils.settings``
+======================
 
 .. automodule:: fsl.utils.settings
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.async module
-======================
+``fsl.utils.async``
+===================
 
 .. automodule:: fsl.utils.async
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.constants module
-=========================
+``fsl.data.constants``
+======================
 
 .. automodule:: fsl.data.constants
     :members:

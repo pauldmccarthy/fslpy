@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.path module
-=====================
+``fsl.utils.path``
+==================
 
 .. automodule:: fsl.utils.path
     :members:

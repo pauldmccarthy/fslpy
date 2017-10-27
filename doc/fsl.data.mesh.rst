@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.mesh module
-====================
+``fsl.data.mesh``
+=================
 
 .. automodule:: fsl.data.mesh
     :members:

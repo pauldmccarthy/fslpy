@@ -1,7 +1,5 @@
-:orphan:
- 
-fsl.data.image module
-=====================
+``fsl.data.image``
+==================
 
 .. automodule:: fsl.data.image
     :members:

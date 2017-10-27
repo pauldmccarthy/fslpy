@@ -1,5 +1,5 @@
-fsl.utils package
-=================
+``fsl.utils``
+=============
 
 .. toctree::
    :hidden:
@@ -7,6 +7,7 @@ fsl.utils package
    fsl.utils.async
    fsl.utils.cache
    fsl.utils.callfsl
+   fsl.utils.imcp
    fsl.utils.memoize
    fsl.utils.notifier
    fsl.utils.path

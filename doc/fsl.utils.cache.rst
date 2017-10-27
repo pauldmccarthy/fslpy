@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.cache module
-======================
+``fsl.utils.cache``
+===================
 
 .. automodule:: fsl.utils.cache
     :members:

@@ -1,7 +1,5 @@
-:orphan:
- 
-fsl.data.imagewrapper module
-============================
+``fsl.data.imagewrapper``
+=========================
 
 .. automodule:: fsl.data.imagewrapper
     :members:

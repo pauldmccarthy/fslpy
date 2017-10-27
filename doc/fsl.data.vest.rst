@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.vest module
-====================
+``fsl.data.vest``
+=================
 
 .. automodule:: fsl.data.vest
     :members:

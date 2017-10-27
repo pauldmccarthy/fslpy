@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.version module
-==================
+``fsl.version``
+===============
 
 .. automodule:: fsl.version
     :members:

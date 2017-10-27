@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.scripts.immv module
-=======================
+``fsl.scripts.immv``
+====================
 
 .. automodule:: fsl.scripts.immv
     :members:

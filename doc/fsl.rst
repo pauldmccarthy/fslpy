@@ -1,13 +1,13 @@
-fsl package
-===========
+``fsl``
+=======
 
 .. toctree::
    :hidden:
 
-   fsl.version
-   fsl.utils
    fsl.data
    fsl.scripts
+   fsl.utils
+   fsl.version
 
 .. automodule:: fsl
     :members:

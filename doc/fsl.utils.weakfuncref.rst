@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.weakfuncref module
-============================
+``fsl.utils.weakfuncref``
+=========================
 
 .. automodule:: fsl.utils.weakfuncref
     :members:

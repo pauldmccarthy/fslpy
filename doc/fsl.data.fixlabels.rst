@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.fixlabels module
-=========================
+``fsl.data.fixlabels``
+======================
 
 .. automodule:: fsl.data.fixlabels
     :members:

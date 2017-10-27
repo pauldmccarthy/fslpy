@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.transform module
-==========================
+``fsl.utils.transform``
+=======================
 
 .. automodule:: fsl.utils.transform
     :members:

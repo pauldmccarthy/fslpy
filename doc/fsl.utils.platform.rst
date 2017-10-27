@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.platform module
-=========================
+``fsl.utils.platform``
+======================
 
 .. automodule:: fsl.utils.platform
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.melodicimage module
-============================
+``fsl.data.melodicimage``
+=========================
 
 .. automodule:: fsl.data.melodicimage
     :members:

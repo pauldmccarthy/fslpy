@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.callfsl module
-========================
+``fsl.utils.callfsl``
+=====================
 
 .. automodule:: fsl.utils.callfsl
     :members:

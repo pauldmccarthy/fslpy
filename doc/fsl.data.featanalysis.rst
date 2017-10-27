@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.featanalysis module
-============================
+``fsl.data.featanalysis``
+=========================
 
 .. automodule:: fsl.data.featanalysis
     :members:

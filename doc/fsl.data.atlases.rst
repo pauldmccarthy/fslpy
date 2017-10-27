@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.atlases module
-=======================
+``fsl.data.atlases``
+====================
 
 .. automodule:: fsl.data.atlases
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.memoize module
-========================
+``fsl.utils.memoize``
+=====================
 
 .. automodule:: fsl.utils.memoize
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.dtifit module
-======================
+``fsl.data.dtifit``
+===================
 
 .. automodule:: fsl.data.dtifit
     :members:

@@ -1,5 +1,5 @@
-fsl.scripts package
-===================
+``fsl.scripts``
+===============
 
 .. toctree::
    :hidden:

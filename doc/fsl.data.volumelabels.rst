@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.volumelabels module
-============================
+``fsl.data.volumelabels``
+=========================
 
 .. automodule:: fsl.data.volumelabels
     :members:

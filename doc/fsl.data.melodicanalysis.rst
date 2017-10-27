@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.melodicanalysis module
-===============================
+``fsl.data.melodicanalysis``
+============================
 
 .. automodule:: fsl.data.melodicanalysis
     :members:

@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.notifier module
-=========================
+``fsl.utils.notifier``
+======================
 
 .. automodule:: fsl.utils.notifier
     :members:

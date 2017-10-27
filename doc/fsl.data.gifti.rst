@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.gifti module
-=====================
+``fsl.data.gifti``
+==================
 
 .. automodule:: fsl.data.gifti
     :members:

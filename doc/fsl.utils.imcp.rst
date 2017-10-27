@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.utils.imcp module
-=====================
+``fsl.utils.imcp``
+==================
 
 .. automodule:: fsl.utils.imcp
     :members:

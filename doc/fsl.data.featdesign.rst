@@ -1,7 +1,5 @@
-:orphan:
-
-fsl.data.featdesign module
-==========================
+``fsl.data.featdesign``
+=======================
 
 .. automodule:: fsl.data.featdesign
     :members:
