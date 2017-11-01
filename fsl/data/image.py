@@ -1149,7 +1149,8 @@ class Image(Nifti):
 
         :arg sliceobj: Slice into this ``Image``. If ``None``, the whole
                        image is resampled, and it is assumed that it has the
-                       same number of dimensions as  ``shape``.
+                       same number of dimensions as  ``shape``. A
+                       :exc:`ValueError` is raised if this is not the case.
 
         :arg dtype:    ``numpy`` data type of the resampled data. If ``None``,
                        the :meth:`dtype` of this ``Image`` is used.
@@ -1183,6 +1184,9 @@ class Image(Nifti):
 
         oldShape = np.array(data.shape, dtype=np.float)
         newShape = np.array(newShape,   dtype=np.float)
+
+        if len(oldShape) != len(newShape):
+            raise ValueError('Shapes don\'t match')
 
         if not np.all(np.isclose(oldShape, newShape)):
 

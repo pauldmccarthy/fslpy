@@ -675,6 +675,42 @@ class Atlas(fslimage.Image):
         return self.desc.find(*args, **kwargs)
 
 
+    def prepareMask(self, mask):
+        """Makes sure that the given mask has the same resolution as this
+        atlas, so it can be used for querying. Used by the
+        :meth:`.LabelAtlas.maskLabels` and
+        :meth:`.ProbabilisticAtlas.maskProportions` methods.
+
+        :arg mask: A :class:`.Image`
+
+        :returns:  A ``numpy`` array containing the resampled mask data.
+
+        :raises:   A :exc:`MaskError` if the mask is not in the same space as
+                   this atlas, or does not have three dimensions.
+        """
+
+        # Make sure that the mask has the same
+        # number of voxels as the atlas image.
+        # Use nearest neighbour interpolation
+        # for resampling, as it is most likely
+        # that the mask is binary.
+        try:
+            mask, xform = mask.resample(self.shape[:3],
+                                        dtype=np.float32,
+                                        order=0)
+
+        except ValueError:
+            raise MaskError('Mask has wrong number of dimensions')
+
+        # TODO allow non-aligned mask - as long as it overlaps
+        #      in world coordinates, it should be allowed
+        if not fslimage.Image(mask, xform=xform).sameSpace(self):
+            raise MaskError('Mask is not in the same space as atlas')
+
+        return mask
+
+
+
 class MaskError(Exception):
     """Exception raised by the :meth:`LabelAtlas.maskLabel` and
     :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
@@ -781,23 +817,10 @@ class LabelAtlas(Atlas):
                   associated with each returned value.
         """
 
-        # Make sure that the mask has the same
-        # number of voxels as the atlas image.
-        # Use nearest neighbour interpolation
-        # for resampling, as it is most likely
-        # that the mask is binary.
-        mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
-
-        if not fslimage.Image(mask, xform=xform).sameSpace(self):
-            raise MaskError('Mask is not in the same space as atlas')
-
-        # TODO allow non-aligned mask - as long as it overlaps
-        #      in world coordinates, it should be allowed
-
-
         # Extract the values that are in
         # the mask, and their corresponding
         # mask weights
+        mask      = self.prepareMask(mask)
         boolmask  = mask > 0
         vals      = self[boolmask]
         weights   = mask[boolmask]
@@ -924,13 +947,7 @@ class ProbabilisticAtlas(Atlas):
 
         props = []
 
-        # Make sure that the mask has the same
-        # number of voxels as the atlas image
-        mask, xform = mask.resample(self.shape[:3], dtype=np.float32, order=0)
-
-        if not fslimage.Image(mask, xform=xform).sameSpace(self):
-            raise MaskError('Mask is not in the same space as atlas')
-
+        mask      = self.prepareMask(mask)
         boolmask  = mask > 0
         weights   = mask[boolmask]
         weightsum = weights.sum()
