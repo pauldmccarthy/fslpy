@@ -18,8 +18,9 @@ import mock
 import pytest
 
 import tests
-import fsl.data.atlases as atlases
-import fsl.data.image   as fslimage
+import fsl.utils.transform as transform
+import fsl.data.atlases    as atlases
+import fsl.data.image     as fslimage
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -233,7 +234,7 @@ def test_load_atlas():
 def test_find():
 
     reg = atlases.registry
-    reg.rescanAtlases
+    reg.rescanAtlases()
 
     probatlas    = reg.loadAtlas('harvardoxford-cortical')
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
@@ -260,3 +261,36 @@ def test_find():
         maxval = max([l.value for l in labels])
         with pytest.raises(KeyError):
             atlas.find(value=maxval + 1)
+
+
+def test_prepareMask():
+
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
+    lblatlas     = reg.loadAtlas('talairach')
+
+    for atlas in [probatlas, probsumatlas, lblatlas]:
+
+        ashape        = list(atlas.shape[:3])
+        m2shape       = [s * 1.5 for s in ashape]
+        goodmask1     = fslimage.Image(np.random.random(ashape),
+                                       xform=atlas.voxToWorldMat)
+        goodmask2, xf = goodmask1.resample(m2shape)
+        goodmask2     = fslimage.Image(goodmask2, xform=xf)
+
+        wrongdims     = fslimage.Image(
+            np.random.random(list(ashape) + [10]))
+        wrongspace    = fslimage.Image(
+            np.random.random((20, 20, 20)),
+            xform=transform.concat(atlas.voxToWorldMat, np.diag([2, 2, 2, 1])))
+
+        with pytest.raises(atlases.MaskError):
+            atlas.prepareMask(wrongdims)
+        with pytest.raises(atlases.MaskError):
+            atlas.prepareMask(wrongspace)
+
+        assert list(atlas.prepareMask(goodmask1).shape) == ashape
+        assert list(atlas.prepareMask(goodmask2).shape) == ashape
