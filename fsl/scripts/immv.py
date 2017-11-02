@@ -54,12 +54,18 @@ def main(argv=None):
         print(usage)
         return 1
 
-    srcs = fslpath.removeDuplicates(srcs,
-                                    allowedExts=fslimage.ALLOWED_EXTENSIONS,
-                                    fileGroups=fslimage.FILE_GROUPS)
+    try:
+        srcs = fslpath.removeDuplicates(
+            srcs,
+            allowedExts=fslimage.ALLOWED_EXTENSIONS,
+            fileGroups=fslimage.FILE_GROUPS)
 
-    for src in srcs:
-        imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
+        for src in srcs:
+            imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
+
+    except Exception as e:
+        print(str(e))
+        return 1
 
     return 0
 
