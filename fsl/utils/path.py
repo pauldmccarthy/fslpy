@@ -81,7 +81,8 @@ def addExt(prefix,
            allowedExts=None,
            mustExist=True,
            defaultExt=None,
-           fileGroups=None):
+           fileGroups=None,
+           unambiguous=True):
     """Adds a file extension to the given file ``prefix``.
 
     If ``mustExist`` is False, and the file does not already have a
@@ -95,8 +96,8 @@ def addExt(prefix,
 
        - No files exist with the given prefix and a supported extension.
 
-       - ``fileGroups`` is ``None``, and more than one file exists with the
-         given prefix, and a supported extension.
+       - ``fileGroups is None`` and ``unambiguous is True``, and more than
+         one file exists with the given prefix, and a supported extension.
 
     Otherwise the full file name is returned.
 
@@ -109,6 +110,11 @@ def addExt(prefix,
     :arg defaultExt:  Default file extension to use.
 
     :arg fileGroups:  Recognised file groups - see :func:`getFileGroup`.
+
+    :arg unambiguous: If ``True`` (the default), and more than one file
+                      exists with the specified ``prefix``, a
+                      :exc:`PathError` is raised. Otherwise, a list
+                      containing *all* matching files is returned.
     """
 
     if allowedExts is None: allowedExts = []
@@ -151,8 +157,14 @@ def addExt(prefix,
         raise PathError('Could not find a supported file '
                         'with prefix "{}"'.format(prefix))
 
-    # Ambiguity! More than one supported
-    # file with the specified prefix.
+    # If ambiguity is ok, return
+    # all matching paths
+    elif not unambiguous:
+        return allPaths
+
+    # Ambiguity is not ok! More than
+    # one supported file with the
+    # specified prefix.
     elif nexists > 1:
 
         # Remove non-existent paths from the

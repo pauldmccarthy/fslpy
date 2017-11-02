@@ -1319,15 +1319,16 @@ def looksLikeImage(filename, allowedExts=None):
     return any([filename.endswith(ext) for ext in allowedExts])
 
 
-def addExt(prefix, mustExist=True):
+def addExt(prefix, mustExist=True, unambiguous=True):
     """Adds a file extension to the given file ``prefix``.  See
     :func:`~fsl.utils.path.addExt`.
     """
     return fslpath.addExt(prefix,
-                          ALLOWED_EXTENSIONS,
-                          mustExist,
-                          defaultExt(),
-                          fileGroups=FILE_GROUPS)
+                          allowedExts=ALLOWED_EXTENSIONS,
+                          mustExist=mustExist,
+                          defaultExt=defaultExt(),
+                          fileGroups=FILE_GROUPS,
+                          unambiguous=unambiguous)
 
 
 def splitExt(filename):
