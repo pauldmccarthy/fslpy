@@ -21,8 +21,6 @@ import numpy     as np
 import fsl.data.atlases as fslatlases
 import fsl.data.image   as fslimage
 
-from . import __version__
-
 
 log = logging.getLogger(__name__)
 
