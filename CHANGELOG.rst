@@ -2,6 +2,22 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.4.0 (under development)
+
+* For image file pairs, the ``hdr`` extension now takes precedence over the
+  ``img`` extension, when using the :func:`fsl.data.image.addExt` (and
+  related) functions.
+* The :func:`fsl.utils.path.addExt` function accepts a new parameter,
+  ``unambiguous`` which causes it to allow an ambiguous prefix, and return
+  all matching paths.
+* New :mod:`~fsl.scripts.atlasq` application, intended to replace the FSL
+  ``atlasquery`` tool.
+* New :mod:`~fsl.scripts.imglob` application, intended to replace the FSL
+  ``imglob`` tool.
+* The :meth:`.Image.resample` method explicitly raises a ``ValueError``
+  if incompatible shapes are provided.
+
+
 1.3.1 (Wednesday 25th October 2017)
 -----------------------------------
 
