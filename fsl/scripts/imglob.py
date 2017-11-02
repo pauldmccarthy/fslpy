@@ -12,7 +12,6 @@ NIFTI/ANALYZE image files.
 from __future__ import print_function
 
 import                   sys
-import itertools      as it
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
