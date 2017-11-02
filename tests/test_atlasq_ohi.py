@@ -13,8 +13,8 @@ import            shlex
 
 import numpy as np
 
-import fsl.atlasq.atlasq as fslatlasq
-import fsl.data.atlases  as fslatlases
+import fsl.scripts.atlasq as fslatlasq
+import fsl.data.atlases   as fslatlases
 
 from . import (tempdir,
                make_random_mask,

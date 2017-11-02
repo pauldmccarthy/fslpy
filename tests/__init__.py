@@ -8,15 +8,81 @@
 
 
 import              os
+import              sys
 import              glob
 import              shutil
 import              tempfile
+import              contextlib
 import itertools as it
 import os.path   as op
 import numpy     as np
 import nibabel   as nib
 
+from six import StringIO
+
 import fsl.data.image as fslimage
+
+
+
+@contextlib.contextmanager
+def tempdir():
+    """Returnsa context manager which creates and returns a temporary
+    directory, and then deletes it on exit.
+    """
+
+    testdir = tempfile.mkdtemp()
+    prevdir = os.getcwd()
+    try:
+
+        os.chdir(testdir)
+        yield testdir
+
+    finally:
+        os.chdir(prevdir)
+        shutil.rmtree(testdir)
+
+
+class CaptureStdout(object):
+    """Context manager which captures stdout and stderr. """
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.__mock_stdout = StringIO('')
+        self.__mock_stderr = StringIO('')
+
+    def __enter__(self):
+        self.__real_stdout = sys.stdout
+        self.__real_stderr = sys.stderr
+
+        sys.stdout = self.__mock_stdout
+        sys.stderr = self.__mock_stderr
+
+
+    def __exit__(self, *args, **kwargs):
+        sys.stdout = self.__real_stdout
+        sys.stderr = self.__real_stderr
+
+        if args[0] is not None:
+            print('Error')
+            print('stdout:')
+            print(self.stdout)
+            print('stderr:')
+            print(self.stderr)
+
+        return False
+
+    @property
+    def stdout(self):
+        self.__mock_stdout.seek(0)
+        return self.__mock_stdout.read()
+
+    @property
+    def stderr(self):
+        self.__mock_stderr.seek(0)
+        return self.__mock_stderr.read()
+
 
 
 def testdir(contents=None):

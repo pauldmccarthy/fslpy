@@ -8,8 +8,8 @@
 import              os
 import itertools as it
 
-import fsl.data.atlases  as fslatlases
-import fsl.atlasq.atlasq as fslatlasq
+import fsl.data.atlases   as fslatlases
+import fsl.scripts.atlasq as fslatlasq
 
 from . import CaptureStdout
 
