@@ -4,16 +4,15 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module defines the ``imglob`` application, for expanding glob patterns
-involving NIFTI/ANALYZE image file name.
+"""This module defines the ``imglob`` application, which identifies unique
+NIFTI/ANALYZE image files.
 """
 
 
 from __future__ import print_function
 
-import os.path        as op
 import                   sys
-import                   glob
+import itertools      as it
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
@@ -29,44 +28,50 @@ groups = fslimage.FILE_GROUPS
 
 
 def main(argv=None):
-    """The ``imglob`` utility. Prints image files which match one or more
-    shell-style wildcard patterns.
+    """The ``imglob`` utility. Given a list of file names, identifies and prints
+    the unique NIFTI/ANALYZE image files.
     """
 
     if argv is None:
         argv = sys.argv[1:]
 
     if len(argv) < 1:
-        raise RuntimeError(usage)
+        print(usage)
+        return 1
 
     if   argv[0] == '-extension':  output = 'primary'
     elif argv[0] == '-extensions': output = 'all'
     else:                          output = 'prefix'
 
-    if output == 'prefix': patterns = argv
-    else:                  patterns = argv[1:]
+    if output == 'prefix': paths = argv
+    else:                  paths = argv[1:]
 
-    paths = []
+    imgfiles = []
 
-    for pattern in patterns:
+    # Build a list of all image files (both
+    # hdr and img and otherwise) that match
+    for path in paths:
+        try:
+            imgfiles.extend(fslimage.addExt(path, unambiguous=False))
+        except fslpath.PathError:
+            continue
 
-        hits = glob.glob(pattern)
-        hits = [fslimage.looksLikeImage(h) for h in hits]
-
-        if output == 'prefix':
-
-            hits = fslpath.removeDuplicates(hits,
+    if output == 'prefix':
+        imgfiles = fslpath.removeDuplicates(imgfiles,
                                             allowedExts=exts,
                                             fileGroups=groups)
-            hits = [fslpath.removeExt(h, exts) for h in hits]
-        elif output == 'primary':
-            hits = fslpath.removeDuplicates(hits,
+        imgfiles = [fslpath.removeExt(f, exts) for f in imgfiles]
+
+    elif output == 'primary':
+        imgfiles = fslpath.removeDuplicates(imgfiles,
                                             allowedExts=exts,
                                             fileGroups=groups)
 
-        paths.extend(hits)
+    imgfiles = sorted(set(imgfiles))
 
-    print(' '.join(paths))
+    print(' '.join(imgfiles))
+
+    return 0
 
 
 if __name__ == '__main__':
