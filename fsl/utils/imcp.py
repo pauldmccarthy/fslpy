@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
+"""This module contains functions for moving/copying NIFIT image files.
 
 .. autosummary::
    :nosignatures:

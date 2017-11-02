@@ -253,7 +253,7 @@ def getFileGroup(path,
         [('.img',    '.hdr'),
          ('.img.gz', '.hdr.gz')]
 
-    If you specify``fileGroups=[('.img', '.hdr')]`` and ``prefix='file'``, and
+    If you specify ``fileGroups=[('.img', '.hdr')]`` and ``prefix='file'``, and
     both ``file.img`` and ``file.hdr`` exist, the :func:`addExt` function would
     return ``file.img`` (i.e. the file which matches the first extension in
     the group).

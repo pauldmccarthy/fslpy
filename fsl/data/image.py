@@ -1284,8 +1284,8 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-FILE_GROUPS = [('.img',    '.hdr'),
-               ('.img.gz', '.hdr.gz')]
+FILE_GROUPS = [('.hdr',    '.img'),
+               ('.hdr.gz', '.img.gz')]
 """File suffix groups used by :func:`addExt` to resolve file path
 ambiguities - see :func:`fsl.utils.path.addExt`.
 """
