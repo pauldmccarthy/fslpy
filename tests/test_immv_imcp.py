@@ -440,12 +440,8 @@ def test_imcp_script_shouldFail(move=False):
                     cmd = cmd.replace('indir', indir).replace('outdir', outdir)
                     sp.call(cmd.split())
 
-            try:
-                if move: immv_script.main(imcp_args)
-                else:    imcp_script.main(imcp_args)
-                assert False
-            except (RuntimeError, IOError, fslpath.PathError, ImageFileError):
-                pass
+            if move: assert immv_script.main(imcp_args) != 0
+            else:    assert imcp_script.main(imcp_args) != 0
 
             sp.call('chmod u+rwx {}'.format(indir) .split())
             sp.call('chmod u+rwx {}'.format(outdir).split())
