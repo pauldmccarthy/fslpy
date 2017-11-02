@@ -43,13 +43,15 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     if len(argv) < 2:
-        raise RuntimeError(usage)
+        print(usage)
+        return 1
 
     srcs = argv[:-1]
     dest = argv[ -1]
 
     if len(srcs) > 1 and not op.isdir(dest):
-        raise RuntimeError(usage)
+        print(usage)
+        return 1
 
     srcs = fslpath.removeDuplicates(srcs,
                                     allowedExts=fslimage.ALLOWED_EXTENSIONS,
@@ -58,11 +60,8 @@ def main(argv=None):
     for src in srcs:
         imcp.imcp(src, dest, useDefaultExt=True, overwrite=True)
 
+    return 0
+
 
 if __name__ == '__main__':
-
-    try:
-        main()
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    sys.exit(main())
