@@ -317,13 +317,9 @@ def _gen_mask_query(atlas, use_label, q_type, q_in, res):
         mask = make_random_mask(
             maskfile, a_img.shape[:3], a_img.voxToWorldMat, zmask)
 
-        mask.save('/Users/paulmc/Projects/fsl-atlasq/mask_before_resample.nii.gz')
-        mask.save('/Users/paulmc/Projects/fsl-atlasq/mask.nii.gz')
-        fslimage.Image(np.array(zmask, dtype=np.uint8), xform=a_img.voxToWorldMat).save('/Users/paulmc/Projects/fsl-atlasq/zmask.nii.gz')
         if maskres != res:
 
             zmask = ndi.binary_erosion(zmask, iterations=3)
-            fslimage.Image(np.array(zmask, dtype=np.uint8), xform=a_img.voxToWorldMat).save('/Users/paulmc/Projects/fsl-atlasq/zmask.nii.gz')
             mask[zmask == 0] = 0
 
             a = _get_atlas(atlas, True, maskres)
@@ -342,7 +338,6 @@ def _gen_mask_query(atlas, use_label, q_type, q_in, res):
             mask = np.array(mask, dtype=np.uint8)
             mask = fslimage.Image(mask, xform=xform)
 
-            mask.save('/Users/paulmc/Projects/fsl-atlasq/mask.nii.gz')
             mask.save(maskfile)
 
     return maskfile
