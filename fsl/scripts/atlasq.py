@@ -19,6 +19,7 @@ import              logging
 import numpy     as np
 
 import fsl.data.atlases as fslatlases
+import fsl.version      as fslversion
 import fsl.data.image   as fslimage
 
 
@@ -534,7 +535,7 @@ def parseArgs(args):
         except:
             pass
 
-    prolog = 'FSL atlasq {}'.format(__version__)
+    prolog = 'FSL atlasq {}'.format(fslversion.__version__)
 
     helps = {
         'ohi'     : 'Emulate the FSL atlasquery tool',
