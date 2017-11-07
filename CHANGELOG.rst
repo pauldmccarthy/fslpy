@@ -3,7 +3,12 @@ order.
 
 
 1.4.0 (under development)
+-------------------------
 
+
+* The :mod:`fsl.utils.async` module is now deprecated, as ``async`` will
+  become a reserved word in Python 3.7. It has been renamed to
+  ``fsl.utils.idle``, with no other API changes.
 * For image file pairs, the ``hdr`` extension now takes precedence over the
   ``img`` extension, when using the :func:`fsl.data.image.addExt` (and
   related) functions.
