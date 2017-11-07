@@ -753,7 +753,9 @@ class Image(Nifti):
                         coordinates. If not provided, and a ``header`` is
                         provided, the transformation in the header is used.
                         If neither a ``xform`` nor a ``header`` are provided,
-                        an identity matrix is used.
+                        an identity matrix is used. If both a ``xform`` and a
+                        ``header`` are provided, the ``xform`` is used in
+                        preference to the header transformation.
 
         :arg loadData:  If ``True`` (the default) the image data is loaded
                         in to memory.  Otherwise, only the image header
@@ -798,6 +800,17 @@ class Image(Nifti):
         # the future.
         if header is not None:
             header = header.copy()
+
+        # if a header and xform are provided,
+        # make sure the xform gets used. Does
+        # not apply to ANALYZE images,
+        if header is not None and \
+           xform  is not None and \
+           isinstance(header, nib.nifti1.Nifti1Header):
+            sform = int(header.get_sform(True)[1])
+            qform = int(header.get_qform(True)[1])
+            header.set_sform(xform, code=sform)
+            header.set_qform(xform, code=qform)
 
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
