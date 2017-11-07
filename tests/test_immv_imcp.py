@@ -335,8 +335,8 @@ def test_imcp_script_shouldPass(move=False):
                 print('indir before:    ', os.listdir(indir))
                 print('outdir before:   ', os.listdir(outdir))
 
-                if move: immv_script.main(imcp_args)
-                else:    imcp_script.main(imcp_args)
+                if move: assert immv_script.main(imcp_args) == 0
+                else:    assert imcp_script.main(imcp_args) == 0
 
                 print('indir after:     ', os.listdir(indir))
                 print('outdir after:    ', os.listdir(outdir))
@@ -356,7 +356,6 @@ def test_imcp_script_shouldPass(move=False):
     finally:
         shutil.rmtree(indir)
         shutil.rmtree(outdir)
-
 
 
 def test_imcp_script_shouldFail(move=False):
@@ -452,6 +451,15 @@ def test_imcp_script_shouldFail(move=False):
     finally:
         shutil.rmtree(indir)
         shutil.rmtree(outdir)
+
+    # Other failure cases
+    if move: assert immv_script.main()       != 0
+    else:    assert imcp_script.main()       != 0
+    if move: assert immv_script.main([])     != 0
+    else:    assert imcp_script.main([])     != 0
+    if move: assert immv_script.main(['wa']) != 0
+    else:    assert imcp_script.main(['wa']) != 0
+
 
 
 def test_immv_script_shouldPass():
