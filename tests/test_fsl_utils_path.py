@@ -17,6 +17,8 @@ import pytest
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
+from . import testdir
+
 
 def make_dummy_file(path):
     with open(path, 'wt') as f:
@@ -491,6 +493,11 @@ def test_addExt_noExist():
         ('file.blob',   '.img', allowedExts,  'file.blob.img'),
         ('file.blob',    'img', None,         'file.blobimg'),
         ('file.blob',   '.img', None,         'file.blob.img'),
+
+        # If no defaultExt or allowedExts, the
+        # prefix should be returned unchanged
+        ('file',      None, None, 'file'),
+        ('file.blob', None, None, 'file.blob'),
     ]
 
     for prefix, defaultExt, allowedExts, expected in tests:
@@ -500,6 +507,46 @@ def test_addExt_noExist():
                               defaultExt=defaultExt,
                               mustExist=False) == expected
 
+
+def test_addExt_unambiguous():
+
+    allowedExts = fslimage.ALLOWED_EXTENSIONS
+    fileGroups  = fslimage.FILE_GROUPS
+
+    # files to create, prefix, file groups, allowedExts, defaultExt, expected,
+
+    tests = [
+
+        ('file.img file.hdr', 'file.img', None, None, None,   'file.img'),
+        ('file.img file.hdr', 'file.hdr', None, None, None,   'file.hdr'),
+        ('file.img file.hdr', 'file.hdr', None, None, None,   'file.hdr'),
+        ('file.img file.hdr', 'file',     None, None, '.hdr', 'file.hdr'),
+        ('file.img file.hdr', 'file',     None, None, '.img', 'file.img'),
+
+        ('file.img file.hdr', 'file',     None,       allowedExts, None,   'file.hdr file.img'),
+        ('file.img file.hdr', 'file.img', None,       allowedExts, None,   'file.img'),
+        ('file.img file.hdr', 'file',     fileGroups, allowedExts, None,   'file.hdr file.img'),
+        ('file.img file.hdr', 'file.img', fileGroups, allowedExts, None,   'file.img'),
+        ('file.img file.hdr', 'file',     None,       allowedExts, '.img', 'file.hdr file.img'),
+        ('file.img file.hdr', 'file.img', None,       allowedExts, '.img', 'file.img'),
+        ('file.img file.hdr', 'file',     fileGroups, allowedExts, '.img', 'file.hdr file.img'),
+        ('file.img file.hdr', 'file.img', fileGroups, allowedExts, '.img', 'file.img'),
+    ]
+
+    for create, prefix, groups, exts, defaultExt, expected in tests:
+
+        create   = create  .split()
+        expected = expected.split()
+
+        with testdir(create) as td:
+
+            result = fslpath.addExt(prefix,
+                                    allowedExts=exts,
+                                    fileGroups=groups,
+                                    defaultExt=defaultExt,
+                                    unambiguous=False)
+
+            assert sorted(expected) == sorted(result)
 
 def test_removeExt():
 
@@ -1071,6 +1118,11 @@ def test_removeDuplicates_otherFiles_shouldPass():
         ('file1.a file1.b file2.a file2.b', 'file1   file1.a file2   file2.a', '.a .b', ['.a .b'], 'file1.a file2.a'),
         ('file1.a file1.b file2.a file2.b', 'file1           file2',           '.a .b', ['.a .b'], 'file1.a file2.a'),
         ('file1.a file1.b file2.a file2.b', 'file1   file1.a file2',           '.a .b', ['.a .b'], 'file1.a file2.a'),
+
+        # no file groups - should still work
+        ('file1.a file1.b file2.a file2.b', 'file1.a',         '', [], 'file1.a'),
+        ('file1.a file1.b file2.a file2.b', 'file1.a file1.b', '', [], 'file1.a file1.b'),
+        ('file1.a file1.b file2.a file2.b', 'file1.a file2.a', '', [], 'file1.a file2.a'),
     ]
 
 
@@ -1253,6 +1305,12 @@ def test_uniquePrefix():
             result   = fslpath.uniquePrefix(op.join(workdir, filename))
 
             assert result == expected
+
+        # test that an error is raised on an invalid path
+        with pytest.raises(fslpath.PathError):
+            fslpath.uniquePrefix(op.join(workdir, 'not-a-valid-path'))
+        with pytest.raises(fslpath.PathError):
+            fslpath.uniquePrefix(op.join(workdir, '100307'))
 
     finally:
         shutil.rmtree(workdir)
