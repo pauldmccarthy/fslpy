@@ -214,8 +214,14 @@ def idleReset():
     if _idleTimer is not None:
         _idleTimer.Stop()
 
+    # If we're atexit, the ref
+    # to the queue module might
+    # have been cleared.
+    if queue is not None: newQueue = queue.Queue()
+    else:                 newQueue = None
+
     _idleRegistered = False
-    _idleQueue      = queue.Queue()
+    _idleQueue      = newQueue
     _idleQueueDict  = {}
     _idleTimer      = None
     _idleCallRate   = 200
