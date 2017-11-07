@@ -45,7 +45,7 @@ import numpy     as np
 import nibabel   as nib
 
 import fsl.utils.notifier as notifier
-import fsl.utils.async    as async
+import fsl.utils.idle     as idle
 
 
 log = logging.getLogger(__name__)
@@ -219,7 +219,7 @@ class ImageWrapper(notifier.Notifier):
             self.loadData()
 
         if threaded:
-            self.__taskThread = async.TaskThread()
+            self.__taskThread = idle.TaskThread()
             self.__taskThread.daemon = True
             self.__taskThread.start()
 

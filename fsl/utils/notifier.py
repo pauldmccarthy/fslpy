@@ -17,7 +17,7 @@ import collections
 import six
 
 
-import fsl.utils.async       as async
+import fsl.utils.idle        as idle
 import fsl.utils.weakfuncref as weakfuncref
 
 
@@ -133,7 +133,7 @@ class Notifier(object):
         :arg topic:     Optional topic on which to listen for notifications.
 
         :arg runOnIdle: If ``True``, this listener will be called on the main
-                        thread, via the :func:`.async.idle` function.
+                        thread, via the :func:`.idle.idle` function.
                         Otherwise this function will be called directly by the
                         :meth:`notify` method. Defaults to ``False``.
 
@@ -330,7 +330,7 @@ class Notifier(object):
         All other arguments passed to this method are ignored.
 
         .. note:: Listeners registered with ``runOnIdle=True`` are called
-                  via :func:`async.idle`. Other listeners are called directly.
+                  via :func:`idle.idle`. Other listeners are called directly.
                   See :meth:`register`.
         """
 
@@ -370,8 +370,8 @@ class Notifier(object):
             elif not listener.enabled:
                 continue
 
-            elif listener.runOnIdle: async.idle(callback, self, topic, value)
-            else:                    callback(            self, topic, value)
+            elif listener.runOnIdle: idle.idle(callback, self, topic, value)
+            else:                    callback(           self, topic, value)
 
 
     def __getListeners(self, topic):
