@@ -4,9 +4,9 @@
 .. toctree::
    :hidden:
 
-   fsl.utils.async
    fsl.utils.cache
    fsl.utils.callfsl
+   fsl.utils.idle
    fsl.utils.imcp
    fsl.utils.memoize
    fsl.utils.notifier
