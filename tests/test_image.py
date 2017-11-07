@@ -30,6 +30,7 @@ import fsl.utils.transform   as transform
 from . import make_random_image
 from . import make_dummy_file
 from . import testdir
+from . import tempdir
 
 
 def make_image(filename=None,
@@ -1081,3 +1082,84 @@ def test_image_resample(seed):
 
         resampled = img.resample((15, 15, 15), slc)[0]
         assert tuple(resampled.shape) == (15, 15, 15)
+
+
+def  test_Image_init_xform_nifti1():  _test_Image_init_xform(1)
+def  test_Image_init_xform_nifti2():  _test_Image_init_xform(2)
+def _test_Image_init_xform(imgtype):
+
+    with tempdir() as td:
+
+        sform = transform.compose(np.random.random(3),
+                                  np.random.random(3),
+                                  np.random.random(3))
+        qform = transform.compose(np.random.random(3),
+                                  np.random.random(3),
+                                  np.random.random(3))
+
+        sform_code = 3
+        qform_code = 4
+
+        # Create a base nifti image
+        img = make_image('file.nii')
+        img.set_sform(sform, code=sform_code)
+        img.set_qform(qform, code=qform_code)
+        nib.save(img, 'file.nii')
+        img = nib.load('file.nii')
+
+        # an image created off a
+        # header should have
+        # identical sform/qform
+        fimg = fslimage.Image(img.get_data(), header=img.header)
+
+        fsform, fsform_code = fimg.header.get_sform(True)
+        fqform, fqform_code = fimg.header.get_qform(True)
+        xform               = fimg.voxToWorldMat
+
+        assert np.all(np.isclose(fsform, sform))
+        assert np.all(np.isclose(fqform, qform))
+        assert np.all(np.isclose(xform,  sform))
+        assert fsform_code == sform_code
+        assert fqform_code == qform_code
+
+
+        # an image created off
+        # an xform only should
+        # get its sform set
+        # set to that xform,
+        # qform to None, and
+        # and codes set to (s2, q0)
+        fimg = fslimage.Image(img.get_data(), xform=sform)
+
+        fsform, fsform_code = fimg.header.get_sform(True)
+        fqform, fqform_code = fimg.header.get_qform(True)
+        xform               = fimg.voxToWorldMat
+
+        assert np.all(np.isclose(fsform, sform))
+        assert np.all(np.isclose(xform,  sform))
+        assert fqform is None
+        assert fsform_code == 2
+        assert fqform_code == 0
+
+        # an image created with a
+        # header and an xform should
+        # have its s/q forms set
+        # to the xform. and its
+        # s/q form codes the same
+        # as what is in the header
+        rxform = transform.compose(np.random.random(3),
+                                   np.random.random(3),
+                                   np.random.random(3))
+        fimg = fslimage.Image(img.get_data(),
+                              header=img.header,
+                              xform=rxform)
+
+        fsform, fsform_code = fimg.header.get_sform(True)
+        fqform, fqform_code = fimg.header.get_qform(True)
+        xform               = fimg.voxToWorldMat
+
+        assert np.all(np.isclose(fsform, rxform))
+        assert np.all(np.isclose(fqform, rxform))
+        assert np.all(np.isclose(xform,  rxform))
+        assert fsform_code == sform_code
+        assert fqform_code == qform_code
