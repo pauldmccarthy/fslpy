@@ -37,6 +37,9 @@ order.
 
 * :class:`.Atlas` classes can now pass ``kwargs`` through to the
   :class:`.Image` constructor.
+* :class:`.LabelAtlas` image values no longer need to match the index of the
+  label into the :class:`.AtlasDescription` ``labels`` list. This means that
+  label atlas XML files may contain non-sequential label values.
 * :class:`.Cache` now implements ``__getitem__`` and ``__setitem__``
 * The :func:`.image.read_segments` function (monkey-patched into ``nibabel``)
   is deprecated, as it is no longer necessary as of ``nibabel`` 2.2.0.
