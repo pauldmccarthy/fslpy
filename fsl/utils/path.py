@@ -293,7 +293,7 @@ def getFileGroup(path,
                       extensions in the group are returned.
 
     :arg unambiguous: Defaults to ``False``. If ``True``, and the path
-                      is not unambiguouosly part of one group, or part of
+                      is not unambiguously part of one group, or part of
                       no groups, a :exc:`PathError` is raised.
                       Otherwise, the path is returned.
     """
@@ -318,12 +318,13 @@ def getFileGroup(path,
         groupFiles = [base + s for s in group]
         exist      = [op.exists(f) for f in groupFiles]
 
-        if any(exist): partialMatches += 1
-        if all(exist): fullMatches    += 1
-        else:          continue
+        if any(exist):
+            partialMatches += 1
 
-        matchedGroups    .append(group)
-        matchedGroupFiles.append(groupFiles)
+        if all(exist):
+            fullMatches += 1
+            matchedGroups    .append(group)
+            matchedGroupFiles.append(groupFiles)
 
     # Path is not part of any group
     if partialMatches == 0:
@@ -410,11 +411,7 @@ def removeDuplicates(paths, allowedExts=None, fileGroups=None):
 
         groupFiles = getFileGroup(path, allowedExts, fileGroups)
 
-        if len(groupFiles) == 0:
-            if path not in unique:
-                unique.append(path)
-
-        elif not any([p in unique for p in groupFiles]):
+        if not any([p in unique for p in groupFiles]):
             unique.append(groupFiles[0])
 
     return unique
