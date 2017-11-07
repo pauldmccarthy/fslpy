@@ -424,7 +424,7 @@ def uniquePrefix(path):
     """Return the longest prefix for the given file name which unambiguously
     identifies it, relative to the other files in the same directory.
 
-    Raises a :exc:`ValueError` if a unique prefix could not be found (which
+    Raises a :exc:`PathError` if a unique prefix could not be found (which
     will never happen if the path is valid).
     """
 
@@ -442,7 +442,7 @@ def uniquePrefix(path):
 
         # Should never happen if path is valid
         elif len(hits) == 0 or idx >= len(filename) - 1:
-            raise ValueError('No unique prefix for {}'.format(filename))
+            raise PathError('No unique prefix for {}'.format(filename))
 
         # Not unique - continue looping
         else:
