@@ -6,6 +6,8 @@ order.
 -------------------------
 
 
+* The :func:`.uniquePrefix` function now raises a :exc:`.PathError` instead
+  of a :exc:`.ValueError`, when an invalid path is provided.
 * The :mod:`fsl.utils.async` module is now deprecated, as ``async`` will
   become a reserved word in Python 3.7. It has been renamed to
   ``fsl.utils.idle``, with no other API changes.
