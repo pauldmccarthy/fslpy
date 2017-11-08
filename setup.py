@@ -22,6 +22,9 @@ basedir = op.dirname(__file__)
 # Dependencies are listed in requirements.txt
 install_requires = open(op.join(basedir, 'requirements.txt'), 'rt').readlines()
 
+# Development/test dependencies are listed in requirements-dev.txt
+dev_requires = open(op.join(basedir, 'requirements-dev.txt'), 'rt').readlines()
+
 packages = find_packages(
     exclude=('doc', 'tests', 'dist', 'build', 'fslpy.egg-info'))
 
@@ -104,15 +107,10 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
     packages=packages,
-    install_requires=install_requires,
-    setup_requires=['pytest-runner', 'sphinx', 'sphinx-rtd-theme', 'mock'],
 
-    tests_require=['mock',
-                   'coverage',
-                   'pytest-cov',
-                   'pytest-html',
-                   'pytest-runner',
-                   'pytest'],
+    install_requires=install_requires,
+    setup_requires=dev_requires,
+
     test_suite='tests',
 
     cmdclass={'doc' : doc},
