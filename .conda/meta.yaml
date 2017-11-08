@@ -1,0 +1,21 @@
+package:
+  name:    '{{ name }}'
+  version: '{{ version }}'
+
+source:
+  path:
+    ../
+
+requirements:
+  build:
+    - python
+    - setuptools
+    {% for r in requirements %}
+    - {{ r }}
+    {% endfor %}
+
+  run:
+    - python
+    {% for r in requirements %}
+    - {{ r }}
+    {% endfor %}
