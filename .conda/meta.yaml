@@ -2,6 +2,11 @@ package:
   name:    '{{ name }}'
   version: '{{ version }}'
 
+
+build:
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
 source:
   path:
     ../
@@ -10,12 +15,6 @@ requirements:
   build:
     - python
     - setuptools
-    {% for r in requirements %}
-    - {{ r }}
-    {% endfor %}
 
   run:
     - python
-    {% for r in requirements %}
-    - {{ r }}
-    {% endfor %}
