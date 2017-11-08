@@ -12,7 +12,7 @@ name=`python ../setup.py --name`
 # them conda compatible...
 
 # strip all spaces
-reqs=`cat ../requirements.txt | sed -e 's/ //g'`
+reqs=`cat ../requirements.txt ../requirements-dev.txt | sed -e 's/ //g'`
 
 # add a space after package name -
 # package names must match a-zA-Z0-9_
