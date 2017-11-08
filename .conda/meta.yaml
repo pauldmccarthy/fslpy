@@ -13,7 +13,7 @@ source:
 
 requirements:
   build:
-    - python
+    - python {{ python }}
     - setuptools
     - six 1.*
     - deprecation 1.*

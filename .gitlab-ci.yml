@@ -1,4 +1,4 @@
-###########################################################################
+#############################################################################
 # This file defines the build process for fslpy, as hosted at:
 #
 #    https://git.fmrib.ox.ac.uk/fsl/fslpy
@@ -11,10 +11,10 @@
 #
 #    3. doc:    Building API documentation
 #
-#    4. build:  Building source distributions and wheels
+#    4. build:  Building source, wheel and conda distributions
 #
-#    5. deploy: Uploading the build outputs to pypi, and the documentation
-#               to a hosting server.
+#    5. deploy: Uploading the build outputs to pypi/hosting servers, and the
+#               documentation to a hosting server.
 #
 # The test and style stages are executed on all branches of upstream and fork
 # repositories.
@@ -22,11 +22,14 @@
 # The doc stage, and the deploy-doc job, is executed on all branches of the
 # upstream repository.
 #
-# The build stage, and the remaining jobs in the  deploy stage, are only
+# The build stage, and the remaining jobs in the deploy stage, are only
 # executed on the upstream repository, and only for release tags.
 #
 # The deploy stages are manually instantiated.
-###########################################################################
+#
+# Most of the logic for each job is defined in shell scripts in the .ci
+# sub-directory.
+#############################################################################
 
 
 stages:
@@ -56,6 +59,9 @@ stages:
 #   - SSH_PRIVATE_KEY_DOC_DEPLOY     - private key for rsyncing documentation
 #                                      to remote host (DOC_HOST)
 #
+#   - SSH_PRIVATE_KEY_CONDA_DEPLOY   - private key for rsyncing conda builds
+#                                      to remote host (CONDA_HOST)
+#
 #   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
 #
 #   - DOC_HOST:                      - Username@host to upload documentation to
@@ -63,6 +69,12 @@ stages:
 #
 #   - FSL_HOST:                      - Username@host to download FSL data from
 #                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
+#
+#   - CONDA_HOST:                    - Username@host to upload conda build to
+#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
+#
+#   - CONDA_CHANNELS                 - List of additional conda channels to
+#                                      use for conda build.
 #
 #   - TWINE_USERNAME:                - Username to use when uploading to pypi
 #
@@ -262,19 +274,18 @@ build-conda-dist:
   <<: *patch_version
 
   stage: build
-  image: continuumio/minconda
+  image: continuumio/miniconda3
 
   tags:
     - docker
 
   script:
-
-   - bash ./.ci/build_conda_dist.sh
+   - bash ./.ci/build_conda_dist.sh fslpy "$CI_COMMIT_REF_NAME"
 
   artifacts:
     expire_in: 1 day
     paths:
-      - dist/*
+      - dist/*conda.tar.gz
 
 
 ##############
@@ -314,3 +325,21 @@ deploy-pypi:
 
   script:
     - bash ./.ci/deploy_pypi.sh
+
+
+
+deploy-conda:
+  <<: *only_releases
+  <<: *setup_ssh
+  stage: deploy
+  when:  manual
+  image: python:3.5
+
+  tags:
+    - docker
+
+  dependencies:
+    - build-conda-dist
+
+  script:
+    - bash ./.ci/deploy_conda.sh

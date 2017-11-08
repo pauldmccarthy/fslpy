@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Install $PY_VERSION, xvfb, and all
 # of the wxpython dependencies.
 apt-get update -y || true
