@@ -19,7 +19,8 @@ rm vars.txt
 
 mkdir -p dist
 
-conda update conda setuptools conda-build
+conda update  --yes conda
+conda install --yes setuptools conda-build
 
 conda build --output-folder=dist .conda
 
