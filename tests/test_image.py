@@ -750,9 +750,14 @@ def _test_Image_changeData(imgtype):
         newdmin = dmin - 100
         newdmax = dmax + 100
 
-        # random value below the data range
-        minx, miny, minz = randvox()
-        img[minx, miny, minz] = newdmin
+        # random value below the data range,
+        # making sure not to overwrite the
+        # max
+        while True:
+            minx, miny, minz = randvox()
+            if not np.isclose(img[minx, miny, minz], dmax):
+                img[minx, miny, minz] = newdmin
+                break
 
         assert notified.get('data',      False)
         assert notified.get('dataRange', False)
@@ -762,13 +767,14 @@ def _test_Image_changeData(imgtype):
         notified.pop('data')
         notified.pop('dataRange')
 
-        # random value above the data range
-        maxx, maxy, maxz = randvox()
-
-        while (maxx, maxy, maxz) == (minx, miny, minz):
+        # random value above the data range,
+        # making sure not to overwrite the
+        # min
+        while True:
             maxx, maxy, maxz = randvox()
-
-        img[maxx, maxy, maxz] = newdmax
+            if not np.isclose(img[maxx, maxy, maxz], newdmin):
+                img[maxx, maxy, maxz] = newdmax
+                break
 
         assert notified.get('data',      False)
         assert notified.get('dataRange', False)
