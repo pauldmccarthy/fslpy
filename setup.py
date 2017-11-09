@@ -117,10 +117,10 @@ setup(
 
     entry_points={
         'console_scripts' : [
-            'immv   = fsl.scripts.immv.main',
-            'imcp   = fsl.scripts.imcp.main',
-            'imglob = fsl.scripts.imglob.main',
-            'atlasq = fsl.scripts.atlasq.main',
+            'immv   = fsl.scripts.immv:main',
+            'imcp   = fsl.scripts.imcp:main',
+            'imglob = fsl.scripts.imglob:main',
+            'atlasq = fsl.scripts.atlasq:main',
         ]
     }
 )
