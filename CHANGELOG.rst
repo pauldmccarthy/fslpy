@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.4.1 (Thursday 9th November 2017)
+----------------------------------
+
+
+* Fixed bug in ``setup.py``.
+
+
 1.4.0 (Thursday 9th November 2017)
 ----------------------------------
 
