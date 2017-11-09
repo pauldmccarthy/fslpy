@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.4.0 (under development)
--------------------------
+1.4.0 (Thursday 9th November 2017)
+----------------------------------
 
 
 * The :func:`.uniquePrefix` function now raises a :exc:`.PathError` instead
