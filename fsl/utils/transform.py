@@ -23,6 +23,7 @@ spaces. The following functions are provided:
    axisBounds
    flirtMatrixToSform
    sformToFlirtMatrix
+   rmsdev
 
 And a few more functions are provided for working with vectors:
 
@@ -593,3 +594,49 @@ def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
                   refWorldToVoxMat,
                   srcVoxToWorldMat,
                   srcScaledVoxToVoxMat)
+
+
+def rmsdev(T1, T2, R=None, xc=None):
+    """Calculates the RMS deviation of the given affine transforms ``T1`` and
+    ``T2``. This can be used as a measure of the 'distance' between two
+    affines.
+
+    The ``T1`` and ``T2`` arguments may be either full ``(4, 4)`` affines, or
+    ``(3, 3)`` rotation matrices.
+
+    See FMRIB technical report TR99MJ1, available at:
+
+    https://www.fmrib.ox.ac.uk/datasets/techrep/
+
+    :arg T1:  First affine
+    :arg T2:  Second affine
+    :arg R:   Sphere radius
+    :arg xc:  Sphere centre
+    :returns: The RMS deviation between ``T1`` and ``T2``.
+    """
+
+    if R is None:
+        R = 1
+
+    if xc is None:
+        xc = np.zeros(3)
+
+    # rotations only
+    if T1.shape == (3, 3):
+        M = np.dot(T2, invert(T1)) - np.eye(3)
+        A = M[:3, :3]
+        t = np.zeros(3)
+
+    # full affine
+    else:
+        M = np.dot(T2, invert(T1)) - np.eye(4)
+        A = M[:3, :3]
+        t = M[:3,  3]
+
+    Axc = np.dot(A, xc)
+
+    erms = np.dot((t + Axc).T, t + Axc)
+    erms = 0.2 * R ** 2 * np.dot(A.T, A).trace() + erms
+    erms = np.sqrt(erms)
+
+    return erms
