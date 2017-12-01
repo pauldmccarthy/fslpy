@@ -372,7 +372,7 @@ class Settings(object):
         try:
             with open(configFile, 'rb') as f:
                 return pickle.load(f)
-        except (IOError, pickle.UnpicklingError):
+        except (IOError, pickle.UnpicklingError, EOFError):
             log.debug('Unable to load stored {} configuration file '
                       '{}'.format(self.__configID, configFile),
                       exc_info=True)
@@ -391,7 +391,7 @@ class Settings(object):
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f)
-        except (IOError, pickle.PicklingError):
+        except (IOError, pickle.PicklingError, EOFError):
             log.warning('Unable to save {} configuration file '
                         '{}'.format(self.__configID, configFile),
                         exc_info=True)
