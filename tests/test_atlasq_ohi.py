@@ -89,7 +89,12 @@ def test_coords(seed):
     for ad in atlases:
 
         # atlasquery/ohi always uses 2mm resolution
-        atlas = fslatlases.loadAtlas(ad.atlasID, resolution=2)
+        atlas = fslatlases.loadAtlas(
+            ad.atlasID,
+            resolution=2,
+            indexed=True,
+            calcRange=False,
+            loadData=False)
 
         print(ad.name)
 
@@ -174,7 +179,12 @@ def test_mask(seed):
 
             # atlasquery always uses 2mm
             # resolution versions of atlases
-            atlas2mm = fslatlases.loadAtlas(desc.atlasID, resolution=2)
+            atlas2mm = fslatlases.loadAtlas(
+                desc.atlasID,
+                resolution=2,
+                indexed=True,
+                calcRange=False,
+                loadData=False)
 
             # Test with 1mm and 2mm masks
             for res in [1, 2]:
