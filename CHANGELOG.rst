@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.4.2 (under development)
--------------------------
+1.4.2 (Monday December 4th 2017)
+--------------------------------
 
 
 * New function :func:`.transform.rmsdev` function, which implements the RMS
