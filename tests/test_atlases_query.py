@@ -34,11 +34,12 @@ def _repeat(iterator, n):
             yield elem
 
 
-_atlases = cache.Cache(maxsize=1)
+_atlases = cache.Cache()
 def _get_atlas(atlasID, res, summary=False):
     atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
-        if summary or atlasID in ('talairach', 'striatum-structural', 'jhu-labels'):
+        if summary or atlasID in ('talairach', 'striatum-structural',
+                                  'jhu-labels'):
             kwargs = {}
         else:
             kwargs = {'loadData'  : False,
@@ -66,7 +67,7 @@ def _random_atlas(atype, res, summary=False):
 
 # Generate a mask which tells us which
 # voxels in the atlas are all zeros
-_zero_masks = {}
+_zero_masks = cache.Cache(maxsize=5)
 def _get_zero_mask(aimg):
 
     atlasID = aimg.desc.atlasID

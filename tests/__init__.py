@@ -285,21 +285,15 @@ def make_random_mask(filename, shape, xform, premask=None):
 
     mask = np.zeros(shape, dtype=np.uint8)
 
-    if premask is None:
-        numones = np.random.randint(1, np.prod(shape) / 100)
-        xc      = np.random.randint(0, shape[0], numones)
-        yc      = np.random.randint(0, shape[1], numones)
-        zc      = np.random.randint(0, shape[2], numones)
-        mask[xc, yc, zc] = 1
-    else:
-        xc, yc, zc = np.where(premask)
-        numones    = np.random.randint(1, len(xc))
-        idxs       = np.random.randint(1, len(xc), numones)
-        xc         = xc[idxs]
-        yc         = yc[idxs]
-        zc         = zc[idxs]
+    numones = np.random.randint(1, np.prod(shape) / 100)
+    xc      = np.random.randint(0, shape[0], numones)
+    yc      = np.random.randint(0, shape[1], numones)
+    zc      = np.random.randint(0, shape[2], numones)
 
-        mask[xc, yc, zc] = 1
+    mask[xc, yc, zc] = 1
+
+    if premask is not None:
+        mask[premask == 0] = 0
 
     img = fslimage.Image(mask, xform=xform)
     img.save(filename)

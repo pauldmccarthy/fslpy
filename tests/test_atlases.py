@@ -20,7 +20,7 @@ import pytest
 import tests
 import fsl.utils.transform as transform
 import fsl.data.atlases    as atlases
-import fsl.data.image     as fslimage
+import fsl.data.image      as fslimage
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -222,7 +222,8 @@ def test_load_atlas():
     reg = atlases.registry
     reg.rescanAtlases()
 
-    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probatlas    = reg.loadAtlas('harvardoxford-cortical',
+                                 indexed=True, calcRange=False, loadData=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 
@@ -236,7 +237,8 @@ def test_find():
     reg = atlases.registry
     reg.rescanAtlases()
 
-    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probatlas    = reg.loadAtlas('harvardoxford-cortical',
+                                 indexed=True, calcRange=False, loadData=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 
@@ -268,7 +270,8 @@ def test_prepareMask():
     reg = atlases.registry
     reg.rescanAtlases()
 
-    probatlas    = reg.loadAtlas('harvardoxford-cortical')
+    probatlas    = reg.loadAtlas('harvardoxford-cortical',
+                                 indexed=True, loadData=False, calcRange=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 
@@ -276,13 +279,16 @@ def test_prepareMask():
 
         ashape        = list(atlas.shape[:3])
         m2shape       = [s * 1.5 for s in ashape]
-        goodmask1     = fslimage.Image(np.random.random(ashape),
-                                       xform=atlas.voxToWorldMat)
+
+        goodmask1     = fslimage.Image(
+            np.array(np.random.random(ashape), dtype=np.float32),
+            xform=atlas.voxToWorldMat)
+
         goodmask2, xf = goodmask1.resample(m2shape)
         goodmask2     = fslimage.Image(goodmask2, xform=xf)
 
         wrongdims     = fslimage.Image(
-            np.random.random(list(ashape) + [10]))
+            np.random.random(list(ashape) + [2]))
         wrongspace    = fslimage.Image(
             np.random.random((20, 20, 20)),
             xform=transform.concat(atlas.voxToWorldMat, np.diag([2, 2, 2, 1])))
