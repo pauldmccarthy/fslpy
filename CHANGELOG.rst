@@ -2,19 +2,28 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.4.1 (Thursday 9th November 2017)
+1.4.2 (Monday December 4th 2017)
+--------------------------------
+
+
+* New function :func:`.transform.rmsdev` function, which implements the RMS
+  deviation equation for comparing two affine transformations (FMRIB Technical
+  Report TR99MJ1, available at https://www.fmrib.ox.ac.uk/datasets/techrep/).
+
+
+1.4.1 (Thursday November 9th 2017)
 ----------------------------------
 
 
 * Fixed bug in ``setup.py``.
 
 
-1.4.0 (Thursday 9th November 2017)
+1.4.0 (Thursday November 9th 2017)
 ----------------------------------
 
 
-* The :func:`.uniquePrefix` function now raises a :exc:`.PathError` instead
-  of a :exc:`.ValueError`, when an invalid path is provided.
+* The :func:`.uniquePrefix` function now raises a :exc:`~.path.PathError`
+  instead of a :exc:`.ValueError`, when an invalid path is provided.
 * The :mod:`fsl.utils.async` module is now deprecated, as ``async`` will
   become a reserved word in Python 3.7. It has been renamed to
   ``fsl.utils.idle``, with no other API changes.
@@ -32,7 +41,7 @@ order.
   if incompatible shapes are provided.
 
 
-1.3.1 (Wednesday 25th October 2017)
+1.3.1 (Wednesday October 25th 2017)
 -----------------------------------
 
 
@@ -40,7 +49,7 @@ order.
   ``WX_UNKNOWN``.
 
 
-1.3.0 (Wednesday 25th October 2017)
+1.3.0 (Wednesday October 25th 2017)
 -----------------------------------
 
 

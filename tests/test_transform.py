@@ -537,3 +537,34 @@ def test_sformToFlirtMatrix():
 
         assert np.all(np.isclose(result1, expected))
         assert np.all(np.isclose(result2, expected))
+
+
+def test_rmsdev():
+
+    t1 = np.eye(4)
+    t2 = transform.scaleOffsetXform([1, 1, 1], [2, 0, 0])
+
+    assert np.isclose(transform.rmsdev(t1, t2), 2)
+    assert np.isclose(transform.rmsdev(t1, t2, R=2), 2)
+    assert np.isclose(transform.rmsdev(t1, t2, R=2, xc=(1, 1, 1)), 2)
+
+    t1       = np.eye(3)
+    lastdist = 0
+
+    for i in range(1, 11):
+        rot    = np.pi * i / 10.0
+        t2     = transform.axisAnglesToRotMat(rot, 0, 0)
+        result = transform.rmsdev(t1, t2)
+
+        assert result > lastdist
+
+        lastdist = result
+
+    for i in range(11, 20):
+        rot    = np.pi * i / 10.0
+        t2     = transform.axisAnglesToRotMat(rot, 0, 0)
+        result = transform.rmsdev(t1, t2)
+
+        assert result < lastdist
+
+        lastdist = result
