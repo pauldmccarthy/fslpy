@@ -34,8 +34,7 @@ def _repeat(iterator, n):
             yield elem
 
 
-
-_atlases = cache.Cache()
+_atlases = cache.Cache(maxsize=1)
 def _get_atlas(atlasID, res, summary=False):
     atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
