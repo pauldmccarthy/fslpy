@@ -483,8 +483,8 @@ class AtlasDescription(object):
 
         self.atlasID   = atlasID
         self.specPath  = op.abspath(filename)
-        self.name      = header.find('name').text
-        self.atlasType = header.find('type').text.lower()
+        self.name      = header.find('name').text.strip()
+        self.atlasType = header.find('type').text.strip().lower()
 
         # Spelling error in some of the atlas.xml files.
         if self.atlasType == 'probabalistic':
@@ -501,8 +501,8 @@ class AtlasDescription(object):
         for image in images:
 
             # Every image must also have a summary image
-            imagefile        = image.find('imagefile')       .text
-            summaryimagefile = image.find('summaryimagefile').text
+            imagefile        = image.find('imagefile')       .text.strip()
+            summaryimagefile = image.find('summaryimagefile').text.strip()
 
             # Assuming that the path
             # names begin with a slash
@@ -533,7 +533,7 @@ class AtlasDescription(object):
 
         for i, label in enumerate(labels):
 
-            name  = label.text
+            name  = label.text.strip()
             index = int(  label.attrib['index'])
             x     = float(label.attrib['x'])
             y     = float(label.attrib['y'])

@@ -171,8 +171,8 @@ def queryLongOutput(atlas, sources, types, allLabels, allProps):
         label = labels[0]
         name  = names[ 0]
 
-        if label is None:
-            label = np.nan
+        if label is None: label = np.nan
+        else:             label = int(label)
 
         fields = ['name', 'index']
         values = [name, label]
@@ -304,7 +304,7 @@ def ohi(namespace):
                 props, labels = zip(*reversed(sorted(zip(props, labels))))
 
             for label, prop in zip(labels, props):
-                label = atlasDesc.labels[label].name
+                label = atlasDesc.labels[int(label)].name
                 labelStrs.append('{:d}% {}'.format(int(round(prop)), label))
 
             if len(labelStrs) == 0: labels = 'No label found!'
@@ -331,7 +331,7 @@ def labelNames(atlas, labels):
 
     for l in labels:
         if l is None: names.append('No label')
-        else:         names.append(atlas.desc.labels[l].name)
+        else:         names.append(atlas.desc.labels[int(l)].name)
 
     return names
 
