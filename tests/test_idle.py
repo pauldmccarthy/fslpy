@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import gc
 import time
 import threading
 import random
@@ -17,15 +18,9 @@ import mock
 import fsl.utils.idle as idle
 from fsl.utils.platform import platform as fslplatform
 
-# We use a single wx.App object because wx.GetApp()
-# will still return an old App objectd after its
-# mainloop has exited. and therefore idle.idle
-# will potentially register on EVT_IDLE with the
-# wrong wx.App object.
-_wxapp = None
 def _run_with_wx(func, *args, **kwargs):
 
-    global _wxapp
+    gc.collect()
 
     propagateRaise = kwargs.pop('propagateRaise', True)
     startingDelay  = kwargs.pop('startingDelay',  500)
@@ -36,9 +31,7 @@ def _run_with_wx(func, *args, **kwargs):
 
     result = [None]
     raised = [None]
-
-    if _wxapp is None:
-        _wxapp    = wx.App()
+    app    = [wx.App()]
     frame  = wx.Frame(None)
 
     if callAfterApp is not None:
@@ -57,18 +50,23 @@ def _run_with_wx(func, *args, **kwargs):
         finally:
             def finish():
                 frame.Destroy()
-                _wxapp.ExitMainLoop()
+                app[0].ExitMainLoop()
             wx.CallLater(finishingDelay, finish)
 
     frame.Show()
 
     wx.CallLater(startingDelay, wrap)
 
-    _wxapp.MainLoop()
+    app[0].MainLoop()
+
+    time.sleep(1)
+
     idle.idleReset()
 
     if raised[0] and propagateRaise:
         raise raised[0]
+
+    del app[0]
 
     return result[0]
 
@@ -245,17 +243,28 @@ def test_idle_dropIfQueued():
     name        = 'mytask'
 
     def task1():
+        print('task1 called')
         task1called[0] = True
 
     def task2():
+        print('task2 called')
         task2called[0] = True
 
     def queuetask():
 
+        print('Queuetask running')
+
         idle.idle(task1, after=0.01, name=name)
         idle.idle(task2, after=0.01, name=name, dropIfQueued=True)
 
+        print('Queuetask finished')
+
+    import sys
+    print('running with wx')
+    sys.stdout.flush()
     _run_with_wx(queuetask)
+    print('run with wx finished')
+    sys.stdout.flush()
 
     assert not task1called[0]
     assert     task2called[0]
