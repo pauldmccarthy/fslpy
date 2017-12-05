@@ -29,7 +29,7 @@ def setup_module():
         raise Exception('FSLDIR is not set - atlas tests cannot be run')
 
 
-atlases  = ['harvardoxford-subcortical', 'talairach']
+atlases  = ['mni', 'talairach']
 
 # False: do not use the --label flag
 # True:  use the --label flag
@@ -110,20 +110,8 @@ def _test_query(tests):
                      o_type)
 
 
-_atlases = {}
 def _get_atlas(aid, use_label, res):
-
-    atlas = _atlases.get((aid, use_label, res), None)
-
-    if atlas is None:
-        atlas = fslatlases.loadAtlas(aid,
-                                     loadSummary=use_label,
-                                     resolution=res,
-                                     indexed=True,
-                                     loadData=False,
-                                     calcRange=False)
-        _atlases[aid] = atlas
-    return atlas
+    return fslatlases.loadAtlas(aid, loadSummary=use_label, resolution=res)
 
 
 _zero_masks = {}
@@ -219,6 +207,8 @@ def _eval_coord_voxel_query(
         # all label atlases have an entry for 0
         if q_in == 'in' or (q_in == 'zero' and not prob):
 
+            explabel = int(explabel)
+
             if prob: labelobj = a_img.desc.labels[explabel - 1]
             else:    labelobj = a_img.desc.labels[explabel]
 
@@ -235,6 +225,8 @@ def _eval_coord_voxel_query(
 
         if q_in == 'in' or (q_in == 'zero' and not prob):
 
+            explabel = int(explabel)
+
             if prob: labelobj = a_img.desc.labels[explabel - 1]
             else:    labelobj = a_img.desc.labels[explabel]
 
@@ -244,7 +236,7 @@ def _eval_coord_voxel_query(
             exp = [q_type, squery, 'No label']
 
         _stdout = re.sub('\s+', ' ', stdout).strip()
-        assert _stdout == ' '.join(exp)
+        assert _stdout.strip() == ' '.join(exp).strip()
 
     def evalProbNormalOutput(expprops):
 
