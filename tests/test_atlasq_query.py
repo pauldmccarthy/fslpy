@@ -29,7 +29,7 @@ def setup_module():
         raise Exception('FSLDIR is not set - atlas tests cannot be run')
 
 
-atlases  = ['harvardoxford-cortical', 'talairach']
+atlases  = ['harvardoxford-subcortical', 'talairach']
 
 # False: do not use the --label flag
 # True:  use the --label flag
@@ -118,7 +118,10 @@ def _get_atlas(aid, use_label, res):
     if atlas is None:
         atlas = fslatlases.loadAtlas(aid,
                                      loadSummary=use_label,
-                                     resolution=res)
+                                     resolution=res,
+                                     indexed=True,
+                                     loadData=False,
+                                     calcRange=False)
         _atlases[aid] = atlas
     return atlas
 
@@ -438,10 +441,17 @@ def test_bad_mask(seed):
 
         for atlasID, use_label in it.product(atlases, use_labels):
 
-            atlas  = fslatlases.loadAtlas(atlasID, loadSummary=use_label)
+            atlas  = fslatlases.loadAtlas(
+                atlasID,
+                loadSummary=use_label,
+                indexed=True,
+                loadData=False,
+                calcRange=False)
             ashape = list(atlas.shape[:3])
 
-            wrongdims  = fslimage.Image(np.random.random(list(ashape) + [10]))
+            wrongdims  = fslimage.Image(
+                np.array(np.random.random(list(ashape) + [2]),
+                            dtype=np.float32))
             wrongspace = fslimage.Image(
                 np.random.random((20, 20, 20)),
                 xform=transform.concat(atlas.voxToWorldMat,
