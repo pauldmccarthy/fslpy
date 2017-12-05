@@ -12,6 +12,7 @@ import              sys
 import              glob
 import              shutil
 import              tempfile
+import              logging
 import              contextlib
 import itertools as it
 import os.path   as op
@@ -21,6 +22,9 @@ import nibabel   as nib
 from six import StringIO
 
 import fsl.data.image as fslimage
+
+
+logging.getLogger().setLevel(logging.WARNING)
 
 
 
