@@ -2,13 +2,14 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.4.2 (Monday December 4th 2017)
---------------------------------
+1.4.2 (Tuesday December 5th 2017)
+---------------------------------
 
 
 * New function :func:`.transform.rmsdev` function, which implements the RMS
   deviation equation for comparing two affine transformations (FMRIB Technical
   Report TR99MJ1, available at https://www.fmrib.ox.ac.uk/datasets/techrep/).
+* Some small bugfixes to the :mod:`.atlasq` and :mod:`.atlases` moduless.
 
 
 1.4.1 (Thursday November 9th 2017)
