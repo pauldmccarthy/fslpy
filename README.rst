@@ -9,12 +9,12 @@ fslpy
    :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
 
 .. image:: https://img.shields.io/pypi/v/fslpy.svg
-   :target: https://pypi.python.org/pypi/fslpy/)
+   :target: https://pypi.python.org/pypi/fslpy/
 
 
 The ``fslpy`` project is a `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_
 programming library written in Python. It is used by `FSLeyes
-<https://git.fmrib.ox.ac.uk/paulmc/fsleyes/>`_.
+<https://git.fmrib.ox.ac.uk/fsl/fsleyes/fsleyes/>`_.
 
 
 Dependencies
