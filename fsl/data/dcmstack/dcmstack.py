@@ -12,6 +12,7 @@ from nibabel.nifti1 import Nifti1Extensions
 from nibabel.spatialimages import HeaderDataError
 from nibabel.orientations import (io_orientation,
                                   apply_orientation,
+                                  axcodes2ornt,
                                   inv_ornt_aff)
 import numpy as np
 from .dcmmeta import DcmMetaExtension, NiftiWrapper
@@ -132,47 +133,6 @@ def ornt_transform(start_ornt, end_ornt):
                              end_out_idx)
     return result
 
-def axcodes2ornt(axcodes, labels=None):
-    """ Convert axis codes `axcodes` to an orientation
-
-    Parameters
-    ----------
-    axcodes : (N,) tuple
-        axis codes - see ornt2axcodes docstring
-    labels : optional, None or sequence of (2,) sequences
-        (2,) sequences are labels for (beginning, end) of output axis.  That
-        is, if the first element in `axcodes` is ``front``, and the second
-        (2,) sequence in `labels` is ('back', 'front') then the first
-        row of `ornt` will be ``[1, 1]``. If None, equivalent to
-        ``(('L','R'),('P','A'),('I','S'))`` - that is - RAS axes.
-
-    Returns
-    -------
-    ornt : (N,2) array-like
-        oritation array - see io_orientation docstring
-
-    Examples
-    --------
-    >>> axcodes2ornt(('F', 'L', 'U'), (('L','R'),('B','F'),('D','U')))
-    [[1, 1],[0,-1],[2,1]]
-    """
-
-    if labels is None:
-        labels = zip('LPI', 'RAS')
-
-    n_axes = len(axcodes)
-    ornt = np.ones((n_axes, 2), dtype=np.int8) * np.nan
-    for code_idx, code in enumerate(axcodes):
-        for label_idx, codes in enumerate(labels):
-            if code is None:
-                continue
-            if code in codes:
-                if code == codes[0]:
-                    ornt[code_idx, :] = [label_idx, -1]
-                else:
-                    ornt[code_idx, :] = [label_idx, 1]
-                break
-    return ornt
 
 def reorder_voxels(vox_array, affine, voxel_order):
     '''Reorder the given voxel array and corresponding affine.
