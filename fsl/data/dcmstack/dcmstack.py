@@ -1014,7 +1014,8 @@ def parse_and_group(src_paths, group_by=default_group_keys, extractor=None,
     Parameters
     ----------
     src_paths : sequence
-        A list of paths to the source DICOM files.
+        A list of paths to the source DICOM files, or a list of open
+        pydicom FileDataset objects.
 
     group_by : tuple
         Meta data keys to group data sets with. Any data set with the same
@@ -1047,18 +1048,25 @@ def parse_and_group(src_paths, group_by=default_group_keys, extractor=None,
         from .extract import default_extractor
         extractor = default_extractor
 
+    are_paths = isinstance(src_paths[0], six.string_types)
+
     results = {}
     close_elems = {}
     for dcm_path in src_paths:
         #Read the DICOM file
-        try:
-            dcm = dicom.read_file(dcm_path, force=force)
-        except Exception as e:
-            if warn_on_except:
-                warnings.warn('Error reading file %s: %s' % (dcm_path, str(e)))
-                continue
-            else:
-                raise
+        if are_paths:
+            try:
+                dcm = dicom.read_file(dcm_path, force=force)
+            except Exception as e:
+                if warn_on_except:
+                    warnings.warn('Error reading file %s: %s' % (dcm_path,
+                                                                 str(e)))
+                    continue
+                else:
+                    raise
+        else:
+             dcm = dcm_path
+             dcm_path = getattr(dcm, 'filename', None)
 
         #Extract the meta data and group
         meta = extractor(dcm)
