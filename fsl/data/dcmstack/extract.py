@@ -1,6 +1,7 @@
 """
 Extract meta data from a DICOM data set.
 """
+import sys
 import struct, warnings
 from collections import namedtuple, defaultdict
 import dicom

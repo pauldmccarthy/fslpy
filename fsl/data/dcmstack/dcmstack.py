@@ -4,6 +4,8 @@ into the package namespace.
 """
 import warnings, re, dicom
 from copy import deepcopy
+from collections import MutableSequence
+import six
 import nibabel as nb
 from nibabel.nifti1 import Nifti1Extensions
 from nibabel.spatialimages import HeaderDataError
@@ -1091,18 +1093,21 @@ def parse_and_group(src_paths, group_by=default_group_keys, extractor=None,
 
     # Unpack sub results, using the canonical value for the close keys
     full_results = {}
-    for eq_key, sub_res_list in results.iteritems():
+    for eq_key, sub_res_list in results.items():
         for close_key, sub_res in sub_res_list:
             full_key = []
             eq_idx = 0
             close_idx = 0
             for grp_key in group_by:
                 if grp_key in close_tests:
-                    full_key.append(close_key[close_idx])
+                    val = close_key[close_idx]
                     close_idx += 1
                 else:
-                    full_key.append(eq_key[eq_idx])
+                    val = eq_key[eq_idx]
                     eq_idx += 1
+                if isinstance(val, MutableSequence):
+                    val = tuple(val)
+                full_key.append(val)
             full_key = tuple(full_key)
             full_results[full_key] = sub_res
 
