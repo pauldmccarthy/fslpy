@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dicom.py -
+# dicom.py - Access data in DICOM directories.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
