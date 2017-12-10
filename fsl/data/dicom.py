@@ -9,28 +9,32 @@ volumetric DICOM data series. The ``DicomImage`` is simply an :class:`.`Image`
 which provides accessors for additional DICOM meta data.
 
 The following other functions are provided in this module, which are thin
-wrappers around functionality provided by ``pydicom`` and ``dcmstack``:
+wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
 
 .. autosummary::
    :nosignatures:
 
    scanDir
-   stack
+   loadNifti
+
+.. note:: These functions will not work if an executable called ``dcm2niix``
+          cannot be found.
+
+.. see:: https://github.com/rordenlab/dcm2niix/
 """
 
 
-import os
-import fnmatch
+import os.path    as op
+import subprocess as sp
+import               glob
+import               json
 
-import pydicom as dicom
-
-from . import dcmstack
-
-from . import image as fslimage
+import fsl.utils.tempdir as tempdir
+import fsl.data.image    as fslimage
 
 
 class DicomImage(fslimage.Image):
-    """The ``DicomImage`` is a volumetric :class:`.Image` with associated
+    """The ``DicomImage`` is a volumetric :class:`.Image` with some associated
     DICOM metadata.
 
     The ``Image`` class is used to manage the data and the voxel-to-world
@@ -39,114 +43,98 @@ class DicomImage(fslimage.Image):
 
     def __init__(self, image, meta):
         """Create a ``DicomImage``.
+
+        :arg image: Passed through to :meth:`.Image.__init__`.
+        :arg meta:  Dictionary containing DICOM meta-data.
         """
         fslimage.Image.__init__(self, image)
+        self.__meta = meta
 
 
-def scanDir(dcmdir, filePattern='*.dcm', callback=None):
-    """Recursively scans the given DICOM directory, and returns a dictionary
-    which contains all of the data series that were found.
+    def keys(self):
+        """Returns the keys contained in the DICOM metadata dictionary
+        (``dict.keys``).
+        """
+        return self.__meta.keys()
 
-   :arg dcmdir:       Directory containing DICOM files.
 
-   :arg filePattern:  Glob-like pattern with which to identify DICOM files.
-                      Defaults to ``'*.dcm'``.
+    def values(self):
+        """Returns the values contained in the DICOM metadata dictionary
+        (``dict.values``).
+        """
+        return self.__meta.values()
 
-   :arg callback:     Function which will get called every time a file is
-                      loaded, and can be used for e.g. updating progress.
-                      Must accept three positional parameters:
-                        - ``path``: Path
-                        - ``n``:    Index of current path
-                        - ``ttl``:  Total number of paths
 
-                      After all files have been loaded, this function is called
-                      once more before the files are grouped into data series.
-                      For this final call, ``path is None``, and ``n == ttl``.
+    def items(self):
+        """Returns the items contained in the DICOM metadata dictionary
+        (``dict.items``).
+        """
+        return self.__meta.items()
 
-    :returns:         A list containing one element for each identified data
-                      series. Each element itself is a list with one element
-                      for each file, where each element is a tuple containing
-                      the ``pydicom.dataset.FileDataset``, and a ``dict``
-                      containing some basic metadata extracted from the file.
 
-    .. see:: ``dcmstack.parse_and_group`` and ``pydicom.dicomio.dcmread``.
+    def get(self, *args, **kwargs):
+        """Returns the metadata value with the specified key (``dict.get``).
+        """
+        return self.__meta.get(*args, **kwargs)
+
+
+def scanDir(dcmdir):
+    """Uses ``dcm2niix`` to scans the given DICOM directory, and returns a
+    list of dictionaries, one for each data series that was identified.
+    Each dictionary is populated with some basic metadata about the series.
+
+    :arg dcmdir: Directory containing DICOM files.
+
+    :returns:    A list of dictionaries, each containing metadata about
+                 one DICOM data series.
     """
 
-    def default_callback(path, n, ttl):
-        pass
+    dcmdir = op.abspath(dcmdir)
+    cmd    = 'dcm2niix -b o -ba n -f %s -o . {}'.format(dcmdir)
 
-    if callback is None:
-        callback = default_callback
+    with tempdir.tempdir() as td:
 
-    # Find all the DICOM files in the directory.
-    # If/when we drop python < 3.5, we can use:
-    #
-    #   glob.glob(op.join(dcmdir, '**', filePattern), recursive=True)
-    dcmfiles = []
-    for root, dirnames, filenames in os.walk(dcmdir):
-        for filename in fnmatch.filter(filenames, filePattern):
-            dcmfiles.append(os.path.join(root, filename))
+        sp.call(cmd.split())
 
-    # No files found
-    if len(dcmfiles) == 0:
-        return {}
+        files = glob.glob(op.join(td, '*.json'))
 
-    # Tell pydicom to only load the tags that
-    # are necessary to group files into series,
-    # and to give us basic metadata.
-    tags = [
-        'SeriesInstanceUID',
-        'SeriesNumber',
-        'SeriesDescription',
-        'ProtocolName',
-        'ImageOrientationPatient',
-        'Rows',
-        'Columns',
-        'PixelSpacing']
+        if len(files) == 0:
+            return []
 
-    # Load the files one by one
-    dcms = []
-    for i, path in enumerate(dcmfiles):
-        callback(path, i, len(dcmfiles))
-        dcms.append(dicom.dcmread(path, defer_size=64, specific_tags=tags))
+        # sort numerically by series number
+        def sortkey(f):
+            return int(op.splitext(op.basename(f))[0])
 
-    callback(None, len(dcmfiles), len(dcmfiles))
+        files = sorted(files, key=sortkey)
 
-    # Group the files into data series
-    series = dcmstack.parse_and_group(dcms)
+        series = []
+        for fn in files:
+            with open(fn, 'rt') as f:
+                meta = json.load(f)
+                meta['DicomDir'] = dcmdir
+                series.append(meta)
 
-    # parse_and_group returns a dict, with
-    # one entry for each data series, where
-    # each entry is a list containing
-    #   (pydicom file, metadata, filepath)
-    #
-    # We don't care about the dict keys,
-    series = list(series.values())
-
-    return series
+        return series
 
 
-def stack(series, callback=None):
-    """Takes a DICOM data series, as returned by :func:`scanDir`, and converts
-    it to a ``dcmstack.DicomStack``.
+def loadNifti(series):
+    """Takes a DICOM series meta data dictionary, as returned by
+    :func:`scanDir`, and loads the associated data as one or more NIFTI
+    images.
 
-    :arg series:
+    :arg series: Dictionary as returned by :func:`scanDir`, containing
+                 meta data about one DICOM data series.
 
-    :arg callback:
-
-    :returns:
+    :returns:    List containing one or more :class:`.DicomImage` objects.
     """
 
-    def default_callback(path, n, ttl):
-        pass
+    dcmdir = series['DicomDir']
+    snum   = series['SeriesNumber']
+    cmd    = 'dcm2niix -b n -f %s -z n -o n {}'.format(dcmdir)
 
-    if callback is None:
-        callback = default_callback
+    with tempdir.tempdir() as td:
+        sp.call(cmd.split())
 
-    ds = dcmstack.DicomStack()
+        files = glob.glob(op.join(td, '{}.nii'.format(snum)))
 
-    for i, (_, meta, filename) in enumerate(series):
-        callback(filename, i, len(series))
-        ds.add_dcm(dicom.dcmread(filename), meta)
-
-    return ds
+        return [DicomImage(f, series) for f in files]
