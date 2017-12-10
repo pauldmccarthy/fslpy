@@ -15,7 +15,7 @@ wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
    :nosignatures:
 
    scanDir
-   loadNifti
+   loadSeries
 
 .. note:: These functions will not work if an executable called ``dcm2niix``
           cannot be found.
@@ -29,6 +29,8 @@ import subprocess as sp
 import               glob
 import               json
 
+import nibabel    as nib
+
 import fsl.utils.tempdir as tempdir
 import fsl.data.image    as fslimage
 
@@ -41,13 +43,13 @@ class DicomImage(fslimage.Image):
     transformation. Additional DICOM metadata may be accessed via TODO
     """
 
-    def __init__(self, image, meta):
+    def __init__(self, image, meta, *args, **kwargs):
         """Create a ``DicomImage``.
 
         :arg image: Passed through to :meth:`.Image.__init__`.
         :arg meta:  Dictionary containing DICOM meta-data.
         """
-        fslimage.Image.__init__(self, image)
+        fslimage.Image.__init__(self, image, *args, **kwargs)
         self.__meta = meta
 
 
@@ -94,7 +96,7 @@ def scanDir(dcmdir):
 
     with tempdir.tempdir() as td:
 
-        sp.call(cmd.split())
+        sp.call(cmd.split(), stdout=sp.DEVNULL, stderr=sp.DEVNULL)
 
         files = glob.glob(op.join(td, '*.json'))
 
@@ -117,7 +119,7 @@ def scanDir(dcmdir):
         return series
 
 
-def loadNifti(series):
+def loadSeries(series):
     """Takes a DICOM series meta data dictionary, as returned by
     :func:`scanDir`, and loads the associated data as one or more NIFTI
     images.
@@ -130,11 +132,14 @@ def loadNifti(series):
 
     dcmdir = series['DicomDir']
     snum   = series['SeriesNumber']
-    cmd    = 'dcm2niix -b n -f %s -z n -o n {}'.format(dcmdir)
+    desc   = series['SeriesDescription']
+    cmd    = 'dcm2niix -b n -f %s -z n -o . {}'.format(dcmdir)
 
     with tempdir.tempdir() as td:
-        sp.call(cmd.split())
 
-        files = glob.glob(op.join(td, '{}.nii'.format(snum)))
+        sp.call(cmd.split(), stdout=sp.DEVNULL, stderr=sp.DEVNULL)
 
-        return [DicomImage(f, series) for f in files]
+        files  = glob.glob(op.join(td, '{}.nii'.format(snum)))
+        images = [nib.load(f, mmap=False) for f in files]
+
+        return [DicomImage(i, series, name=desc) for i in images]
