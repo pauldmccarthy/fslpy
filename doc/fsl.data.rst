@@ -6,6 +6,7 @@
 
    fsl.data.atlases
    fsl.data.constants
+   fsl.data.dicom
    fsl.data.dtifit
    fsl.data.featanalysis
    fsl.data.featdesign

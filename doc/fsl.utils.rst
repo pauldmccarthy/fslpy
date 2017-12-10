@@ -13,6 +13,7 @@
    fsl.utils.path
    fsl.utils.platform
    fsl.utils.settings
+   fsl.utils.tempdir
    fsl.utils.transform
    fsl.utils.weakfuncref
 
