@@ -56,9 +56,6 @@ will be generated in ``htmlcov/``.
 Credits
 -------
 
-The `fsl.data.dcmstack <fsleyes/dcmstack/>`_ package contains a copy of
-Brendan Moloney's `dcmstack
-<https://github.com/moloney/dcmstack/tree/c12d27d2c802d75a33ad70110124500a83e851ee>`_
-project (version 0.7.0.dev), with python 2-to-3 fixes made by `Ghislain Antony
-Vaillant
-<https://github.com/ghisvail/dcmstack/tree/1a1573b3869a0920953f64d3d0b99e4ecb1a4c81>`_.
+The `fsl.data.dicom <fsl/data/dicom/>`_ module is little more than a thin
+wrapper around Chris Rorden's `dcm2niix
+<https://github.com/rordenlab/dcm2niix>`_ program.
