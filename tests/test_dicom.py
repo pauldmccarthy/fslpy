@@ -104,6 +104,7 @@ def test_loadSeries():
             img = img[0]
 
             assert img.shape              == expShape
+            assert img[:].shape           == expShape
             assert img.get('PatientName') == 'MCCARTHY_PAUL'
             assert 'PatientName'                    in img.keys()
             assert 'MCCARTHY_PAUL'                  in img.values()
