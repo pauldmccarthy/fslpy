@@ -14,6 +14,7 @@ wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
 .. autosummary::
    :nosignatures:
 
+   enabled
    scanDir
    loadSeries
 
@@ -26,13 +27,19 @@ wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
 
 import os.path    as op
 import subprocess as sp
+import               re
 import               glob
 import               json
+import               logging
 
 import nibabel    as nib
 
 import fsl.utils.tempdir as tempdir
+import fsl.utils.memoize as memoize
 import fsl.data.image    as fslimage
+
+
+log = logging.getLogger(__name__)
 
 
 class DicomImage(fslimage.Image):
@@ -80,6 +87,56 @@ class DicomImage(fslimage.Image):
         return self.__meta.get(*args, **kwargs)
 
 
+@memoize.memoize
+def enabled():
+    """Returns ``True`` if ``dcm2niix`` is present, and recent enough,
+    ``False`` otherwise.
+    """
+
+    cmd            = 'dcm2niix -h'
+    minimumVersion = (1, 0, 2016, 9, 30)
+    versionPattern = re.compile('v'
+                                '(?P<major>[0-9]+)\.'
+                                '(?P<minor>[0-9]+)\.'
+                                '(?P<year>[0-9]{4})'
+                                '(?P<month>[0-9]{2})'
+                                '(?P<day>[0-9]{2})')
+
+    try:
+        output = sp.check_output(cmd.split()).decode()
+        output = [l for l in output.split('\n') if 'version' in l.lower()]
+        output = '\n'.join(output).split()
+
+        for word in output:
+
+            match = re.match(versionPattern, word)
+
+            if match is None:
+                continue
+
+            installedVersion = (
+                int(match.group('major')),
+                int(match.group('minor')),
+                int(match.group('year')),
+                int(match.group('month')),
+                int(match.group('day')))
+
+            # make sure installed version
+            # is equal to or newer than
+            # minimum required version
+            for iv, mv in zip(installedVersion, minimumVersion):
+                if   iv > mv: return True
+                elif iv < mv: return False
+
+            # if we get here, versions are equal
+            return True
+
+    except Exception as e:
+        log.debug('Error parsing dcm2niix version string: {}'.format(e))
+
+    return False
+
+
 def scanDir(dcmdir):
     """Uses ``dcm2niix`` to scans the given DICOM directory, and returns a
     list of dictionaries, one for each data series that was identified.
@@ -90,6 +147,9 @@ def scanDir(dcmdir):
     :returns:    A list of dictionaries, each containing metadata about
                  one DICOM data series.
     """
+
+    if not enabled():
+        raise RuntimeError('dcm2niix is not available or is too old')
 
     dcmdir = op.abspath(dcmdir)
     cmd    = 'dcm2niix -b o -ba n -f %s -o . {}'.format(dcmdir)
@@ -129,6 +189,9 @@ def loadSeries(series):
 
     :returns:    List containing one or more :class:`.DicomImage` objects.
     """
+
+    if not enabled():
+        raise RuntimeError('dcm2niix is not available or is too old')
 
     dcmdir = series['DicomDir']
     snum   = series['SeriesNumber']
