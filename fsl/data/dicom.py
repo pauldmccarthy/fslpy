@@ -25,6 +25,7 @@ wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
 """
 
 
+import               os
 import os.path    as op
 import subprocess as sp
 import               re
@@ -156,7 +157,8 @@ def scanDir(dcmdir):
 
     with tempdir.tempdir() as td:
 
-        sp.call(cmd.split(), stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        with open(os.devnull, 'wb') as devnull:
+            sp.call(cmd.split(), stdout=devnull, stderr=devnull)
 
         files = glob.glob(op.join(td, '*.json'))
 
@@ -200,7 +202,8 @@ def loadSeries(series):
 
     with tempdir.tempdir() as td:
 
-        sp.call(cmd.split(), stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        with open(os.devnull, 'wb') as devnull:
+            sp.call(cmd.split(), stdout=devnull, stderr=devnull)
 
         files  = glob.glob(op.join(td, '{}.nii'.format(snum)))
         images = [nib.load(f, mmap=False) for f in files]
