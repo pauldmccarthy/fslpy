@@ -1003,7 +1003,7 @@ class Image(Nifti):
         # Get the data type from the
         # first voxel in the image
         coords = [0] * len(self.__nibImage.shape)
-        return self.__nibImage.dataobj[tuple(coords)].dtype
+        return self[tuple(coords)].dtype
 
 
     @Nifti.voxToWorldMat.setter
