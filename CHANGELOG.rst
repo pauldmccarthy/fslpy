@@ -2,6 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.5.0 (Under development)
+-------------------------
+
+
+* New module :mod:`.dicom`, which provides a thin wrapper on top of Chris
+  Rorden's `dcm2niix <https://github.com/rordenlab/dcm2niix>`_.
+* New module :mod:`.tempdir`, which has a convenience function for creating
+  temporary directories.
+
+
 1.4.2 (Tuesday December 5th 2017)
 ---------------------------------
 
