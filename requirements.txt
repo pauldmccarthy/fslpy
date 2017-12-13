@@ -5,4 +5,3 @@ scipy>=0.18,<1
 nibabel==2.*
 indexed_gzip>=0.6.1,<1
 wxpython>=3.0.2.0,<4.1
-pydicom==0.9.9
