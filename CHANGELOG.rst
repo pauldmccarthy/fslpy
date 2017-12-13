@@ -2,14 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.5.0 (Under development)
--------------------------
+1.5.0 (Wednesday December 13th 2017)
+------------------------------------
 
 
 * New module :mod:`.dicom`, which provides a thin wrapper on top of Chris
   Rorden's `dcm2niix <https://github.com/rordenlab/dcm2niix>`_.
 * New module :mod:`.tempdir`, which has a convenience function for creating
   temporary directories.
+* Fixed small issue in :meth:`.Image.dtype` - making sure that it access
+  image data via the :class:`.ImageWrapper`, rather than via the `Nifti1Image`
+  object.
 
 
 1.4.2 (Tuesday December 5th 2017)
