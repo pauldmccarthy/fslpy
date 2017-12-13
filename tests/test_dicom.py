@@ -43,7 +43,7 @@ def test_enabled():
         fsldcm.enabled.invalidate()
         # test dcm2niix not present
         with mock.patch('subprocess.check_output',
-                        side_effect=FileNotFoundError()):
+                        side_effect=Exception()):
             assert not fsldcm.enabled()
 
         # test presence of different versions
