@@ -152,8 +152,9 @@ def scanDir(dcmdir):
     if not enabled():
         raise RuntimeError('dcm2niix is not available or is too old')
 
-    dcmdir = op.abspath(dcmdir)
-    cmd    = 'dcm2niix -b o -ba n -f %s -o . {}'.format(dcmdir)
+    dcmdir      = op.abspath(dcmdir)
+    cmd         = 'dcm2niix -b o -ba n -f %s -o . {}'.format(dcmdir)
+    snumPattern = re.compile('^[0-9]+')
 
     with tempdir.tempdir() as td:
 
@@ -165,11 +166,17 @@ def scanDir(dcmdir):
         if len(files) == 0:
             return []
 
-        # sort numerically by series number
-        def sortkey(f):
-            return int(op.splitext(op.basename(f))[0])
+        # sort numerically by series number if possible
+        try:
+            def sortkey(f):
+                match = re.match(snumPattern, f)
+                snum  = int(match.group(0))
+                return snum
 
-        files = sorted(files, key=sortkey)
+            files = sorted(files, key=sortkey)
+
+        except Exception:
+            files = sorted(files)
 
         series = []
         for fn in files:
