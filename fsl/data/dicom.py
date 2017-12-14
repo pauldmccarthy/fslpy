@@ -212,7 +212,7 @@ def loadSeries(series):
         with open(os.devnull, 'wb') as devnull:
             sp.call(cmd.split(), stdout=devnull, stderr=devnull)
 
-        files  = glob.glob(op.join(td, '{}.nii'.format(snum)))
+        files  = glob.glob(op.join(td, '{}*.nii'.format(snum)))
         images = [nib.load(f) for f in files]
 
         # Force-load images into memory
