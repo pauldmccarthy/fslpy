@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.5.1 (Thursday December 14th 2017)
+-----------------------------------
+
+
+* Fixed bug in :func:`.dicom.scanDir` function related to data series ordering.
+
+
 1.5.0 (Wednesday December 13th 2017)
 ------------------------------------
 
