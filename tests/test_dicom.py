@@ -14,8 +14,6 @@ import pytest
 import fsl.data.dicom    as fsldcm
 import fsl.utils.tempdir as tempdir
 
-from . import tempdir
-
 
 datadir = op.join(op.dirname(__file__), 'testdata')
 
@@ -64,7 +62,7 @@ def test_enabled():
 
 def test_scanDir():
 
-    with tempdir() as td:
+    with tempdir.tempdir() as td:
 
         series = fsldcm.scanDir(td)
         assert len(series) == 0
@@ -78,34 +76,37 @@ def test_scanDir():
         assert len(series) == 2
 
         for s in series:
-            assert s['PatientName'] == 'MCCARTHY_PAUL'
+            assert (s['PatientName'] == 'MCCARTHY_PAUL' or
+                    s['PatientName'] == 'MCCARTHY_PAUL_2')
 
 
 def test_loadSeries():
 
-    with tempdir() as td:
+    with tempdir.tempdir() as td:
 
         datafile = op.join(datadir, 'example_dicom.tbz2')
 
         with tarfile.open(datafile) as f:
             f.extractall()
 
-        series = fsldcm.scanDir(td)
+        series   = fsldcm.scanDir(td)
+        expShape = (512, 512, 1)
+        explens  = [1, 2]
 
-        expShapes = [(512, 512, 25),
-                     (512, 512, 29)]
+        for s, explen in zip(series, explens):
 
-        for s, expShape in zip(series, expShapes):
+            imgs = fsldcm.loadSeries(s)
 
-            img = fsldcm.loadSeries(s)
+            assert len(imgs) == explen
 
-            assert len(img) == 1
+            for img in imgs:
 
-            img = img[0]
-
-            assert img.shape              == expShape
-            assert img[:].shape           == expShape
-            assert img.get('PatientName') == 'MCCARTHY_PAUL'
-            assert 'PatientName'                    in img.keys()
-            assert 'MCCARTHY_PAUL'                  in img.values()
-            assert ('PatientName', 'MCCARTHY_PAUL') in img.items()
+                assert img.shape              == expShape
+                assert img[:].shape           == expShape
+                assert img.get('PatientName') == 'MCCARTHY_PAUL' or \
+                       img.get('PatientName') == 'MCCARTHY_PAUL_2'
+                assert 'PatientName'                      in img.keys()
+                assert 'MCCARTHY_PAUL'                    in img.values() or \
+                       'MCCARTHY_PAUL_2'                  in img.values()
+                assert ('PatientName', 'MCCARTHY_PAUL')   in img.items() or \
+                       ('PatientName', 'MCCARTHY_PAUL_2') in img.items()
