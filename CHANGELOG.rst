@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.5.2 (Tuesday January 2nd 2018)
+--------------------------------
+
+
+* Fixed issue with ``MANIFEST.in`` file.
+
+
 1.5.1 (Thursday December 14th 2017)
 -----------------------------------
 
