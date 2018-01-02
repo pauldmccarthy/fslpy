@@ -1,6 +1,7 @@
 include           LICENSE
 include           COPYRIGHT
 include           requirements.txt
+include           requirements-dev.txt
 include           pytest.ini
 recursive-include doc      *
 recursive-exclude doc/html *
