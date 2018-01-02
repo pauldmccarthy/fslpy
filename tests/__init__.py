@@ -284,12 +284,12 @@ def make_mock_feat_analysis(featdir,
 
 
 
-def make_random_mask(filename, shape, xform, premask=None):
+def make_random_mask(filename, shape, xform, premask=None, minones=1):
     """Make a random binary mask image. """
 
     mask = np.zeros(shape, dtype=np.uint8)
 
-    numones = np.random.randint(1, np.prod(shape) / 100)
+    numones = np.random.randint(minones, np.prod(shape) / 100)
     xc      = np.random.randint(0, shape[0], numones)
     yc      = np.random.randint(0, shape[1], numones)
     zc      = np.random.randint(0, shape[2], numones)

@@ -310,7 +310,7 @@ def _gen_mask_query(atlas, use_label, q_type, q_in, res):
             zmask = zmask == 0
 
         mask = make_random_mask(
-            maskfile, a_img.shape[:3], a_img.voxToWorldMat, zmask)
+            maskfile, a_img.shape[:3], a_img.voxToWorldMat, zmask, minones=20)
 
         if maskres != res:
 
