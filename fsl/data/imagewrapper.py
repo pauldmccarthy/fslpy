@@ -461,20 +461,22 @@ class ImageWrapper(notifier.Notifier):
         # coverage and data range.
         for exp in expansions:
 
-            data = self.__getData(exp, isTuple=True)
-            data = data.squeeze(squeezeDims)
-
+            data     = self.__getData(exp, isTuple=True)
+            data     = data.squeeze(squeezeDims)
             vlo, vhi = exp[self.__numRealDims - 1]
 
             for vi, vol in enumerate(range(vlo, vhi)):
 
                 oldvlo, oldvhi = self.__volRanges[vol, :]
                 voldata        = data[..., vi]
-
                 newvlo, newvhi = naninfrange(voldata)
 
-                if (not np.isnan(oldvlo)) and oldvlo < newvlo: newvlo = oldvlo
-                if (not np.isnan(oldvhi)) and oldvhi > newvhi: newvhi = oldvhi
+                if np.isnan(newvlo) or \
+                   (not np.isnan(oldvlo) and oldvlo < newvlo):
+                    newvlo = oldvlo
+                if np.isnan(newvhi) or \
+                   (not np.isnan(oldvhi) and oldvhi > newvhi):
+                    newvhi = oldvhi
 
                 # Update the stored range and
                 # coverage for each volume
@@ -720,7 +722,7 @@ def naninfrange(data):
     use an alternate approach to calculating the minimum/maximum.
     """
 
-    if not np.issubdtype(data.dtype, np.float):
+    if not np.issubdtype(data.dtype, np.floating):
         return data.min(), data.max()
 
     # But np.nanmin/nanmax are substantially
