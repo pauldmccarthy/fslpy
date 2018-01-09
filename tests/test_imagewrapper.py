@@ -18,6 +18,8 @@ import nibabel   as nib
 import fsl.data.image        as image
 import fsl.data.imagewrapper as imagewrap
 
+from . import random_voxels
+
 
 real_print = print
 def print(*args, **kwargs):
@@ -33,11 +35,11 @@ def teardown_module():
 
 
 def random_coverage(shape, vol_limit=None):
-    
+
     ndims = len(shape) - 1
     nvols = shape[-1]
 
-    # Generate a random coverage. 
+    # Generate a random coverage.
     # We use the same coverage for
     # each vector/slice/volume, so
     # are not fully testing the function.
@@ -51,7 +53,7 @@ def random_coverage(shape, vol_limit=None):
 
         # We have to make sure that the coverage is not
         # complete, as some of the tests will fail if
-        # the coverage is complete. 
+        # the coverage is complete.
         if low == 0: high = np.random.randint(low + 1, dsize)
         else:        high = np.random.randint(low + 1, dsize + 1)
 
@@ -60,7 +62,7 @@ def random_coverage(shape, vol_limit=None):
 
     if vol_limit is not None:
         coverage[:, :, vol_limit:] = np.nan
- 
+
     return coverage
 
 
@@ -88,14 +90,14 @@ def random_slices(coverage, shape, mode):
 
     for dim, size in enumerate(shape):
 
-        # Volumes 
+        # Volumes
         if dim == ndims:
             lowCover  = np.random.randint(0,            nvols)
-            highCover = np.random.randint(lowCover + 1, nvols + 1) 
+            highCover = np.random.randint(lowCover + 1, nvols + 1)
 
             slices[:, dim] = lowCover, highCover
             continue
- 
+
         if origMode == 'out':
             mode = dimModes[dim]
 
@@ -108,7 +110,7 @@ def random_slices(coverage, shape, mode):
                 mode = 'out'
             else:
                 raise RuntimeError('Can\'t generate in/overlapping slices on an empty coverage')
-        
+
         # Generate some slices that will
         # be contained within the coverage
         if mode == 'in':
@@ -128,11 +130,11 @@ def random_slices(coverage, shape, mode):
 
         elif mode == 'out':
 
-            # No coverage, anything that 
+            # No coverage, anything that
             # we generate will be outside
             if np.isnan(lowCover) or np.isnan(highCover):
                 lowSlice  = np.random.randint(0,            size)
-                highSlice = np.random.randint(lowSlice + 1, size + 1) 
+                highSlice = np.random.randint(lowSlice + 1, size + 1)
 
             # The coverage is full, so we can't
             # generate an outside range
@@ -151,7 +153,7 @@ def random_slices(coverage, shape, mode):
             elif highCover == size:
                 lowSlice  = np.random.randint(0,            lowCover)
                 highSlice = np.random.randint(lowSlice + 1, lowCover + 1)
-                
+
             # Otherwise the slice could be
             # below or above the coverage
             else:
@@ -202,7 +204,7 @@ def applyCoverage(wrapper, coverage):
     for vol in range(nvols):
 
         uncovered = np.any(np.isnan(coverage[..., vol]))
-            
+
         wcov = wrapper.coverage(vol)
 
         if uncovered:
@@ -224,7 +226,7 @@ def coverageDataRange(data, coverage, slices=None):
     origcoverage = coverage
 
     if slices is not None:
-        
+
         coverage = np.copy(coverage)
 
         lowVol, highVol = slices[-1]
@@ -242,7 +244,7 @@ def coverageDataRange(data, coverage, slices=None):
 
         if np.any(np.isnan(cov)):
             continue
-        
+
         sliceobj = []
 
         for d in range(ndims):
@@ -303,7 +305,7 @@ def test_naninfrange():
     assert imagewrap.naninfrange(data) == (0, 100)
 
     for numinf, numnan, expected in tests:
-        
+
         data   = np.linspace(0, 100, 100)
 
         if   numinf == 'all': data[:] = np.inf
@@ -318,7 +320,7 @@ def test_naninfrange():
         if numnan != 'all':
             for i in range(nanoff, numnan + nanoff):
                 data[i] = np.nan
-        
+
         result = imagewrap.naninfrange(data)
 
         if   np.isfinite(expected[0]): assert result[0] == expected[0]
@@ -326,7 +328,7 @@ def test_naninfrange():
         elif np.isinf(   expected[0]): assert np.isinf(result[0])
         if   np.isfinite(expected[1]): assert result[1] == expected[1]
         elif np.isnan(   expected[1]): assert np.isnan(result[1])
-        elif np.isinf(   expected[1]): assert np.isinf(result[1]) 
+        elif np.isinf(   expected[1]): assert np.isinf(result[1])
 
 
 def test_adjustCoverage():
@@ -335,7 +337,7 @@ def test_adjustCoverage():
 
     n = np.nan
 
-    # Each test is a tuple of (coverage, expansion, expectedResult) 
+    # Each test is a tuple of (coverage, expansion, expectedResult)
     tests = [([[3, 5], [2, 6]], [[6, 7], [8,  10]],         [[3, 7], [2,  10]]),
              ([[0, 0], [0, 0]], [[1, 2], [3,  5]],          [[0, 2], [0,  5]]),
              ([[2, 3], [0, 6]], [[1, 5], [4,  10]],         [[1, 5], [0,  10]]),
@@ -376,18 +378,18 @@ def test_sliceOverlap(niters):
             assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_ALL
 
         # Generate some slices that should
-        # overlap with the coverage 
+        # overlap with the coverage
         for _ in range(niters):
             slices = random_slices(coverage, shape, 'overlap')
             assert imagewrap.sliceOverlap(slices, coverage) == imagewrap.OVERLAP_SOME
 
         # Generate some slices that should
-        # be outside of the coverage 
+        # be outside of the coverage
         for _ in range(niters):
             slices = random_slices(coverage, shape, 'out')
             assert imagewrap.sliceOverlap(slices, coverage)  == imagewrap.OVERLAP_NONE
 
-        
+
 def test_sliceCovered(niters):
 
     # A bunch of random coverages
@@ -413,16 +415,16 @@ def test_sliceCovered(niters):
             assert imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
-        # overlap with the coverage 
+        # overlap with the coverage
         for _ in range(niters):
             slices = random_slices(coverage, shape, 'overlap')
             assert not imagewrap.sliceCovered(slices, coverage)
 
         # Generate some slices that should
-        # be outside of the coverage 
+        # be outside of the coverage
         for _ in range(niters):
             slices = random_slices(coverage, shape, 'out')
-            assert not imagewrap.sliceCovered(slices, coverage) 
+            assert not imagewrap.sliceCovered(slices, coverage)
 
 
 # The sum of the coverage ranges + the
@@ -466,7 +468,7 @@ def _test_expansion(coverage, slices, volumes, expansions):
             int(vol),
             " ".join(["{:2d} {:2d}".format(int(l), int(h)) for l, h in exp])))
         expsByVol[vol].append(exp)
-        
+
     for point in points:
 
         # Is this point in the old coverage?
@@ -483,26 +485,26 @@ def _test_expansion(coverage, slices, volumes, expansions):
 
         if covered:
             continue
-        
+
         for vol, exps in expsByVol.items():
 
             # Is this point in any of the expansions
             coveredInExp = [False] * len(exps)
             for i, exp in enumerate(exps):
-                
+
                 coveredInExp[i] = True
-                
+
                 for dim in range(ndims):
 
                     expLow, expHigh = exp[dim]
                     if point[dim] < expLow or point[dim] > expHigh:
                         coveredInExp[i] = False
                         break
-                    
+
         if not (covered or any(coveredInExp)):
             raise AssertionError(point)
 
-            
+
 def test_calcExpansionNoCoverage(niters):
 
     for _ in range(niters):
@@ -519,7 +521,7 @@ def test_calcExpansionNoCoverage(niters):
             vols, exps = imagewrap.calcExpansion(slices, coverage)
             _test_expansion(coverage, slices, vols, exps)
 
-                
+
 def test_calcExpansion(niters):
 
     for _ in range(niters):
@@ -540,10 +542,10 @@ def test_calcExpansion(niters):
             slices     = random_slices(coverage, shape, 'in')
             vols, exps = imagewrap.calcExpansion(slices, coverage)
 
-            # There should be no expansions for a 
+            # There should be no expansions for a
             # slice that's inside the coverage
             assert len(vols) == 0 and len(exps) == 0
-            
+
         print()
         print('-- Overlap --' )
         for _ in range(niters):
@@ -567,8 +569,13 @@ def _ImageWraper_busy_wait(wrapper, v=0):
 def test_ImageWrapper_read_threaded(niters, seed):
     _test_ImageWrapper_read(niters, seed, True)
 def test_ImageWrapper_read_unthreaded(niters, seed):
-    _test_ImageWrapper_read(niters, seed, False) 
-def _test_ImageWrapper_read(niters, seed, threaded):
+    _test_ImageWrapper_read(niters, seed, False)
+def test_ImageWrapper_read_nans_threaded(niters, seed):
+    _test_ImageWrapper_read(niters, seed, True, True)
+def test_ImageWrapper_read_nans_unthreaded(niters, seed):
+    _test_ImageWrapper_read(niters, seed, False, True)
+
+def _test_ImageWrapper_read(niters, seed, threaded, addnans=False):
 
     for _ in range(niters):
 
@@ -583,23 +590,43 @@ def _test_ImageWrapper_read(niters, seed, threaded):
         # The data range of each volume
         # increases sequentially
         data[..., 0] = np.random.randint(-5, 6, shape[:-1])
-        volRanges    = [(np.min(data[..., 0]),
-                         np.max(data[..., 0]))]
-
         for vol in range(1, nvols):
             data[..., vol] = data[..., 0] * (vol + 1)
-            volRanges.append((np.min(data[..., vol]),
-                              np.max(data[..., vol])))
+
+        # Add 10-50% infs/nans to the image
+        if addnans:
+
+            infprop = 0.10 + 0.2 * np.random.random()
+            nanprop = 0.10 + 0.2 * np.random.random()
+
+            ninfs = int(infprop * np.prod(shape[:-1]))
+            nnans = int(nanprop * np.prod(shape[:-1]))
+
+            for vol in range(nvols):
+                coords = random_voxels(shape[:-1], int(ninfs))
+                coords = tuple([coords[..., i] for i in range(ndims)] + [vol])
+                data[coords] = np.inf
+
+                coords = random_voxels(shape[:-1], int(nnans))
+                coords = tuple([coords[..., i] for i in range(ndims)] + [vol])
+                data[coords] = np.nan
+
+
+        volRanges = [imagewrap.naninfrange(data[..., v]) for v in range(nvols)]
+
+        rrs = []
+        for vol in range(nvols):
+            rrs.append('{:3d}: {: 3.0f} - {: 3.0f}'.format(
+                vol, *volRanges[vol]))
 
         img     = nib.Nifti1Image(data, np.eye(4))
         wrapper = imagewrap.ImageWrapper(img,
                                          loadData=False,
                                          threaded=threaded)
 
-        # We're going to access data volumes 
+        # We're going to access data volumes
         # through the image wrapper with a
         # bunch of random volume orderings.
-
         for _ in range(niters):
 
             ordering = list(range(nvols))
@@ -630,6 +657,8 @@ def _test_ImageWrapper_read(niters, seed, threaded):
                 if j < nvols - 1: assert not wrapper.covered
                 else:             assert     wrapper.covered
 
+
+
 def test_ImageWrapper_write_out_threaded(niters, seed):
     _test_ImageWrapper_write_out(niters, seed, True)
 def test_ImageWrapper_write_out_unthreaded(niters, seed):
@@ -639,10 +668,10 @@ def _test_ImageWrapper_write_out(niters, seed, threaded):
 
     loop = 0
 
- 
+
     # Generate a bunch of random coverages
     for _ in range(niters):
-        
+
         # Generate an image with just two volumes. We're only
         # testing within-volume modifications here.
         ndims     = random.choice((2, 3, 4)) - 1
@@ -708,20 +737,20 @@ def _test_ImageWrapper_write_out(niters, seed, threaded):
             #                                    (clo < rlo < chi < rhi)
             #  - Outside of the existing range   (clo < chi < rlo < rhi)
             #                                    (rlo < rhi < clo < chi)
-            loRanges = [rfloat(clo,         chi), 
-                        rfloat(elo - 100,   elo), 
-                        rfloat(elo - 100,   elo), 
-                        rfloat(clo,         chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(elo - 100,   elo)] 
+            loRanges = [rfloat(clo,         chi),
+                        rfloat(elo - 100,   elo),
+                        rfloat(elo - 100,   elo),
+                        rfloat(clo,         chi),
+                        rfloat(ehi,         ehi + 100),
+                        rfloat(elo - 100,   elo)]
 
-            hiRanges = [rfloat(loRanges[0], chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(clo,         chi), 
-                        rfloat(ehi,         ehi + 100), 
-                        rfloat(loRanges[4], ehi + 100), 
+            hiRanges = [rfloat(loRanges[0], chi),
+                        rfloat(ehi,         ehi + 100),
+                        rfloat(clo,         chi),
+                        rfloat(ehi,         ehi + 100),
+                        rfloat(loRanges[4], ehi + 100),
                         rfloat(loRanges[5], elo)]
-            
+
             for rlo, rhi in zip(loRanges, hiRanges):
 
                 img     = nib.Nifti1Image(np.copy(data), np.eye(4))
@@ -773,7 +802,7 @@ def _test_ImageWrapper_write_out(niters, seed, threaded):
 def test_ImageWrapper_write_in_overlap_threaded(niters, seed):
     _test_ImageWrapper_write_in_overlap(niters, seed, True)
 def test_ImageWrapper_write_in_overlap_unthreaded(niters, seed):
-    _test_ImageWrapper_write_in_overlap(niters, seed, False) 
+    _test_ImageWrapper_write_in_overlap(niters, seed, False)
 def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
 
     # Generate a bunch of random coverages
@@ -800,7 +829,7 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
         print('Shape:    {}'.format(shape))
         print('Coverage: {}'.format(cov))
         print('Data:     {}'.format(data))
-        
+
         # Now, we'll simulate some writes
         # which are contained within, or
         # overlap with, the initial coverage
@@ -823,8 +852,8 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
                 sliceshape = sliceshape[:-1]
                 break
 
-            # Expected wrapper coverage after the 
-            # write is the union of the original 
+            # Expected wrapper coverage after the
+            # write is the union of the original
             # coverage and the write slice.
             expCov = imagewrap.adjustCoverage(cov[..., 0], slices)
 
@@ -873,7 +902,7 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
                 print('Slice min/max:     {} - {}'.format(img.get_data()[tuple(sliceobjs)].min(),
                                                           img.get_data()[tuple(sliceobjs)].max()))
                 print('Data min/max:      {} - {}'.format(img.get_data().min(),
-                                                          img.get_data().max())) 
+                                                          img.get_data().max()))
 
                 assert np.all(newCov == expCov)
 
@@ -889,7 +918,7 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
 
     for _ in range(niters):
 
-        # Generate an image with several volumes. 
+        # Generate an image with several volumes.
         ndims     = random.choice((2, 3, 4)) - 1
         nvols     = np.random.randint(10, 40)
         shape     = np.random.randint(5, 60, size=ndims + 1)
@@ -950,12 +979,12 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
                 while True:
                     vlo = np.random.randint(0,       nvols)
                     vhi = np.random.randint(vlo + 1, nvols + 1)
-                    
+
                     if vhi < covvlo or vlo > covvhi:
                         break
-                    
+
                 slices[-1] = vlo, vhi
-                
+
                 sliceshape = [hi - lo for lo, hi in slices]
 
                 if np.prod(sliceshape) == 0:
@@ -964,7 +993,7 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
                 sliceobjs = imagewrap.sliceTupleToSliceObj(slices)
                 break
 
-            # Calculate what we expect the 
+            # Calculate what we expect the
             # coverage to be after the write
             expCov = np.copy(cov)
             for vol in range(slices[-1][0], slices[-1][1]):
@@ -978,22 +1007,22 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
             #                                    (clo < rlo < chi < rhi)
             #  - Outside of the existing range   (clo < chi < rlo < rhi)
             #                                    (rlo < rhi < clo < chi)
-            
-            loRanges = [rfloat(covlo,         covhi), 
-                        rfloat(covlo - 100,   covlo), 
-                        rfloat(covlo - 100,   covlo), 
-                        rfloat(covlo,         covhi), 
-                        rfloat(covhi,         covhi + 100), 
-                        rfloat(covlo - 100,   covlo)] 
 
-            hiRanges = [rfloat(loRanges[0], covhi), 
-                        rfloat(covhi,       covhi + 100), 
-                        rfloat(covlo,       covhi), 
-                        rfloat(covhi,       covhi + 100), 
-                        rfloat(loRanges[4], covhi + 100), 
+            loRanges = [rfloat(covlo,         covhi),
+                        rfloat(covlo - 100,   covlo),
+                        rfloat(covlo - 100,   covlo),
+                        rfloat(covlo,         covhi),
+                        rfloat(covhi,         covhi + 100),
+                        rfloat(covlo - 100,   covlo)]
+
+            hiRanges = [rfloat(loRanges[0], covhi),
+                        rfloat(covhi,       covhi + 100),
+                        rfloat(covlo,       covhi),
+                        rfloat(covhi,       covhi + 100),
+                        rfloat(loRanges[4], covhi + 100),
                         rfloat(loRanges[5], covlo)]
 
-            # What we expect the range to 
+            # What we expect the range to
             # be after the data write
             expected = [(covlo,       covhi),
                         (loRanges[1], hiRanges[1]),
@@ -1015,7 +1044,7 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
                 newData = newData.reshape(sliceshape)
 
                 if np.prod(sliceshape) == 1:
-                    ehi = max(newData.max(), oldHi) 
+                    ehi = max(newData.max(), oldHi)
 
                 wrapper[tuple(sliceobjs)] = newData
                 _ImageWraper_busy_wait(wrapper)
@@ -1029,7 +1058,7 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
                 print('Newdata range:  {} - {}'.format(newData.min(), newData.max()))
                 print('Expected range: {} - {}'.format(elo,   ehi))
                 print('New range:      {} - {}'.format(newLo, newHi))
-                    
+
                 assert np.isclose(newLo, elo)
                 assert np.isclose(newHi, ehi)
 
@@ -1037,10 +1066,10 @@ def _test_ImageWrapper_write_different_volume(niters, seed, threaded):
 def test_collapseExpansions(niters):
 
     def expEq(exp1, exp2):
-        
+
         if len(exp1) != len(exp2):
             return False
-        
+
         for (e1lo, e1hi), (e2lo, e2hi) in zip(exp1, exp2):
             if e1lo != e2lo: return False
             if e1hi != e2hi: return False
@@ -1089,7 +1118,7 @@ def test_collapseExpansions(niters):
 
                     if not expEq(exp[:-1], slices[:-1]):
                         continue
-                    
+
                     evlo, evhi = exp[-1]
 
                     # Overlap
@@ -1126,7 +1155,7 @@ def test_3D_indexing(shape=None, img=None):
 
     if   shape is None:   shape = (21, 22, 23)
     elif len(shape) == 2: shape = tuple(list(shape) + [1])
-        
+
     if img is None:
         data   = np.random.random(shape)
         nibImg = nib.Nifti1Image(data, np.eye(4))
@@ -1158,7 +1187,7 @@ def test_3D_indexing(shape=None, img=None):
     img[:, 0, 0] = np.array([999] * shape[0])
     img[0, :, 0] = np.array([999] * shape[1])
     img[0, 0, :] = np.array([999] * shape[2])
-        
+
     img[0, :, :] = np.ones((shape[1], shape[2]))
     img[:, 0, :] = np.ones((shape[0], shape[2]))
     img[:, :, 0] = np.ones((shape[0], shape[1]))
@@ -1174,7 +1203,7 @@ def test_3D_4D_indexing():
     # trailing fourth dimension of length 1 -
     # it should look like a 3D image, but
     # should still accept (valid) 4D slicing.
-    
+
     # __getitem__ and __setitem__ on
     #   - 3D index
     #   - 4D index
@@ -1191,10 +1220,10 @@ def test_3D_4D_indexing():
     test_3D_indexing(shape, img)
 
     assert tuple(img[:, :, :, :].shape) == tuple(shape)
-    
+
     assert tuple(img[:, 0, 0, 0].shape) == (shape[0], )
     assert tuple(img[:, 0, 0, :].shape) == (shape[0], )
-    
+
     assert tuple(img[:, :, 0, 0].shape) == (shape[0], shape[1])
     assert tuple(img[:, :, 0, :].shape) == (shape[0], shape[1])
 
@@ -1205,14 +1234,14 @@ def test_3D_4D_indexing():
     mask[0, 0, 0, 0] = True
 
     assert type(img[mask])      == np.ndarray
-    assert      img[mask].shape == (1, ) 
+    assert      img[mask].shape == (1, )
 
 
 def test_3D_len_one_indexing(shape=None, img=None):
 
-    # Testing ImageWrapper for a 3D image with 
+    # Testing ImageWrapper for a 3D image with
     # a third dimension of length 1 - it should
-    # look like a 3D image, but should still 
+    # look like a 3D image, but should still
     # accept (valid) 2D slicing.
 
     if   shape is None:  shape = (20, 20, 1)
@@ -1237,15 +1266,15 @@ def test_3D_len_one_indexing(shape=None, img=None):
 
     mask = np.zeros(shape, dtype=np.bool)
     mask[0, 0, 0] = True
-    
+
     assert type(img[mask])      == np.ndarray
     assert      img[mask].shape == (1, )
- 
+
 
 def test_2D_indexing():
 
-    # Testing ImageWrapper for a 2D image - 
-    # it should look just like a 3D image 
+    # Testing ImageWrapper for a 2D image -
+    # it should look just like a 3D image
     # (the same as is tested above).
 
     shape  = (20, 20)
@@ -1255,12 +1284,12 @@ def test_2D_indexing():
 
     test_3D_len_one_indexing(shape, img)
 
-    
+
 def test_4D_indexing(shape=None, img=None):
 
     if shape is None:
         shape = (20, 21, 22, 23)
-        
+
     if img is None:
 
         data   = np.random.random(shape)
@@ -1271,19 +1300,19 @@ def test_4D_indexing(shape=None, img=None):
     assert tuple(img[:, :]      .shape) == tuple(shape)
     assert tuple(img[:, :, :]   .shape) == tuple(shape)
     assert tuple(img[:, :, :, :].shape) == tuple(shape)
-    
+
     assert tuple(img[:, 0, 0, 0].shape) == (shape[0], )
     assert tuple(img[0, :, 0, 0].shape) == (shape[1], )
     assert tuple(img[0, 0, :, 0].shape) == (shape[2], )
     assert tuple(img[0, 0, 0, :].shape) == (shape[3], )
 
-    
+
     assert tuple(img[0, :, :, :].shape) == (shape[1], shape[2], shape[3])
     assert tuple(img[:, 0, :, :].shape) == (shape[0], shape[2], shape[3])
     assert tuple(img[:, :, 0, :].shape) == (shape[0], shape[1], shape[3])
     assert tuple(img[:, :, :, 0].shape) == (shape[0], shape[1], shape[2])
 
-    assert type(img[0, 0, 0, 0]) == np.float64 
+    assert type(img[0, 0, 0, 0]) == np.float64
 
     mask1 = np.zeros(shape, dtype=np.bool)
 
@@ -1293,18 +1322,18 @@ def test_4D_indexing(shape=None, img=None):
     assert tuple(img[mask1].shape) == (2, )
 
     img[0, 0, 0, 0] =  999
-    
+
     img[:, 0, 0, 0] = [999] * shape[0]
     img[0, :, 0, 0] = [999] * shape[1]
     img[0, 0, :, 0] = [999] * shape[2]
     img[0, 0, 0, :] = [999] * shape[3]
-    
+
     img[:, 0, 0, 0] = np.array([999] * shape[0])
     img[0, :, 0, 0] = np.array([999] * shape[1])
     img[0, 0, :, 0] = np.array([999] * shape[2])
     img[0, 0, 0, :] = np.array([999] * shape[3])
 
-        
+
     img[0, :, :, :] = np.ones((shape[1], shape[2], shape[3]))
     img[:, 0, :, :] = np.ones((shape[0], shape[2], shape[3]))
     img[:, :, 0, :] = np.ones((shape[0], shape[1], shape[3]))
