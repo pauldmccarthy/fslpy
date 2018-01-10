@@ -27,6 +27,8 @@ import numpy   as np
 
 import six
 
+import trimesh
+
 import fsl.utils.transform as transform
 
 from . import image as fslimage
@@ -121,6 +123,11 @@ class TriangleMesh(object):
         if fixWinding:
             self.__fixWindingOrder()
 
+        self.__trimesh = trimesh.Trimesh(self.__vertices,
+                                         self.__indices,
+                                         process=False,
+                                         validate=False)
+
 
     def __repr__(self):
         """Returns a string representation of this ``TriangleMesh`` instance.
@@ -145,6 +152,14 @@ class TriangleMesh(object):
     def indices(self):
         """The ``(M, 3)`` triangles of this mesh. """
         return self.__indices
+
+
+    @property
+    def trimesh(self):
+        """Reference to a ``trimesh.Trimesh`` object which can be used for
+        geometric operations on the mesh.
+        """
+        return self.__trimesh
 
 
     def __fixWindingOrder(self):
