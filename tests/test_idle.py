@@ -71,6 +71,11 @@ def _run_with_wx(func, *args, **kwargs):
     return result[0]
 
 
+def _run_without_wx(func, *args, **kwargs):
+    with mock.patch.dict('sys.modules', wx=None):
+        return func(*args, **kwargs)
+
+
 def _wait_for_idle_loop_to_clear():
 
     if fslplatform.haveGui:
@@ -86,8 +91,8 @@ def _wait_for_idle_loop_to_clear():
             wx.Yield()
 
 
-def  test_run_with_gui():    _run_with_wx(_test_run)
-def  test_run_without_gui(): _test_run()
+def  test_run_with_gui():    _run_with_wx(   _test_run)
+def  test_run_without_gui(): _run_without_wx(_test_run)
 def _test_run():
 
     taskRun        = [False]
@@ -138,7 +143,10 @@ def _test_run():
     assert     onErrorCalled[ 0]
 
 
-def test_idleTimeout():
+
+def test_idleTimeout_with_gui():    _run_with_wx(   _test_idleTimeout)
+def test_idleTimeout_without_gui(): _run_without_wx(_test_idleTimeout)
+def _test_idleTimeout():
     idle.idleReset()
     default = idle.getIdleTimeout()
     idle.setIdleTimeout(999)
@@ -160,7 +168,7 @@ def test_idle():
     assert idle.getIdleTimeout() > 0
 
     # Run directly
-    idle.idle(task, 1, kwarg1=2, name='direct')
+    _run_without_wx(idle.idle, task, 1, kwarg1=2, name='direct')
     assert called[0]
 
     called[0] = False
