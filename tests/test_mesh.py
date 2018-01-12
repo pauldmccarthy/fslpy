@@ -11,6 +11,7 @@ import            shutil
 import            tempfile
 
 import numpy   as np
+import            mock
 import            pytest
 
 import fsl.utils.transform as transform
@@ -18,6 +19,35 @@ import fsl.data.mesh       as fslmesh
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
+
+
+# vertices of a cube
+CUBE_VERTICES = np.array([
+    [-1, -1, -1],
+    [-1, -1,  1],
+    [-1,  1, -1],
+    [-1,  1,  1],
+    [ 1, -1, -1],
+    [ 1, -1,  1],
+    [ 1,  1, -1],
+    [ 1,  1,  1],
+])
+
+# triangles
+# cw  == clockwise, when facing outwards
+#        from the centre of the mesh
+CUBE_TRIANGLES_CW = np.array([
+    [0, 4, 6], [0, 6, 2],
+    [1, 3, 5], [3, 7, 5],
+    [0, 1, 4], [1, 5, 4],
+    [2, 6, 7], [2, 7, 3],
+    [0, 2, 1], [1, 2, 3],
+    [4, 5, 7], [4, 7, 6],
+])
+
+# ccw == counter-clockwise
+CUBE_TRIANGLES_CCW = np.array(CUBE_TRIANGLES_CW)
+CUBE_TRIANGLES_CCW[:, [1, 2]] = CUBE_TRIANGLES_CCW[:, [2, 1]]
 
 
 def test_create_mesh():
@@ -137,32 +167,9 @@ def test_findReferenceImage():
 def test_normals():
 
     # vertices of a cube
-    verts = np.array([
-        [-1, -1, -1],
-        [-1, -1,  1],
-        [-1,  1, -1],
-        [-1,  1,  1],
-        [ 1, -1, -1],
-        [ 1, -1,  1],
-        [ 1,  1, -1],
-        [ 1,  1,  1],
-    ])
-
-    # triangles
-    # cw  == clockwise, when facing outwards
-    #        from the centre of the mesh
-    triangles_cw = np.array([
-        [0, 4, 6], [0, 6, 2],
-        [1, 3, 5], [3, 7, 5],
-        [0, 1, 4], [1, 5, 4],
-        [2, 6, 7], [2, 7, 3],
-        [0, 2, 1], [1, 2, 3],
-        [4, 5, 7], [4, 7, 6],
-    ])
-
-    # ccw == counter-clockwise
-    triangles_ccw = np.array(triangles_cw)
-    triangles_ccw[:, [1, 2]] = triangles_ccw[:, [2, 1]]
+    verts         = np.array(CUBE_VERTICES)
+    triangles_cw  = np.array(CUBE_TRIANGLES_CW)
+    triangles_ccw = np.array(CUBE_TRIANGLES_CCW)
 
     # face normals
     fnormals = np.array([
@@ -196,3 +203,49 @@ def test_normals():
     assert np.all(np.isclose(ccw_nofix.vnormals, vnormals))
     assert np.all(np.isclose(ccw_fix  .normals,   fnormals))
     assert np.all(np.isclose(ccw_fix  .vnormals,  vnormals))
+
+
+
+def test_trimesh_no_trimesh():
+
+    testbase = 'test_mesh.vtk'
+    testfile = op.join(datadir, testbase)
+
+    mods = ['trimesh', 'rtree']
+
+    for mod in mods:
+        with mock.patch.dict('sys.modules', **{mod : None}):
+            mesh = fslmesh.TriangleMesh(testfile)
+            assert mesh.trimesh() is None
+            assert mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]]) == [[]]
+
+
+def test_trimesh():
+
+    import trimesh
+
+    testbase = 'test_mesh.vtk'
+    testfile = op.join(datadir, testbase)
+    mesh = fslmesh.TriangleMesh(testfile)
+    assert isinstance(mesh.trimesh(), trimesh.Trimesh)
+
+
+def test_rayIntersection():
+
+    verts     = np.array(CUBE_VERTICES)
+    triangles = np.array(CUBE_TRIANGLES_CCW)
+    mesh      = fslmesh.TriangleMesh(verts, triangles)
+
+    for axis in range(3):
+        rayOrigin       = [0, 0, 0]
+        rayDir          = [0, 0, 0]
+        rayOrigin[axis] = -2
+        rayDir[   axis] =  1
+
+        hits = mesh.rayIntersection([rayOrigin], [rayDir], sort=True)[0]
+
+        expected          = np.array([[0, 0, 0], [0, 0, 0]])
+        expected[0, axis] = -1
+        expected[1, axis] =  1
+
+        assert np.all(np.isclose(hits, expected))
