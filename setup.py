@@ -20,10 +20,16 @@ from setuptools import Command
 basedir = op.dirname(__file__)
 
 # Dependencies are listed in requirements.txt
-install_requires = open(op.join(basedir, 'requirements.txt'), 'rt').readlines()
+with open(op.join(basedir, 'requirements.txt'), 'rt') as f:
+    install_requires = f.readlines()
 
 # Development/test dependencies are listed in requirements-dev.txt
-dev_requires = open(op.join(basedir, 'requirements-dev.txt'), 'rt').readlines()
+with open(op.join(basedir, 'requirements-dev.txt'), 'rt') as f:
+    dev_requires = f.readlines()
+
+# Optional dependencies are listed in requirements-extra.txt
+with open(op.join(basedir, 'requirements-extra.txt'), 'rt') as f:
+    extra_requires = {'extras' : f.readlines()}
 
 packages = find_packages(
     exclude=('doc', 'tests', 'dist', 'build', 'fslpy.egg-info'))
@@ -109,6 +115,7 @@ setup(
     packages=packages,
 
     install_requires=install_requires,
+    extras_require=extra_requires,
     setup_requires=dev_requires,
 
     test_suite='tests',
