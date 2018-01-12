@@ -8,12 +8,27 @@
 import os.path as op
 import            time
 
+import mock
+
 import numpy   as np
 import nibabel as nib
 
 import tests
 import fsl.data.image as fslimage
 
+
+from . import make_random_image
+
+
+# make sure Image(indexed=True) works
+# even if indexed_gzip is not present
+def test_image_indexed_no_igzip_threaded():
+    with mock.patch.dict('sys.modules', indexed_gzip=None):
+        _test_image_indexed(True)
+
+def test_image_indexed_no_igzip_unthreaded():
+    with mock.patch.dict('sys.modules', indexed_gzip=None):
+        _test_image_indexed(False)
 
 def test_image_indexed_threaded(  ): _test_image_indexed(True)
 def test_image_indexed_unthreaded(): _test_image_indexed(False)
@@ -24,7 +39,7 @@ def _test_image_indexed(threaded):
         filename = op.join(testdir, 'image.nii.gz')
 
         # Data range grows with volume
-        data  = np.zeros((100, 100, 100, 50))
+        data  = np.zeros((50, 50, 50, 50))
         for vol in range(data.shape[-1]):
             data[..., vol] = vol
 
