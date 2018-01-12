@@ -1389,10 +1389,17 @@ def loadIndexedImageFile(filename):
 
     Returns a tuple containing the ``nibabel`` NIFTI image, and the open
     ``IndexedGzipFile`` handle.
+
+    If ``indexed_gzip`` is not present, the image is loaded normally via
+    ``nibabel.load``.
     """
 
-    import                 threading
-    import indexed_gzip as igzip
+    import threading
+
+    try:
+        import indexed_gzip as igzip
+    except ImportError:
+        return nib.load(filename), None
 
     log.debug('Loading {} using indexed gzip'.format(filename))
 
