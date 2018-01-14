@@ -217,7 +217,9 @@ def test_trimesh_no_trimesh():
         with mock.patch.dict('sys.modules', **{mod : None}):
             mesh = fslmesh.TriangleMesh(testfile)
             assert mesh.trimesh() is None
-            assert mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]]) == [[]]
+            locs, tris = mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]])
+            assert locs.size == 0
+            assert locs.size == 0
 
 
 def test_trimesh():
@@ -242,10 +244,12 @@ def test_rayIntersection():
         rayOrigin[axis] = -2
         rayDir[   axis] =  1
 
-        hits = mesh.rayIntersection([rayOrigin], [rayDir], sort=True)[0]
+        loc, tri = mesh.rayIntersection([rayOrigin], [rayDir])
 
-        expected          = np.array([[0, 0, 0], [0, 0, 0]])
+        assert loc.shape == (1, 3)
+        assert tri.shape == (1,)
+
+        expected          = np.array([[0, 0, 0]])
         expected[0, axis] = -1
-        expected[1, axis] =  1
 
-        assert np.all(np.isclose(hits, expected))
+        assert np.all(np.isclose(loc, expected))
