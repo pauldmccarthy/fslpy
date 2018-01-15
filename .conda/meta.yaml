@@ -20,8 +20,6 @@ requirements:
     - numpy 1.*
     - scipy >=0.18,<1
     - nibabel 2.*
-#     - indexed_gzip >=0.6.1,<1
-    - wxpython >=3.0.2.0,<4.1
     - sphinx 1.6.*
     - sphinx_rtd_theme 0.*
     - mock 2.*
@@ -30,7 +28,6 @@ requirements:
     - pytest-cov 2.*
     - pytest-runner >=2.*,<=3.*
 
-
   run:
     - python
     - six 1.*
@@ -38,5 +35,9 @@ requirements:
     - numpy 1.*
     - scipy >=0.18,<1
     - nibabel 2.*
-#     - indexed_gzip >=0.6.1,<1
+
+  run_constrained:
+    - indexed_gzip >=0.6.1,<1
     - wxpython >=3.0.2.0,<4.1
+    - trimesh 2.*
+    - rtree 0.8
