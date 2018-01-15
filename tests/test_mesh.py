@@ -219,7 +219,7 @@ def test_trimesh_no_trimesh():
             assert mesh.trimesh() is None
             locs, tris = mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]])
             assert locs.size == 0
-            assert locs.size == 0
+            assert tris.size == 0
 
 
 def test_trimesh():
@@ -253,3 +253,8 @@ def test_rayIntersection():
         expected[0, axis] = -1
 
         assert np.all(np.isclose(loc, expected))
+
+    loc, tri = mesh.rayIntersection([[-1, -1, -1]], [[-1, -1, -1]])
+
+    assert loc.size == 0
+    assert tri.size == 0
