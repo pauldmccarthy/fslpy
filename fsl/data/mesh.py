@@ -291,7 +291,7 @@ class TriangleMesh(object):
             return_locations=True,
             multiple_hits=False)
 
-        if tris.size == 0:
+        if len(tris) == 0:
             return np.zeros((0, 3)), np.zeros((0,))
 
         # sort by ray. I'm Not sure if this is
