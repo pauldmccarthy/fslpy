@@ -291,9 +291,12 @@ class TriangleMesh(object):
             return_locations=True,
             multiple_hits=False)
 
+        if tris.size == 0:
+            return np.zeros((0, 3)), np.zeros((0,))
+
         # sort by ray. I'm Not sure if this is
         # needed - does trimesh do it for us?
-        rayIdxs = np.argsort(rays)
+        rayIdxs = np.asarray(np.argsort(rays), np.int)
         locs    = locs[rayIdxs]
         tris    = tris[rayIdxs]
 
