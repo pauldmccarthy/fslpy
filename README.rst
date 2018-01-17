@@ -96,6 +96,11 @@ will be generated in ``htmlcov/``.
 Credits
 -------
 
+
 The `fsl.data.dicom <fsl/data/dicom/>`_ module is little more than a thin
 wrapper around Chris Rorden's `dcm2niix
 <https://github.com/rordenlab/dcm2niix>`_ program.
+
+
+The `example.mgz <tests/testdata/example.mgz>`_ file, used for testing,
+originates from the ``nibabel`` test data set.
