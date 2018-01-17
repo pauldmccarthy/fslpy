@@ -7,8 +7,9 @@ order.
 
 
 * The :class:`.TriangleMesh` class now uses the ``trimesh`` library
-  (https://github.com/mikedh/trimesh) to perform ray-mesh intersections,
-  via a new :meth:`.TriangleMesh.rayIntersection` method.
+  (https://github.com/mikedh/trimesh) to perform various geometrical
+  operations, accessible via new :meth:`.TriangleMesh.rayIntersection` and
+  :meth:`.TriangleMesh.nearestVertex` methods.
 * Optional dependencies ``wxpython``, ``indexed_gzip``, ``trimesh``, and
   ``rtree`` are now listed separately, so ``fslpy`` can be used without
   them (although relevant functionality will be disabled).
