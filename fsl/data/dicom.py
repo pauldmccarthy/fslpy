@@ -67,7 +67,7 @@ class DicomImage(fslimage.Image):
 
         if metadata is not None:
             for k, v in metadata.items():
-                self.addMeta(k, v)
+                self.setMeta(k, v)
 
 
     @property

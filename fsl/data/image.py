@@ -174,6 +174,7 @@ class Nifti(notifier.Notifier):
        metaValues
        metaItems
        getMeta
+       setMeta
 
 
     **Notification**
@@ -711,6 +712,12 @@ class Nifti(notifier.Notifier):
         """Returns the metadata value with the specified key (``dict.get``).
         """
         return self.__meta.get(*args, **kwargs)
+
+
+    def setMeta(self, *args, **kwargs):
+        """Add some metadata with the specified key (``dict.__setitem__``).
+        """
+        self.__meta.__setitem__(*args, **kwargs)
 
 
 class Image(Nifti):
