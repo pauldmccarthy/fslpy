@@ -101,6 +101,7 @@ def test_loadSeries():
 
             for img in imgs:
 
+                assert img.dicomDir           == td
                 assert img.shape              == expShape
                 assert img[:].shape           == expShape
                 assert img.get('PatientName') == 'MCCARTHY_PAUL' or \
