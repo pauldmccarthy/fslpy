@@ -40,12 +40,27 @@ class MGHImage(fslimage.Image):
         """
 
         if isinstance(image, six.string_types):
-            image = nib.load(image)
+            filename = image
+            image    = nib.load(image)
+        else:
+            filename = None
 
         data   = image.get_data()
         affine = image.affine
 
         fslimage.Image.__init__(self, data, xform=affine)
+
+        if filename is not None:
+            self.setMeta('mghImageFile', filename)
+
+
+    @property
+    def mghImageFile(self):
+        """If this ``MGHImage`` was loaded from a file, returns the file
+        name. Otherwise returns ``None``.
+        """
+        return self.getMeta('mghImageFile', None)
+
 
 
 ALLOWED_EXTENSIONS = ['.mgz', '.mgh']
