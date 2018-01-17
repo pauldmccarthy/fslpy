@@ -16,10 +16,9 @@ order.
 * Optional dependencies ``wxpython``, ``indexed_gzip``, ``trimesh``, and
   ``rtree`` are now listed separately, so ``fslpy`` can be used without
   them (although relevant functionality will be disabled).
-* The :class:`.Image` class has new methods allowing arbitrary metadata to be
+* The :class:`.Nifti` class has new methods allowing arbitrary metadata to be
   stored with the image, as key-value pairs. Equivalent methods on the
   :class:`.DicomImage` class have been deprecated.
-
 
 
 1.5.4 (Wednesday January 10th 2018)
