@@ -254,7 +254,20 @@ def test_rayIntersection():
 
         assert np.all(np.isclose(loc, expected))
 
-    loc, tri = mesh.rayIntersection([[-1, -1, -1]], [[-1, -1, -1]])
+    loc, tri = mesh.rayIntersection([[-2, -2, -2]], [[-1, -1, -1]])
 
     assert loc.size == 0
     assert tri.size == 0
+
+
+def test_nearestVertex():
+
+    verts     = np.array(CUBE_VERTICES)
+    triangles = np.array(CUBE_TRIANGLES_CCW)
+    mesh      = fslmesh.TriangleMesh(verts, triangles)
+
+    nverts, nidxs, ndists = mesh.nearestVertex(verts * 2)
+
+    assert np.all(np.isclose(nverts, verts))
+    assert np.all(np.isclose(nidxs,  np.arange(len(verts))))
+    assert np.all(np.isclose(ndists, np.sqrt(3)))
