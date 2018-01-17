@@ -36,6 +36,7 @@ import                      os
 import os.path           as op
 import                      string
 import                      logging
+import                      collections
 
 import                      six
 import                      deprecation
@@ -158,6 +159,23 @@ class Nifti(notifier.Notifier):
         :attr:`.constants.NIFTI_XFORM_ANALYZE`.
 
 
+    **Metadata**
+
+
+    The ``Image`` class has a handful of methods allowing you to add and access
+    additional metadata associated with the image. These methods are used by
+    the :class:`.DicomImage` and :class:`.MGHImage` to store additional
+    meta-data that cannot be stored in the NIFTI header:
+
+    .. autosummary::
+       :nosignatures:
+
+       metaKeys
+       metaValues
+       metaItems
+       getMeta
+
+
     **Notification**
 
 
@@ -193,6 +211,7 @@ class Nifti(notifier.Notifier):
         worldToVoxMat = transform.invert(voxToWorldMat)
 
         self.header          = header
+        self.__meta          = collections.OrderedDict()
         self.__shape         = shape
         self.__intent        = header.get('intent_code',
                                           constants.NIFTI_INTENT_NONE)
@@ -667,6 +686,33 @@ class Nifti(notifier.Notifier):
         return code
 
 
+    def metaKeys(self):
+        """Returns the keys contained in the image metadata dictionary
+        (``dict.keys``).
+        """
+        return self.__meta.keys()
+
+
+    def metaValues(self):
+        """Returns the values contained in the image metadata dictionary
+        (``dict.values``).
+        """
+        return self.__meta.values()
+
+
+    def metaItems(self):
+        """Returns the items contained in the image metadata dictionary
+        (``dict.items``).
+        """
+        return self.__meta.items()
+
+
+    def getMeta(self, *args, **kwargs):
+        """Returns the metadata value with the specified key (``dict.get``).
+        """
+        return self.__meta.get(*args, **kwargs)
+
+
 class Image(Nifti):
     """Class which represents a NIFTI image. Internally, the image is
     loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image` or
@@ -831,7 +877,7 @@ class Image(Nifti):
             # Otherwise we let nibabel
             # manage the file reference(s)
             else:
-                nibImage  = nib.load(image, **kwargs)
+                nibImage = nib.load(image, **kwargs)
 
             dataSource = image
 
@@ -1311,7 +1357,7 @@ Made available in this module for convenience.
 
 
 def looksLikeImage(filename, allowedExts=None):
-    """Returns ``True`` if the given file looks like an image, ``False``
+    """Returns ``True`` if the given file looks like a NIFTI image, ``False``
     otherwise.
 
     .. note:: The ``filename`` cannot just be a file prefix - it must

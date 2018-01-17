@@ -32,6 +32,7 @@ import               re
 import               glob
 import               json
 import               logging
+import               deprecation
 
 import nibabel    as nib
 
@@ -48,44 +49,63 @@ class DicomImage(fslimage.Image):
     DICOM metadata.
 
     The ``Image`` class is used to manage the data and the voxel-to-world
-    transformation. Additional DICOM metadata may be accessed via TODO
+    transformation. Additional DICOM metadata may be accessed via the
+    :class:`.Image` metadata access methods.
     """
 
-    def __init__(self, image, meta, *args, **kwargs):
+
+    def __init__(self, image, metadata, dicomDir, *args, **kwargs):
         """Create a ``DicomImage``.
 
-        :arg image: Passed through to :meth:`.Image.__init__`.
-        :arg meta:  Dictionary containing DICOM meta-data.
+        :arg image:    Passed through to :meth:`.Image.__init__`.
+        :arg metadata: Dictionary containing DICOM meta-data.
+        :arg dicomDir: Directory that the dicom image was loaded from.
         """
         fslimage.Image.__init__(self, image, *args, **kwargs)
-        self.__meta = meta
+
+        self.__dicomDir = dicomDir
+
+        if metadata is not None:
+            for k, v in metadata.items():
+                self.addMeta(k, v)
 
 
+    @property
+    def dicomDir(self):
+        """Returns the directory that the DICOM image data was loaded from. """
+        return self.__dicomDir
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use metaKeys instead')
     def keys(self):
-        """Returns the keys contained in the DICOM metadata dictionary
-        (``dict.keys``).
-        """
-        return self.__meta.keys()
+        """Deprecated - use :meth:`.Image.metaKeys`. """
+        return self.metaKeys()
 
 
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use metaValues instead')
     def values(self):
-        """Returns the values contained in the DICOM metadata dictionary
-        (``dict.values``).
-        """
-        return self.__meta.values()
+        """Deprecated - use :meth:`.Image.metaValues`. """
+        return self.metaValues()
 
 
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use metaItems instead')
     def items(self):
-        """Returns the items contained in the DICOM metadata dictionary
-        (``dict.items``).
-        """
-        return self.__meta.items()
+        """Deprecated - use :meth:`.Image.metaItems`. """
+        return self.metaItems()
 
 
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use getMeta instead')
     def get(self, *args, **kwargs):
-        """Returns the metadata value with the specified key (``dict.get``).
-        """
-        return self.__meta.get(*args, **kwargs)
+        """Deprecated - use :meth:`.Image.getMeta`. """
+        return self.getMeta(*args, **kwargs)
 
 
 @memoize.memoize
@@ -218,4 +238,4 @@ def loadSeries(series):
         # Force-load images into memory
         [i.get_data() for i in images]
 
-        return [DicomImage(i, series, name=desc) for i in images]
+        return [DicomImage(i, series, dcmdir, name=desc) for i in images]
