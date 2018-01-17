@@ -6,6 +6,9 @@ order.
 -------------------------
 
 
+* Freesurfer ``mgz`` / ``mgh`` image files can now be loaded via the new
+  :mod:`.mghimage` module. Internally, these image files are converted to NIFTI
+  - the :class:`.MGHImage` class derives from the :class:`.Image` class.
 * The :class:`.TriangleMesh` class now uses the ``trimesh`` library
   (https://github.com/mikedh/trimesh) to perform various geometrical
   operations, accessible via new :meth:`.TriangleMesh.rayIntersection` and
@@ -13,6 +16,9 @@ order.
 * Optional dependencies ``wxpython``, ``indexed_gzip``, ``trimesh``, and
   ``rtree`` are now listed separately, so ``fslpy`` can be used without
   them (although relevant functionality will be disabled).
+* The :class:`.Image` class has new methods allowing arbitrary metadata to be
+  stored with the image, as key-value pairs. Equivalent methods on the
+  :class:`.DicomImage` class have been deprecated.
 
 
 
