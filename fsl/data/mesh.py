@@ -303,6 +303,33 @@ class TriangleMesh(object):
         return locs, tris
 
 
+    def nearestVertex(self, points):
+        """Identifies the nearest vertex to each of the provided points.
+
+        :arg points: A ``(n, 3)`` array containing the points to query.
+
+        :returns:    A tuple containing:
+
+                      - A ``(n, 3)`` array containing the nearest vertex for
+                        for each of the ``n`` input points.
+
+                      - A ``(n,)`` array containing the indices of each vertex.
+
+                      - A ``(n,)`` array containing the distance from each
+                        point to the nearest vertex.
+        """
+
+        trimesh = self.trimesh()
+
+        if trimesh is None:
+            return np.zeros((0, 3))
+
+        dists, idxs = trimesh.nearest.vertex(points)
+        verts       = self.vertices[idxs, :]
+
+        return verts, idxs, dists
+
+
     def getBounds(self):
         """Returns a tuple of values which define a minimal bounding box that
         will contain all vertices in this ``TriangleMesh`` instance. The
