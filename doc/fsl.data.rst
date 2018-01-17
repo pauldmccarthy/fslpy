@@ -18,6 +18,7 @@
    fsl.data.melodicanalysis
    fsl.data.melodicimage
    fsl.data.mesh
+   fsl.data.mghimage
    fsl.data.vest
    fsl.data.volumelabels
 
