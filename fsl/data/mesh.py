@@ -231,6 +231,66 @@ class TriangleMesh(object):
         return self.__vertNormals
 
 
+    def getBounds(self):
+        """Returns a tuple of values which define a minimal bounding box that
+        will contain all vertices in this ``TriangleMesh`` instance. The
+        bounding box is arranged like so:
+
+            ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
+        """
+        return (self.__loBounds, self.__hiBounds)
+
+
+    def loadVertexData(self, dataSource, vertexData=None):
+        """Attempts to load scalar data associated with each vertex of this
+        ``TriangleMesh`` from the given ``dataSource``. The data is returned,
+        and also stored in an internal cache so it can be retrieved later
+        via the :meth:`getVertexData` method.
+
+        This method may be overridden by sub-classes.
+
+        :arg dataSource: Path to the vertex data to load
+        :arg vertexData: The vertex data itself, if it has already been
+                         loaded.
+
+        :returns: A ``(M, N)``) array, which contains ``N`` data points
+                  for ``M`` vertices.
+        """
+
+        nvertices = self.vertices.shape[0]
+
+        # Currently only white-space delimited
+        # text files are supported
+        if vertexData is None:
+            vertexData = np.loadtxt(dataSource)
+            vertexData.reshape(nvertices, -1)
+
+        if vertexData.shape[0] != nvertices:
+            raise ValueError('Incompatible size: {}'.format(dataSource))
+
+        self.__vertexData[dataSource] = vertexData
+
+        return vertexData
+
+
+    def getVertexData(self, dataSource):
+        """Returns the vertex data for the given ``dataSource`` from the
+        internal vertex data cache. If the given ``dataSource`` is not
+        in the cache, it is loaded via :meth:`loadVertexData`.
+        """
+
+        try:             return self.__vertexData[dataSource]
+        except KeyError: return self.loadVertexData(dataSource)
+
+
+    def clearVertexData(self):
+        """Clears the internal vertex data cache - see the
+        :meth:`loadVertexData` and :meth:`getVertexData`  methods.
+        """
+
+        self.__vertexData = {}
+
+
     @memoize.Instanceify(memoize.memoize)
     def trimesh(self):
         """Reference to a ``trimesh.Trimesh`` object which can be used for
@@ -391,65 +451,6 @@ class TriangleMesh(object):
 
         return lines, faces, dists
 
-
-    def getBounds(self):
-        """Returns a tuple of values which define a minimal bounding box that
-        will contain all vertices in this ``TriangleMesh`` instance. The
-        bounding box is arranged like so:
-
-            ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
-        """
-        return (self.__loBounds, self.__hiBounds)
-
-
-    def loadVertexData(self, dataSource, vertexData=None):
-        """Attempts to load scalar data associated with each vertex of this
-        ``TriangleMesh`` from the given ``dataSource``. The data is returned,
-        and also stored in an internal cache so it can be retrieved later
-        via the :meth:`getVertexData` method.
-
-        This method may be overridden by sub-classes.
-
-        :arg dataSource: Path to the vertex data to load
-        :arg vertexData: The vertex data itself, if it has already been
-                         loaded.
-
-        :returns: A ``(M, N)``) array, which contains ``N`` data points
-                  for ``M`` vertices.
-        """
-
-        nvertices = self.vertices.shape[0]
-
-        # Currently only white-space delimited
-        # text files are supported
-        if vertexData is None:
-            vertexData = np.loadtxt(dataSource)
-            vertexData.reshape(nvertices, -1)
-
-        if vertexData.shape[0] != nvertices:
-            raise ValueError('Incompatible size: {}'.format(dataSource))
-
-        self.__vertexData[dataSource] = vertexData
-
-        return vertexData
-
-
-    def getVertexData(self, dataSource):
-        """Returns the vertex data for the given ``dataSource`` from the
-        internal vertex data cache. If the given ``dataSource`` is not
-        in the cache, it is loaded via :meth:`loadVertexData`.
-        """
-
-        try:             return self.__vertexData[dataSource]
-        except KeyError: return self.loadVertexData(dataSource)
-
-
-    def clearVertexData(self):
-        """Clears the internal vertex data cache - see the
-        :meth:`loadVertexData` and :meth:`getVertexData`  methods.
-        """
-
-        self.__vertexData = {}
 
 
 ALLOWED_EXTENSIONS     = ['.vtk']
