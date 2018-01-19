@@ -55,7 +55,7 @@ class MelodicImage(fslimage.Image):
         """
 
         if op.isdir(path):
-            path = op.join(path, 'melodic_IC')
+            path = melanalysis.getICFile(path)
 
         if not melanalysis.isMelodicImage(path):
             raise ValueError('{} does not appear to be a '

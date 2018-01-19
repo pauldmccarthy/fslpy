@@ -48,14 +48,18 @@ def isMelodicImage(path):
 
 
     try:
-        path = fslimage.addExt(path, mustExist=True)
+        path = fslimage.addExt(path)
     except fslimage.PathError:
         return False
 
     dirname  = op.dirname( path)
     filename = op.basename(path)
+    filename = fslimage.removeExt(filename)
 
-    return filename.startswith('melodic_IC') and isMelodicDir(dirname)
+    prefixes = ['melodic_IC',
+                'melodic_oIC']
+
+    return any([filename == p for p in prefixes]) and isMelodicDir(dirname)
 
 
 def isMelodicDir(path):
@@ -63,7 +67,8 @@ def isMelodicDir(path):
     a MELODIC directory, ``False`` otherwise. A melodic directory:
 
       - Must be named ``*.ica``.
-      - Must contain a file called ``melodic_IC.nii.gz``.
+      - Must contain a file called ``melodic_IC.nii.gz`` or
+        ``melodic_oIC.nii.gz``.
       - Must contain a file called ``melodic_mix``.
       - Must contain a file called ``melodic_FTmix``.
     """
@@ -78,10 +83,16 @@ def isMelodicDir(path):
     if not any([dirname.endswith(suf) for suf in sufs]):
         return False
 
-    # Must contain an image file called melodic_IC
-    try:
-        fslimage.addExt(op.join(dirname, 'melodic_IC'), mustExist=True)
-    except fslimage.PathError:
+    # Must contain an image file called
+    # melodic_IC or melodic_oIC
+    prefixes = ['melodic_IC', 'melodic_oIC']
+    for p in prefixes:
+        try:
+            fslimage.addExt(op.join(dirname, p))
+            break
+        except fslimage.PathError:
+            pass
+    else:
         return False
 
     # Must contain files called
@@ -128,7 +139,7 @@ def getDataFile(meldir):
 
     dataFile = op.join(topDir, 'filtered_func_data')
 
-    try:                       return fslimage.addExt(dataFile, mustExist=True)
+    try:                       return fslimage.addExt(dataFile)
     except fslimage.PathError: return None
 
 
@@ -139,7 +150,10 @@ def getMeanFile(meldir):
 
 def getICFile(meldir):
     """Returns the path to the melodic IC image. """
-    return fslimage.addExt(op.join(meldir, 'melodic_IC'))
+    try:
+        return fslimage.addExt(op.join(meldir, 'melodic_IC'))
+    except fslimage.PathError:
+        return fslimage.addExt(op.join(meldir, 'melodic_oIC'))
 
 
 def getMixFile(meldir):
