@@ -188,10 +188,16 @@ def test_normals():
         vnormals[i] = fnormals[faces].sum(axis=0)
     vnormals = transform.normalise(vnormals)
 
-    cw_nofix  = fslmesh.TriangleMesh(verts, triangles_cw)
-    cw_fix    = fslmesh.TriangleMesh(verts, triangles_cw, fixWinding=True)
-    ccw_nofix = fslmesh.TriangleMesh(verts, triangles_ccw)
-    ccw_fix   = fslmesh.TriangleMesh(verts, triangles_ccw, fixWinding=True)
+    cw_nofix  = fslmesh.TriangleMesh(np.array(verts),
+                                     np.array(triangles_cw))
+    cw_fix    = fslmesh.TriangleMesh(np.array(verts),
+                                     np.array(triangles_cw),
+                                     fixWinding=True)
+    ccw_nofix = fslmesh.TriangleMesh(np.array(verts),
+                                     np.array(triangles_ccw))
+    ccw_fix   = fslmesh.TriangleMesh(np.array(verts),
+                                     np.array(triangles_ccw),
+                                     fixWinding=True)
 
     # ccw triangles should give correct
     # normals without unwinding
