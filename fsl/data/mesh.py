@@ -40,8 +40,7 @@ import fsl.utils.meta      as meta
 import fsl.utils.notifier  as notifier
 import fsl.utils.memoize   as memoize
 import fsl.utils.transform as transform
-
-from . import image as fslimage
+import fsl.data.image      as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -186,6 +185,19 @@ class Mesh(notifier.Notifier, meta.Meta):
         self.__trimesh = collections.OrderedDict()
 
 
+    def __repr__(self):
+        """Returns a string representation of this ``Mesh`` instance. """
+        return '{}({}, {})'.format(type(self).__name__,
+                                   self.name,
+                                   self.dataSource)
+
+
+    def __str__(self):
+        """Returns a string representation of this ``Mesh`` instance.
+        """
+        return self.__repr__()
+
+
     @property
     def name(self):
         """Returns the name of this ``Mesh``. """
@@ -204,7 +216,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         return self.__vertices[self.__selected]
 
 
-    @property.setter
+    @vertices.setter
     def vertices(self, key):
         """Select the current vertex set - a ``KeyError`` is raised
         if no vertex set with the specified ``key`` has been added.
@@ -215,11 +227,13 @@ class Mesh(notifier.Notifier, meta.Meta):
         self.__vertices[key]
         self.__selected = key
 
+        self.notify(topic='vertices')
+
 
     @property
     def indices(self):
         """The ``(M, 3)`` triangles of this mesh. """
-        return self.__indices[self.__selected]
+        return self.__indices
 
 
     @property
@@ -256,6 +270,14 @@ class Mesh(notifier.Notifier, meta.Meta):
             self.__vertNormals[selected] = vnormals
 
         return vnormals
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use bounds instead')
+    def getBounds(self):
+        """Deprecated - use :meth:`bounds` instead. """
+        return self.bounds
 
 
     @property
@@ -595,3 +617,91 @@ def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
     # If it isn't, we need to flip the
     # triangle winding order.
     return np.dot(n, transform.normalise(camera - vert)) < 0
+
+
+class TriangleMesh(Mesh):
+    """Deprecated - use :class:`fsl.data.mesh.Mesh`, or one 'of its sub-classes
+    instead.
+    """
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use fsl.data.mesh.Mesh, or one '
+                                    'of its sub-classes instead')
+    def __init__(self, data, indices=None, fixWinding=False):
+
+        import fsl.data.vtk as fslvtk
+
+        if isinstance(data, six.string_types):
+            name       = op.basename(data)
+            dataSource = data
+            mesh       = fslvtk.VTKMesh(data, fixWinding=False)
+            vertices   = mesh.vertices
+            indices    = mesh.indices
+
+        else:
+            name       = 'TriangleMesh'
+            dataSource = None
+            vertices   = data
+
+        Mesh.__init__(self, indices, name=name, dataSource=dataSource)
+        self.addVertices(vertices, 'default', fixWinding=fixWinding)
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use the Mesh class instead')
+    def loadVertexData(self, dataSource, vertexData=None):
+
+        nvertices = self.vertices.shape[0]
+
+        # Currently only white-space delimited
+        # text files are supported
+        if vertexData is None:
+            vertexData = np.loadtxt(dataSource)
+            vertexData.reshape(nvertices, -1)
+
+        if vertexData.shape[0] != nvertices:
+            raise ValueError('Incompatible size: {}'.format(dataSource))
+
+        self.addVertexData(dataSource, vertexData)
+
+        return vertexData
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use the Mesh class instead')
+    def getVertexData(self, dataSource):
+        try:
+            return Mesh.getVertexData(self, dataSource)
+        except KeyError:
+            return self.loadVertexData(dataSource)
+
+
+@deprecation.deprecated(deprecated_in='1.6.0',
+                        removed_in='2.0.0',
+                        details='Use fsl.data.vtk.loadVTKPolydataFile instead')
+def loadVTKPolydataFile(*args, **kwargs):
+    """Deprecated - use :func:`fsl.data.vtk.loadVTKPolydataFile` instead. """
+    import fsl.data.vtk as fslvtk
+    return fslvtk.loadVTKPolydataFile(*args, **kwargs)
+
+
+@deprecation.deprecated(deprecated_in='1.6.0',
+                        removed_in='2.0.0',
+                        details='Use fsl.data.vtk.getFIRSTPrefix instead')
+def getFIRSTPrefix(*args, **kwargs):
+    """Deprecated - use :func:`fsl.data.vtk.getFIRSTPrefix` instead. """
+    import fsl.data.vtk as fslvtk
+    return fslvtk.getFIRSTPrefix(*args, **kwargs)
+
+
+@deprecation.deprecated(deprecated_in='1.6.0',
+                        removed_in='2.0.0',
+                        details='Use fsl.data.vtk.findReferenceImage instead')
+def findReferenceImage(*args, **kwargs):
+    """Deprecated - use :func:`fsl.data.vtk.findReferenceImage` instead. """
+    import fsl.data.vtk as fslvtk
+    return fslvtk.findReferenceImage(*args, **kwargs)
