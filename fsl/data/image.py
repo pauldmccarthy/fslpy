@@ -46,6 +46,7 @@ import scipy.ndimage     as ndimage
 import nibabel           as nib
 import nibabel.fileslice as fileslice
 
+import fsl.utils.meta        as meta
 import fsl.utils.transform   as transform
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
@@ -57,7 +58,7 @@ import fsl.data.imagewrapper as imagewrapper
 log = logging.getLogger(__name__)
 
 
-class Nifti(notifier.Notifier):
+class Nifti(notifier.Notifier, meta.Meta):
     """The ``Nifti`` class is intended to be used as a base class for
     things which either are, or are associated with, a NIFTI image.
     The ``Nifti`` class is intended to represent information stored in
@@ -162,19 +163,8 @@ class Nifti(notifier.Notifier):
     **Metadata**
 
 
-    The ``Image`` class has a handful of methods allowing you to add and access
-    additional metadata associated with the image. These methods are used by
-    the :class:`.DicomImage` and :class:`.MGHImage` to store additional
-    meta-data that cannot be stored in the NIFTI header:
-
-    .. autosummary::
-       :nosignatures:
-
-       metaKeys
-       metaValues
-       metaItems
-       getMeta
-       setMeta
+    The ``Image`` class inherits from the :class:`.Meta` class - its methods
+    can be used to store and query any meta-data associated with the image.
 
 
     **Notification**
@@ -212,7 +202,6 @@ class Nifti(notifier.Notifier):
         worldToVoxMat = transform.invert(voxToWorldMat)
 
         self.header          = header
-        self.__meta          = collections.OrderedDict()
         self.__shape         = shape
         self.__intent        = header.get('intent_code',
                                           constants.NIFTI_INTENT_NONE)
@@ -685,39 +674,6 @@ class Nifti(notifier.Notifier):
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
 
         return code
-
-
-    def metaKeys(self):
-        """Returns the keys contained in the image metadata dictionary
-        (``dict.keys``).
-        """
-        return self.__meta.keys()
-
-
-    def metaValues(self):
-        """Returns the values contained in the image metadata dictionary
-        (``dict.values``).
-        """
-        return self.__meta.values()
-
-
-    def metaItems(self):
-        """Returns the items contained in the image metadata dictionary
-        (``dict.items``).
-        """
-        return self.__meta.items()
-
-
-    def getMeta(self, *args, **kwargs):
-        """Returns the metadata value with the specified key (``dict.get``).
-        """
-        return self.__meta.get(*args, **kwargs)
-
-
-    def setMeta(self, *args, **kwargs):
-        """Add some metadata with the specified key (``dict.__setitem__``).
-        """
-        self.__meta.__setitem__(*args, **kwargs)
 
 
 class Image(Nifti):

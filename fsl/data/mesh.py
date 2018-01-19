@@ -27,6 +27,7 @@ import numpy   as np
 
 import six
 
+import fsl.utils.meta      as meta
 import fsl.utils.memoize   as memoize
 import fsl.utils.transform as transform
 
@@ -36,7 +37,7 @@ from . import image as fslimage
 log = logging.getLogger(__name__)
 
 
-class TriangleMesh(object):
+class TriangleMesh(meta.Meta):
     """The ``TriangleMesh`` class represents a 3D model. A mesh is defined by a
     collection of ``N`` vertices, and ``M`` triangles.  The triangles are
     defined by ``(M, 3)`` indices into the list of vertices.
