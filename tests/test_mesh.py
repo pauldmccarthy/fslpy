@@ -221,6 +221,15 @@ def test_trimesh_no_trimesh():
             assert locs.size == 0
             assert tris.size == 0
 
+            verts, idxs, dists = mesh.nearestVertex([[0, 0, 0]])
+            assert verts.size == 0
+            assert idxs.size  == 0
+            assert dists.size == 0
+
+            lines, faces = mesh.planeIntersection([0, 0, 1], [0, 0, 0])
+            assert lines.size == 0
+            assert faces.size == 0
+
 
 def test_trimesh():
 
@@ -271,3 +280,74 @@ def test_nearestVertex():
     assert np.all(np.isclose(nverts, verts))
     assert np.all(np.isclose(nidxs,  np.arange(len(verts))))
     assert np.all(np.isclose(ndists, np.sqrt(3)))
+
+
+def test_planeIntersection():
+
+    verts     = np.array(CUBE_VERTICES)
+    triangles = np.array(CUBE_TRIANGLES_CCW)
+    mesh      = fslmesh.TriangleMesh(verts, triangles)
+
+    normal = [0, 0, 1]
+    origin = [0, 0, 0]
+
+    lines,  faces         = mesh.planeIntersection(normal, origin)
+    lines2, faces2, dists = mesh.planeIntersection(normal,
+                                                   origin,
+                                                   distances=True)
+
+    expLines = np.array([
+        [[-1, -1,  0],
+         [ 0, -1,  0]],
+        [[ 1, -1,  0],
+         [ 0, -1,  0]],
+
+        [[ 1,  1,  0],
+         [ 0,  1,  0]],
+
+        [[-1,  1,  0],
+         [ 0,  1,  0]],
+
+        [[-1,  0,  0],
+         [-1, -1,  0]],
+
+        [[-1,  0,  0],
+         [-1,  1,  0]],
+
+        [[ 1,  0,  0],
+         [ 1, -1,  0]],
+
+        [[ 1,  0,  0],
+         [ 1,  1,  0]]])
+
+    expFaces = np.array([ 4,  5,  6,  7,  8,  9, 10, 11])
+    expDists = np.array([
+        [[0.5, 0,   0.5],
+         [0,   0.5, 0.5]],
+
+        [[0,   0.5, 0.5],
+         [0.5, 0.5, 0]],
+
+        [[0,   0.5, 0.5],
+         [0.5, 0.5, 0]],
+
+        [[0.5, 0.5, 0],
+         [0.5, 0,   0.5]],
+
+        [[0,   0.5, 0.5],
+         [0.5, 0.5, 0]],
+
+        [[0.5, 0,   0.5],
+         [0,   0.5, 0.5]],
+
+        [[0.5, 0.5, 0],
+         [0.5, 0,   0.5]],
+
+        [[0.5, 0,   0.5],
+         [0,   0.5, 0.5]]])
+
+    assert np.all(np.isclose(lines, lines2))
+    assert np.all(np.isclose(faces, faces2))
+    assert np.all(np.isclose(lines, expLines))
+    assert np.all(np.isclose(faces, expFaces))
+    assert np.all(np.isclose(dists, expDists))
