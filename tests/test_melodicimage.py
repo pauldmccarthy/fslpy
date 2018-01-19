@@ -26,14 +26,15 @@ def _create_dummy_melodic_analysis(basedir,
                                    tr=2,
                                    with_data=True,
                                    with_reportfile=True,
-                                   with_meanfile=True):
+                                   with_meanfile=True,
+                                   ic_prefix='melodic_IC'):
 
     tldir      = op.join(basedir, 'toplevel.ica')
     meldir     = op.join(tldir,   'analysis.ica')
     datafile   = op.join(tldir,   'filtered_func_data.nii.gz')
     reportfile = op.join(tldir,   'report.html')
     meanfile   = op.join(meldir,  'mean.nii.gz')
-    icfile     = op.join(meldir,  'melodic_IC.nii.gz')
+    icfile     = op.join(meldir,  '{}.nii.gz'.format(ic_prefix))
     mixfile    = op.join(meldir,  'melodic_mix')
     ftmixfile  = op.join(meldir,  'melodic_FTmix')
 
@@ -102,16 +103,20 @@ def test_MelodicImage_create():
         with pytest.raises(Exception):
             meli.MelodicImage(path)
 
-    with tests.testdir() as testdir:
-        meldir      = _create_dummy_melodic_analysis(testdir)
-        icfile      = op.join(meldir, 'melodic_IC.nii.gz')
-        icfilenosuf = op.join(meldir, 'melodic_IC')
 
-        # Should be able to specify the
-        # melodic dir, or the IC image
-        meli.MelodicImage(meldir)
-        meli.MelodicImage(icfile)
-        meli.MelodicImage(icfilenosuf)
+    for ic_prefix in ['melodic_IC', 'melodic_oIC']:
+
+        with tests.testdir() as testdir:
+            meldir      = _create_dummy_melodic_analysis(testdir,
+                                                         ic_prefix=ic_prefix)
+            icfile      = op.join(meldir, '{}.nii.gz'.format(ic_prefix))
+            icfilenosuf = op.join(meldir, ic_prefix)
+
+            # Should be able to specify the
+            # melodic dir, or the IC image
+            meli.MelodicImage(meldir)
+            meli.MelodicImage(icfile)
+            meli.MelodicImage(icfilenosuf)
 
 
 def test_MelodicImage_atts():
