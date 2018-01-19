@@ -4,30 +4,40 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :class:`TriangleMesh` class, which represents a
+"""This module provides the :class:`Mesh` class, which represents a
 3D model made of triangles.
 
-.. note:: I/O support is very limited - currently, the only supported file
-          type is the VTK legacy file format, containing the ``POLYDATA``
-          dataset. the :class:`TriangleMesh` class assumes that every polygon
-          defined in an input file is a triangle (i.e. refers to three
-          vertices).
+See also the following modules:
 
-          See http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
-          for an overview of the VTK legacy file format.
+  .. autosummary::
 
-          In the future, I may or may not add support for more complex meshes.
+     fsl.data.vtk
+     fsl.data.gifti
+     fsl.data.freesurfer
+
+A handful of standalone functions are provided in this module, for doing various
+things with meshes:
+
+  .. autosummary::
+     :nosignatures:
+
+     calcFaceNormals
+     calcVertexNormals
+     needsFixing
 """
 
 
 import logging
+import collections
+
+import six
+import deprecation
 
 import os.path as op
 import numpy   as np
 
-import six
-
 import fsl.utils.meta      as meta
+import fsl.utils.notifier  as notifier
 import fsl.utils.memoize   as memoize
 import fsl.utils.transform as transform
 
@@ -37,13 +47,13 @@ from . import image as fslimage
 log = logging.getLogger(__name__)
 
 
-class TriangleMesh(meta.Meta):
-    """The ``TriangleMesh`` class represents a 3D model. A mesh is defined by a
+class Mesh(notifier.Notifier, meta.Meta):
+    """The ``Mesh`` class represents a 3D model. A mesh is defined by a
     collection of ``N`` vertices, and ``M`` triangles.  The triangles are
     defined by ``(M, 3)`` indices into the list of vertices.
 
 
-    A ``TriangleMesh`` instance has the following attributes:
+    A ``Mesh`` instance has the following attributes:
 
 
     ============== ====================================================
@@ -52,134 +62,164 @@ class TriangleMesh(meta.Meta):
     ``dataSource`` Full path to the mesh file (or ``None`` if there is
                    no file associated with this mesh).
 
-    ``vertices``   A :math:`N\times 3` ``numpy`` array containing
-                   the vertices.
+    ``vertices``   A ``(n, 3)`` array containing the currently selected
+                   vertices. You can assign  a vertex set key to this
+                   attribute to change the selected vertex set.
 
-    ``indices``    A :meth:`M\times 3` ``numpy`` array containing
-                   the vertex indices for :math:`M` triangles
+    ``bounds``     The lower and upper bounds
 
-    ``normals``    A :math:`M\times 3` ``numpy`` array containing
-                   face normals.
+    ``indices``    A ``(m, 3)`` array containing the vertex indices
+                   for ``m`` triangles
 
-    ``vnormals``   A :math:`N\times 3` ``numpy`` array containing
-                   vertex normals.
+    ``normals``    A  ``(m, 3)`` array containing face normals for the
+                   triangles
+
+    ``vnormals``   A ``(n, 3)`` array containing vertex normals for the
+                   the current vertices.
     ============== ====================================================
 
 
-    And the following methods:
+    **Vertex sets**
+
+
+    A ``Mesh`` object can be associated with multiple sets of vertices, but
+    only one set of triangles. Vertices can be added via the
+    :meth:`addVertices` method. Each vertex set must be associated with a
+    unique key - you can then select the current vertex set via the
+    :meth:`vertices` property. Most ``Mesh`` methods will raise a ``KeyError``
+    if you have not added any vertex sets, or selected a vertex set.
+
+
+    **Vertex data**
+
+
+    A ``Mesh`` object can store vertex-wise data. The following methods can be
+    used for adding/retrieving vertex data:
 
     .. autosummary::
        :nosignatures:
 
-       getBounds
-       loadVertexData
+       addVertexData
        getVertexData
        clearVertexData
+
+
+    **Notification**
+
+
+    The ``Mesh`` class inherits from the :class:`Notifier` class. Whenever the
+    ``Mesh`` vertex set is changed, a notification is emitted via the
+    ``Notifier`` interface, with a topic of ``'vertices'``. When this occurs,
+    the :meth:`vertices`, :meth:`bounds`, :meth:`normals` and :attr:`vnormals`
+    properties will all change so that they return data specific to the newly
+    selected vertex set.
+
+
+    **Metadata*
+
+
+    The ``Mesh`` class also inherits from the :class:`Meta` class, so
+    any metadata associated with the ``Mesh`` may be added via those methods.
+
+
+    **Geometric queries**
+
+
+    If the ``trimesh`` library is present, the following methods may be used
+    to perform geometric queries on a mesh:
+
+    .. autosummary::
+       :nosignatures:
+
+       rayIntersection
+       planeIntersection
+       nearestVertex
     """
 
 
-    def __init__(self, data, indices=None, fixWinding=False):
-        """Create a ``TriangleMesh`` instance.
+    def __init__(self, indices, name='mesh', dataSource=None):
+        """Create a ``Mesh`` instance.
 
-        :arg data:       Can either be a file name, or a :math:`N\\times 3`
-                         ``numpy`` array containing vertex data. If ``data``
-                         is a file name, it is passed to the
-                         :func:`loadVTKPolydataFile` function.
+        Before a ``Mesh`` can be used, some vertices must be added via the
+        :meth:`addVertices` method.
 
-        :arg indices:    A list of indices into the vertex data, defining
-                         the triangles.
+        :arg indices:    A list of indices into the vertex data, defining the
+                         mesh triangles.
 
-        :arg fixWinding: Defaults to ``False``. If ``True``, the vertex
-                         winding order of every triangle is is fixed so they
-                         all have outward-facing normal vectors.
+        :arg name:       A name for this ``Mesh``.
+
+        :arg dataSource: the data source for this ``Mesh``.
         """
 
-        if isinstance(data, six.string_types):
-            infile = data
-            data, lengths, indices = loadVTKPolydataFile(infile)
+        self.__name       = name
+        self.__dataSource = dataSource
+        self.__indices    = np.asarray(indices).reshape((-1, 3))
 
-            if np.any(lengths != 3):
-                raise RuntimeError('All polygons in VTK file must be '
-                                   'triangles ({})'.format(infile))
+        # This attribute is used to store
+        # the currently selected vertex set,
+        # used as a kety into all of the
+        # dictionaries below.
+        self.__selected = None
 
-            self.name       = op.basename(infile)
-            self.dataSource = infile
-        else:
-            self.name       = 'TriangleMesh'
-            self.dataSource = None
+        # Flag used to keep track of whether
+        # the triangle winding order has been
+        # "fixed" - see the addVertices method.
+        self.__fixed = False
 
-        if indices is None:
-            indices = np.arange(data.shape[0])
+        # All of these are populated
+        # in the addVertices method
+        self.__vertices = collections.OrderedDict()
+        self.__loBounds = collections.OrderedDict()
+        self.__hiBounds = collections.OrderedDict()
 
-        self.__vertices     = np.array(data)
-        self.__indices      = np.array(indices).reshape((-1, 3))
+        # These get populated on
+        # normals/vnormals accesses
+        self.__faceNormals = collections.OrderedDict()
+        self.__vertNormals = collections.OrderedDict()
 
-        self.__vertexData = {}
-        self.__faceNormals = None
-        self.__vertNormals = None
-        self.__loBounds    = self.vertices.min(axis=0)
-        self.__hiBounds    = self.vertices.max(axis=0)
+        # this gets populated in
+        # the addVertexData method
+        self.__vertexData  = collections.OrderedDict()
 
-        if fixWinding:
-            self.__fixWindingOrder()
-
-
-    def __repr__(self):
-        """Returns a string representation of this ``TriangleMesh`` instance.
-        """
-        return '{}({}, {})'.format(type(self).__name__,
-                                   self.name,
-                                   self.dataSource)
-
-    def __str__(self):
-        """Returns a string representation of this ``TriangleMesh`` instance.
-        """
-        return self.__repr__()
+        # this gets populated
+        # in the trimesh method
+        self.__trimesh = collections.OrderedDict()
 
 
-    def __fixWindingOrder(self):
-        """Called by :meth:`__init__` if ``fixWinding is True``.  Fixes the
-        mesh triangle winding order so that all face normals are facing
-        outwards from the centre of the mesh.
-        """
+    @property
+    def name(self):
+        """Returns the name of this ``Mesh``. """
+        return self.__name
 
-        # Define a viewpoint which is
-        # far away from the mesh.
-        fnormals = self.normals
-        camera   = self.__loBounds - (self.__hiBounds - self.__loBounds)
 
-        # Find the nearest vertex
-        # to the viewpoint
-        dists = np.sqrt(np.sum((self.vertices - camera) ** 2, axis=1))
-        ivert = np.argmin(dists)
-        vert  = self.vertices[ivert]
-
-        # Pick a triangle that
-        # this vertex in and
-        # ges its face normal
-        itri = np.where(self.indices == ivert)[0][0]
-        n    = fnormals[itri, :]
-
-        # Make sure the angle between the
-        # normal, and a vector from the
-        # vertex to the camera is positive
-        # If it isn't, flip the triangle
-        # winding order.
-        if np.dot(n, transform.normalise(camera - vert)) < 0:
-            self.indices[:, [1, 2]] = self.indices[:, [2, 1]]
-            self.__faceNormals     *= -1
+    @property
+    def dataSource(self):
+        """Returns the data source of this ``Mesh``. """
+        return self.__dataSource
 
 
     @property
     def vertices(self):
         """The ``(N, 3)`` vertices of this mesh. """
-        return self.__vertices
+        return self.__vertices[self.__selected]
+
+
+    @property.setter
+    def vertices(self, key):
+        """Select the current vertex set - a ``KeyError`` is raised
+        if no vertex set with the specified ``key`` has been added.
+        """
+
+        # Force a key error if
+        # the key is invalid
+        self.__vertices[key]
+        self.__selected = key
 
 
     @property
     def indices(self):
         """The ``(M, 3)`` triangles of this mesh. """
-        return self.__indices
+        return self.__indices[self.__selected]
 
 
     @property
@@ -188,18 +228,16 @@ class TriangleMesh(meta.Meta):
         triangle in the mesh, normalised to unit length.
         """
 
-        if self.__faceNormals is not None:
-            return self.__faceNormals
+        selected = self.__selected
+        indices  = self.__indices
+        vertices = self.__vertices[selected]
+        fnormals = self.__faceNormals.get(selected, None)
 
-        v0 = self.vertices[self.indices[:, 0]]
-        v1 = self.vertices[self.indices[:, 1]]
-        v2 = self.vertices[self.indices[:, 2]]
+        if fnormals is None:
+            fnormals = calcFaceNormals(vertices, indices)
+            self.__faceNormals[selected] = fnormals
 
-        n = np.cross((v1 - v0), (v2 - v0))
-
-        self.__faceNormals = transform.normalise(n)
-
-        return self.__faceNormals
+        return fnormals
 
 
     @property
@@ -207,89 +245,98 @@ class TriangleMesh(meta.Meta):
         """A ``(N, 3)`` array containing normals for every vertex
         in the mesh.
         """
-        if self.__vertNormals is not None:
-            return self.__vertNormals
 
-        # per-face normals
-        fnormals = self.normals
-        vnormals = np.zeros((self.vertices.shape[0], 3), dtype=np.float)
+        selected = self.__selected
+        indices  = self.__indices
+        vertices = self.__vertices[selected]
+        vnormals = self.__vertNormals.get(selected, None)
 
-        # TODO make fast. I can't figure
-        # out how to use np.add.at to
-        # accumulate the face normals for
-        # each vertex.
-        for i in range(self.indices.shape[0]):
+        if vnormals is None:
+            vnormals = calcVertexNormals(vertices, indices, self.normals)
+            self.__vertNormals[selected] = vnormals
 
-            v0, v1, v2 = self.indices[i]
-
-            vnormals[v0, :] += fnormals[i]
-            vnormals[v1, :] += fnormals[i]
-            vnormals[v2, :] += fnormals[i]
-
-        # normalise to unit length
-        self.__vertNormals = transform.normalise(vnormals)
-
-        return self.__vertNormals
+        return vnormals
 
 
-    def getBounds(self):
+    @property
+    def bounds(self):
         """Returns a tuple of values which define a minimal bounding box that
-        will contain all vertices in this ``TriangleMesh`` instance. The
-        bounding box is arranged like so:
+        will contain all of the currently selected vertices in this
+        ``Mesh`` instance. The bounding box is arranged like so:
 
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
         """
-        return (self.__loBounds, self.__hiBounds)
+
+        lo = self.__loBounds[self.__selected]
+        hi = self.__hiBounds[self.__selected]
+
+        return lo, hi
 
 
-    def loadVertexData(self, dataSource, vertexData=None):
-        """Attempts to load scalar data associated with each vertex of this
-        ``TriangleMesh`` from the given ``dataSource``. The data is returned,
-        and also stored in an internal cache so it can be retrieved later
-        via the :meth:`getVertexData` method.
+    def addVertices(self, vertices, key, select=True, fixWinding=False):
+        """Adds a set of vertices to this ``Mesh``.
 
-        This method may be overridden by sub-classes.
+        :arg vertices:   A `(n, 3)` array containing ``n`` vertices, compatible
+                         with the indices specified in :meth:`__init__`.
 
-        :arg dataSource: Path to the vertex data to load
-        :arg vertexData: The vertex data itself, if it has already been
-                         loaded.
+        :arg key:        A key for this vertex set.
 
-        :returns: A ``(M, N)``) array, which contains ``N`` data points
-                  for ``M`` vertices.
+        :arg select:     If ``True`` (the default), this vertex set is
+                         made the currently selected vertex set.
+
+        :arg fixWinding: Defaults to ``False``. If ``True``, the vertex
+                         winding order of every triangle is is fixed so they
+                         all have outward-facing normal vectors.
         """
 
-        nvertices = self.vertices.shape[0]
+        vertices = np.asarray(vertices)
+        lo       = vertices.min(axis=0)
+        hi       = vertices.max(axis=0)
 
-        # Currently only white-space delimited
-        # text files are supported
-        if vertexData is None:
-            vertexData = np.loadtxt(dataSource)
-            vertexData.reshape(nvertices, -1)
+        self.__vertices[key] = vertices
+        self.__loBounds[key] = lo
+        self.__hiBounds[key] = hi
 
-        if vertexData.shape[0] != nvertices:
-            raise ValueError('Incompatible size: {}'.format(dataSource))
+        if select:
+            self.vertices = key
 
-        self.__vertexData[dataSource] = vertexData
+        # indices already fixed?
+        if fixWinding and (not self.__fixed):
+            indices      = self.indices
+            normals      = self.normals
+            needsFix     = needsFixing(vertices, indices, normals, lo, hi)
+            self.__fixed = True
 
-        return vertexData
+            # See needsFixing documentation
+            if needsFix:
+
+                indices[:, [1, 2]] = indices[:, [2, 1]]
+
+                for k, fn in self.__faceNormals.items():
+                    self.__faceNormals[k] = fn * -1
 
 
-    def getVertexData(self, dataSource):
-        """Returns the vertex data for the given ``dataSource`` from the
-        internal vertex data cache. If the given ``dataSource`` is not
-        in the cache, it is loaded via :meth:`loadVertexData`.
+    def addVertexData(self, key, vdata):
+        """Adds a vertex-wise data set to the ``Mesh``. It can be retrieved
+        by passing the specified ``key`` to the :meth:`getVertexData` method.
+        """
+        self.__vertexData[key] = vdata
+
+
+    def getVertexData(self, key):
+        """Returns the vertex data for the given ``key`` from the
+        internal vertex data cache. If there is no vertex data iwth the
+        given key, a ``KeyError`` is raised.
         """
 
-        try:             return self.__vertexData[dataSource]
-        except KeyError: return self.loadVertexData(dataSource)
+        return self.__vertexData[key]
 
 
     def clearVertexData(self):
         """Clears the internal vertex data cache - see the
-        :meth:`loadVertexData` and :meth:`getVertexData`  methods.
+        :meth:`addVertexData` and :meth:`getVertexData` methods.
         """
-
-        self.__vertexData = {}
+        self.__vertexData = collections.OrderedDict()
 
 
     @memoize.Instanceify(memoize.memoize)
@@ -298,7 +345,8 @@ class TriangleMesh(meta.Meta):
         geometric operations on the mesh.
 
         If the ``trimesh`` or ``rtree`` libraries are not available, this
-        function returns ``None``
+        function returns ``None``, and none of the geometric query methods
+        will do anything.
         """
 
         # trimesh is an optional dependency - rtree
@@ -313,15 +361,17 @@ class TriangleMesh(meta.Meta):
             log.warning('trimesh is not available')
             return None
 
-        if hasattr(self, '__trimesh'):
-            return self.__trimesh
+        tm = self.__trimesh.get(self.__selected, None)
 
-        self.__trimesh = trimesh.Trimesh(self.__vertices,
-                                         self.__indices,
-                                         process=False,
-                                         validate=False)
+        if tm is None:
+            tm = trimesh.Trimesh(self.vertices,
+                                 self.indices,
+                                 process=False,
+                                 validate=False)
 
-        return self.__trimesh
+            self.__trimesh[self.__selected] = tm
+
+        return tm
 
 
     def rayIntersection(self, origins, directions, vertices=False):
@@ -453,107 +503,95 @@ class TriangleMesh(meta.Meta):
         return lines, faces, dists
 
 
+def calcFaceNormals(vertices, indices):
+    """Calculates face normals for the mesh described by ``vertices`` and
+    ``indices``.
 
-ALLOWED_EXTENSIONS     = ['.vtk']
-"""A list of file extensions which could contain :class:`TriangleMesh` data.
-"""
-
-
-EXTENSION_DESCRIPTIONS = ['VTK polygon model file']
-"""A description for each of the extensions in :data:`ALLOWED_EXTENSIONS`."""
-
-
-def loadVTKPolydataFile(infile):
-    """Loads a vtk legacy file containing a ``POLYDATA`` data set.
-
-    :arg infile: Name of a file to load from.
-
-    :returns: a tuple containing three values:
-
-                - A :math:`N\\times 3` ``numpy`` array containing :math:`N`
-                  vertices.
-                - A 1D ``numpy`` array containing the lengths of each polygon.
-                - A 1D ``numpy`` array containing the vertex indices for all
-                  polygons.
+    :arg vertices: A ``(n, 3)`` array containing the mesh vertices.
+    :arg indices:  A ``(m, 3)`` array containing the mesh triangles.
+    :returns:      A ``(m, 3)`` array containing normals for every triangle in
+                   the mesh.
     """
 
-    lines = None
+    v0 = vertices[indices[:, 0]]
+    v1 = vertices[indices[:, 1]]
+    v2 = vertices[indices[:, 2]]
 
-    with open(infile, 'rt') as f:
-        lines = f.readlines()
+    fnormals = np.cross((v1 - v0), (v2 - v0))
+    fnormals = transform.normalise(fnormals)
 
-    lines = [l.strip() for l in lines]
-
-    if lines[3] != 'DATASET POLYDATA':
-        raise ValueError('Only the POLYDATA data type is supported')
-
-    nVertices = int(lines[4].split()[1])
-    nPolygons = int(lines[5 + nVertices].split()[1])
-    nIndices  = int(lines[5 + nVertices].split()[2]) - nPolygons
-
-    vertices       = np.zeros((nVertices, 3), dtype=np.float32)
-    polygonLengths = np.zeros( nPolygons,     dtype=np.uint32)
-    indices        = np.zeros( nIndices,      dtype=np.uint32)
-
-    for i in range(nVertices):
-        vertLine       = lines[i + 5]
-        vertices[i, :] = [float(w) for w in vertLine.split()]
-
-    indexOffset = 0
-    for i in range(nPolygons):
-
-        polyLine          = lines[6 + nVertices + i].split()
-        polygonLengths[i] = int(polyLine[0])
-
-        start              = indexOffset
-        end                = indexOffset + polygonLengths[i]
-        indices[start:end] = [int(w) for w in polyLine[1:]]
-
-        indexOffset        += polygonLengths[i]
-
-    return vertices, polygonLengths, indices
+    return fnormals
 
 
-def getFIRSTPrefix(modelfile):
-    """If the given ``vtk`` file was generated by `FIRST
-    <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FIRST>`_, this function
-    will return the file prefix. Otherwise a ``ValueError`` will be
-    raised.
+def calcVertexNormals(vertices, indices, fnormals):
+    """Calculates vertex normals for the mesh described by ``vertices``
+    and ``indices``.
+
+    :arg vertices: A ``(n, 3)`` array containing the mesh vertices.
+    :arg indices:  A ``(m, 3)`` array containing the mesh triangles.
+    :arg fnormals: A ``(m, 3)`` array containing the face/triangle normals.
+    :returns:      A ``(n, 3)`` array containing normals for every vertex in
+                   the mesh.
     """
 
-    if not modelfile.endswith('first.vtk'):
-        raise ValueError('Not a first vtk file: {}'.format(modelfile))
+    vnormals = np.zeros((vertices.shape[0], 3), dtype=np.float)
 
-    modelfile = op.basename(modelfile)
-    prefix    = modelfile.split('-')
-    prefix    = '-'.join(prefix[:-1])
+    # TODO make fast. I can't figure
+    # out how to use np.add.at to
+    # accumulate the face normals for
+    # each vertex.
+    for i in range(indices.shape[0]):
 
-    return prefix
+        v0, v1, v2 = indices[i]
+
+        vnormals[v0, :] += fnormals[i]
+        vnormals[v1, :] += fnormals[i]
+        vnormals[v2, :] += fnormals[i]
+
+    # normalise to unit length
+    return transform.normalise(vnormals)
 
 
-def findReferenceImage(modelfile):
-    """Given a ``vtk`` file, attempts to find a corresponding ``NIFTI``
-    image file. Return the path to the image, or ``None`` if no image was
-    found.
+def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
+    """Determines whether the triangle winding order, for the mesh described by
+    ``vertices`` and ``indices``, needs to be flipped.
 
-    Currently this function will only return an image for ``vtk`` files
-    generated by `FIRST <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FIRST>`_.
+    If this function returns ``True``, the given ``indices`` and ``fnormals``
+    need to be adjusted so that all face normals are facing outwards from the
+    centre of the mesh. The necessary adjustments are as follows::
+
+        indices[:, [1, 2]] = indices[:, [2, 1]]
+        fnormals           = fnormals * -1
+
+    :arg vertices: A ``(n, 3)`` array containing the mesh vertices.
+    :arg indices:  A ``(m, 3)`` array containing the mesh triangles.
+    :arg fnormals: A ``(m, 3)`` array containing the face/triangle normals.
+    :arg loBounds: A ``(3, )`` array contaning the low vertex bounds.
+    :arg hiBounds: A ``(3, )`` array contaning the high vertex bounds.
+
+    :returns:      ``True`` if the ``indices`` and ``fnormals`` need to be
+                   adjusted, ``False`` otherwise.
     """
 
-    try:
+    # Define a viewpoint which is
+    # far away from the mesh.
+    camera = loBounds - (hiBounds - loBounds)
 
-        dirname  = op.dirname(modelfile)
-        prefixes = [getFIRSTPrefix(modelfile)]
-    except ValueError:
-        return None
+    # Find the nearest vertex
+    # to the viewpoint
+    dists = np.sqrt(np.sum((vertices - camera) ** 2, axis=1))
+    ivert = np.argmin(dists)
+    vert  = vertices[ivert]
 
-    if prefixes[0].endswith('_first'):
-        prefixes.append(prefixes[0][:-6])
+    # Pick a triangle that
+    # this vertex is in and
+    # ges its face normal
+    itri = np.where(indices == ivert)[0][0]
+    n    = fnormals[itri, :]
 
-    for p in prefixes:
-        try:
-            return fslimage.addExt(op.join(dirname, p), mustExist=True)
-        except fslimage.PathError:
-            continue
-
-    return None
+    # Make sure the angle between the
+    # normal, and a vector from the
+    # vertex to the camera is positive
+    # If it isn't, we need to flip the
+    # triangle winding order.
+    return np.dot(n, transform.normalise(camera - vert)) < 0
