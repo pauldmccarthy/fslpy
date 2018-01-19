@@ -322,12 +322,74 @@ class TriangleMesh(object):
         trimesh = self.trimesh()
 
         if trimesh is None:
-            return np.zeros((0, 3))
+            return np.zeros((0, 3)), np.zeros((0, )), np.zeros((0, ))
 
         dists, idxs = trimesh.nearest.vertex(points)
         verts       = self.vertices[idxs, :]
 
         return verts, idxs, dists
+
+
+    def planeIntersection(self,
+                          normal,
+                          origin,
+                          distances=False):
+        """Calculate the intersection of this ``TriangleMesh`` with
+        the plane defined by ``normal`` and ``origin``.
+
+        :arg normal:    Vector defining the plane orientation
+
+        :arg origin:    Point defining the plane location
+
+        :arg distances: If ``True``, barycentric coordinates for each
+                        intersection line vertex are calculated and returned,
+                        giving their respective distance from the intersected
+                        triangle vertices.
+
+        :returns:       A tuple containing
+                          - A ``(m, 2, 3)`` array containing ``m`` vertices:
+                            of a set of lines, defining the plane intersection
+
+                          - A ``(m,)`` array containing the indices of the
+                            ``m`` triangles that were intersected.
+
+                          - (if ``distances is True``) A ``(m, 2, 3)`` arra
+                            containing the barycentric coordinates of each
+                            line vertex with respect to its intersected
+                            triangle.
+        """
+
+        trimesh = self.trimesh()
+
+        if trimesh is None:
+            return np.zeros((0, 3)), np.zeros((0, 3))
+
+        import trimesh.intersections as tmint
+        import trimesh.triangles     as tmtri
+
+        lines, faces = tmint.mesh_plane(
+            trimesh,
+            plane_normal=normal,
+            plane_origin=origin,
+            return_faces=True)
+
+        if not distances:
+            return lines, faces
+
+        # Calculate the barycentric coordinates
+        # (distance from triangle vertices) for
+        # each intersection line
+
+        triangles = self.vertices[self.indices[faces]].repeat(2, axis=0)
+        points    = lines.reshape((-1, 3))
+
+        if triangles.size > 0:
+            dists = tmtri.points_to_barycentric(triangles, points)
+            dists = dists.reshape((-1, 2, 3))
+        else:
+            dists = np.zeros((0, 2, 3))
+
+        return lines, faces, dists
 
 
     def getBounds(self):
