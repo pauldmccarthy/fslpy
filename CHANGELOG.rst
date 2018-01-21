@@ -19,6 +19,8 @@ order.
 * The :class:`.Nifti` and :class:`.Mesh` classes have new methods allowing
   arbitrary metadata to be stored with the image, as key-value
   pairs. These are provided by a new mixin class, :class:`.Meta`.
+* Freesurer geometry files can  now be loaded via the :class:`.FreesurferMesh`
+  class.
 * Freesurfer ``mgz`` / ``mgh`` image files can now be loaded via the new
   :mod:`.mghimage` module. Internally, these image files are converted to NIFTI
   - the :class:`.MGHImage` class derives from the :class:`.Image` class.
