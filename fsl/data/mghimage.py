@@ -21,6 +21,15 @@ import nibabel as nib
 import fsl.data.image as fslimage
 
 
+ALLOWED_EXTENSIONS = ['.mgz', '.mgh']
+"""List of file extensions interpreted as MGH image files.
+"""
+
+
+EXTENSION_DESCRIPTIONS = ['Compressed MGH image', 'MGH image']
+"""A description for each of the :attr:`ALLOWED_EXTENSIONS`."""
+
+
 class MGHImage(fslimage.Image):
     """The ``MGHImage`` class is a NIFTI :class:`Image` which has been converted
     from a Freesurfer ``.mgh`` file.
@@ -60,20 +69,3 @@ class MGHImage(fslimage.Image):
         name. Otherwise returns ``None``.
         """
         return self.getMeta('mghImageFile', None)
-
-
-
-ALLOWED_EXTENSIONS = ['.mgz', '.mgh']
-"""List of file extensions interpreted as MGH image files.
-"""
-
-
-EXTENSION_DESCRIPTIONS = ['Compressed MGH image', 'MGH image']
-"""A description for each of the :attr:`ALLOWED_EXTENSIONS`."""
-
-
-def looksLikeMGHImage(filename):
-    """Returns ``True`` if the given file looks like a MGH image, ``False``
-    otherwise.
-    """
-    return fslimage.looksLikeImage(filename, ALLOWED_EXTENSIONS)
