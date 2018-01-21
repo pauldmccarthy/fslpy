@@ -16,16 +16,6 @@ from . import testdir
 import fsl.data.mghimage as fslmgh
 
 
-def test_looksLikeMGHImage():
-
-    lookLike   = ['test.mgz', 'test.mgh']
-    noLookLike = ['test.nii', 'test', 'testmgh.mga', 'test.mgza', 'test.mgha']
-
-
-    for l  in lookLike:   assert     fslmgh.looksLikeMGHImage(l)
-    for nl in noLookLike: assert not fslmgh.looksLikeMGHImage(nl)
-
-
 def test_MGHImage():
 
     datadir  = op.join(op.dirname(__file__), 'testdata')
