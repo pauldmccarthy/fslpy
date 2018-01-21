@@ -94,7 +94,7 @@ class Notifier(object):
         instance.
         """
 
-        new = object.__new__(cls)
+        new = super(Notifier, cls).__new__(cls)
 
         # Listeners are stored in this
         #

@@ -27,8 +27,13 @@ class Meta(object):
        setMeta
     """
 
-    def __init__(self):
-        self.__meta = collections.OrderedDict()
+    def __new__(cls, *args, **kwargs):
+        """Initialises a ``Meta`` instance. """
+
+        new        = super(Meta, cls).__new__(cls)
+        new.__meta = collections.OrderedDict()
+
+        return new
 
 
     def metaKeys(self):

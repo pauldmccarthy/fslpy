@@ -144,6 +144,14 @@ class Mesh(notifier.Notifier, meta.Meta):
     """
 
 
+    def __new__(cls, *args, **kwargs):
+        """Create a ``Mesh``. We must override ``__new__``, otherwise the
+        :class:`Meta` and :class:`Notifier` ``__new__`` methods will not be
+        called correctly.
+        """
+        return super(Mesh, cls).__new__(cls, *args, **kwargs)
+
+
     def __init__(self,
                  indices,
                  name='mesh',
