@@ -58,7 +58,7 @@ class GiftiMesh(fslmesh.Mesh):
 
     def __init__(self, infile, fixWinding=False, loadAll=False):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
-        data using the  :func:`loadGiftiSurface` function.
+        data using the  :func:`loadGiftiMesh` function.
 
         :arg infile:     A GIFTI surface file (``*.surf.gii``).
 
@@ -76,7 +76,7 @@ class GiftiMesh(fslmesh.Mesh):
         name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
         infile = op.abspath(infile)
 
-        surfimg, vertices, indices = loadGiftiSurface(infile)
+        surfimg, vertices, indices = loadGiftiMesh(infile)
 
         fslmesh.Mesh.__init__(self,
                               indices,
@@ -96,7 +96,7 @@ class GiftiMesh(fslmesh.Mesh):
 
             for sfile in surfFiles:
 
-                surfimg, vertices, _ = loadGiftiSurface(sfile)
+                surfimg, vertices, _ = loadGiftiMesh(sfile)
 
                 if vertices.shape[0] != nvertices:
                     continue
@@ -109,7 +109,7 @@ class GiftiMesh(fslmesh.Mesh):
         """Overrides the :meth:`.TriangleMesh.loadVertexData` method.
 
         Attempts to load data associated with each vertex of this
-        ``GiftiSurface`` from the given ``dataSource``, which may be
+        ``GiftiMesh`` from the given ``dataSource``, which may be
         a GIFTI file or a plain text file which contains vertex data.
         """
 
