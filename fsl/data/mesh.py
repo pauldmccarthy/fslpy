@@ -305,14 +305,6 @@ class Mesh(notifier.Notifier, meta.Meta):
         return vnormals
 
 
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use bounds instead')
-    def getBounds(self):
-        """Deprecated - use :meth:`bounds` instead. """
-        return self.bounds
-
-
     @property
     def bounds(self):
         """Returns a tuple of values which define a minimal bounding box that
@@ -753,6 +745,14 @@ class TriangleMesh(Mesh):
         self.addVertexData(dataSource, vertexData)
 
         return vertexData
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use bounds instead')
+    def getBounds(self):
+        """Deprecated - use :meth:`bounds` instead. """
+        return self.bounds
 
 
     @deprecation.deprecated(deprecated_in='1.6.0',
