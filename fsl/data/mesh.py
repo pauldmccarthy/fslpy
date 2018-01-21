@@ -136,7 +136,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     """
 
 
-    def __init__(self, indices, name='mesh', dataSource=None):
+    def __init__(self, indices, name='mesh', dataSource=None, vertices=None):
         """Create a ``Mesh`` instance.
 
         Before a ``Mesh`` can be used, some vertices must be added via the
@@ -147,7 +147,10 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         :arg name:       A name for this ``Mesh``.
 
-        :arg dataSource: the data source for this ``Mesh``.
+        :arg dataSource: The data source for this ``Mesh``.
+
+        :arg vertices:   Initial vertex set to add - given the key
+                         ``'default'``.
         """
 
         self.__name       = name
@@ -183,6 +186,11 @@ class Mesh(notifier.Notifier, meta.Meta):
         # this gets populated
         # in the trimesh method
         self.__trimesh = collections.OrderedDict()
+
+        # Add initial vertex
+        # set if provided
+        if vertices is not None:
+            self.addVertices(vertices)
 
 
     def __repr__(self):
@@ -295,13 +303,14 @@ class Mesh(notifier.Notifier, meta.Meta):
         return lo, hi
 
 
-    def addVertices(self, vertices, key, select=True, fixWinding=False):
+    def addVertices(self, vertices, key=None, select=True, fixWinding=False):
         """Adds a set of vertices to this ``Mesh``.
 
         :arg vertices:   A `(n, 3)` array containing ``n`` vertices, compatible
                          with the indices specified in :meth:`__init__`.
 
-        :arg key:        A key for this vertex set.
+        :arg key:        A key for this vertex set. If ``None`` defaults to
+                         ``'default'``.
 
         :arg select:     If ``True`` (the default), this vertex set is
                          made the currently selected vertex set.
@@ -310,6 +319,9 @@ class Mesh(notifier.Notifier, meta.Meta):
                          winding order of every triangle is is fixed so they
                          all have outward-facing normal vectors.
         """
+
+        if key is None:
+            key = 'default'
 
         vertices = np.asarray(vertices)
         lo       = vertices.min(axis=0)
@@ -338,11 +350,17 @@ class Mesh(notifier.Notifier, meta.Meta):
                     self.__faceNormals[k] = fn * -1
 
 
+
+    def selectedVertices(self):
+        """Returns the key of the currently selected vertex set. """
+        return self.__selected
+
+
     def addVertexData(self, key, vdata):
         """Adds a vertex-wise data set to the ``Mesh``. It can be retrieved
         by passing the specified ``key`` to the :meth:`getVertexData` method.
         """
-        self.__vertexData[key] = vdata
+        self.__vertexData[key] = vdata.reshape(vdata.shape[0], -1)
 
 
     def getVertexData(self, key):
