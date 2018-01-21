@@ -108,6 +108,7 @@ class Mesh(notifier.Notifier, meta.Meta):
        loadVertexData
        addVertexData
        getVertexData
+       vertexDataSets
        clearVertexData
 
 
@@ -438,6 +439,11 @@ class Mesh(notifier.Notifier, meta.Meta):
         :meth:`addVertexData` and :meth:`getVertexData` methods.
         """
         self.__vertexData = collections.OrderedDict()
+
+
+    def vertexDataSets(self):
+        """Returns a list of keys for all loaded vertex data sets. """
+        return list(self.__vertexData.keys())
 
 
     @memoize.Instanceify(memoize.memoize)
