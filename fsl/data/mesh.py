@@ -15,8 +15,8 @@ See also the following modules:
      fsl.data.gifti
      fsl.data.freesurfer
 
-A handful of standalone functions are provided in this module, for doing various
-things with meshes:
+A handful of standalone functions are provided in this module, for doing
+various things with meshes:
 
   .. autosummary::
      :nosignatures:
@@ -40,7 +40,6 @@ import fsl.utils.meta      as meta
 import fsl.utils.notifier  as notifier
 import fsl.utils.memoize   as memoize
 import fsl.utils.transform as transform
-import fsl.data.image      as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -86,7 +85,15 @@ class Mesh(notifier.Notifier, meta.Meta):
     :meth:`addVertices` method. Each vertex set must be associated with a
     unique key - you can then select the current vertex set via the
     :meth:`vertices` property. Most ``Mesh`` methods will raise a ``KeyError``
-    if you have not added any vertex sets, or selected a vertex set.
+    if you have not added any vertex sets, or selected a vertex set. The
+    following methods are available for managing vertex sets:
+
+    .. autosummary::
+       :nosignatures:
+
+       addVertices
+       selectedVertices
+       vertexKeys
 
 
     **Vertex data**
@@ -98,6 +105,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     .. autosummary::
        :nosignatures:
 
+       loadVertexData
        addVertexData
        getVertexData
        clearVertexData
@@ -358,17 +366,53 @@ class Mesh(notifier.Notifier, meta.Meta):
                     self.__faceNormals[k] = fn * -1
 
 
+    def vertexKeys(self):
+        """Returns a list containing the keys of all vertex sets. """
+        return list(self.__vertices.keys())
+
 
     def selectedVertices(self):
         """Returns the key of the currently selected vertex set. """
         return self.__selected
 
 
+    def loadVertexData(self, infile, key=None):
+        """Loads vertex-wise data from the given ``infile``, and adds it with
+        the given ``key``. This implementation supports loading data from
+        whitespace-delimited text files via ``numpy.loadtxt``, but sub-classes
+        may override this method to support additional file types.
+
+        :arg infile: File to load data from.
+
+        :arg key:    Key to pass to :meth:`addVertexData`. If not provided,
+                     set to ``infile`` (converted to an absolute path)
+        """
+
+        infile = op.abspath(infile)
+
+        if key is None:
+            key = infile
+
+        nvertices  = self.vertices.shape[0]
+        vertexData = np.loadtxt(infile)
+        vertexData = vertexData.reshape(nvertices, -1)
+
+        self.addVertexData(key, vertexData)
+
+        return vertexData
+
+
     def addVertexData(self, key, vdata):
         """Adds a vertex-wise data set to the ``Mesh``. It can be retrieved
         by passing the specified ``key`` to the :meth:`getVertexData` method.
         """
-        self.__vertexData[key] = vdata.reshape(vdata.shape[0], -1)
+
+        nvertices = self.vertices.shape[0]
+
+        if vdata.shape[0] != nvertices:
+            raise ValueError('Incompatible vertex data size: {}'.format(key))
+
+        self.__vertexData[key] = vdata.reshape(nvertices, -1)
 
 
     def getVertexData(self, key):
