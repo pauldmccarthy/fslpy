@@ -93,7 +93,7 @@ class Mesh(notifier.Notifier, meta.Meta):
 
        addVertices
        selectedVertices
-       vertexKeys
+       vertexSets
 
 
     **Vertex data**
@@ -374,7 +374,7 @@ class Mesh(notifier.Notifier, meta.Meta):
                     self.__faceNormals[k] = fn * -1
 
 
-    def vertexKeys(self):
+    def vertexSets(self):
         """Returns a list containing the keys of all vertex sets. """
         return list(self.__vertices.keys())
 
