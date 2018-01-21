@@ -12,6 +12,7 @@ The following functions are also available:
   .. autosummary::
      :nosignatures:
 
+     loadFreesurferVertexFile
      relatedFiles
 """
 
@@ -25,12 +26,12 @@ import fsl.utils.path as fslpath
 import fsl.data.mesh  as fslmesh
 
 
-ALLOWED_EXTENSIONS = ['.pial',
-                      '.white',
-                      '.sphere',
-                      '.inflated',
-                      '.orig',
-                      '.mid']
+GEOMETRY_EXTENSIONS = ['.pial',
+                       '.white',
+                       '.sphere',
+                       '.inflated',
+                       '.orig',
+                       '.mid']
 """File extensions which are interpreted as Freesurfer geometry files. """
 
 
@@ -41,7 +42,11 @@ EXTENSION_DESCRIPTIONS = [
     "Freesurfer surface",
     "Freesurfer surface",
     "Freesurfer surface"]
-"""A description for each extension in :attr:`ALLOWED_EXTENSIONS`. """
+"""A description for each extension in :attr:`GEOMETRY_EXTENSIONS`. """
+
+
+
+VERTEX_DATA_EXTENSIONS = ['']
 
 
 class FreesurferMesh(fslmesh.Mesh):
@@ -70,7 +75,7 @@ class FreesurferMesh(fslmesh.Mesh):
 
         filename = op.abspath(filename)
         name     = fslpath.removeExt(op.basename(filename),
-                                     ALLOWED_EXTENSIONS)
+                                     GEOMETRY_EXTENSIONS)
 
         fslmesh.Mesh.__init__(self,
                               indices,
@@ -85,7 +90,7 @@ class FreesurferMesh(fslmesh.Mesh):
 
         if loadAll:
 
-            allFiles = relatedFiles(filename, ftypes=ALLOWED_EXTENSIONS)
+            allFiles = relatedFiles(filename, ftypes=GEOMETRY_EXTENSIONS)
 
             for f in allFiles:
                 verts, idxs = nib.freesurfer.read_geometry(f)
@@ -108,7 +113,7 @@ def relatedFiles(fname, ftypes=None):
     """
 
     if ftypes is None:
-        ftypes = ['.annot', '.label', '.curv', '.w']
+        ftypes = VERTEX_DATA_EXTENSIONS
 
     #
     # .annot files contain labels for each vertex, and RGB values for each

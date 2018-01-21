@@ -35,16 +35,13 @@ import fsl.data.constants as constants
 import fsl.data.mesh      as fslmesh
 
 
-# We include .gii here because lots of things
-# don't understand double-barrelled file
-# extensions (e.g. the wxPython open file dialog).
-ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
+ALLOWED_EXTENSIONS = ['.surf.gii']
 """List of file extensions that a file containing Gifti surface data
 is expected to have.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI surface file']
+EXTENSION_DESCRIPTIONS = ['GIFTI surface file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
 
 
