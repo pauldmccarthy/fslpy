@@ -698,7 +698,7 @@ def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
 
 
 class TriangleMesh(Mesh):
-    """Deprecated - use :class:`fsl.data.mesh.Mesh`, or one 'of its sub-classes
+    """Deprecated - use :class:`fsl.data.mesh.Mesh`, or one of its sub-classes
     instead.
     """
 
@@ -783,3 +783,13 @@ def findReferenceImage(*args, **kwargs):
     """Deprecated - use :func:`fsl.data.vtk.findReferenceImage` instead. """
     import fsl.data.vtk as fslvtk
     return fslvtk.findReferenceImage(*args, **kwargs)
+
+
+ALLOWED_EXTENSIONS = ['.vtk']
+"""Deprecated, will be removed in fslpy 2.0.0. Use
+:attr:`fsl.data.vtk.ALLOWED_EXTENSIONS` instead."""
+
+
+EXTENSION_DESCRIPTIONS = ['VTK polygon model file']
+"""Deprecated, will be removed in fslpy 2.0.0. Use
+:attr:`fsl.data.vtk.EXTENSION_DESCRIPTIONS` instead."""

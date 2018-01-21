@@ -7,6 +7,15 @@
 """This module provides the :class:`VTKMesh` class, for loading triangle
 meshes from VTK files.
 
+A handful of convenience functions are also in this module:
+
+.. autosummary::
+   :nosignatures:
+
+   loadVTKPolyDataFile
+   getFIRSTPrefix
+   findReferenceImage
+
 
 .. note:: I/O support is very limited - currently, the only supported file
           type is the VTK legacy file format, containing the ``POLYDATA``
