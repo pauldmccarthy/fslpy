@@ -6,19 +6,12 @@
 #
 
 
-import os.path as op
-import            shutil
-import            tempfile
-
 import numpy   as np
 import            mock
 import            pytest
 
 import fsl.utils.transform as transform
 import fsl.data.mesh       as fslmesh
-
-
-datadir = op.join(op.dirname(__file__), 'testdata')
 
 
 # vertices of a cube
@@ -49,119 +42,96 @@ CUBE_TRIANGLES_CW = np.array([
 CUBE_TRIANGLES_CCW = np.array(CUBE_TRIANGLES_CW)
 CUBE_TRIANGLES_CCW[:, [1, 2]] = CUBE_TRIANGLES_CCW[:, [2, 1]]
 
+CUBE_CCW_FACE_NORMALS = np.array([
+    [ 0,  0, -1], [ 0,  0, -1],
+    [ 0,  0,  1], [ 0,  0,  1],
+    [ 0, -1,  0], [ 0, -1,  0],
+    [ 0,  1,  0], [ 0,  1,  0],
+    [-1,  0,  0], [-1,  0,  0],
+    [ 1,  0,  0], [ 1,  0,  0],
+])
 
-def test_create_mesh():
-
-    # Test:
-    #  - create from file
-    #  - create from inmem data
-    testbase = 'test_mesh.vtk'
-    testfile = op.join(datadir, testbase)
-
-    verts, lens, indices = fslmesh.loadVTKPolydataFile(testfile)
-
-    mesh1 = fslmesh.TriangleMesh(testfile)
-    mesh2 = fslmesh.TriangleMesh(verts, indices)
-
-    assert mesh1.name       == testbase
-    assert mesh2.name       == 'TriangleMesh'
-    assert mesh1.dataSource == testfile
-    assert mesh2.dataSource is None
-
-    assert mesh1.vertices.shape == (642,  3)
-    assert mesh2.vertices.shape == (642,  3)
-    assert mesh1.indices.shape  == (1280, 3)
-    assert mesh2.indices.shape  == (1280, 3)
-
-    minbounds = np.array([ 59.50759888,  88.43039703,  72.10890198])
-    maxbounds = np.array([ 77.72619629, 128.40600586,  94.82050323])
-
-    mesh1Bounds = mesh1.getBounds()
-    mesh2Bounds = mesh2.getBounds()
-
-    assert np.all(np.isclose(mesh1Bounds[0], minbounds))
-    assert np.all(np.isclose(mesh1Bounds[1], maxbounds))
-    assert np.all(np.isclose(mesh2Bounds[0], minbounds))
-    assert np.all(np.isclose(mesh2Bounds[1], maxbounds))
+CUBE_CCW_VERTEX_NORMALS = np.zeros((8, 3))
+for i in range(8):
+    faces = np.where(CUBE_TRIANGLES_CCW == i)[0]
+    CUBE_CCW_VERTEX_NORMALS[i] = CUBE_CCW_FACE_NORMALS[faces].sum(axis=0)
+CUBE_CCW_VERTEX_NORMALS = transform.normalise(CUBE_CCW_VERTEX_NORMALS)
 
 
-def test_mesh_loadVertexData():
+def test_mesh_create():
 
-    meshfile = op.join(datadir, 'test_mesh.vtk')
-    datafile = op.join(datadir, 'test_mesh_data.txt')
-    memdata  = np.random.randint(1, 100, 642)
-    mesh     = fslmesh.TriangleMesh(meshfile)
+    verts = np.array(CUBE_VERTICES)
+    tris  = np.array(CUBE_TRIANGLES_CCW)
 
-    assert mesh.loadVertexData(datafile).shape == (642,)
-    assert np.all(mesh.loadVertexData('inmemdata', memdata) == memdata)
+    mesh = fslmesh.Mesh(tris, vertices=verts)
 
-    assert mesh.getVertexData(datafile).shape == (642,)
-    assert np.all(mesh.getVertexData('inmemdata') == memdata)
+    assert mesh.name       == 'mesh'
+    assert mesh.dataSource is None
+    assert np.all(np.isclose(mesh.vertices, verts))
+    assert np.all(np.isclose(mesh.indices,  tris))
+
+    blo, bhi = mesh.bounds
+
+    assert np.all(np.isclose(blo, verts.min(axis=0)))
+    assert np.all(np.isclose(bhi, verts.max(axis=0)))
+
+
+def test_mesh_addVertices():
+
+    tris   = np.array(CUBE_TRIANGLES_CCW)
+    verts  = np.array(CUBE_VERTICES)
+    verts2 = np.array(CUBE_VERTICES) * 2
+    verts3 = np.array(CUBE_VERTICES) * 3
+
+    mesh = fslmesh.Mesh(tris, vertices=verts)
+
+    assert mesh.selectedVertices() == 'default'
+    assert np.all(np.isclose(mesh.vertices, verts))
+
+    mesh.addVertices(verts2, 'twotimes')
+
+    assert mesh.selectedVertices() == 'twotimes'
+    assert np.all(np.isclose(mesh.vertices, verts2))
+
+    mesh.addVertices(verts3, 'threetimes', select=False)
+
+    assert mesh.selectedVertices() == 'twotimes'
+    assert np.all(np.isclose(mesh.vertices, verts2))
+
+    mesh.vertices = 'threetimes'
+
+    assert mesh.selectedVertices() == 'threetimes'
+    assert np.all(np.isclose(mesh.vertices, verts3))
+
+
+def test_mesh_addVertexData():
+
+    mesh = fslmesh.Mesh(np.array(CUBE_TRIANGLES_CCW),
+                        vertices=np.array(CUBE_VERTICES))
+
+    nverts = CUBE_VERTICES.shape[0]
+
+    data3D   = np.random.randint(1, 100,  nverts)
+    data3_1D = np.random.randint(1, 100, (nverts, 1))
+    data4D   = np.random.randint(1, 100, (nverts, 20))
+
+    mesh.addVertexData('3d',   data3D)
+    mesh.addVertexData('3_1d', data3_1D)
+    mesh.addVertexData('4d',   data4D)
+
+    assert mesh.getVertexData('3d')  .shape == (nverts, 1)
+    assert mesh.getVertexData('3_1d').shape == (nverts, 1)
+    assert mesh.getVertexData('4d')  .shape == (nverts, 20)
+
+    assert np.all(np.isclose(data3D.reshape(-1, 1), mesh.getVertexData('3d')))
+    assert np.all(np.isclose(data3_1D,              mesh.getVertexData('3_1d')))
+    assert np.all(np.isclose(data4D,                mesh.getVertexData('4d')))
 
     mesh.clearVertexData()
 
-    assert mesh.getVertexData(datafile).shape == (642,)
-    assert np.all(mesh.loadVertexData('inmemdata', memdata) == memdata)
-
-
-def test_loadVTKPolydataFile():
-
-    testfile = op.join(datadir, 'test_mesh.vtk')
-    verts, lens, indices = fslmesh.loadVTKPolydataFile(testfile)
-
-    assert verts.shape   == (642, 3)
-    assert indices.shape == (3840, )
-    assert lens.shape    == (1280, )
-    assert np.all(lens == 3)
-
-
-def test_getFIRSTPrefix():
-
-    failures = [
-        'blob.txt',
-        'blob.vtk',
-        'blob.nii.gz']
-
-    passes = [
-        ('blurgh-L_Thal_first.vtk', 'blurgh'),
-        ('blurgh-L_Accu_first.vtk', 'blurgh'),
-        ('blurgh_bufuu-R_Hipp_first.vtk', 'blurgh_bufuu'),
-    ]
-
-    for f in failures:
-        with pytest.raises(ValueError):
-            fslmesh.getFIRSTPrefix(f)
-
-    for fname, expected in passes:
-        assert fslmesh.getFIRSTPrefix(fname) == expected
-
-
-
-def test_findReferenceImage():
-
-    testdir  = tempfile.mkdtemp()
-    vtkfiles = ['struc-L_Thal_first.vtk',
-                'struc_first-L_Thal_first.vtk']
-
-    assert fslmesh.findReferenceImage('nofile') is None
-
-    try:
-
-        for fname in vtkfiles:
-
-            assert fslmesh.findReferenceImage(fname) is None
-
-            prefix   = fslmesh.getFIRSTPrefix(fname)
-            imgfname = op.join(testdir, '{}.nii.gz'.format(prefix))
-            fname    = op.join(testdir, fname)
-
-            with open(fname,    'wt') as f: f.write(fname)
-            with open(imgfname, 'wt') as f: f.write(imgfname)
-
-            assert fslmesh.findReferenceImage(fname) == imgfname
-
-    finally:
-        shutil.rmtree(testdir)
+    with pytest.raises(KeyError): mesh.getVertexData('3d')
+    with pytest.raises(KeyError): mesh.getVertexData('3_1d')
+    with pytest.raises(KeyError): mesh.getVertexData('4d')
 
 
 def test_normals():
@@ -170,34 +140,18 @@ def test_normals():
     verts         = np.array(CUBE_VERTICES)
     triangles_cw  = np.array(CUBE_TRIANGLES_CW)
     triangles_ccw = np.array(CUBE_TRIANGLES_CCW)
+    fnormals      = np.array(CUBE_CCW_FACE_NORMALS)
+    vnormals      = np.array(CUBE_CCW_VERTEX_NORMALS)
 
-    # face normals
-    fnormals = np.array([
-        [ 0,  0, -1], [ 0,  0, -1],
-        [ 0,  0,  1], [ 0,  0,  1],
-        [ 0, -1,  0], [ 0, -1,  0],
-        [ 0,  1,  0], [ 0,  1,  0],
-        [-1,  0,  0], [-1,  0,  0],
-        [ 1,  0,  0], [ 1,  0,  0],
-    ])
+    cw_nofix  = fslmesh.Mesh(np.array(triangles_cw))
+    cw_fix    = fslmesh.Mesh(np.array(triangles_cw))
+    ccw_nofix = fslmesh.Mesh(np.array(triangles_ccw))
+    ccw_fix   = fslmesh.Mesh(np.array(triangles_ccw))
 
-    # vertex normals
-    vnormals = np.zeros((8, 3))
-    for i in range(8):
-        faces = np.where(triangles_cw == i)[0]
-        vnormals[i] = fnormals[faces].sum(axis=0)
-    vnormals = transform.normalise(vnormals)
-
-    cw_nofix  = fslmesh.TriangleMesh(np.array(verts),
-                                     np.array(triangles_cw))
-    cw_fix    = fslmesh.TriangleMesh(np.array(verts),
-                                     np.array(triangles_cw),
-                                     fixWinding=True)
-    ccw_nofix = fslmesh.TriangleMesh(np.array(verts),
-                                     np.array(triangles_ccw))
-    ccw_fix   = fslmesh.TriangleMesh(np.array(verts),
-                                     np.array(triangles_ccw),
-                                     fixWinding=True)
+    cw_nofix .addVertices(np.array(verts))
+    cw_fix   .addVertices(np.array(verts), fixWinding=True)
+    ccw_nofix.addVertices(np.array(verts))
+    ccw_fix  .addVertices(np.array(verts), fixWinding=True)
 
     # ccw triangles should give correct
     # normals without unwinding
@@ -206,29 +160,54 @@ def test_normals():
     assert np.all(np.isclose(cw_fix   .normals,   fnormals))
     assert np.all(np.isclose(cw_fix   .vnormals,  vnormals))
     assert np.all(np.isclose(ccw_nofix.normals,   fnormals))
-    assert np.all(np.isclose(ccw_nofix.vnormals, vnormals))
+    assert np.all(np.isclose(ccw_nofix.vnormals,  vnormals))
     assert np.all(np.isclose(ccw_fix  .normals,   fnormals))
     assert np.all(np.isclose(ccw_fix  .vnormals,  vnormals))
 
+    # Test standalone calcFaceNormals/
+    # calcVertexNormals functions
+    assert np.all(np.isclose(
+        -fnormals, fslmesh.calcFaceNormals(verts, triangles_cw)))
+    assert np.all(np.isclose(
+        fnormals, fslmesh.calcFaceNormals(verts, triangles_ccw)))
+    assert np.all(np.isclose(
+        -vnormals, fslmesh.calcVertexNormals(verts, triangles_cw, -fnormals)))
+    assert np.all(np.isclose(
+        vnormals, fslmesh.calcVertexNormals(verts, triangles_ccw, fnormals)))
+
+
+def test_needsFixing():
+
+    verts    = np.array(CUBE_VERTICES)
+    tris_cw  = np.array(CUBE_TRIANGLES_CW)
+    tris_ccw = np.array(CUBE_TRIANGLES_CCW)
+    fnormals = np.array(CUBE_CCW_VERTEX_NORMALS)
+    blo      = verts.min(axis=0)
+    bhi      = verts.max(axis=0)
+
+    assert not fslmesh.needsFixing(verts, tris_ccw, fnormals, blo, bhi)
+    assert     fslmesh.needsFixing(verts, tris_cw, -fnormals, blo, bhi)
 
 
 def test_trimesh_no_trimesh():
 
-    testbase = 'test_mesh.vtk'
-    testfile = op.join(datadir, testbase)
+    verts = np.array(CUBE_VERTICES)
+    tris  = np.array(CUBE_TRIANGLES_CCW)
 
     mods = ['trimesh', 'rtree']
 
     for mod in mods:
         with mock.patch.dict('sys.modules', **{mod : None}):
-            mesh = fslmesh.TriangleMesh(testfile)
+
+            mesh = fslmesh.Mesh(tris, vertices=verts)
+
             assert mesh.trimesh() is None
             locs, tris = mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]])
             assert locs.size == 0
             assert tris.size == 0
 
-            verts, idxs, dists = mesh.nearestVertex([[0, 0, 0]])
-            assert verts.size == 0
+            nverts, idxs, dists = mesh.nearestVertex([[0, 0, 0]])
+            assert nverts.size == 0
             assert idxs.size  == 0
             assert dists.size == 0
 
@@ -241,9 +220,10 @@ def test_trimesh():
 
     import trimesh
 
-    testbase = 'test_mesh.vtk'
-    testfile = op.join(datadir, testbase)
-    mesh = fslmesh.TriangleMesh(testfile)
+    verts = np.array(CUBE_VERTICES)
+    tris  = np.array(CUBE_TRIANGLES_CCW)
+
+    mesh = fslmesh.Mesh(tris, vertices=verts)
     assert isinstance(mesh.trimesh(), trimesh.Trimesh)
 
 
@@ -251,7 +231,7 @@ def test_rayIntersection():
 
     verts     = np.array(CUBE_VERTICES)
     triangles = np.array(CUBE_TRIANGLES_CCW)
-    mesh      = fslmesh.TriangleMesh(verts, triangles)
+    mesh      = fslmesh.Mesh(triangles, vertices=verts)
 
     for axis in range(3):
         rayOrigin       = [0, 0, 0]
@@ -279,7 +259,7 @@ def test_nearestVertex():
 
     verts     = np.array(CUBE_VERTICES)
     triangles = np.array(CUBE_TRIANGLES_CCW)
-    mesh      = fslmesh.TriangleMesh(verts, triangles)
+    mesh      = fslmesh.Mesh(triangles, vertices=verts)
 
     nverts, nidxs, ndists = mesh.nearestVertex(verts * 2)
 
@@ -292,7 +272,7 @@ def test_planeIntersection():
 
     verts     = np.array(CUBE_VERTICES)
     triangles = np.array(CUBE_TRIANGLES_CCW)
-    mesh      = fslmesh.TriangleMesh(verts, triangles)
+    mesh      = fslmesh.Mesh(triangles, vertices=verts)
 
     normal = [0, 0, 1]
     origin = [0, 0, 0]
@@ -357,3 +337,14 @@ def test_planeIntersection():
     assert np.all(np.isclose(lines, expLines))
     assert np.all(np.isclose(faces, expFaces))
     assert np.all(np.isclose(dists, expDists))
+
+    normal = [0, 0, 1]
+    origin = [3, 3, 3]
+
+    lines, faces, dists = mesh.planeIntersection(normal,
+                                                 origin,
+                                                 distances=True)
+
+    assert lines.shape  == (0, 2, 3)
+    assert faces.shape  == (0, )
+    assert dists.shape  == (0, 2, 3)
