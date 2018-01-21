@@ -6,6 +6,7 @@
 #
 
 
+import            shutil
 import            glob
 import os.path as op
 
@@ -13,37 +14,63 @@ import numpy   as np
 import nibabel as nib
 import pytest
 
-import tests
 import fsl.data.gifti as gifti
 
+from . import tempdir
 
-def test_GiftiSurface():
+
+def test_GiftiMesh_create():
 
     testdir   = op.join(op.dirname(__file__), 'testdata')
     testfile  = op.join(testdir, 'example.surf.gii')
 
-    surf      = gifti.GiftiSurface(testfile)
+    surf      = gifti.GiftiMesh(testfile)
     minbounds = np.array([ 59.50759888,  88.43039703,  72.10890198])
     maxbounds = np.array([ 77.72619629, 128.40600586,  94.82050323])
 
-    minb, maxb = surf.getBounds() 
+    minb, maxb = surf.getBounds()
 
     assert surf.name                  == 'example'
     assert surf.dataSource            == testfile
     assert tuple(surf.vertices.shape) == (642,  3)
     assert tuple(surf.indices .shape) == (1280, 3)
-    assert isinstance(surf.surfImg, nib.gifti.GiftiImage)
+    assert isinstance(surf.getMeta(testfile), nib.gifti.GiftiImage)
 
     assert np.all(np.isclose(minbounds, minb))
     assert np.all(np.isclose(maxbounds, maxb))
 
 
-def test_loadGiftiSurface():
+def test_GiftiMesh_create_loadAll():
 
     testdir  = op.join(op.dirname(__file__), 'testdata')
     testfile = op.join(testdir, 'example.surf.gii')
 
-    gimg, verts, idxs = gifti.loadGiftiSurface(testfile)
+    with tempdir() as td:
+
+        vertSets = [op.join(td, 'prefix.1.surf.gii'),
+                    op.join(td, 'prefix.2.surf.gii'),
+                    op.join(td, 'prefix.3.surf.gii')]
+
+        for vs in vertSets:
+            shutil.copy(testfile, vs)
+
+        mesh = gifti.GiftiMesh(vertSets[0], loadAll=True)
+
+        assert mesh.selectedVertices() == vertSets[0]
+
+        mesh.vertices = vertSets[1]
+        assert mesh.selectedVertices() == vertSets[1]
+
+        mesh.vertices = vertSets[2]
+        assert mesh.selectedVertices() == vertSets[2]
+
+
+def test_loadGiftiMesh():
+
+    testdir  = op.join(op.dirname(__file__), 'testdata')
+    testfile = op.join(testdir, 'example.surf.gii')
+
+    gimg, verts, idxs = gifti.loadGiftiMesh(testfile)
 
     assert isinstance(gimg, nib.gifti.GiftiImage)
     assert tuple(verts.shape) == (642,  3)
@@ -56,33 +83,33 @@ def test_loadGiftiSurface():
             gifti.loadGiftiSurface(bf)
 
 
-def test_GiftiSurface_loadGiftiVertexData():
-    
+def test_GiftiMesh_loadVertexData():
+
     testdir   = op.join(op.dirname(__file__), 'testdata')
     surffile  = op.join(testdir, 'example.surf.gii')
-    
+
     shapefile = op.join(testdir, 'example.shape.gii')
     txtfile   = op.join(testdir, 'test_mesh_data.txt')
     memdata   = np.random.randint(1, 10, 642)
- 
+
     # load from .gii file
-    surf = gifti.GiftiSurface(surffile)
-    assert surf.loadVertexData(shapefile).shape == (642,)
+    surf = gifti.GiftiMesh(surffile)
+    assert surf.loadVertexData(shapefile).shape == (642, 1)
 
     # load from .txt file
-    assert surf.loadVertexData(txtfile).shape == (642,) 
+    assert surf.loadVertexData(txtfile).shape == (642, 1)
 
-    # load from memory
-    assert np.all(surf.loadVertexData('inmemdata', memdata) == memdata)
+    # add from memory
+    surf.addVertexData('inmemdata', memdata)
 
     # check cached
-    assert surf.getVertexData(shapefile)  .shape == (642,)
-    assert surf.getVertexData(txtfile)    .shape == (642,)
-    assert surf.getVertexData('inmemdata').shape == (642,)
+    assert surf.getVertexData(shapefile)  .shape == (642, 1)
+    assert surf.getVertexData(txtfile)    .shape == (642, 1)
+    assert surf.getVertexData('inmemdata').shape == (642, 1)
 
 
 def test_loadGiftiVertexData():
-    
+
     testdir = op.join(op.dirname(__file__), 'testdata')
     surffiles = glob.glob(op.join(testdir, 'example*surf.gii'))
     for sf in surffiles:
@@ -95,15 +122,15 @@ def test_loadGiftiVertexData():
 
     gimg, data = gifti.loadGiftiVertexData(ex3Dfile)
     assert isinstance(gimg, nib.gifti.GiftiImage)
-    assert tuple(data.shape) == (642,)
-    
+    assert tuple(data.shape) == (642, 1)
+
     gimg, data = gifti.loadGiftiVertexData(ex4Dfile)
     assert isinstance(gimg, nib.gifti.GiftiImage)
     assert tuple(data.shape) == (642, 10)
 
     gimg, data = gifti.loadGiftiVertexData(ex4D2file)
     assert isinstance(gimg, nib.gifti.GiftiImage)
-    assert tuple(data.shape) == (642, 10) 
+    assert tuple(data.shape) == (642, 10)
 
 
 def test_relatedFiles():
@@ -158,33 +185,33 @@ def test_relatedFiles():
                                         l.endswith('surf.gii'))]
     lrelated  = [l for l in listing if (l.startswith('subject.L') and
                                         not l.endswith('surf.gii'))]
-    
+
     rsurfaces = [l for l in listing if (l.startswith('subject.R') and
                                         l.endswith('surf.gii'))]
     rrelated  = [l for l in listing if (l.startswith('subject.R') and
                                         not l.endswith('surf.gii'))]
 
-    with tests.testdir() as testdir:
+    with tempdir() as td:
 
         for l in listing:
-            with open(op.join(testdir, l), 'wt') as f:
+            with open(op.join(td, l), 'wt') as f:
                 f.write(l)
 
         with pytest.raises(Exception):
             gifti.relatedFiles('nonexistent')
 
-        badname = op.join(op.join(testdir, 'badly-formed-filename'))
+        badname = op.join(op.join(td, 'badly-formed-filename'))
 
         assert len(gifti.relatedFiles(badname)) == 0
 
-        lsurfaces = [op.join(testdir, f) for f in lsurfaces]
-        rsurfaces = [op.join(testdir, f) for f in rsurfaces]
-        lrelated  = [op.join(testdir, f) for f in lrelated]
-        rrelated  = [op.join(testdir, f) for f in rrelated]
+        lsurfaces = [op.join(td, f) for f in lsurfaces]
+        rsurfaces = [op.join(td, f) for f in rsurfaces]
+        lrelated  = [op.join(td, f) for f in lrelated]
+        rrelated  = [op.join(td, f) for f in rrelated]
 
         for s in lsurfaces:
             result = gifti.relatedFiles(s)
             assert sorted(lrelated) == sorted(result)
         for s in rsurfaces:
             result = gifti.relatedFiles(s)
-            assert sorted(rrelated) == sorted(result) 
+            assert sorted(rrelated) == sorted(result)

@@ -6,12 +6,15 @@
 #
 
 
+import os.path as op
 import numpy   as np
 import            mock
 import            pytest
 
 import fsl.utils.transform as transform
 import fsl.data.mesh       as fslmesh
+
+from . import tempdir
 
 
 # vertices of a cube
@@ -86,16 +89,19 @@ def test_mesh_addVertices():
     mesh = fslmesh.Mesh(tris, vertices=verts)
 
     assert mesh.selectedVertices() == 'default'
+    assert mesh.vertexKeys() == ['default']
     assert np.all(np.isclose(mesh.vertices, verts))
 
     mesh.addVertices(verts2, 'twotimes')
 
     assert mesh.selectedVertices() == 'twotimes'
+    assert mesh.vertexKeys() == ['default', 'twotimes']
     assert np.all(np.isclose(mesh.vertices, verts2))
 
     mesh.addVertices(verts3, 'threetimes', select=False)
 
     assert mesh.selectedVertices() == 'twotimes'
+    assert mesh.vertexKeys() == ['default', 'twotimes', 'threetimes']
     assert np.all(np.isclose(mesh.vertices, verts2))
 
     mesh.vertices = 'threetimes'
@@ -114,6 +120,7 @@ def test_mesh_addVertexData():
     data3D   = np.random.randint(1, 100,  nverts)
     data3_1D = np.random.randint(1, 100, (nverts, 1))
     data4D   = np.random.randint(1, 100, (nverts, 20))
+    dataBad  = np.random.randint(1, 100, (nverts - 1, 20))
 
     mesh.addVertexData('3d',   data3D)
     mesh.addVertexData('3_1d', data3_1D)
@@ -129,9 +136,28 @@ def test_mesh_addVertexData():
 
     mesh.clearVertexData()
 
-    with pytest.raises(KeyError): mesh.getVertexData('3d')
-    with pytest.raises(KeyError): mesh.getVertexData('3_1d')
-    with pytest.raises(KeyError): mesh.getVertexData('4d')
+    with pytest.raises(KeyError):   mesh.getVertexData('3d')
+    with pytest.raises(KeyError):   mesh.getVertexData('3_1d')
+    with pytest.raises(KeyError):   mesh.getVertexData('4d')
+    with pytest.raises(ValueError): mesh.addVertexData('bad', dataBad)
+
+
+def test_loadVertexData():
+
+    verts = np.array(CUBE_VERTICES)
+    tris  = np.array(CUBE_TRIANGLES_CCW)
+    vdata = np.random.randint(1, 100, verts.shape[0]).reshape(-1, 1)
+    mesh  = fslmesh.Mesh(tris, vertices=verts)
+
+    with tempdir():
+        np.savetxt('vdata.txt', vdata)
+
+        key = op.abspath('vdata.txt')
+
+        assert np.all(np.isclose(mesh.loadVertexData(key), vdata))
+        assert np.all(np.isclose(mesh.getVertexData( key), vdata))
+        assert np.all(np.isclose(mesh.loadVertexData(key, 'vdkey'), vdata))
+        assert np.all(np.isclose(mesh.getVertexData(      'vdkey'), vdata))
 
 
 def test_normals():
