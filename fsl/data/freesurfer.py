@@ -20,10 +20,11 @@ The following functions are also available:
 import os.path as op
 import            glob
 
-import nibabel as nib
+import nibabel.freesurfer as nibfs
 
-import fsl.utils.path as fslpath
-import fsl.data.mesh  as fslmesh
+import fsl.utils.path    as fslpath
+import fsl.data.mghimage as fslmgh
+import fsl.data.mesh     as fslmesh
 
 
 GEOMETRY_EXTENSIONS = ['.pial',
@@ -45,8 +46,14 @@ EXTENSION_DESCRIPTIONS = [
 """A description for each extension in :attr:`GEOMETRY_EXTENSIONS`. """
 
 
-
-VERTEX_DATA_EXTENSIONS = ['']
+VERTEX_DATA_EXTENSIONS = ['.curv',
+                          '.crv',
+                          '.area',
+                          '.thickness',
+                          '.volume',
+                          '.mgh',
+                          '.mgz']
+"""File extensions which are interpreted as Freesurfer vertex data files. """
 
 
 class FreesurferMesh(fslmesh.Mesh):
@@ -68,7 +75,7 @@ class FreesurferMesh(fslmesh.Mesh):
                          loaded as additional vertex sets.
         """
 
-        vertices, indices, meta, comment = nib.freesurfer.read_geometry(
+        vertices, indices, meta, comment = nibfs.read_geometry(
             filename,
             read_metadata=True,
             read_stamp=True)
@@ -93,18 +100,47 @@ class FreesurferMesh(fslmesh.Mesh):
             allFiles = relatedFiles(filename, ftypes=GEOMETRY_EXTENSIONS)
 
             for f in allFiles:
-                verts, idxs = nib.freesurfer.read_geometry(f)
+                verts, idxs = nibfs.read_geometry(f)
                 self.addVertices(verts, f, select=False)
 
 
     def loadVertexData(self, infile, key=None):
+        """Overrides :meth:`.Mesh.loadVertexData`. If the given ``infile``
+        looks like a Freesurfer file, it is loaded via the
+        :func:`loadFreesurferVertexFile` function. Otherwise, it is passed
+        through to the base-class function.
         """
-        """
-        pass
+
+        if not fslpath.hasExt(infile, VERTEX_DATA_EXTENSIONS):
+            return fslmesh.loadVertexData(infile, key)
+
+        infile = op.abspath(infile)
+
+        if key is None:
+            key = infile
+
+        vdata = loadFreesurferVertexFile(infile)
+
+        self.addVertexData(key, vdata)
+
+        return vdata
 
 
 def loadFreesurferVertexFile(infile):
-    pass
+    """Loads the given Freesurfer file, assumed to contain vertex-wise data.
+    """
+
+    # morphometry file
+    morphexts = ['.curv', '.crv', '.area', '.thickness', '.volume']
+
+    if fslpath.hasExt(infile, morphexts):
+        vdata = nibfs.read_morph_data(infile)
+
+    # MGH image file
+    elif fslpath.hasExt(infile, fslmgh.ALLOWED_EXTENSIONS):
+        vdata = fslmgh.MGHImage(infile)[:].squeeze()
+
+    return vdata
 
 
 def relatedFiles(fname, ftypes=None):
