@@ -214,7 +214,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         # Add initial vertex
         # set if provided
         if vertices is not None:
-            self.addVertices(vertices)
+            self.addVertices(vertices, fixWinding=fixWinding)
 
 
     def __repr__(self):
@@ -417,8 +417,9 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         nvertices = self.vertices.shape[0]
 
-        if vdata.shape[0] != nvertices:
-            raise ValueError('Incompatible vertex data size: {}'.format(key))
+        if vdata.ndim not in (1, 2) or vdata.shape[0] != nvertices:
+            raise ValueError('{}: incompatible vertex data '
+                             'shape: {}'.format(key, vdata.shape))
 
         self.__vertexData[key] = vdata.reshape(nvertices, -1)
 

@@ -71,8 +71,8 @@ class VTKMesh(fslmesh.Mesh):
 
         fslmesh.Mesh.__init__(self,
                               indices,
-                              name,
-                              dataSource,
+                              name=name,
+                              dataSource=dataSource,
                               vertices=data,
                               fixWinding=fixWinding)
 
