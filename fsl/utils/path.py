@@ -13,6 +13,7 @@ paths.
 
    deepest
    shallowest
+   hasExt
    addExt
    removeExt
    getExt
@@ -77,6 +78,13 @@ def shallowest(path, suffixes):
     return None
 
 
+def hasExt(path, allowedExts):
+    """Convenience function which returns ``True`` if the given ``path``
+    ends with any of the given ``allowedExts``, ``False`` otherwise.
+    """
+    return any([path.endsWith(e) for e in allowedExts])
+
+
 def addExt(prefix,
            allowedExts=None,
            mustExist=True,
@@ -127,7 +135,7 @@ def addExt(prefix,
 
         # the provided file name already
         # ends with a supported extension
-        if any([prefix.endswith(ext) for ext in allowedExts]):
+        if hasExt(prefix, allowedExts):
             return prefix
 
         if defaultExt is not None: return prefix + defaultExt
@@ -138,8 +146,7 @@ def addExt(prefix,
     # already ends with a supported
     # extension, check to see that it
     # exists.
-    if len(allowedExts) == 0 or \
-       any([prefix.endswith(ext) for ext in allowedExts]):
+    if len(allowedExts) == 0 or hasExt(prefix, allowedExts):
         allPaths = [prefix]
 
     # Otherwise, make a bunch of file names, one per
