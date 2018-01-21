@@ -82,7 +82,7 @@ def hasExt(path, allowedExts):
     """Convenience function which returns ``True`` if the given ``path``
     ends with any of the given ``allowedExts``, ``False`` otherwise.
     """
-    return any([path.endsWith(e) for e in allowedExts])
+    return any([path.endswith(e) for e in allowedExts])
 
 
 def addExt(prefix,
