@@ -6,19 +6,30 @@ order.
 -------------------------
 
 
+* The new :class:`.Mesh` class is now the base class for all mesh types. It
+  has been written to allow multiple sets of vertices to be associated with a
+  mesh object (to support e.g. white matter, inflated, spherical models for a
+  GIFTI/freeusrfer mesh).
+* The new :class:`.VTKMesh` class must now be used for loading VTK model files,
+  instead of the old :class:`.TriangleMesh` class.
+* The new :class:`.Mesh` class uses the ``trimesh`` library
+  (https://github.com/mikedh/trimesh) to perform various geometrical
+  operations, accessible via new :meth:`.Mesh.rayIntersection`,
+  :meth:`.Mesh.planeIntersection`, :meth:`.Mesh.nearestVertex` methods.
+* The :class:`.Nifti` and :class:`.Mesh` classes have new methods allowing
+  arbitrary metadata to be stored with the image, as key-value
+  pairs. These are provided by a new mixin class, :class:`.Meta`.
 * Freesurfer ``mgz`` / ``mgh`` image files can now be loaded via the new
   :mod:`.mghimage` module. Internally, these image files are converted to NIFTI
   - the :class:`.MGHImage` class derives from the :class:`.Image` class.
-* The :class:`.TriangleMesh` class now uses the ``trimesh`` library
-  (https://github.com/mikedh/trimesh) to perform various geometrical
-  operations, accessible via new :meth:`.TriangleMesh.rayIntersection` and
-  :meth:`.TriangleMesh.nearestVertex` methods.
+* Meta-data access methods on the :class:`.DicomImage` class have been
+  deprecated, as their functionality is provided by the new :class:`.Meta`
+  mixin.
+* The :class:`.TriangleMesh` class has been deprecated in favour of the new
+  :class:`.Mesh` class.
 * Optional dependencies ``wxpython``, ``indexed_gzip``, ``trimesh``, and
-  ``rtree`` are now listed separately, so ``fslpy`` can be used without
-  them (although relevant functionality will be disabled).
-* The :class:`.Nifti` class has new methods allowing arbitrary metadata to be
-  stored with the image, as key-value pairs. Equivalent methods on the
-  :class:`.DicomImage` class have been deprecated.
+  ``rtree`` are now listed separately, so ``fslpy`` can be used without them
+  (although relevant functionality will be disabled if they are not present).
 
 
 1.5.4 (Wednesday January 10th 2018)
