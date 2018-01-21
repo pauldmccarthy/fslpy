@@ -110,6 +110,20 @@ def test_shallowest():
         assert fslpath.shallowest(path, suffixes) == output
 
 
+def test_hasExt():
+
+    tests = [
+        ('file.nii',    ['.nii', '.gz'], True),
+        ('file.nii.gz', ['.nii'],        False),
+        ('file.nii.gz', ['.nii', '.gz'], True),
+        ('file.nii.gz', ['.nii.gz'],     True),
+        ('file.txt',    ['.nii', '.gz'], False),
+    ]
+
+    for path, aexts, expected in tests:
+        assert fslpath.hasExt(path, aexts) == expected
+
+
 def test_addExt_imageFiles_mustExist_shouldPass():
     """Tests the addExt function where the path exists, and the inputs
     are valid.
