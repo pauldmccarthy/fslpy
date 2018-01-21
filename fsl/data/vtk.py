@@ -60,9 +60,12 @@ class VTKMesh(fslmesh.Mesh):
             raise RuntimeError('All polygons in VTK file must be '
                                'triangles ({})'.format(infile))
 
-        fslmesh.Mesh.__init__(self, indices, name, dataSource)
-
-        self.addVertices(data, 'default', fixWinding=fixWinding)
+        fslmesh.Mesh.__init__(self,
+                              indices,
+                              name,
+                              dataSource,
+                              vertices=data,
+                              fixWinding=fixWinding)
 
 
 def loadVTKPolydataFile(infile):

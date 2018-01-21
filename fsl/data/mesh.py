@@ -136,7 +136,12 @@ class Mesh(notifier.Notifier, meta.Meta):
     """
 
 
-    def __init__(self, indices, name='mesh', dataSource=None, vertices=None):
+    def __init__(self,
+                 indices,
+                 name='mesh',
+                 dataSource=None,
+                 vertices=None,
+                 fixWinding=False):
         """Create a ``Mesh`` instance.
 
         Before a ``Mesh`` can be used, some vertices must be added via the
@@ -151,6 +156,9 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         :arg vertices:   Initial vertex set to add - given the key
                          ``'default'``.
+
+        :arg fixWinding: Ignored if ``vertices is None``. Passed through to the
+                         :meth:`addVertices` method along with ``vertices``.
         """
 
         self.__name       = name
