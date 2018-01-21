@@ -91,7 +91,7 @@ class GiftiMesh(fslmesh.Mesh):
         if loadAll:
 
             nvertices = vertices.shape[0]
-            surfFiles = relatedFiles(infile, 'surf')
+            surfFiles = relatedFiles(infile, ALLOWED_EXTENSIONS)
 
             for sfile in surfFiles:
 
@@ -234,22 +234,25 @@ def loadGiftiVertexData(filename):
     return gimg, vdata
 
 
-def relatedFiles(fname, ftype=None):
+def relatedFiles(fname, ftypes=None):
     """Given a GIFTI file, returns a list of other GIFTI files in the same
     directory which appear to be related with the given one.  Files which
     share the same prefix are assumed to be related to the given file.
 
     :arg fname: Name of the file to search for related files for
 
-    :arg ftype: If provided, only files with a name ``'*.[ftype].gii'`` are
-                searched for.
+    :arg ftype: If provided, only files with suffixes in this list are
+                searched for. Defaults to files which contain vertex data.
     """
+
+    if ftypes is None:
+        ftypes = ['.func.gii', '.shape.gii', '.label.gii', '.time.gii']
 
     # We want to return all files in the same
     # directory which have the following name:
 
     #
-    # [prefix].*.[type].gii
+    # [prefix].*[ftype]
     #
     #   where
     #     - prefix is the file prefix, and which
@@ -257,7 +260,8 @@ def relatedFiles(fname, ftype=None):
     #
     #     - we don't care about the middle
     #
-    #     - type is func, shape, label, time, or `ftype`
+    #     - suffix is func, shape, label, time, or `ftype`
+    #
 
     # We determine the unique prefix of the
     # given file, and back-up to the most
@@ -271,15 +275,10 @@ def relatedFiles(fname, ftype=None):
     if lastdot == -1:
         return []
 
-    if ftype is None:
-        ftypes = ['func', 'shape', 'label', 'time']
-    else:
-        ftypes = [ftype]
-
     related = []
 
     for ftype in ftypes:
-        related += list(glob.glob('{}*.{}.gii'.format(prefix, ftype)))
+        related += list(glob.glob('{}*{}'.format(prefix, ftype)))
 
     return [r for r in related if r != fname]
 
