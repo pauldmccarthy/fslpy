@@ -36,7 +36,6 @@ import                      os
 import os.path           as op
 import                      string
 import                      logging
-import                      collections
 
 import                      six
 import                      deprecation
@@ -56,6 +55,35 @@ import fsl.data.imagewrapper as imagewrapper
 
 
 log = logging.getLogger(__name__)
+
+
+ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
+"""The file extensions which we understand. This list is used as the default
+if the ``allowedExts`` parameter is not passed to any of the functions
+below.
+"""
+
+
+EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
+                          'NIFTI images',
+                          'ANALYZE75 images',
+                          'NIFTI/ANALYZE75 headers',
+                          'Compressed NIFTI/ANALYZE75 images',
+                          'Compressed NIFTI/ANALYZE75 headers']
+"""Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
+
+
+FILE_GROUPS = [('.hdr',    '.img'),
+               ('.hdr.gz', '.img.gz')]
+"""File suffix groups used by :func:`addExt` to resolve file path
+ambiguities - see :func:`fsl.utils.path.addExt`.
+"""
+
+
+PathError = fslpath.PathError
+"""Error raised by :mod:`fsl.utils.path` functions when an error occurs.
+Made available in this module for convenience.
+"""
 
 
 class Nifti(notifier.Notifier, meta.Meta):
@@ -1288,35 +1316,6 @@ class Image(Nifti):
 
             if not np.all(np.isclose(oldRange, newRange)):
                 self.notify(topic='dataRange')
-
-
-ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
-"""The file extensions which we understand. This list is used as the default
-if the ``allowedExts`` parameter is not passed to any of the functions
-below.
-"""
-
-
-EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
-                          'NIFTI images',
-                          'ANALYZE75 images',
-                          'NIFTI/ANALYZE75 headers',
-                          'Compressed NIFTI/ANALYZE75 images',
-                          'Compressed NIFTI/ANALYZE75 headers']
-"""Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
-
-
-FILE_GROUPS = [('.hdr',    '.img'),
-               ('.hdr.gz', '.img.gz')]
-"""File suffix groups used by :func:`addExt` to resolve file path
-ambiguities - see :func:`fsl.utils.path.addExt`.
-"""
-
-
-PathError = fslpath.PathError
-"""Error raised by :mod:`fsl.utils.path` functions when an error occurs.
-Made available in this module for convenience.
-"""
 
 
 def looksLikeImage(filename, allowedExts=None):
