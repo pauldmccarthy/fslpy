@@ -89,19 +89,19 @@ def test_mesh_addVertices():
     mesh = fslmesh.Mesh(tris, vertices=verts)
 
     assert mesh.selectedVertices() == 'default'
-    assert mesh.vertexKeys() == ['default']
+    assert mesh.vertexSets() == ['default']
     assert np.all(np.isclose(mesh.vertices, verts))
 
     mesh.addVertices(verts2, 'twotimes')
 
     assert mesh.selectedVertices() == 'twotimes'
-    assert mesh.vertexKeys() == ['default', 'twotimes']
+    assert mesh.vertexSets() == ['default', 'twotimes']
     assert np.all(np.isclose(mesh.vertices, verts2))
 
     mesh.addVertices(verts3, 'threetimes', select=False)
 
     assert mesh.selectedVertices() == 'twotimes'
-    assert mesh.vertexKeys() == ['default', 'twotimes', 'threetimes']
+    assert mesh.vertexSets() == ['default', 'twotimes', 'threetimes']
     assert np.all(np.isclose(mesh.vertices, verts2))
 
     mesh.vertices = 'threetimes'
