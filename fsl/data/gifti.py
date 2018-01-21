@@ -16,62 +16,96 @@ are available:
   .. autosummary::
      :nosignatures:
 
-     GiftiSurface
-     loadGiftiSurface
+     GiftiMesh
+     loadGiftiMesh
+     loadGiftiVertexData
      relatedFiles
 """
 
 
 import            glob
 import os.path as op
+import            deprecation
 
 import numpy   as np
 import nibabel as nib
 
-import fsl.utils.path as fslpath
-from . import            constants
-from . import            mesh
+import fsl.utils.path     as fslpath
+import fsl.data.constants as constants
+import fsl.data.mesh      as fslmesh
 
 
-class GiftiSurface(mesh.TriangleMesh):
+
+ALLOWED_EXTENSIONS = ['.surf.gii']
+"""List of file extensions that a file containing Gifti surface data
+is expected to have.
+"""
+
+
+EXTENSION_DESCRIPTIONS = ['GIFTI surface file']
+"""A description for each of the :data:`ALLOWED_EXTENSIONS`. """
+
+
+class GiftiMesh(fslmesh.Mesh):
     """Class which represents a GIFTI surface image. This is essentially
     just a 3D model made of triangles.
 
-    In addition to the ``vertices`` and ``indices`` provided by the
-    :class:`.TriangleMesh` class (from which the ``GiftiSurface`` class
-    derives), a ``GiftiSurface`` instance has the following attributes:
-
-    ============== ====================================================
-    ``name``       A name, typically the file name sans-suffix.
-    ``dataSource`` Full path to the GIFTI file.
-    ``surfImg``    Reference to the loaded ``nibabel.gifti.GiftiImage``
-    ============== ====================================================
+    For each GIFTI surface file that is loaded, the
+    ``nibabel.gifti.GiftiImage`` instance is stored in the :class:`.Meta`
+    store, with the absolute path to the surface file as the key.
     """
 
 
-    def __init__(self, infile, fixWinding=False):
+    def __init__(self, infile, fixWinding=False, loadAll=False):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
         data using the  :func:`loadGiftiSurface` function.
 
-        :arg infile: A GIFTI surface file (``*.surf.gii``).
+        :arg infile:     A GIFTI surface file (``*.surf.gii``).
+
+        :arg fixWinding: Passed through to the :meth:`addVertices` method
+                         for the first vertex set.
+
+        :arg loadAll:    If ``True``, the ``infile`` directory is scanned
+                         for other surface files which are then loaded
+                         as additional vertex sets.
 
         .. todo:: Allow loading from a ``.topo.gii`` and ``.coord.gii`` file?
                   Maybe.
         """
 
-        surfimg, vertices, indices = loadGiftiSurface(infile)
-
-        mesh.TriangleMesh.__init__(self, vertices, indices, fixWinding)
-
         name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
         infile = op.abspath(infile)
 
-        self.name       = name
-        self.dataSource = infile
-        self.surfImg    = surfimg
+        surfimg, vertices, indices = loadGiftiSurface(infile)
+
+        fslmesh.Mesh.__init__(self,
+                              indices,
+                              name=name,
+                              dataSource=infile)
+
+        self.addVertices(vertices, infile, fixWinding=fixWinding)
+        self.setMeta(infile, surfimg)
+
+        # Find and load all other
+        # surfaces in the same directory
+        # as the specfiied one.
+        if loadAll:
+
+            nvertices = vertices.shape[0]
+            surfFiles = relatedFiles(infile, 'surf')
+
+            for sfile in surfFiles:
+
+                surfimg, vertices, _ = loadGiftiSurface(sfile)
+
+                if vertices.shape[0] != nvertices:
+                    continue
+
+                self.addVertices(vertices, sfile, select=False)
+                self.setMeta(    sfile, surfimg)
 
 
-    def loadVertexData(self, dataSource, vertexData=None):
+    def loadVertexData(self, infile, key=None):
         """Overrides the :meth:`.TriangleMesh.loadVertexData` method.
 
         Attempts to load data associated with each vertex of this
@@ -79,27 +113,21 @@ class GiftiSurface(mesh.TriangleMesh):
         a GIFTI file or a plain text file which contains vertex data.
         """
 
-        if vertexData is None:
-            if dataSource.endswith('.gii'):
-                vertexData = loadGiftiVertexData(dataSource)[1]
-            else:
-                vertexData = None
+        infile = op.abspath(infile)
 
-        return mesh.TriangleMesh.loadVertexData(self, dataSource, vertexData)
+        if key is None:
+            key = infile
 
+        if infile.endswith('.gii'):
+            vdata = loadGiftiVertexData(infile)[1]
+            self.addVertexData(key, vdata)
+            return vdata
 
-ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
-"""List of file extensions that a file containing Gifti surface data
-is expected to have.
-"""
-
-
-EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI surface file']
-"""A description for each of the :data:`ALLOWED_EXTENSIONS`.
-"""
+        else:
+            return fslmesh.Mesh.loadVertexData(self, infile, key)
 
 
-def loadGiftiSurface(filename):
+def loadGiftiMesh(filename):
     """Extracts surface data from the given ``nibabel.gifti.GiftiImage``.
 
     The image is expected to contain the following``<DataArray>`` elements:
@@ -116,11 +144,10 @@ def loadGiftiSurface(filename):
 
                    - The loaded ``nibabel.gifti.GiftiImage`` instance
 
-                   - A :math:`N\\times 3` ``numpy`` array containing :math:`N`
-                     vertices.
+                   - A ``(N, 3)`` array containing ``N`` vertices.
 
-                   - A :math:`M\\times 3` ``numpy`` array containing the
-                     vertex indices for :math:`M` triangles.
+                   - A ``(M, 3))`` array containing the vertex indices for
+                     ``M`` triangles.
     """
 
     gimg = nib.load(filename)
@@ -132,16 +159,17 @@ def loadGiftiSurface(filename):
     triangles = [d for d in gimg.darrays if d.intent == triangleCode]
 
     if len(gimg.darrays) != 2:
-        raise ValueError('GIFTI surface files must contain exactly '
-                         'one pointset array and one triangle array')
+        raise ValueError('{}: GIFTI surface files must contain '
+                         'exactly one pointset array and one '
+                         'triangle array'.format(filename))
 
     if len(pointsets) != 1:
-        raise ValueError('GIFTI surface files must contain '
-                         'exactly one pointset array')
+        raise ValueError('{}: GIFTI surface files must contain '
+                         'exactly one pointset array'.format(filename))
 
     if len(triangles) != 1:
-        raise ValueError('GIFTI surface files must contain '
-                         'exactly one triangle array')
+        raise ValueError('{}: GIFTI surface files must contain '
+                         'exactly one triangle array'.format(filename))
 
     vertices = pointsets[0].data
     indices  = triangles[0].data
@@ -190,7 +218,8 @@ def loadGiftiVertexData(filename):
     # DataArray goes against the GIFTI spec,
     # but hey, it happens.
     if len(gimg.darrays) == 1:
-        return gimg, gimg.darrays[0].data
+        vdata = gimg.darrays[0].data
+        return gimg, vdata.reshape(vdata.shape[0], -1)
 
     # Otherwise extract and concatenate
     # multiple 1-dimensional arrays
@@ -200,13 +229,21 @@ def loadGiftiVertexData(filename):
         raise ValueError('{} contains one or more non-vector '
                          'darrays'.format(filename))
 
-    return gimg, np.vstack(vdata).T
+    vdata = np.vstack(vdata).T
+    vdata = vdata.reshape(vdata.shape[0], -1)
+
+    return gimg, vdata
 
 
-def relatedFiles(fname):
+def relatedFiles(fname, ftype=None):
     """Given a GIFTI file, returns a list of other GIFTI files in the same
     directory which appear to be related with the given one.  Files which
     share the same prefix are assumed to be related to the given file.
+
+    :arg fname: Name of the file to search for related files for
+
+    :arg ftype: If provided, only files with a name ``'*.[ftype].gii'`` are
+                searched for.
     """
 
     # We want to return all files in the same
@@ -221,7 +258,7 @@ def relatedFiles(fname):
     #
     #     - we don't care about the middle
     #
-    #     - type is func, shape, label, or time
+    #     - type is func, shape, label, time, or `ftype`
 
     # We determine the unique prefix of the
     # given file, and back-up to the most
@@ -235,9 +272,59 @@ def relatedFiles(fname):
     if lastdot == -1:
         return []
 
-    funcs  = list(glob.glob('{}*.func.gii' .format(prefix)))
-    shapes = list(glob.glob('{}*.shape.gii'.format(prefix)))
-    labels = list(glob.glob('{}*.label.gii'.format(prefix)))
-    times  = list(glob.glob('{}*.time.gii' .format(prefix)))
+    if ftype is None:
+        ftypes = ['func', 'shape', 'label', 'time']
+    else:
+        ftypes = [ftype]
 
-    return funcs + shapes + labels + times
+    related = []
+
+    for ftype in ftypes:
+        related += list(glob.glob('{}*.{}.gii'.format(prefix, ftype)))
+
+    return [r for r in related if r != fname]
+
+
+class GiftiSurface(fslmesh.TriangleMesh):
+    """Deprecated - use GiftiMesh instead. """
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use GiftiMesh instead')
+    def __init__(self, infile, fixWinding=False):
+        """Deprecated - use GiftiMesh instead. """
+        surfimg, vertices, indices = loadGiftiSurface(infile)
+
+        fslmesh.TriangleMesh.__init__(self, vertices, indices, fixWinding)
+
+        name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
+        infile = op.abspath(infile)
+
+        self._Mesh__name       = name
+        self._Mesh__dataSource = infile
+        self.surfImg           = surfimg
+
+
+    @deprecation.deprecated(deprecated_in='1.6.0',
+                            removed_in='2.0.0',
+                            details='Use GiftiMesh instead')
+    def loadVertexData(self, dataSource, vertexData=None):
+        """Deprecated - use GiftiMesh instead. """
+
+        if vertexData is None:
+            if dataSource.endswith('.gii'):
+                vertexData = loadGiftiVertexData(dataSource)[1]
+            else:
+                vertexData = None
+
+        return fslmesh.TriangleMesh.loadVertexData(
+            self, dataSource, vertexData)
+
+
+@deprecation.deprecated(deprecated_in='1.6.0',
+                        removed_in='2.0.0',
+                        details='Use loadGiftiMesh instead')
+def loadGiftiSurface(filename):
+    """Deprecated - use loadGiftiMesh instead."""
+    return loadGiftiMesh(filename)
