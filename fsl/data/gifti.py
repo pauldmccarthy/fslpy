@@ -77,6 +77,7 @@ class GiftiMesh(fslmesh.Mesh):
 
         surfimg, vertices, indices = loadGiftiMesh(infile)
 
+
         fslmesh.Mesh.__init__(self,
                               indices,
                               name=name,
@@ -278,35 +279,35 @@ def relatedFiles(fname, ftypes=None):
     # directory which have the following name:
 
     #
-    # [prefix].*[ftype]
+    # [subj].[hemi].[type].*.[ftype]
     #
+
     #   where
-    #     - prefix is the file prefix, and which
-    #       may include periods.
+    #     - [subj] is the subject ID, and matches fname
     #
-    #     - we don't care about the middle
+    #     - [hemi] is the hemisphere, and matches fname
+    #
+    #     - [type] defines the file contents
     #
     #     - suffix is func, shape, label, time, or `ftype`
-    #
 
-    # We determine the unique prefix of the
-    # given file, and back-up to the most
-    # recent period. Then search for other
-    # files which have that same (non-unique)
-    # prefix.
-    prefix  = fslpath.uniquePrefix(fname)
-    lastdot = prefix.rfind('.')
-    prefix  = prefix[:lastdot]
+    path            = op.abspath(fname)
+    dirname, fname  = op.split(path)
 
-    if lastdot == -1:
+    # get the [subj].[hemi] prefix
+    try:
+        subj, hemi, _ = fname.split('.', 2)
+        prefix        = '.'.join((subj, hemi))
+    except Exception:
         return []
 
     related = []
 
     for ftype in ftypes:
-        related += list(glob.glob('{}*{}'.format(prefix, ftype)))
+        related.extend(
+            glob.glob(op.join(dirname, '{}*{}'.format(prefix, ftype))))
 
-    return [r for r in related if r != fname]
+    return [r for r in related if r != path]
 
 
 class GiftiSurface(fslmesh.TriangleMesh):

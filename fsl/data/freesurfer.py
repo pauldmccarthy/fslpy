@@ -93,7 +93,6 @@ VERTEX_DATA_FILES = ['?h.thickness',
                      '?h.curv',
                      '?h.area',
                      '?h.sulc',
-                     '?h.*.stats',
                      '.mgh',
                      '.mgz']
 """File patterns which are interpreted as Freesurfer vertex data files,
@@ -225,7 +224,7 @@ class FreesurferMesh(fslmesh.Mesh):
 
         self.addVertexData(key, vdata)
 
-        if isvlabel:
+        if isvannot:
             self.__luts[key] = lut, names, lut
 
         return vdata
@@ -368,9 +367,20 @@ def relatedVertexDataFiles(fname):
     fpats   = VERTEX_DATA_FILES + VERTEX_LABEL_FILES + VERTEX_ANNOT_FILES
     fpats   = [hemi + p[1:] if p.startswith('?h') else p for p in fpats]
 
-    related = [glob.glob(op.join(dirname, p)) for p in fpats]
+    basedir    = op.dirname(dirname)
+    searchDirs = set([dirname,
+                      op.join(basedir, 'surf'),
+                      op.join(basedir, 'stats'),
+                      op.join(basedir, 'label')])
 
-    return list(it.chain(*related))
+    searchPats = it.product(searchDirs, fpats)
+
+    related = []
+
+    for sdir, spat in searchPats:
+        related.extend(glob.glob(op.join(sdir, spat)))
+
+    return related
 
 
 def findReferenceImage(fname):
