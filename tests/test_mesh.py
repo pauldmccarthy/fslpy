@@ -68,8 +68,11 @@ def test_mesh_create():
 
     mesh = fslmesh.Mesh(tris, vertices=verts)
 
+    print(str(mesh))
+
     assert mesh.name       == 'mesh'
     assert mesh.dataSource is None
+    assert mesh.nvertices  == 8
     assert np.all(np.isclose(mesh.vertices, verts))
     assert np.all(np.isclose(mesh.indices,  tris))
 
@@ -92,13 +95,13 @@ def test_mesh_addVertices():
     assert mesh.vertexSets() == ['default']
     assert np.all(np.isclose(mesh.vertices, verts))
 
-    mesh.addVertices(verts2, 'twotimes')
+    assert np.all(np.isclose(mesh.addVertices(verts2, 'twotimes'), verts2))
 
     assert mesh.selectedVertices() == 'twotimes'
     assert mesh.vertexSets() == ['default', 'twotimes']
     assert np.all(np.isclose(mesh.vertices, verts2))
 
-    mesh.addVertices(verts3, 'threetimes', select=False)
+    assert np.all(np.isclose(mesh.addVertices(verts3, 'threetimes', select=False), verts3))
 
     assert mesh.selectedVertices() == 'twotimes'
     assert mesh.vertexSets() == ['default', 'twotimes', 'threetimes']
@@ -108,6 +111,32 @@ def test_mesh_addVertices():
 
     assert mesh.selectedVertices() == 'threetimes'
     assert np.all(np.isclose(mesh.vertices, verts3))
+
+    with pytest.raises(ValueError):
+        mesh.addVertices(verts[:-1, :], 'badverts')
+
+
+def test_loadVertices():
+
+    tris  = np.array(CUBE_TRIANGLES_CCW)
+    verts = np.array(CUBE_VERTICES)
+
+    mesh = fslmesh.Mesh(tris, vertices=verts)
+
+    with tempdir():
+
+        verts2 = verts * 2
+
+        np.savetxt('verts2.txt', verts2)
+
+        assert np.all(np.isclose(mesh.loadVertices('verts2.txt'), verts2))
+
+        assert mesh.selectedVertices() == op.abspath('verts2.txt')
+
+        np.savetxt('badverts.txt', verts2[:-1, :])
+
+        with pytest.raises(ValueError):
+            mesh.loadVertices('badverts.txt')
 
 
 def test_mesh_addVertexData():
@@ -122,9 +151,14 @@ def test_mesh_addVertexData():
     data4D   = np.random.randint(1, 100, (nverts, 20))
     dataBad  = np.random.randint(1, 100, (nverts - 1, 20))
 
-    mesh.addVertexData('3d',   data3D)
-    mesh.addVertexData('3_1d', data3_1D)
-    mesh.addVertexData('4d',   data4D)
+    assert np.all(np.isclose(mesh.addVertexData('3d',   data3D),   data3D.reshape(-1, 1)))
+    assert list(mesh.vertexDataSets()) == ['3d']
+
+    assert np.all(np.isclose(mesh.addVertexData('3_1d', data3_1D), data3_1D))
+    assert list(mesh.vertexDataSets()) == ['3d', '3_1d']
+
+    assert np.all(np.isclose(mesh.addVertexData('4d',   data4D),   data4D))
+    assert list(mesh.vertexDataSets()) == ['3d', '3_1d', '4d']
 
     assert mesh.getVertexData('3d')  .shape == (nverts, 1)
     assert mesh.getVertexData('3_1d').shape == (nverts, 1)
@@ -150,7 +184,8 @@ def test_loadVertexData():
     mesh  = fslmesh.Mesh(tris, vertices=verts)
 
     with tempdir():
-        np.savetxt('vdata.txt', vdata)
+        np.savetxt('vdata.txt',    vdata)
+        np.savetxt('badvdata.txt', vdata[:-1])
 
         key = op.abspath('vdata.txt')
 
@@ -158,6 +193,9 @@ def test_loadVertexData():
         assert np.all(np.isclose(mesh.getVertexData( key), vdata))
         assert np.all(np.isclose(mesh.loadVertexData(key, 'vdkey'), vdata))
         assert np.all(np.isclose(mesh.getVertexData(      'vdkey'), vdata))
+
+        with pytest.raises(ValueError):
+            mesh.loadVertexData('badvdata.txt')
 
 
 def test_normals():
@@ -217,17 +255,16 @@ def test_needsFixing():
 
 def test_trimesh_no_trimesh():
 
-    verts = np.array(CUBE_VERTICES)
-    tris  = np.array(CUBE_TRIANGLES_CCW)
-
     mods = ['trimesh', 'rtree']
 
     for mod in mods:
         with mock.patch.dict('sys.modules', **{mod : None}):
 
-            mesh = fslmesh.Mesh(tris, vertices=verts)
+            verts = np.array(CUBE_VERTICES)
+            tris  = np.array(CUBE_TRIANGLES_CCW)
+            mesh  = fslmesh.Mesh(tris, vertices=verts)
 
-            assert mesh.trimesh() is None
+            assert mesh.trimesh is None
             locs, tris = mesh.rayIntersection([[0, 0, 0]], [[0, 0, 1]])
             assert locs.size == 0
             assert tris.size == 0
@@ -250,7 +287,7 @@ def test_trimesh():
     tris  = np.array(CUBE_TRIANGLES_CCW)
 
     mesh = fslmesh.Mesh(tris, vertices=verts)
-    assert isinstance(mesh.trimesh(), trimesh.Trimesh)
+    assert isinstance(mesh.trimesh, trimesh.Trimesh)
 
 
 def test_rayIntersection():

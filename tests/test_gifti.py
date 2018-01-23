@@ -28,7 +28,7 @@ def test_GiftiMesh_create():
     minbounds = np.array([ 59.50759888,  88.43039703,  72.10890198])
     maxbounds = np.array([ 77.72619629, 128.40600586,  94.82050323])
 
-    minb, maxb = surf.getBounds()
+    minb, maxb = surf.bounds
 
     assert surf.name                  == 'example'
     assert surf.dataSource            == testfile
@@ -47,9 +47,9 @@ def test_GiftiMesh_create_loadAll():
 
     with tempdir() as td:
 
-        vertSets = [op.join(td, 'prefix.1.surf.gii'),
-                    op.join(td, 'prefix.2.surf.gii'),
-                    op.join(td, 'prefix.3.surf.gii')]
+        vertSets = [op.join(td, 'prefix.L.1.surf.gii'),
+                    op.join(td, 'prefix.L.2.surf.gii'),
+                    op.join(td, 'prefix.L.3.surf.gii')]
 
         for vs in vertSets:
             shutil.copy(testfile, vs)
@@ -83,6 +83,27 @@ def test_loadGiftiMesh():
             gifti.loadGiftiSurface(bf)
 
 
+def test_loadVertices():
+
+    testdir  = op.join(op.dirname(__file__), 'testdata')
+    testfile = op.join(testdir, 'example.surf.gii')
+
+    with tempdir():
+
+        mesh = gifti.GiftiMesh(testfile)
+
+        shutil.copy(testfile, 'example2.surf.gii')
+
+
+        verts  = mesh.vertices
+        verts2 = verts * 2
+
+        np.savetxt('verts.txt', verts2)
+
+        assert np.all(np.isclose(mesh.loadVertices('example2.surf.gii'), verts))
+        assert np.all(np.isclose(mesh.loadVertices('verts.txt')        , verts2))
+
+
 def test_GiftiMesh_loadVertexData():
 
     testdir   = op.join(op.dirname(__file__), 'testdata')
@@ -100,7 +121,7 @@ def test_GiftiMesh_loadVertexData():
     assert surf.loadVertexData(txtfile).shape == (642, 1)
 
     # add from memory
-    surf.addVertexData('inmemdata', memdata)
+    assert np.all(np.isclose(surf.addVertexData('inmemdata', memdata), memdata.reshape(-1, 1)))
 
     # check cached
     assert surf.getVertexData(shapefile)  .shape == (642, 1)
@@ -197,12 +218,10 @@ def test_relatedFiles():
             with open(op.join(td, l), 'wt') as f:
                 f.write(l)
 
-        with pytest.raises(Exception):
-            gifti.relatedFiles('nonexistent')
-
         badname = op.join(op.join(td, 'badly-formed-filename'))
 
-        assert len(gifti.relatedFiles(badname)) == 0
+        assert len(gifti.relatedFiles(badname))       == 0
+        assert len(gifti.relatedFiles('nonexistent')) == 0
 
         lsurfaces = [op.join(td, f) for f in lsurfaces]
         rsurfaces = [op.join(td, f) for f in rsurfaces]
