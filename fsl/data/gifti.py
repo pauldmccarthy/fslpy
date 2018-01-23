@@ -104,12 +104,38 @@ class GiftiMesh(fslmesh.Mesh):
                 self.setMeta(    sfile, surfimg)
 
 
+    def loadVertices(self, infile, key=None, *args, **kwargs):
+        """Overrides the :meth:`.Mesh.loadVertices` method.
+
+        Attempts to load vertices for this ``GiftiMesh`` from the given
+        ``infile``, which may be a GIFTI file or a plain text file containing
+        vertices.
+        """
+
+        if not infile.endswith('.gii'):
+            return fslmesh.Mesh.loadVertices(
+                self, infile, key, *args, **kwargs)
+
+        infile = op.abspath(infile)
+
+        if key is None:
+            key = infile
+
+        surfimg, vertices, _ = loadGiftiMesh(infile)
+        vertices = vertices.reshape(self.vertices.shape[0], 3)
+
+        self.addVertices(vertices, key, *args, **kwargs)
+        self.setMeta(    infile, surfimg)
+
+        return vertices
+
+
     def loadVertexData(self, infile, key=None):
-        """Overrides the :meth:`.TriangleMesh.loadVertexData` method.
+        """Overrides the :meth:`.Mesh.loadVertexData` method.
 
         Attempts to load data associated with each vertex of this
-        ``GiftiMesh`` from the given ``dataSource``, which may be
-        a GIFTI file or a plain text file which contains vertex data.
+        ``GiftiMesh`` from the given ``infile``, which may be a GIFTI file or
+        a plain text file which contains vertex data.
         """
 
         infile = op.abspath(infile)

@@ -104,6 +104,32 @@ class FreesurferMesh(fslmesh.Mesh):
                 self.addVertices(verts, f, select=False)
 
 
+    def loadVertices(self, infile, key=None, **kwargs):
+        """Overrides :meth:`.Mesh.loadVertices`. If the given ``infile``
+        looks like a Freesurfer file, it is loaded via
+        ``nibabel.freesurfer.load_geometry``. Otherwise, it is passed to
+        :meth:`.Mesh.loadVertices`.
+        """
+        if not fslpath.hasExt(infile, GEOMETRY_EXTENSIONS):
+            return fslmesh.Mesh.loadVertices(
+                self, infile, key, **kwargs)
+
+        infile = op.abspath(infile)
+        if key is None:
+            key = infile
+
+        # TODO merge metadata
+        vertices, indices, meta, comment = nibfs.read_geometry(
+            infile,
+            read_metadata=True,
+            read_stamp=True)
+
+        vertices = vertices.reshape(self.vertices.shape)
+        self.addVertices(vertices, key, **kwargs)
+
+        return vertices
+
+
     def loadVertexData(self, infile, key=None):
         """Overrides :meth:`.Mesh.loadVertexData`. If the given ``infile``
         looks like a Freesurfer file, it is loaded via the

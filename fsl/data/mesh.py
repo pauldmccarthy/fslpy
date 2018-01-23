@@ -91,6 +91,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     .. autosummary::
        :nosignatures:
 
+       loadVertices
        addVertices
        selectedVertices
        vertexSets
@@ -253,14 +254,19 @@ class Mesh(notifier.Notifier, meta.Meta):
     def vertices(self, key):
         """Select the current vertex set - a ``KeyError`` is raised
         if no vertex set with the specified ``key`` has been added.
+
+        When the current vertex set is changed, a notification is emitted
+        through the :class:`.Notifier` interface, with the topic
+        ``'vertices'``.
         """
 
         # Force a key error if
         # the key is invalid
         self.__vertices[key]
-        self.__selected = key
 
-        self.notify(topic='vertices')
+        if self.__selected != key:
+            self.__selected = key
+            self.notify(topic='vertices')
 
 
     @property
@@ -318,6 +324,36 @@ class Mesh(notifier.Notifier, meta.Meta):
         hi = self.__hiBounds[self.__selected]
 
         return lo, hi
+
+
+    def loadVertices(self, infile, key=None, **kwargs):
+        """Loads vertex data from the given ``infile``, and adds it as a vertex
+        set with the given ``key``. This implementation supports loading vertex
+        data from white-space delimited text files via ``numpy.loadtxt``, but
+        sub-classes may override this method to support additional file types.
+
+
+        :arg infile: File to load data from.
+
+        :arg key:    Key to pass to :meth:`addVertices`. If not provided,
+                     set to ``infile`` (converted to an absolute path)
+
+        All of the other arguments are passed through to :meth:`addVertices`.
+
+        :returns:    The loaded vertices.
+        """
+
+        infile = op.abspath(infile)
+
+        if key is None:
+            key = infile
+
+        vertices = np.loadtxt(infile)
+        vertices = vertices.reshape(self.vertices.shape)
+
+        self.addVertices(vertices, key, **kwargs)
+
+        return vertices
 
 
     def addVertices(self, vertices, key=None, select=True, fixWinding=False):
@@ -387,6 +423,8 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         :arg key:    Key to pass to :meth:`addVertexData`. If not provided,
                      set to ``infile`` (converted to an absolute path)
+
+        :returns:    The loaded vertex data.
         """
 
         infile = op.abspath(infile)
