@@ -14,8 +14,9 @@ Freesurfer ``mgh``/``mgz`` image files.
 """
 
 
-import six
+import os.path as op
 
+import            six
 import nibabel as nib
 
 import fsl.data.image as fslimage
@@ -49,15 +50,20 @@ class MGHImage(fslimage.Image):
         """
 
         if isinstance(image, six.string_types):
-            filename = image
+            filename = op.abspath(image)
+            name     = op.basename(filename)
             image    = nib.load(image)
         else:
+            name     = None
             filename = None
 
         data   = image.get_data()
         affine = image.affine
 
-        fslimage.Image.__init__(self, data, xform=affine)
+        fslimage.Image.__init__(self,
+                                data,
+                                xform=affine,
+                                name=name)
 
         if filename is not None:
             self.setMeta('mghImageFile', filename)
