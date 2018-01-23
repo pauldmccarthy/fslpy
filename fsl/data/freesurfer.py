@@ -182,10 +182,7 @@ class FreesurferMesh(fslmesh.Mesh):
             read_metadata=True,
             read_stamp=True)
 
-        vertices = vertices.reshape(self.vertices.shape)
-        self.addVertices(vertices, key, **kwargs)
-
-        return vertices
+        return self.addVertices(vertices, key, **kwargs)
 
 
     def loadVertexData(self, infile, key=None):
@@ -203,10 +200,10 @@ class FreesurferMesh(fslmesh.Mesh):
         isvannot = isVertexAnnotFile(infile)
 
         if not any((isvdata, isvlabel, isvannot)):
-            return fslmesh.Mesh.loadVertexData(infile)
+            return fslmesh.Mesh.loadVertexData(self, infile)
 
         infile    = op.abspath(infile)
-        nvertices = self.vertices.shape[0]
+        nvertices = self.nvertices
 
         if key is None:
             key = infile
@@ -222,7 +219,7 @@ class FreesurferMesh(fslmesh.Mesh):
         elif isvannot:
             vdata, lut, names = vdata
 
-        self.addVertexData(key, vdata)
+        vdata = self.addVertexData(key, vdata)
 
         if isvannot:
             self.__luts[key] = lut, names, lut

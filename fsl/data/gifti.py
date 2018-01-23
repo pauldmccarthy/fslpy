@@ -123,10 +123,10 @@ class GiftiMesh(fslmesh.Mesh):
             key = infile
 
         surfimg, vertices, _ = loadGiftiMesh(infile)
-        vertices = vertices.reshape(self.vertices.shape[0], 3)
 
-        self.addVertices(vertices, key, *args, **kwargs)
-        self.setMeta(    infile, surfimg)
+        vertices = self.addVertices(vertices, key, *args, **kwargs)
+
+        self.setMeta(infile, surfimg)
 
         return vertices
 
@@ -139,18 +139,16 @@ class GiftiMesh(fslmesh.Mesh):
         a plain text file which contains vertex data.
         """
 
+        if not infile.endswith('.gii'):
+            return fslmesh.Mesh.loadVertexData(self, infile)
+
         infile = op.abspath(infile)
 
         if key is None:
             key = infile
 
-        if infile.endswith('.gii'):
-            vdata = loadGiftiVertexData(infile)[1]
-            self.addVertexData(key, vdata)
-            return vdata
-
-        else:
-            return fslmesh.Mesh.loadVertexData(self, infile, key)
+        vdata = loadGiftiVertexData(infile)[1]
+        return self.addVertexData(key, vdata)
 
 
 def loadGiftiMesh(filename):

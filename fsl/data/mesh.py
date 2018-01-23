@@ -59,6 +59,8 @@ class Mesh(notifier.Notifier, meta.Meta):
     ``dataSource`` Full path to the mesh file (or ``None`` if there is
                    no file associated with this mesh).
 
+    ``nvertices``  The number of vertices in the mesh.
+
     ``vertices``   A ``(n, 3)`` array containing the currently selected
                    vertices. You can assign  a vertex set key to this
                    attribute to change the selected vertex set.
@@ -185,6 +187,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         self.__name       = name
         self.__dataSource = dataSource
         self.__indices    = np.asarray(indices).reshape((-1, 3))
+        self.__nvertices  = self.__indices.max() + 1
 
         # This attribute is used to store
         # the currently selected vertex set,
@@ -245,6 +248,12 @@ class Mesh(notifier.Notifier, meta.Meta):
     def dataSource(self):
         """Returns the data source of this ``Mesh``. """
         return self.__dataSource
+
+
+    @property
+    def nvertices(self):
+        """Returns the number of vertices in the mesh. """
+        return self.__nvertices
 
 
     @property
@@ -352,11 +361,8 @@ class Mesh(notifier.Notifier, meta.Meta):
             key = infile
 
         vertices = np.loadtxt(infile)
-        vertices = vertices.reshape(self.vertices.shape)
 
-        self.addVertices(vertices, key, **kwargs)
-
-        return vertices
+        return self.addVertices(vertices, key, **kwargs)
 
 
     def addVertices(self, vertices, key=None, select=True, fixWinding=False):
@@ -374,6 +380,11 @@ class Mesh(notifier.Notifier, meta.Meta):
         :arg fixWinding: Defaults to ``False``. If ``True``, the vertex
                          winding order of every triangle is is fixed so they
                          all have outward-facing normal vectors.
+
+        :returns:        The vertices, possibly reshaped
+
+        :raises:         ``ValueError`` if the provided ``vertices`` array
+                         has the wrong number of vertices.
         """
 
         if key is None:
@@ -382,6 +393,19 @@ class Mesh(notifier.Notifier, meta.Meta):
         vertices = np.asarray(vertices)
         lo       = vertices.min(axis=0)
         hi       = vertices.max(axis=0)
+
+        # Don't allow vertices of
+        # different size to be added
+        try:
+            vertices = vertices.reshape(self.nvertices, 3)
+
+        # reshape raised an error -
+        # wrong number of vertices
+        except ValueError:
+            raise ValueError('{}: invalid number of vertices: '
+                             '{} != ({}, 3)'.format(key,
+                                                    vertices.shape,
+                                                    self.nvertices))
 
         self.__vertices[key] = vertices
         self.__loBounds[key] = lo
@@ -404,6 +428,8 @@ class Mesh(notifier.Notifier, meta.Meta):
 
                 for k, fn in self.__faceNormals.items():
                     self.__faceNormals[k] = fn * -1
+
+        return vertices
 
 
     def vertexSets(self):
@@ -435,27 +461,28 @@ class Mesh(notifier.Notifier, meta.Meta):
         if key is None:
             key = infile
 
-        nvertices  = self.vertices.shape[0]
         vertexData = np.loadtxt(infile)
-        vertexData = vertexData.reshape(nvertices, -1)
 
-        self.addVertexData(key, vertexData)
-
-        return vertexData
+        return self.addVertexData(key, vertexData)
 
 
     def addVertexData(self, key, vdata):
         """Adds a vertex-wise data set to the ``Mesh``. It can be retrieved
         by passing the specified ``key`` to the :meth:`getVertexData` method.
+
+        :returns: The vertex data, possibly reshaped.
         """
 
-        nvertices = self.vertices.shape[0]
+        nvertices = self.nvertices
 
         if vdata.ndim not in (1, 2) or vdata.shape[0] != nvertices:
             raise ValueError('{}: incompatible vertex data '
                              'shape: {}'.format(key, vdata.shape))
 
-        self.__vertexData[key] = vdata.reshape(nvertices, -1)
+        vdata                  = vdata.reshape(nvertices, -1)
+        self.__vertexData[key] = vdata
+
+        return vdata
 
 
     def getVertexData(self, key):
