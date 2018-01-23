@@ -38,7 +38,6 @@ import numpy   as np
 
 import fsl.utils.meta      as meta
 import fsl.utils.notifier  as notifier
-import fsl.utils.memoize   as memoize
 import fsl.utils.transform as transform
 
 
@@ -54,7 +53,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     A ``Mesh`` instance has the following attributes:
 
 
-    ============== ====================================================
+    ============== ======================================================
     ``name``       A name, typically the file name sans-suffix.
 
     ``dataSource`` Full path to the mesh file (or ``None`` if there is
@@ -74,7 +73,11 @@ class Mesh(notifier.Notifier, meta.Meta):
 
     ``vnormals``   A ``(n, 3)`` array containing vertex normals for the
                    the current vertices.
-    ============== ====================================================
+
+    ``trimesh``    (if the `trimesh <https://github.com/mikedh/trimesh>`_
+                   library is present) A ``trimesh.Trimesh`` object which
+                   can be used for geometric queries on the mesh.
+    ============== ======================================================
 
 
     **Vertex sets**
@@ -476,7 +479,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         return list(self.__vertexData.keys())
 
 
-    @memoize.Instanceify(memoize.memoize)
+    @property
     def trimesh(self):
         """Reference to a ``trimesh.Trimesh`` object which can be used for
         geometric operations on the mesh.
@@ -528,7 +531,7 @@ class Mesh(notifier.Notifier, meta.Meta):
                              ``n`` rays.
         """
 
-        trimesh = self.trimesh()
+        trimesh = self.trimesh
 
         if trimesh is None:
             return np.zeros((0, 3)), np.zeros((0,))
@@ -567,7 +570,7 @@ class Mesh(notifier.Notifier, meta.Meta):
                         point to the nearest vertex.
         """
 
-        trimesh = self.trimesh()
+        trimesh = self.trimesh
 
         if trimesh is None:
             return np.zeros((0, 3)), np.zeros((0, )), np.zeros((0, ))
@@ -607,7 +610,7 @@ class Mesh(notifier.Notifier, meta.Meta):
                             triangle.
         """
 
-        trimesh = self.trimesh()
+        trimesh = self.trimesh
 
         if trimesh is None:
             return np.zeros((0, 3)), np.zeros((0, 3))
