@@ -416,7 +416,6 @@ def findReferenceImage(fname):
     exts    = fslimage.ALLOWED_EXTENSIONS + fslmgh.ALLOWED_EXTENSIONS
 
     try:
-
-        fslpath.addExt(t1, allowedExts=exts, mustExist=True)
+        return fslpath.addExt(t1, allowedExts=exts, mustExist=True)
     except fslpath.PathError:
         return None
