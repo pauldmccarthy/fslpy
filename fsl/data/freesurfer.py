@@ -92,11 +92,16 @@ EXTRA_GEOMETRY_FILES = ['?h.orig.nofix',
 VERTEX_DATA_FILES = ['?h.thickness',
                      '?h.curv',
                      '?h.area',
-                     '?h.sulc',
-                     '.mgh',
-                     '.mgz']
+                     '?h.sulc']
 """File patterns which are interpreted as Freesurfer vertex data files,
 containing a scalar value for every vertex in the mesh.
+"""
+
+
+VERTEX_MGH_FILES = ['?h.*.mgh',
+                    '?h.*.mgz']
+"""File patterns which are interpreted as MGH files containing a
+scalar value for every vertex in the mesh.
 """
 
 
@@ -196,10 +201,11 @@ class FreesurferMesh(fslmesh.Mesh):
         """
 
         isvdata  = isVertexDataFile( infile)
+        isvmgh   = isVertexMGHFile(  infile)
         isvlabel = isVertexLabelFile(infile)
         isvannot = isVertexAnnotFile(infile)
 
-        if not any((isvdata, isvlabel, isvannot)):
+        if not any((isvdata, isvmgh, isvlabel, isvannot)):
             return fslmesh.Mesh.loadVertexData(self, infile)
 
         infile    = op.abspath(infile)
@@ -211,9 +217,11 @@ class FreesurferMesh(fslmesh.Mesh):
         vdata = loadVertexDataFile(infile)
 
         if isvlabel:
-            idxs, vdata    = np.asarray(vdata, np.int)
+            # Currently ignoring scalar
+            # values stored in label files
+            idxs           = np.asarray(vdata[0])
             expanded       = np.zeros(nvertices)
-            expanded[idxs] = vdata
+            expanded[idxs] = 1
             vdata          = expanded
 
         elif isvannot:
@@ -222,7 +230,7 @@ class FreesurferMesh(fslmesh.Mesh):
         vdata = self.addVertexData(key, vdata)
 
         if isvannot:
-            self.__luts[key] = lut, names, lut
+            self.__luts[key] = lut, names
 
         return vdata
 
@@ -275,10 +283,16 @@ def loadVertexDataFile(infile):
         return nibfs.read_label(infile, read_scalars=True)
 
     elif isVertexAnnotFile(infile):
-        return nibfs.read_annot(infile, orig_ids=False)
 
-    elif fslpath.hasExt(infile, fslmgh.ALLOWED_EXTENSIONS):
+        # nibabel 2.2.1 is broken w.r.t. .annot files.
+        # raise ValueError('.annot files are not yet supported')
+
+        labels, lut, names = nibfs.read_annot(infile, orig_ids=False)
+        return labels, lut, names
+
+    elif isVertexMGHFile(infile):
         return fslmgh.MGHImage(infile)[:].squeeze()
+
     else:
         raise ValueError('Unrecognised freesurfer '
                          'file type: {}'.format(infile))
@@ -310,6 +324,15 @@ def isVertexDataFile(infile):
     """
     infile = op.basename(infile)
     return any([fnmatch.fnmatch(infile, gf) for gf in VERTEX_DATA_FILES])
+
+
+@memoize.memoize
+def isVertexMGHFile(infile):
+    """Returns ``True`` if ``infile`` looks like a Freesurfer MGH file
+    containing vertex data, ``False`` otherwise.
+    """
+    infile = op.basename(infile)
+    return any([fnmatch.fnmatch(infile, gf) for gf in VERTEX_MGH_FILES])
 
 
 @memoize.memoize
@@ -361,7 +384,10 @@ def relatedVertexDataFiles(fname):
     dirname = op.dirname(fname)
     hemi    = op.basename(fname)[0]
 
-    fpats   = VERTEX_DATA_FILES + VERTEX_LABEL_FILES + VERTEX_ANNOT_FILES
+    fpats   = (VERTEX_DATA_FILES  +
+               VERTEX_LABEL_FILES +
+               VERTEX_ANNOT_FILES +
+               VERTEX_MGH_FILES)
     fpats   = [hemi + p[1:] if p.startswith('?h') else p for p in fpats]
 
     basedir    = op.dirname(dirname)
