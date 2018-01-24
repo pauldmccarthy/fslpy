@@ -46,6 +46,11 @@ def tempdir():
         shutil.rmtree(testdir)
 
 
+def touch(fname):
+    with open(fname, 'wt') as f:
+        pass
+
+
 class CaptureStdout(object):
     """Context manager which captures stdout and stderr. """
 
