@@ -161,7 +161,6 @@ def test_loadVertexData_mgh():
         img  = nib.freesurfer.mghformat.MGHImage(data, np.eye(4))
 
         nib.save(img, 'lh.vdata.mgh')
-        nib.save(img, '/Users/paulmc/lh.vdata.mgh')
 
         gen_freesurfer_geometry('lh.pial', verts, tris)
 
