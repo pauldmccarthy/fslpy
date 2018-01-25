@@ -236,7 +236,9 @@ class FreesurferMesh(fslmesh.Mesh):
 
 
     def getVertexDataColourTable(self, key):
-        """TODO
+        """If the given ``key`` refers to a Freesurfer ``.annot`` file,
+        the corresponding RGBA lookup table and label names can be
+        retrieved via this method.
         """
 
         return self.__luts[key]
