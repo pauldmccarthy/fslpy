@@ -176,8 +176,12 @@ def test_loadVertexData_mgh():
 
 def test_loadVertexData_annot():
 
+    import nibabel.info as nibinfo
+
+    # assume nibabel 2.*
     # nibabel 2.2.1 is broken w.r.t. .annot files.
-    # return
+    if nibinfo._version_minor == 2 and nibinfo._version_micro <= 1:
+        return
 
     verts = np.array(CUBE_VERTICES)
     tris  = np.array(CUBE_TRIANGLES_CCW)
