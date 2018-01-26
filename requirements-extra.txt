@@ -1,5 +1,4 @@
 indexed_gzip>=0.7.0,<1
 wxpython>=3.0.2.0,<4.1
-trimesh==2.*
+trimesh>=2.22.28,<3
 rtree==0.8
-lxml==4.*
