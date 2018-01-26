@@ -18,7 +18,7 @@ requirements:
     - six 1.*
     - deprecation 1.*
     - numpy 1.*
-    - scipy >=0.18,<1
+    - scipy >=0.18,<2
     - nibabel 2.*
     - sphinx 1.6.*
     - sphinx_rtd_theme 0.*
