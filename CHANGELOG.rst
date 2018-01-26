@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.6.0 (Under development)
--------------------------
+1.6.0 (Friday January 26th 2018)
+--------------------------------
 
 
 * The new :class:`.Mesh` class is now the base class for all mesh types. It
