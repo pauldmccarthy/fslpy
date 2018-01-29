@@ -2,6 +2,15 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.6.2 (Tuesday January 30th 2018)
+---------------------------------
+
+
+* Updates to the ``conda`` installation process.
+* A new script is installed when ``fslpy`` is installed via ``pip`` or
+  ``conda`` - ``atlasquery``, which emulates the FSL ``atlasquery`` tool.
+
+
 1.6.1 (Monday January 29th 2018)
 --------------------------------
 
