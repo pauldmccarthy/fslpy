@@ -2,6 +2,14 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.6.1 (Monday January 29th 2018)
+--------------------------------
+
+
+* Removed ``lxml`` as a dependency - this was necessary in older versions of
+  ``trimesh``.
+
+
 1.6.0 (Friday January 26th 2018)
 --------------------------------
 
