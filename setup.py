@@ -127,7 +127,7 @@ setup(
             'immv   = fsl.scripts.immv:main',
             'imcp   = fsl.scripts.imcp:main',
             'imglob = fsl.scripts.imglob:main',
-            'atlasq = fsl.scripts.atlasq:main',
+            'atlasquery = fsl.scripts.atlasq:main',
         ]
     }
 )
