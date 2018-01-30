@@ -738,5 +738,16 @@ def main(args=None):
     return 0
 
 
+def atlasquery_emulation(args=None):
+    """Entry point for ``atlasquery``. Runs as ``atlasq`` in ``ohi``
+    mode.
+    """
+
+    if args is None:
+        args = sys.argv[1:]
+
+    return main(['ohi'] + args)
+
+
 if __name__ == '__main__':
     sys.exit(main())
