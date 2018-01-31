@@ -132,6 +132,11 @@ class WeakFunctionRef(object):
         return None
 
 
+    def __call__(self):
+        """See :meth:``function``. """
+        return self.function()
+
+
     def function(self):
         """Return a reference to the encapsulated function or method,
         or ``None`` if the function has been garbage collected.
