@@ -81,8 +81,8 @@ class WeakFunctionRef(object):
         irreconcilably incompatible (or just where :mod:`six` does not have a
         function to help us).
 
-        In Python 2 there is no difference between an unbound method and a
-        function. But in Python 3, an unbound method is still a method (and
+        In Python 3 there is no difference between an unbound method and a
+        function. But in Python 2, an unbound method is still a method (and
         inspect.ismethod returns True).
         """
 
