@@ -21,7 +21,19 @@ def make_weakfuncref_method_that_will_get_gcd():
         def method(self):
             pass
 
-    return weakfuncref.WeakFunctionRef(Thing.method) 
+    return weakfuncref.WeakFunctionRef(Thing.method)
+
+
+def test_weakfuncref_call():
+
+    def func():
+        pass
+
+    non_gcd_func = weakfuncref.WeakFunctionRef(func)
+    gcd_func     = make_weakfuncref_that_will_get_gcd()
+
+    assert gcd_func()     is None
+    assert non_gcd_func() is func
 
 
 def test_weakfuncref_function():
@@ -43,11 +55,11 @@ def test_weakfuncref_method():
             return 'existent!'
 
         def __priv_method(self):
-            return 'existent!' 
-        
+            return 'existent!'
+
         @classmethod
         def clsmethod(clsself):
-            return 'existent!' 
+            return 'existent!'
 
 
     t = Thing()
