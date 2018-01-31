@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.7.0 (Under development)
+-------------------------
+
+
+* Minor enhancements to the :class:`.WeakFunctionRef` class.
+
+
 1.6.2 (Tuesday January 30th 2018)
 ---------------------------------
 
