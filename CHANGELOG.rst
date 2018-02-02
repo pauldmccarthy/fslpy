@@ -2,11 +2,14 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.7.0 (Under development)
--------------------------
+1.6.3 (Friday February 2nd 2018)
+--------------------------------
 
 
 * Minor enhancements to the :class:`.WeakFunctionRef` class.
+* Some bugfixes to the :mod:`fsl.utils.imcp` module, with respect to handling
+  relative path names, moving file groups (e.g. `.img`/`.hdr` pairs), and
+  non-existent directories.
 
 
 1.6.2 (Tuesday January 30th 2018)
