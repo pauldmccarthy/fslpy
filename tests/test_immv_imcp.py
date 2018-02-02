@@ -337,17 +337,19 @@ def test_imcp_script_shouldPass(move=False):
                     reldir  = tindir
                     toutdir = tindir
 
-                    infiles = os.listdir(tindir)
+                    if not move:
 
-                    files_to_expect = files_to_expect +  ' ' + \
-                                      ' '.join(infiles)
+                        infiles = os.listdir(tindir)
 
-                    for inf in infiles:
-                        img     = nib.load(op.join(tindir, inf))
-                        imghash = hash(img.get_data().tobytes())
-                        imageHashes.append(imghash)
+                        files_to_expect = files_to_expect +  ' ' + \
+                                          ' '.join(infiles)
 
-                print('adj files_to_expectexpected: ', files_to_expect)
+                        for inf in infiles:
+                            img     = nib.load(op.join(tindir, inf))
+                            imghash = hash(img.get_data().tobytes())
+                            imageHashes.append(imghash)
+
+                print('adj files_to_expect: ', files_to_expect)
 
                 os.chdir(reldir)
 
@@ -369,8 +371,12 @@ def test_imcp_script_shouldPass(move=False):
                 checkFilesToExpect(
                     files_to_expect, toutdir, outputType, imageHashes)
 
-                if move:
+                # too hard if indir == outdir
+                if move and tindir != toutdir:
+                    real_print('indir: ',  tindir)
+                    real_print('outdir: ', toutdir)
                     infiles = os.listdir(tindir)
+                    infiles = [f for f in infiles if op.isfile(f)]
                     infiles = [f for f in infiles if op.isfile(f)]
                     assert len(infiles) == 0
 
@@ -464,8 +470,19 @@ def test_imcp_script_shouldFail(move=False):
                     cmd = cmd.replace('indir', indir).replace('outdir', outdir)
                     sp.call(cmd.split())
 
-            if move: assert immv_script.main(imcp_args) != 0
-            else:    assert imcp_script.main(imcp_args) != 0
+            print('calling {} {}'.format('immv' if move else 'imcp',
+                                         ' '.join(imcp_args)))
+
+            print('indir before:   {}'.format(os.listdir(indir)))
+            print('out dir before: {}'.format(os.listdir(outdir)))
+
+            if move: result = immv_script.main(imcp_args)
+            else:    result = imcp_script.main(imcp_args)
+
+            print('indir after:   {}'.format(os.listdir(indir)))
+            print('out dir after: {}'.format(os.listdir(outdir)))
+
+            assert result != 0
 
             sp.call('chmod u+rwx {}'.format(indir) .split())
             sp.call('chmod u+rwx {}'.format(outdir).split())
