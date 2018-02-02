@@ -18,6 +18,8 @@ import                   os
 import os.path        as op
 import                   shutil
 
+import nibabel        as nib
+
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
@@ -53,7 +55,9 @@ def imcp(src,
                         copied. See :func:`immv`.
     """
 
-    import nibabel as nib
+    # special case - non-existent directory
+    if dest.endswith('/') and not op.isdir(dest):
+        raise fslpath.PathError('Directory does not exist: {}'.format(dest))
 
     if op.isdir(dest):
         dest = op.join(dest, op.basename(src))
@@ -135,7 +139,13 @@ def imcp(src,
         nib.save(img, dest)
 
         if move:
-            os.remove(src)
+            # if input is an image pair, we
+            # need to remove all input files
+            srcs = fslpath.getFileGroup(src,
+                                        fslimage.ALLOWED_EXTENSIONS,
+                                        fslimage.FILE_GROUPS)
+            for src in srcs:
+                os.remove(src)
 
         return
 
