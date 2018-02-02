@@ -9,21 +9,15 @@ from __future__ import print_function
 
 
 
-import               os
 import os.path    as op
-import               shutil
+import itertools  as it
 import subprocess as sp
+import               os
+import               shutil
 import               tempfile
-import               logging
 
-import numpy   as np
 import nibabel as nib
 
-from nibabel.spatialimages import ImageFileError
-
-import pytest
-
-import fsl.utils.path   as fslpath
 import fsl.utils.imcp   as imcp
 import fsl.scripts.imcp as imcp_script
 import fsl.scripts.immv as immv_script
@@ -79,6 +73,9 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
                 '.nii'    : ['.nii'],
                 '.nii.gz' : ['.nii.gz']
             }.get(fe, [])
+        # filename already has a different extension
+        elif fe != '' and fe not in fexts:
+            fexts = [fe]
 
         for e in fexts:
 
@@ -119,7 +116,7 @@ def test_imcp_script_shouldPass(move=False):
     # or invalid - '' in this case), they
     # should produce .nii.gz
     outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ', '']
-
+    reldirs     = ['neutral', 'samedir', 'indir', 'outdir']
 
     # Test tuples have the following structure (each
     # item is a string which will be split on spaces):
@@ -306,12 +303,13 @@ def test_imcp_script_shouldPass(move=False):
         ('a.nii.gz a.nii    a.img   ', 'a.nii.gz a.nii    a.img    .', 'a'),
     ]
 
-    indir  = tempfile.mkdtemp()
-    outdir = tempfile.mkdtemp()
+    indir    = tempfile.mkdtemp()
+    outdir   = tempfile.mkdtemp()
+    startdir = os.getcwd()
 
     try:
 
-        for outputType in outputTypes:
+        for outputType, reldir in it.product(outputTypes, reldirs):
 
             os.environ['FSLOUTPUTTYPE'] = outputType
 
@@ -329,31 +327,58 @@ def test_imcp_script_shouldPass(move=False):
 
                 imcp_args = imcp_args.split()
 
-                imcp_args[:-1] = [op.join(indir, a) for a in imcp_args[:-1]]
-                imcp_args[ -1] =  op.join(outdir, imcp_args[-1])
+                tindir  = indir
+                toutdir = outdir
 
-                print('indir before:    ', os.listdir(indir))
-                print('outdir before:   ', os.listdir(outdir))
+                if   reldir == 'neutral': reldir = startdir
+                elif reldir == 'indir':   reldir = tindir
+                elif reldir == 'outdir':  reldir = toutdir
+                elif reldir == 'samedir':
+                    reldir  = tindir
+                    toutdir = tindir
 
-                if move: assert immv_script.main(imcp_args) == 0
-                else:    assert imcp_script.main(imcp_args) == 0
+                    infiles = os.listdir(tindir)
 
-                print('indir after:     ', os.listdir(indir))
-                print('outdir after:    ', os.listdir(outdir))
+                    files_to_expect = files_to_expect +  ' ' + \
+                                      ' '.join(infiles)
+
+                    for inf in infiles:
+                        img     = nib.load(op.join(tindir, inf))
+                        imghash = hash(img.get_data().tobytes())
+                        imageHashes.append(imghash)
+
+                print('adj files_to_expectexpected: ', files_to_expect)
+
+                os.chdir(reldir)
+
+                imcp_args[:-1] = [op.join(tindir, a) for a in imcp_args[:-1]]
+                imcp_args[ -1] =  op.join(toutdir, imcp_args[-1])
+                imcp_args      = [op.relpath(a, reldir) for a in imcp_args]
+
+                print('indir before:    ', os.listdir(tindir))
+                print('outdir before:   ', os.listdir(toutdir))
+
+                if move: result = immv_script.main(imcp_args)
+                else:    result = imcp_script.main(imcp_args)
+
+                print('indir after:     ', os.listdir(tindir))
+                print('outdir after:    ', os.listdir(toutdir))
+
+                assert result == 0
 
                 checkFilesToExpect(
-                    files_to_expect, outdir, outputType, imageHashes)
+                    files_to_expect, toutdir, outputType, imageHashes)
 
                 if move:
-                    infiles = os.listdir(indir)
+                    infiles = os.listdir(tindir)
                     infiles = [f for f in infiles if op.isfile(f)]
                     assert len(infiles) == 0
 
                 cleardir(indir)
                 cleardir(outdir)
 
-
     finally:
+        os.chdir(startdir)
         shutil.rmtree(indir)
         shutil.rmtree(outdir)
 
