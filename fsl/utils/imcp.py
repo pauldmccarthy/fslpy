@@ -58,6 +58,9 @@ def imcp(src,
     if op.isdir(dest):
         dest = op.join(dest, op.basename(src))
 
+    src  = op.abspath(src)
+    dest = op.abspath(dest)
+
     srcBase,  srcExt  = fslimage.splitExt(src)
     destBase, destExt = fslimage.splitExt(dest)
 
