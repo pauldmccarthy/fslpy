@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.6.4 (Monday February 5th 2018)
+--------------------------------
+
+
+* The :mod:`.platform` module emits a warning if it cannot import ``wx``.
+
+
 1.6.3 (Friday February 2nd 2018)
 --------------------------------
 
