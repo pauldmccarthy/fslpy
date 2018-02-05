@@ -158,6 +158,7 @@ class Platform(notifier.Notifier):
             import wx
             self.__canHaveGui = wx.App.IsDisplayAvailable()
         except ImportError:
+            log.warning('Could not import wx', exc_info=True)
             self.__canHaveGui = False
 
         # If one of the SSH_/VNC environment
