@@ -1,4 +1,4 @@
-if [ -e ${FSLDIR}/bin/requestFSLpythonLink.sh ]; then 
-    $FSLDIR/bin/requestFSLpythonLink.sh atlasquery atlasq imcp immv imglob
+if [ -e ${FSLDIR}/etc/fslconf/requestFSLpythonLink.sh ]; then 
+    $FSLDIR/etc/fslconf/requestFSLpythonLink.sh atlasquery atlasq imcp immv imglob
 fi
 
