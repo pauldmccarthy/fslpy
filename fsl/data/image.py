@@ -1332,12 +1332,10 @@ def looksLikeImage(filename, allowedExts=None):
                       extensions - defaults to :attr:`ALLOWED_EXTENSIONS`.
     """
 
-    if allowedExts is None: allowedExts = ALLOWED_EXTENSIONS
+    if allowedExts is None:
+        allowedExts = ALLOWED_EXTENSIONS
 
-    # TODO A much more robust approach would be
-    #      to try loading the file using nibabel.
-
-    return any([filename.endswith(ext) for ext in allowedExts])
+    return fslpath.hasExt(filename, allowedExts)
 
 
 def addExt(prefix, mustExist=True, unambiguous=True):
