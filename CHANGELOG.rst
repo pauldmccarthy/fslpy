@@ -2,6 +2,15 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.6.7 (Friday February 9th 2018)
+--------------------------------
+
+
+* More further adjustments to the ``conda`` package build.
+* Adjustments to pypi source distribution - the `requirements-extra.txt` file
+  was not being included.
+
+
 1.6.6 (Thursday February 8th 2018)
 ----------------------------------
 
