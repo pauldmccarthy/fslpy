@@ -33,11 +33,11 @@ requirements:
     - six 1.*
     - deprecation 1.*
     - numpy 1.*
-    - scipy >=0.18,<1
+    - scipy >=0.18,<2
     - nibabel 2.*
 
   run_constrained:
-    - indexed_gzip >=0.6.1,<1
+    - indexed_gzip >=0.7.0,<1
     - wxpython >=3.0.2.0,<4.1
     - trimesh >=2.22.28,<3
     - rtree 0.8
