@@ -27,3 +27,12 @@ conda build --output-folder=dist .conda
 # tar it up
 cd dist
 tar czf "$name"-"$version"-conda.tar.gz *
+cd ..
+
+# Make sure package is installable
+for pyver in 2.7 3.4 3.5 3.6; do
+    conda create -y --name "test$pyver" python=$pyver
+    source activate test$pyver
+    conda install -y -c file://`pwd`/dist fslpy
+    source deactivate
+done
