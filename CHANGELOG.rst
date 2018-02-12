@@ -2,6 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.6.8 (Monday February 12th 2018)
+---------------------------------
+
+
+* The `atlasq`, `immv`, `imcp` and `imglob` scripts suppress some warnings.
+
+
 1.6.7 (Friday February 9th 2018)
 --------------------------------
 
