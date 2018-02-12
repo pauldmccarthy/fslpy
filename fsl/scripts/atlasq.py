@@ -15,12 +15,24 @@ import itertools as it
 import              sys
 import              argparse
 import              textwrap
+import              warnings
 import              logging
 import numpy     as np
 
-import fsl.data.atlases as fslatlases
-import fsl.version      as fslversion
-import fsl.data.image   as fslimage
+# if h5py <= 2.7.1 is installed,
+# it will be imported via nibabel,
+# and will cause a numpy warning
+# to be emitted.
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    import fsl.data.image as fslimage
+
+# If wx is not present, then fsl.utils.platform
+# will complain that it is not present.
+logging.getLogger('fsl.utils.platform').setLevel(logging.ERROR)
+
+import fsl.data.atlases as fslatlases  # noqa
+import fsl.version      as fslversion  # noqa
 
 
 log = logging.getLogger(__name__)

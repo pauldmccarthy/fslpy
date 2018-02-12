@@ -17,9 +17,15 @@ from __future__ import print_function
 
 import os.path        as op
 import                   sys
+import                   warnings
+
 import fsl.utils.path as fslpath
-import fsl.utils.imcp as imcp
-import fsl.data.image as fslimage
+
+# See atlasq.py for explanation
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    import fsl.utils.imcp as imcp
+    import fsl.data.image as fslimage
 
 
 usage = """Usage:
