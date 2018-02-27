@@ -4,22 +4,22 @@ package:
   version: {{ data['version']}}
 
 build:
-   noarch: python
-   script: python setup.py install --single-version-externally-managed --record=record.txt
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
 
 source:
   path: ../
 
 requirements:
   build:
-    - python >2
+    - python {{ python }}
     - setuptools
     {% for package in data.get('setup_requires', {}) %}
     - {{ package.lower() }}
     {% endfor %}
 
   run:
-    - python >2
+    - python 
     {% for package in data.get('install_requires', {}) %}
     - {{ package.lower() }}
     {% endfor %}
@@ -40,7 +40,7 @@ test:
   source_files:
     - {{ data['test_suite'] }}
   commands:
-    - python -m pytest {{ data['test_suite'] }}
+    - python -m pytest {{ data['test_suite'] }} -m "not (fsltest or wxtest or dicomtest or meshtest or igziptest or longtest)"
 {% endif %}
 
 about:
