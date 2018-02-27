@@ -127,7 +127,7 @@ class FSFError(Exception):
 class FEATFSFDesign(object):
     """The ``FEATFSFDesign`` class encapsulates the design matrix from a FEAT
     analysis. This class is intended to be used for FEAT analyses generated
-    with FSL 5.0.9 and older.
+    with FSL 5.0.9 and newer.
     """
 
     def __init__(self, featDir, settings=None, loadVoxelwiseEVs=True):
