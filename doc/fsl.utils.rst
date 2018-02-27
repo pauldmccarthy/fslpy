@@ -4,6 +4,7 @@
 .. toctree::
    :hidden:
 
+   fsl.utils.assertions
    fsl.utils.cache
    fsl.utils.callfsl
    fsl.utils.idle
