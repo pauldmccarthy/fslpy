@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+#
+# ensure.py - Functions which ensure things.
+#
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+#
+"""This module contains a handful of utility functions which attempt to ensure
+that some condition is met.
+
+.. autosummary::
+   :nosignatures:
+
+   ensureIsImage
+"""
+
+
+import six
+
+import nibabel as nib
+
+
+def ensureIsImage(img):
+    """Ensures that the given ``img`` is an in-memory ``nibabel`` object.
+    """
+    if isinstance(img, six.string_types):
+        img = nib.load(img)
+    return img
