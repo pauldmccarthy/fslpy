@@ -31,3 +31,12 @@ def test_tempdir():
         assert op.realpath(os.getcwd()) == op.realpath(td)
 
     assert not op.exists(d)
+
+
+def test_tempdir_root():
+
+    # this first tempdir is then used
+    # as the root for another temp dir
+    with tempdir.tempdir() as root:
+        with tempdir.tempdir(root=root) as td:
+            assert op.dirname(td) == root
