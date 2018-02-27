@@ -586,39 +586,41 @@ def test_mutex():
         @idle.mutex
         def method1(self):
             self.method1start = time.time()
-            time.sleep(0.5)
+            time.sleep(0.01)
             self.method1end = time.time()
 
         @idle.mutex
         def method2(self):
             self.method2start = time.time()
-            time.sleep(0.5)
+            time.sleep(0.01)
             self.method2end = time.time()
 
-    t = [Thing()]
+    for i in range(200):
 
-    def thread1():
-        t[0].method1()
+        t = [Thing()]
 
-    def thread2():
-        t[0].method2()
+        def thread1():
+            t[0].method1()
 
-    for i in range(20):
+        def thread2():
+            t[0].method2()
 
-        t[0].method1start = None
-        t[0].method2start = None
-        t[0].method1end   = None
-        t[0].method2end   = None
+        for i in range(10):
 
-        t1 = threading.Thread(target=thread1)
-        t2 = threading.Thread(target=thread2)
+            t[0].method1start = None
+            t[0].method2start = None
+            t[0].method1end   = None
+            t[0].method2end   = None
 
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
+            t1 = threading.Thread(target=thread1)
+            t2 = threading.Thread(target=thread2)
 
-        # Either t1 has to start and
-        # finish before t2 or vice versa
-        assert (t[0].method2start > t[0].method1end or
-                t[0].method1start > t[0].method2end)
+            t1.start()
+            t2.start()
+            t1.join()
+            t2.join()
+
+            # Either t1 has to start and
+            # finish before t2 or vice versa
+            assert (t[0].method2start > t[0].method1end or
+                    t[0].method1start > t[0].method2end)
