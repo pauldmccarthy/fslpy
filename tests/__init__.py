@@ -94,7 +94,7 @@ class CaptureStdout(object):
 
 
 
-def testdir(contents=None):
+def testdir(contents=None, suffix=None):
     """Returnsa context manager which creates, changes to, and returns a
     temporary directory, and then deletes it on exit.
     """
@@ -109,7 +109,7 @@ def testdir(contents=None):
 
         def __enter__(self):
 
-            self.testdir = tempfile.mkdtemp()
+            self.testdir = tempfile.mkdtemp(suffix=suffix)
             self.prevdir = os.getcwd()
 
             os.chdir(self.testdir)
@@ -194,20 +194,55 @@ def random_voxels(shape, nvoxels=1):
         return randVoxels
 
 
-def make_random_image(filename, dims=(10, 10, 10), xform=None):
-    """Creates a NIFTI1 image with random data, saves and
-    returns it.
+def make_random_image(filename=None,
+                      dims=(10, 10, 10),
+                      xform=None,
+                      imgtype=1,
+                      pixdims=None,
+                      dtype=np.float32):
+    """Convenience function which makes an image containing random data.
+    Saves and returns the nibabel object.
+
+    imgtype == 0: ANALYZE
+    imgtype == 1: NIFTI1
+    imgtype == 2: NIFTI2
     """
+
+    if   imgtype == 0: hdr = nib.AnalyzeHeader()
+    elif imgtype == 1: hdr = nib.Nifti1Header()
+    elif imgtype == 2: hdr = nib.Nifti2Header()
+
+    if pixdims is None:
+        pixdims = [1] * len(dims)
+
+    pixdims = pixdims[:len(dims)]
+    zooms   = [abs(p) for p in pixdims]
+
+    hdr.set_data_dtype(dtype)
+    hdr.set_data_shape(dims)
+    hdr.set_zooms(zooms)
 
     if xform is None:
         xform = np.eye(4)
+        for i, p in enumerate(pixdims[:3]):
+            xform[i, i] = p
 
-    data = np.array(np.random.random(dims) * 100, dtype=np.float32)
-    img  = nib.Nifti1Image(data, xform)
+    data  = np.array(np.random.random(dims) * 100, dtype=dtype)
 
-    nib.save(img, filename)
+    if   imgtype == 0: img = nib.AnalyzeImage(data, xform, hdr)
+    elif imgtype == 1: img = nib.Nifti1Image( data, xform, hdr)
+    elif imgtype == 2: img = nib.Nifti2Image( data, xform, hdr)
+
+    if filename is not None:
+
+        if op.splitext(filename)[1] == '':
+            if imgtype == 0: filename = '{}.img'.format(filename)
+            else:            filename = '{}.nii'.format(filename)
+
+        nib.save(img, filename)
 
     return img
+
 
 def make_mock_feat_analysis(featdir,
                             testdir,
