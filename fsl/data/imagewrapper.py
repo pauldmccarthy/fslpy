@@ -766,27 +766,13 @@ def canonicalSliceObj(sliceobj, shape):
         return nib.fileslice.canonical_slicers(sliceobj, shape)
 
 
+@deprecation.deprecated(deprecated_in='1.7.0',
+                        removed_in='2.0.0',
+                        details='moved to the fsl.data.image module')
 def canonicalShape(shape):
-    """Calculates a *canonical* shape, how the given ``shape`` should
-    be presented. The shape is forced to be at least three dimensions,
-    with any other trailing dimensions of length 1 ignored.
-    """
-
-    shape = list(shape)
-
-    # Squeeze out empty dimensions, as
-    # 3D image can sometimes be listed
-    # as having 4 or more dimensions
-    for i in reversed(range(len(shape))):
-        if shape[i] == 1: shape = shape[:i]
-        else:             break
-
-    # But make sure the shape
-    # has at 3 least dimensions
-    if len(shape) < 3:
-        shape = shape + [1] * (3 - len(shape))
-
-    return shape
+    """Deprecated - moved to the :mod:`fsl.data.image` module. """
+    from fsl.data.image import canonicalShape
+    return canonicalShape(shape)
 
 
 def expectedShape(sliceobj, shape):

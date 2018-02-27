@@ -22,6 +22,7 @@ and file names:
 .. autosummary::
    :nosignatures:
 
+   canonicalShape
    looksLikeImage
    addExt
    splitExt
@@ -311,10 +312,10 @@ class Nifti(notifier.Notifier, meta.Meta):
          - A sequence/tuple containing the zooms/pixdims.
         """
 
-        # The canonicalShape method figures out
+        # The canonicalShape function figures out
         # the data shape that we should use.
         origShape = list(header.get_data_shape())
-        shape     = imagewrapper.canonicalShape(origShape)
+        shape     = canonicalShape(origShape)
         pixdims   = list(header.get_zooms())
 
         # if get_zooms() doesn't return at
@@ -1316,6 +1317,29 @@ class Image(Nifti):
 
             if not np.all(np.isclose(oldRange, newRange)):
                 self.notify(topic='dataRange')
+
+
+def canonicalShape(shape):
+    """Calculates a *canonical* shape, how the given ``shape`` should
+    be presented. The shape is forced to be at least three dimensions,
+    with any other trailing dimensions of length 1 ignored.
+    """
+
+    shape = list(shape)
+
+    # Squeeze out empty dimensions, as
+    # 3D image can sometimes be listed
+    # as having 4 or more dimensions
+    for i in reversed(range(len(shape))):
+        if shape[i] == 1: shape = shape[:i]
+        else:             break
+
+    # But make sure the shape
+    # has at 3 least dimensions
+    if len(shape) < 3:
+        shape = shape + [1] * (3 - len(shape))
+
+    return shape
 
 
 def looksLikeImage(filename, allowedExts=None):
