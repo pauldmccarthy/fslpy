@@ -11,7 +11,6 @@
 
 import              os
 import os.path   as op
-import itertools as it
 import numpy     as np
 
 import mock
@@ -24,6 +23,9 @@ import fsl.data.image      as fslimage
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
+
+
+pytestmark = pytest.mark.fsltest
 
 
 def setup_module():

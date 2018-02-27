@@ -11,6 +11,8 @@ import os.path as op
 import            os
 import            shlex
 
+import            pytest
+
 import numpy as np
 
 import fsl.scripts.atlasq as fslatlasq
@@ -19,6 +21,9 @@ import fsl.data.atlases   as fslatlases
 from . import (tempdir,
                make_random_mask,
                CaptureStdout)
+
+
+pytestmark = pytest.mark.fsltest
 
 
 def setup_module():

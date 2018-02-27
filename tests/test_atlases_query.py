@@ -7,7 +7,6 @@
 
 import                    os
 import itertools       as it
-from   collections import defaultdict
 import numpy           as np
 import                    pytest
 
@@ -18,6 +17,9 @@ import fsl.utils.transform as transform
 import fsl.utils.cache     as cache
 
 from . import (testdir, make_random_mask)
+
+
+pytestmark = pytest.mark.fsltest
 
 
 def setup_module():

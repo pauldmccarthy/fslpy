@@ -279,6 +279,7 @@ def test_trimesh_no_trimesh():
             assert faces.size == 0
 
 
+@pytest.mark.meshtest
 def test_trimesh():
 
     import trimesh
@@ -290,6 +291,7 @@ def test_trimesh():
     assert isinstance(mesh.trimesh, trimesh.Trimesh)
 
 
+@pytest.mark.meshtest
 def test_rayIntersection():
 
     verts     = np.array(CUBE_VERTICES)
@@ -318,6 +320,7 @@ def test_rayIntersection():
     assert tri.size == 0
 
 
+@pytest.mark.meshtest
 def test_nearestVertex():
 
     verts     = np.array(CUBE_VERTICES)
@@ -331,6 +334,7 @@ def test_nearestVertex():
     assert np.all(np.isclose(ndists, np.sqrt(3)))
 
 
+@pytest.mark.meshtest
 def test_planeIntersection():
 
     verts     = np.array(CUBE_VERTICES)

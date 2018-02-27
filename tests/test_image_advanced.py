@@ -9,6 +9,7 @@ import os.path as op
 import            time
 
 import mock
+import pytest
 
 import numpy   as np
 import nibabel as nib
@@ -22,15 +23,22 @@ from . import make_random_image
 
 # make sure Image(indexed=True) works
 # even if indexed_gzip is not present
+@pytest.mark.longtest
 def test_image_indexed_no_igzip_threaded():
     with mock.patch.dict('sys.modules', indexed_gzip=None):
         _test_image_indexed(True)
 
+@pytest.mark.longtest
 def test_image_indexed_no_igzip_unthreaded():
     with mock.patch.dict('sys.modules', indexed_gzip=None):
         _test_image_indexed(False)
 
+
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_indexed_threaded(  ): _test_image_indexed(True)
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_indexed_unthreaded(): _test_image_indexed(False)
 def _test_image_indexed(threaded):
 
@@ -74,8 +82,12 @@ def _test_image_indexed(threaded):
         assert (end1 - start1) > (end2 - start2)
 
 
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_indexed_read4D_threaded(seed):
     _test_image_indexed_read4D(True)
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_indexed_read4D_unthreaded(seed):
     _test_image_indexed_read4D(False)
 def _test_image_indexed_read4D(threaded):
@@ -115,7 +127,11 @@ def _test_image_indexed_read4D(threaded):
             assert np.all(data == np.arange(nvols))
 
 
+@pytest.mark.igziptest
+@pytest.mark.longtest
 def test_image_indexed_save_threaded(  ): _test_image_indexed_save(True)
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_indexed_save_unthreaded(): _test_image_indexed_save(False)
 def _test_image_indexed_save(threaded):
 
@@ -186,7 +202,11 @@ def _test_image_indexed_save(threaded):
         assert np.all(img[..., 40] == 45)
 
 
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_no_calcRange_threaded():   _test_image_no_calcRange(True)
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_no_calcRange_unthreaded(): _test_image_no_calcRange(False)
 def _test_image_no_calcRange(threaded):
 
@@ -217,7 +237,11 @@ def _test_image_no_calcRange(threaded):
         assert img.dataRange == (0, i)
 
 
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_calcRange_threaded():   _test_image_calcRange(True)
+@pytest.mark.longtest
+@pytest.mark.igziptest
 def test_image_calcRange_unthreaded(): _test_image_calcRange(False)
 def _test_image_calcRange(threaded):
 

@@ -10,9 +10,10 @@ import                  os
 import os.path       as op
 import                  re
 import itertools     as it
-import                  six
 import numpy         as np
 import scipy.ndimage as ndi
+
+import                  pytest
 
 import fsl.utils.transform as transform
 import fsl.data.atlases    as fslatlases
@@ -22,6 +23,9 @@ import fsl.scripts.atlasq  as fslatlasq
 from . import (tempdir,
                make_random_mask,
                CaptureStdout)
+
+
+pytestmark = pytest.mark.fsltest
 
 
 def setup_module():

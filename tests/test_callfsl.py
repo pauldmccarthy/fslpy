@@ -20,6 +20,10 @@ from   fsl.utils.platform import platform as fslplatform
 
 import tests
 
+
+pytestmark = pytest.mark.fsltest
+
+
 def setup_module():
     fsldir = os.environ.get('FSLDIR', None)
     if fsldir is None or not op.exists(fsldir):

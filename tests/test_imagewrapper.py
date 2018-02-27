@@ -13,6 +13,7 @@ import              time
 import itertools as it
 import numpy     as np
 import nibabel   as nib
+import              pytest
 
 
 import fsl.data.image        as image
@@ -566,12 +567,16 @@ def _ImageWraper_busy_wait(wrapper, v=0):
     if tt is not None:
         tt.waitUntilIdle()
 
+@pytest.mark.longtest
 def test_ImageWrapper_read_threaded(niters, seed):
     _test_ImageWrapper_read(niters, seed, True)
+@pytest.mark.longtest
 def test_ImageWrapper_read_unthreaded(niters, seed):
     _test_ImageWrapper_read(niters, seed, False)
+@pytest.mark.longtest
 def test_ImageWrapper_read_nans_threaded(niters, seed):
     _test_ImageWrapper_read(niters, seed, True, True)
+@pytest.mark.longtest
 def test_ImageWrapper_read_nans_unthreaded(niters, seed):
     _test_ImageWrapper_read(niters, seed, False, True)
 
@@ -658,9 +663,10 @@ def _test_ImageWrapper_read(niters, seed, threaded, addnans=False):
                 else:             assert     wrapper.covered
 
 
-
+@pytest.mark.longtest
 def test_ImageWrapper_write_out_threaded(niters, seed):
     _test_ImageWrapper_write_out(niters, seed, True)
+@pytest.mark.longtest
 def test_ImageWrapper_write_out_unthreaded(niters, seed):
     _test_ImageWrapper_write_out(niters, seed, False)
 def _test_ImageWrapper_write_out(niters, seed, threaded):
@@ -799,8 +805,10 @@ def _test_ImageWrapper_write_out(niters, seed, threaded):
             # print('--------------')
 
 
+@pytest.mark.longtest
 def test_ImageWrapper_write_in_overlap_threaded(niters, seed):
     _test_ImageWrapper_write_in_overlap(niters, seed, True)
+@pytest.mark.longtest
 def test_ImageWrapper_write_in_overlap_unthreaded(niters, seed):
     _test_ImageWrapper_write_in_overlap(niters, seed, False)
 def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
@@ -910,8 +918,10 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
                 assert np.isclose(newHi, expHi)
 
 
+@pytest.mark.longtest
 def test_ImageWrapper_write_different_volume_threaded(niters, seed):
     _test_ImageWrapper_write_different_volume(niters, seed, True)
+@pytest.mark.longtest
 def test_ImageWrapper_write_different_volume_unthreaded(niters, seed):
     _test_ImageWrapper_write_different_volume(niters, seed, False)
 def _test_ImageWrapper_write_different_volume(niters, seed, threaded):

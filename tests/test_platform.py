@@ -11,6 +11,7 @@ import os.path as op
 import            sys
 import            shutil
 import            tempfile
+import            pytest
 
 import mock
 
@@ -35,6 +36,7 @@ def test_atts():
     p.glIsSoftwareRenderer
 
 
+@pytest.mark.wxtest
 def test_haveGui():
 
     import wx
@@ -207,6 +209,7 @@ def test_detect_ssh():
         assert not p.inVNCSession
 
 
+@pytest.mark.wxtest
 def test_IsWidgetAlive():
 
     import wx

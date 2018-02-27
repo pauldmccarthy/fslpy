@@ -18,6 +18,7 @@ import mock
 import fsl.utils.idle as idle
 from fsl.utils.platform import platform as fslplatform
 
+
 def _run_with_wx(func, *args, **kwargs):
 
     gc.collect()
@@ -91,6 +92,7 @@ def _wait_for_idle_loop_to_clear():
             wx.Yield()
 
 
+@pytest.mark.wxtest
 def  test_run_with_gui():    _run_with_wx(   _test_run)
 def  test_run_without_gui(): _run_without_wx(_test_run)
 def _test_run():
@@ -143,7 +145,7 @@ def _test_run():
     assert     onErrorCalled[ 0]
 
 
-
+@pytest.mark.wxtest
 def test_idleTimeout_with_gui():    _run_with_wx(   _test_idleTimeout)
 def test_idleTimeout_without_gui(): _run_without_wx(_test_idleTimeout)
 def _test_idleTimeout():
@@ -155,6 +157,7 @@ def _test_idleTimeout():
     assert idle.getIdleTimeout() == default
 
 
+@pytest.mark.wxtest
 def test_idle():
 
     called = [False]
@@ -185,6 +188,7 @@ def test_idle():
     _run_with_wx(idle.idle, errtask, 1, kwarg1=2)
 
 
+@pytest.mark.wxtest
 def test_inidle():
 
     called = [False]
@@ -203,6 +207,7 @@ def test_inidle():
     assert called[0]
 
 
+@pytest.mark.wxtest
 def test_cancelidle():
 
     called = [False]
@@ -221,6 +226,7 @@ def test_cancelidle():
     assert not called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_skipIfQueued():
 
     task1called = [False]
@@ -244,6 +250,7 @@ def test_idle_skipIfQueued():
     assert not task2called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_dropIfQueued():
 
     task1called = [False]
@@ -278,6 +285,7 @@ def test_idle_dropIfQueued():
     assert     task2called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_alwaysQueue1():
 
     # Test scheduling the task before
@@ -304,6 +312,7 @@ def test_idle_alwaysQueue1():
     assert called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_alwaysQueue2():
 
     # Test scheduling the task
@@ -323,6 +332,7 @@ def test_idle_alwaysQueue2():
     assert called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_alwaysQueue3():
 
     # Test scheduling the task
@@ -343,6 +353,7 @@ def test_idle_alwaysQueue3():
     assert called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_alwaysQueue4():
 
     # Test scheduling the task when
@@ -370,6 +381,7 @@ def test_idle_alwaysQueue4():
     assert called[0]
 
 
+@pytest.mark.wxtest
 def test_idle_timeout():
 
     called = [False]
@@ -382,7 +394,7 @@ def test_idle_timeout():
     assert not called[0]
 
 
-
+@pytest.mark.wxtest
 def test_idleWhen():
 
     called      = [False]
@@ -403,6 +415,7 @@ def test_idleWhen():
     assert timesPolled[0] == 50
 
 
+@pytest.mark.wxtest
 def  test_wait_with_gui(): _run_with_wx(_test_wait, finishingDelay=1100)
 def  test_wait_without_gui(): _test_wait()
 def _test_wait():

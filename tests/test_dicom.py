@@ -18,6 +18,9 @@ import fsl.utils.tempdir as tempdir
 datadir = op.join(op.dirname(__file__), 'testdata')
 
 
+pytestmark = pytest.mark.dicomtest
+
+
 def setup_module():
 
     if not fsldcm.enabled():
