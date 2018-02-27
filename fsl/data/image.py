@@ -771,60 +771,64 @@ class Image(Nifti):
                  calcRange=True,
                  indexed=False,
                  threaded=False,
+                 dataSource=None,
                  **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
-        :arg image:     A string containing the name of an image file to load,
-                        or a :mod:`numpy` array, or a :mod:`nibabel` image
-                        object.
+        :arg image:      A string containing the name of an image file to load,
+                         or a :mod:`numpy` array, or a :mod:`nibabel` image
+                         object.
 
-        :arg name:      A name for the image.
+        :arg name:       A name for the image.
 
-        :arg header:    If not ``None``, assumed to be a
-                        :class:`nibabel.nifti1.Nifti1Header` or
-                        :class:`nibabel.nifti2.Nifti2Header` to be used as the
-                        image header. Not applied to images loaded from file,
-                        or existing :mod:`nibabel` images.
+        :arg header:     If not ``None``, assumed to be a
+                         :class:`nibabel.nifti1.Nifti1Header` or
+                         :class:`nibabel.nifti2.Nifti2Header` to be used as the
+                         image header. Not applied to images loaded from file,
+                         or existing :mod:`nibabel` images.
 
-        :arg xform:     A :math:`4\\times 4` affine transformation matrix
-                        which transforms voxel coordinates into real world
-                        coordinates. If not provided, and a ``header`` is
-                        provided, the transformation in the header is used.
-                        If neither a ``xform`` nor a ``header`` are provided,
-                        an identity matrix is used. If both a ``xform`` and a
-                        ``header`` are provided, the ``xform`` is used in
-                        preference to the header transformation.
+        :arg xform:      A :math:`4\\times 4` affine transformation matrix
+                         which transforms voxel coordinates into real world
+                         coordinates. If not provided, and a ``header`` is
+                         provided, the transformation in the header is used.
+                         If neither a ``xform`` nor a ``header`` are provided,
+                         an identity matrix is used. If both a ``xform`` and a
+                         ``header`` are provided, the ``xform`` is used in
+                         preference to the header transformation.
 
-        :arg loadData:  If ``True`` (the default) the image data is loaded
-                        in to memory.  Otherwise, only the image header
-                        information is read, and the image data is kept
-                        from disk. In either case, the image data is
-                        accessed through an :class:`.ImageWrapper` instance.
-                        The data may be loaded into memory later on via the
-                        :meth:`loadData` method.
+        :arg loadData:   If ``True`` (the default) the image data is loaded
+                         in to memory.  Otherwise, only the image header
+                         information is read, and the image data is kept
+                         from disk. In either case, the image data is
+                         accessed through an :class:`.ImageWrapper` instance.
+                         The data may be loaded into memory later on via the
+                         :meth:`loadData` method.
 
-        :arg calcRange: If ``True`` (the default), the image range is
-                        calculated immediately (vi a call to
-                        :meth:`calcRange`). Otherwise, the image range is
-                        incrementally updated as more data is read from memory
-                        or disk.
+        :arg calcRange:  If ``True`` (the default), the image range is
+                         calculated immediately (vi a call to
+                         :meth:`calcRange`). Otherwise, the image range is
+                         incrementally updated as more data is read from memory
+                         or disk.
 
-        :arg indexed:   If ``True``, and the file is gzipped, it is opened
-                        using the :mod:`indexed_gzip` package. Otherwise the
-                        file is opened by ``nibabel``. Ignored if ``loadData``
-                        is ``True``.
+        :arg indexed:    If ``True``, and the file is gzipped, it is opened
+                         using the :mod:`indexed_gzip` package. Otherwise the
+                         file is opened by ``nibabel``. Ignored if ``loadData``
+                         is ``True``.
 
-        :arg threaded:  If ``True``, the :class:`.ImageWrapper` will use a
-                        separate thread for data range calculation. Defaults
-                        to ``False``. Ignored if ``loadData`` is ``True``.
+        :arg threaded:   If ``True``, the :class:`.ImageWrapper` will use a
+                         separate thread for data range calculation. Defaults
+                         to ``False``. Ignored if ``loadData`` is ``True``.
+
+        :arg dataSource: If ``image`` is not a file name, this argument may be
+                         used to specify the file from which the image was
+                         loaded.
 
         All other arguments are passed through to the ``nibabel.load`` function
         (if it is called).
         """
 
-        nibImage   = None
-        dataSource = None
-        fileobj    = None
+        nibImage = None
+        fileobj  = None
 
         if loadData:
             indexed  = False
@@ -1131,6 +1135,10 @@ class Image(Nifti):
             filename = self.__dataSource
 
         filename = op.abspath(filename)
+
+        # make sure the extension is specified
+        if not looksLikeImage(filename):
+            filename = addExt(filename, mustExist=False)
 
         log.debug('Saving {} to {}'.format(self.name, filename))
 

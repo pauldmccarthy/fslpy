@@ -19,6 +19,7 @@ import os.path as op
 import            six
 import nibabel as nib
 
+import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
 
@@ -54,7 +55,7 @@ class MGHImage(fslimage.Image):
             name     = op.basename(filename)
             image    = nib.load(image)
         else:
-            name     = None
+            name     = 'MGH image'
             filename = None
 
         data   = image.get_data()
@@ -63,10 +64,24 @@ class MGHImage(fslimage.Image):
         fslimage.Image.__init__(self,
                                 data,
                                 xform=affine,
-                                name=name)
+                                name=name,
+                                dataSource=filename)
 
         if filename is not None:
             self.setMeta('mghImageFile', filename)
+
+
+    def save(self, filename=None):
+        """Overrides :meth:`.Image.save`.  If a ``filename`` is not provided,
+        converts the original (MGH) file name into a NIFTI filename, before
+        passing it to the :meth:`.Image.save` method.
+        """
+        if filename is None:
+            filename = self.dataSource
+
+        filename = fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
+
+        return fslimage.Image.save(self, filename)
 
 
     @property
