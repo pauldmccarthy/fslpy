@@ -70,6 +70,8 @@ def test_query_voxel(seed):
     _test_query([t for t in tests if t[2] == 'voxel'])
 def test_query_coord(seed):
     _test_query([t for t in tests if t[2] == 'coordinate'])
+
+@pytest.mark.longtest
 def test_query_mask(seed):
     _test_query([t for t in tests if t[2].startswith('mask')])
 

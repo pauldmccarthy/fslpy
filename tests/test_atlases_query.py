@@ -96,9 +96,11 @@ def _get_zero_mask(aimg):
 
 def test_label_coord_query(  seed): _test_query('coord', 'label')
 def test_label_voxel_query(  seed): _test_query('voxel', 'label')
+@pytest.mark.longtest
 def test_label_mask_query(   seed): _test_query('mask',  'label')
 def test_summary_coord_query(seed): _test_query('coord', 'prob', summary=True)
 def test_summary_voxel_query(seed): _test_query('voxel', 'prob', summary=True)
+@pytest.mark.longtest
 def test_summary_mask_query( seed): _test_query('mask',  'prob', summary=True)
 def test_prob_coord_query(   seed): _test_query('coord', 'prob')
 def test_prob_voxel_query(   seed): _test_query('voxel', 'prob')

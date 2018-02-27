@@ -46,6 +46,7 @@ def test_dumpatlases():
     assert capture.stdout.strip() == '\n'.join(atlases)
 
 
+@pytest.mark.longtest
 def test_coords(seed):
     """Test the ohi -a "atlas" -c "coords" mode. """
 
@@ -142,6 +143,7 @@ def test_bad_atlas():
             assert capture.stdout.strip() == expected
 
 
+@pytest.mark.longtest
 def test_mask(seed):
     """Test the ohi -a "atlas" -m "mask" mode, with label and probabilistic
     atlases.

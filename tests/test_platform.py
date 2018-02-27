@@ -63,6 +63,7 @@ def test_haveGui():
     assert passed[0]
 
 
+@pytest.mark.wxtest
 def test_wxatts():
 
     with mock.patch.dict('sys.modules', wx=None):
