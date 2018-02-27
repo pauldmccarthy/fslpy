@@ -862,6 +862,17 @@ class MutexFactory(object):
     """
 
 
+    createLock = threading.Lock()
+    """This lock is used by all ``MutexFactory`` instances when a decorated
+    instance method is accessed for the first time.
+
+    The first time that a mutexed method is accessed on an instance, a new
+    ``threading.Lock`` is created, to be shared by all mutexed methods of that
+    instance. The ``createLock`` is used to ensure that this can only occur
+    once for each instance.
+    """
+
+
     def __init__(self, function):
         """Create a ``MutexFactory``.
         """
@@ -883,25 +894,25 @@ class MutexFactory(object):
         if instance is None:
             return self.__func
 
-        # Get the lock object, creating if it necessary
-        lock = getattr(instance, '_async_mutex_lock', None)
-        if lock is None:
-            lock                       = threading.Lock()
-            instance._async_mutex_lock = lock
+        # Get the lock object, creating if it necessary.
+        # We use the createLock in case multiple threads
+        # access a method at the same time, in which case
+        # only one of them will be able to create the
+        # instance lock.
+        with MutexFactory.createLock:
 
-        # The true decorator function:
-        #    - Acquire the lock (blocking until it has been released)
-        #    - Run the decorated method
-        #    - Release the lock
-        def decorator(*args, **kwargs):
-            lock.acquire()
-            try:
-                return self.__func(instance, *args, **kwargs)
-            finally:
-                lock.release()
+            lock = getattr(instance, '_idle_mutex_lock', None)
+            if lock is None:
+                lock                      = threading.Lock()
+                instance._idle_mutex_lock = lock
 
-        # Replace this MutexFactory with
-        # the decorator on the instance
-        decorator = functools.update_wrapper(decorator, self.__func)
-        setattr(instance, self.__func.__name__, decorator)
-        return decorator
+            # The true decorator function
+            def decorator(*args, **kwargs):
+                with instance._idle_mutex_lock:
+                    return self.__func(instance, *args, **kwargs)
+
+            # Replace this MutexFactory with
+            # the decorator on the instance
+            decorator = functools.update_wrapper(decorator, self.__func)
+            setattr(instance, self.__func.__name__, decorator)
+            return decorator
