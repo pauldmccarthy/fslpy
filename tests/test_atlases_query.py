@@ -102,6 +102,7 @@ def test_summary_voxel_query(seed): _test_query('voxel', 'prob', summary=True)
 def test_summary_mask_query( seed): _test_query('mask',  'prob', summary=True)
 def test_prob_coord_query(   seed): _test_query('coord', 'prob')
 def test_prob_voxel_query(   seed): _test_query('voxel', 'prob')
+@pytest.mark.longtest
 def test_prob_mask_query(    seed): _test_query('mask',  'prob')
 
 
