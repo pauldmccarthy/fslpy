@@ -284,7 +284,7 @@ def _test_Image_atts(imgtype):
 
             dims, pixdims, dtype = atts
 
-            expdims    = imagewrapper.canonicalShape(dims)
+            expdims    = fslimage.canonicalShape(dims)
             expndims   = len(expdims)
             ndims      = len(dims)
             pixdims    = pixdims[:ndims]
@@ -338,6 +338,33 @@ def _test_Image_atts2(imgtype):
             assert img.xyzUnits  == xyzu
             assert img.timeUnits == timeu
             assert img.intent    == intent
+
+
+def test_canonicalShape():
+
+    # (input, expected)
+    tests = [
+        ((10,),                   (10,  1,  1)),
+        ((10,  1),                (10,  1,  1)),
+        ((10,  1,  1),            (10,  1,  1)),
+        ((10,  1,  1,  1),        (10,  1,  1)),
+        ((10,  1,  1,  1,  1),    (10,  1,  1)),
+        ((10, 10),                (10, 10,  1)),
+        ((10, 10,  1),            (10, 10,  1)),
+        ((10, 10,  1,  1),        (10, 10,  1)),
+        ((10, 10,  1,  1,  1),    (10, 10,  1)),
+        ((10, 10, 10),            (10, 10, 10)),
+        ((10, 10, 10,  1),        (10, 10, 10)),
+        ((10, 10, 10,  1,  1),    (10, 10, 10)),
+        ((10, 10, 10, 10),        (10, 10, 10, 10)),
+        ((10, 10, 10, 10,  1),    (10, 10, 10, 10)),
+        ((10, 10, 10, 10,  1, 1), (10, 10, 10, 10)),
+        ((10, 10, 10, 10, 10),    (10, 10, 10, 10, 10)),
+        ((10, 10, 10, 10, 10, 1), (10, 10, 10, 10, 10)),
+    ]
+
+    for input, expected in tests:
+        assert tuple(fslimage.canonicalShape(input)) == expected
 
 
 def test_looksLikeImage():
