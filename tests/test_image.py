@@ -10,8 +10,6 @@
 import              os
 import os.path   as op
 import itertools as it
-import              tempfile
-import              shutil
 
 import pytest
 
@@ -27,10 +25,10 @@ import fsl.data.imagewrapper as imagewrapper
 import fsl.utils.path        as fslpath
 import fsl.utils.transform   as transform
 
+from fsl.utils.tempdir import tempdir
+
 from . import make_random_image
 from . import make_dummy_file
-from . import testdir
-from . import tempdir
 
 
 def make_image(filename=None,
@@ -121,17 +119,17 @@ def test_load():
                    ('notnifti',        ImageFileError),
                    ('notnifti.nii.gz', ImageFileError)]
 
-    testdir = tempfile.mkdtemp()
 
-    for f in toCreate:
+    with tempdir() as testdir:
 
-        if f.startswith('notnifti'):
-            make_dummy_file(op.join(testdir, f))
-        else:
-            make_random_image(op.join(testdir, f))
+        for f in toCreate:
 
-    # Not raising an error means the test passes
-    try:
+            if f.startswith('notnifti'):
+                make_dummy_file(op.join(testdir, f))
+            else:
+                make_random_image(op.join(testdir, f))
+
+        # Not raising an error means the test passes
         for fname in shouldPass:
             fslimage.Image(op.join(testdir, fname))
 
@@ -139,8 +137,6 @@ def test_load():
         for fname, exc in shouldRaise:
             with pytest.raises(exc):
                 fslimage.Image(op.join(testdir, fname))
-    finally:
-        shutil.rmtree(testdir)
 
 
 def test_create():
@@ -180,8 +176,7 @@ def test_create():
         assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
 
     for imgtype in [0, 1, 2]:
-        testdir = tempfile.mkdtemp()
-        try:
+        with tempdir() as testdir:
             fname = op.join(testdir, 'myimage')
             nimg  = make_image(fname, imgtype, pixdims=(2, 3, 4))
 
@@ -192,9 +187,6 @@ def test_create():
             img = fslimage.Image(nimg)
             assert img.niftiVersion == imgtype
             assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
-
-        finally:
-            shutil.rmtree(testdir)
 
 
 def test_bad_create():
@@ -236,7 +228,6 @@ def  test_Image_atts_nifti2():  _test_Image_atts(2)
 def _test_Image_atts(imgtype):
     """Test that basic Nifti/Image attributes are correct. """
 
-    testdir     = tempfile.mkdtemp()
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     fileGroups  = fslimage.FILE_GROUPS
 
@@ -268,17 +259,17 @@ def _test_Image_atts(imgtype):
     tests = list(tests)
     paths = ['test{:03d}'.format(i) for i in range(len(tests))]
 
-    for path, atts in zip(paths, tests):
+    with tempdir() as testdir:
 
-        dims, pixdims, dtype = atts
+        for path, atts in zip(paths, tests):
 
-        ndims   = len(dims)
-        pixdims = pixdims[:ndims]
+            dims, pixdims, dtype = atts
 
-        path = op.abspath(op.join(testdir, path))
-        make_image(path, imgtype, dims, pixdims, dtype)
+            ndims   = len(dims)
+            pixdims = pixdims[:ndims]
 
-    try:
+            path = op.abspath(op.join(testdir, path))
+            make_image(path, imgtype, dims, pixdims, dtype)
 
         for path, atts in zip(paths, tests):
 
@@ -305,8 +296,7 @@ def _test_Image_atts(imgtype):
                                                   allowedExts=allowedExts,
                                                   mustExist=True,
                                                   fileGroups=fileGroups)
-    finally:
-        shutil.rmtree(testdir)
+
 
 def  test_Image_atts2_analyze(): _test_Image_atts2(0)
 def  test_Image_atts2_nifti1():  _test_Image_atts2(1)
@@ -390,7 +380,6 @@ def test_addExt():
     """Test the addExt function. """
 
     default = fslimage.defaultExt()
-    testdir = tempfile.mkdtemp()
 
     toCreate = [
         'compressed.nii.gz',
@@ -429,11 +418,13 @@ def test_addExt():
         ('ambiguous.img.gz',               True,  'ambiguous.img.gz'),
         ('ambiguous.hdr.gz',               True,  'ambiguous.hdr.gz')]
 
-    for path in toCreate:
-        path = op.abspath(op.join(testdir, path))
-        make_random_image(path)
 
-    try:
+    with tempdir() as testdir:
+
+        for path in toCreate:
+            path = op.abspath(op.join(testdir, path))
+            make_random_image(path)
+
         for path, mustExist, expected in tests:
 
             path     = op.abspath(op.join(testdir, path))
@@ -445,8 +436,6 @@ def test_addExt():
         with pytest.raises(fslimage.PathError):
             path = op.join(testdir, 'ambiguous')
             fslimage.addExt(path, mustExist=True)
-    finally:
-        shutil.rmtree(testdir)
 
 
 def test_removeExt():
@@ -506,45 +495,43 @@ def  test_Image_orientation_nifti2_radio():  _test_Image_orientation(2, 'radio')
 def _test_Image_orientation(imgtype, voxorient):
     """Test the Nifti.isNeurological and Nifti.getOrientation methods. """
 
-    testdir   = tempfile.mkdtemp()
-    imagefile = op.join(testdir, 'image')
+    with tempdir() as testdir:
+        imagefile = op.join(testdir, 'image')
 
-    # an image with RAS voxel storage order
-    # (affine has a positive determinant)
-    # is said to be "neurological", whereas
-    # an image with LAS voxel storage order
-    # (negative determinant - x axis must
-    # be flipped to bring it into RAS nifti
-    # world coordinates)) is said to be
-    # "radiological".  The make_image function
-    # forms the affine from these pixdims.
-    if   voxorient == 'neuro': pixdims = ( 1, 1, 1)
-    elif voxorient == 'radio': pixdims = (-1, 1, 1)
+        # an image with RAS voxel storage order
+        # (affine has a positive determinant)
+        # is said to be "neurological", whereas
+        # an image with LAS voxel storage order
+        # (negative determinant - x axis must
+        # be flipped to bring it into RAS nifti
+        # world coordinates)) is said to be
+        # "radiological".  The make_image function
+        # forms the affine from these pixdims.
+        if   voxorient == 'neuro': pixdims = ( 1, 1, 1)
+        elif voxorient == 'radio': pixdims = (-1, 1, 1)
 
-    make_image(imagefile, imgtype, (10, 10, 10), pixdims, np.float32)
+        make_image(imagefile, imgtype, (10, 10, 10), pixdims, np.float32)
 
-    image = fslimage.Image(imagefile)
+        image = fslimage.Image(imagefile)
 
-    # analyze images are always assumed to be
-    # stored in radiological (LAS) orientation
-    if imgtype == 0:
-        expectNeuroTest       = False
-        expectvox0Orientation = constants.ORIENT_R2L
-        expectvox1Orientation = constants.ORIENT_P2A
-        expectvox2Orientation = constants.ORIENT_I2S
+        # analyze images are always assumed to be
+        # stored in radiological (LAS) orientation
+        if imgtype == 0:
+            expectNeuroTest       = False
+            expectvox0Orientation = constants.ORIENT_R2L
+            expectvox1Orientation = constants.ORIENT_P2A
+            expectvox2Orientation = constants.ORIENT_I2S
 
-    elif voxorient == 'neuro':
-        expectNeuroTest       = True
-        expectvox0Orientation = constants.ORIENT_L2R
-        expectvox1Orientation = constants.ORIENT_P2A
-        expectvox2Orientation = constants.ORIENT_I2S
-    else:
-        expectNeuroTest       = False
-        expectvox0Orientation = constants.ORIENT_R2L
-        expectvox1Orientation = constants.ORIENT_P2A
-        expectvox2Orientation = constants.ORIENT_I2S
-
-    try:
+        elif voxorient == 'neuro':
+            expectNeuroTest       = True
+            expectvox0Orientation = constants.ORIENT_L2R
+            expectvox1Orientation = constants.ORIENT_P2A
+            expectvox2Orientation = constants.ORIENT_I2S
+        else:
+            expectNeuroTest       = False
+            expectvox0Orientation = constants.ORIENT_R2L
+            expectvox1Orientation = constants.ORIENT_P2A
+            expectvox2Orientation = constants.ORIENT_I2S
 
         assert image.isNeurological() == expectNeuroTest
 
@@ -562,9 +549,6 @@ def _test_Image_orientation(imgtype, voxorient):
         assert image.getOrientation(1, affine) == expectvox1Orientation
         assert image.getOrientation(2, affine) == expectvox2Orientation
 
-    finally:
-        shutil.rmtree(testdir)
-
 
 def  test_Image_sqforms_nifti1_normal():   _test_Image_sqforms(1, 1, 1)
 def  test_Image_sqforms_nifti1_nosform():  _test_Image_sqforms(1, 0, 1)
@@ -579,55 +563,54 @@ def _test_Image_sqforms(imgtype, sformcode, qformcode):
     attributes for NIFTI images with the given sform/qform code combination.
     """
 
-    testdir = tempfile.mkdtemp()
+    with tempdir() as testdir:
 
-    imagefile = op.abspath(op.join(testdir, 'image.nii.gz'))
+        imagefile = op.abspath(op.join(testdir, 'image.nii.gz'))
 
-    # For an image with no s/q form, we expect the
-    # fallback affine - a simple scaling matrix.
-    # We add some offsets to the actual affine so
-    # we can distinguish it from the fallback affine.
-    scaleMat      = np.diag([2,   2,   2,   1])
-    invScaleMat   = np.diag([0.5, 0.5, 0.5, 1])
-    affine        = np.array(scaleMat)
-    affine[:3, 3] = [25, 20, 20]
-    invAffine     = npla.inv(affine)
+        # For an image with no s/q form, we expect the
+        # fallback affine - a simple scaling matrix.
+        # We add some offsets to the actual affine so
+        # we can distinguish it from the fallback affine.
+        scaleMat      = np.diag([2,   2,   2,   1])
+        invScaleMat   = np.diag([0.5, 0.5, 0.5, 1])
+        affine        = np.array(scaleMat)
+        affine[:3, 3] = [25, 20, 20]
+        invAffine     = npla.inv(affine)
 
-    image = make_image(imagefile, imgtype, (10, 10, 10), (2, 2, 2), np.float32)
+        image = make_image(imagefile, imgtype, (10, 10, 10), (2, 2, 2), np.float32)
 
-    image.set_sform(affine, sformcode)
-    image.set_qform(affine, qformcode)
-    image.update_header()
+        image.set_sform(affine, sformcode)
+        image.set_qform(affine, qformcode)
+        image.update_header()
 
-    nib.save(image, imagefile)
+        nib.save(image, imagefile)
 
-    # No s or qform - we expect the fallback affine
-    if sformcode == 0 and qformcode == 0:
-        expAffine    = scaleMat
-        invExpAffine = invScaleMat
-        expCode      = constants.NIFTI_XFORM_UNKNOWN
-        expOrient    = constants.ORIENT_UNKNOWN
+        # No s or qform - we expect the fallback affine
+        if sformcode == 0 and qformcode == 0:
+            expAffine    = scaleMat
+            invExpAffine = invScaleMat
+            expCode      = constants.NIFTI_XFORM_UNKNOWN
+            expOrient    = constants.ORIENT_UNKNOWN
 
-    # No sform, but valid qform - expect the affine
-    elif sformcode == 0 and qformcode > 0:
-        expAffine    = affine
-        invExpAffine = invAffine
-        expCode      = qformcode
-        expOrient    = constants.ORIENT_L2R
+        # No sform, but valid qform - expect the affine
+        elif sformcode == 0 and qformcode > 0:
+            expAffine    = affine
+            invExpAffine = invAffine
+            expCode      = qformcode
+            expOrient    = constants.ORIENT_L2R
 
-    # Valid sform (qform irrelevant) - expect the affine
-    elif sformcode > 0:
-        expAffine    = affine
-        invExpAffine = invAffine
-        expCode      = sformcode
-        expOrient    = constants.ORIENT_L2R
+        # Valid sform (qform irrelevant) - expect the affine
+        elif sformcode > 0:
+            expAffine    = affine
+            invExpAffine = invAffine
+            expCode      = sformcode
+            expOrient    = constants.ORIENT_L2R
 
-    image = fslimage.Image(imagefile)
+        image = fslimage.Image(imagefile)
 
-    with pytest.raises(ValueError):
-        image.getXFormCode('badcode')
+        with pytest.raises(ValueError):
+            image.getXFormCode('badcode')
 
-    try:
         assert np.all(np.isclose(image.voxToWorldMat,  expAffine))
         assert np.all(np.isclose(image.worldToVoxMat,  invExpAffine))
 
@@ -636,8 +619,6 @@ def _test_Image_sqforms(imgtype, sformcode, qformcode):
         assert image.getXFormCode('qform') == qformcode
 
         assert image.getOrientation(0, image.voxToWorldMat) == expOrient
-    finally:
-        shutil.rmtree(testdir)
 
 
 def  test_Image_changeXform_analyze():         _test_Image_changeXform(0)
@@ -647,47 +628,45 @@ def  test_Image_changeXform_nifti2():          _test_Image_changeXform(2)
 def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
     """Test changing the Nifti.voxToWorldMat attribute. """
 
-    testdir   = tempfile.mkdtemp()
-    imagefile = op.join(testdir, 'image')
+    with tempdir() as testdir:
+        imagefile = op.join(testdir, 'image')
 
-    image = make_image(imagefile, imgtype)
+        image = make_image(imagefile, imgtype)
 
-    if imgtype > 0:
+        if imgtype > 0:
 
-        if sformcode is not None: image.set_sform(image.affine, sformcode)
-        if qformcode is not None: image.set_qform(image.affine, qformcode)
-        image.update_header()
-        nib.save(image, imagefile)
+            if sformcode is not None: image.set_sform(image.affine, sformcode)
+            if qformcode is not None: image.set_qform(image.affine, qformcode)
+            image.update_header()
+            nib.save(image, imagefile)
 
-    notified = {}
+        notified = {}
 
-    def onXform(*a):
-        notified['xform'] = True
+        def onXform(*a):
+            notified['xform'] = True
 
-    def onSave(*a):
-        notified['save'] = True
+        def onSave(*a):
+            notified['save'] = True
 
-    img = fslimage.Image(imagefile)
+        img = fslimage.Image(imagefile)
 
-    img.register('name1', onXform, 'transform')
-    img.register('name2', onSave,  'saveState')
+        img.register('name1', onXform, 'transform')
+        img.register('name2', onSave,  'saveState')
 
-    newXform = np.array([[5, 0, 0, 10],
-                         [0, 2, 0, 23],
-                         [0, 0, 14, 5],
-                         [0, 0, 0, 1]])
+        newXform = np.array([[5, 0, 0, 10],
+                             [0, 2, 0, 23],
+                             [0, 0, 14, 5],
+                             [0, 0, 0, 1]])
 
-    if imgtype > 0:
-        expSformCode = image.get_sform(coded=True)[1]
-        expQformCode = image.get_qform(coded=True)[1]
+        if imgtype > 0:
+            expSformCode = image.get_sform(coded=True)[1]
+            expQformCode = image.get_qform(coded=True)[1]
 
-        if sformcode == 0:
-            expSformCode = constants.NIFTI_XFORM_ALIGNED_ANAT
-    else:
-        expSformCode = constants.NIFTI_XFORM_ANALYZE
-        expQformCode = constants.NIFTI_XFORM_ANALYZE
-
-    try:
+            if sformcode == 0:
+                expSformCode = constants.NIFTI_XFORM_ALIGNED_ANAT
+        else:
+            expSformCode = constants.NIFTI_XFORM_ANALYZE
+            expQformCode = constants.NIFTI_XFORM_ANALYZE
 
         # Image state should initially be saved
         assert img.saveState
@@ -712,8 +691,6 @@ def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
         assert np.all(np.isclose(img.worldToVoxMat, invx))
         assert img.getXFormCode('sform') == expSformCode
         assert img.getXFormCode('qform') == expQformCode
-    finally:
-        shutil.rmtree(testdir)
 
 
 def  test_Image_changeData_analyze(seed): _test_Image_changeData(0)
@@ -724,48 +701,52 @@ def _test_Image_changeData(imgtype):
     the dataRange attribute to be updated.
     """
 
-    testdir   = tempfile.mkdtemp()
-    imagefile = op.join(testdir, 'image')
+    with tempdir() as testdir:
+        imagefile = op.join(testdir, 'image')
 
-    make_image(imagefile, imgtype)
+        make_image(imagefile, imgtype)
 
-    img = fslimage.Image(imagefile)
+        img = fslimage.Image(imagefile)
 
-    notified = {}
+        notified = {}
 
-    def randvox():
-        return (np.random.randint(0, img.shape[0]),
-                np.random.randint(0, img.shape[1]),
-                np.random.randint(0, img.shape[2]))
+        def randvox():
+            return (np.random.randint(0, img.shape[0]),
+                    np.random.randint(0, img.shape[1]),
+                    np.random.randint(0, img.shape[2]))
 
-    def onData(*a):
-        notified['data'] = True
+        def onData(*a):
+            notified['data'] = True
 
-    def onSaveState(*a):
-        notified['save'] = True
+        def onSaveState(*a):
+            notified['save'] = True
 
-    def onDataRange(*a):
-        notified['dataRange'] = True
+        def onDataRange(*a):
+            notified['dataRange'] = True
 
-    img.register('name1', onData,      'data')
-    img.register('name2', onSaveState, 'saveState')
-    img.register('name3', onDataRange, 'dataRange')
+        img.register('name1', onData,      'data')
+        img.register('name2', onSaveState, 'saveState')
+        img.register('name3', onDataRange, 'dataRange')
 
-    # Calculate the actual data range
-    data   = img.nibImage.get_data()
-    dmin   = data.min()
-    dmax   = data.max()
-    drange = dmax - dmin
-
-    try:
+        # Calculate the actual data range
+        data   = img.nibImage.get_data()
+        dmin   = data.min()
+        dmax   = data.max()
+        drange = dmax - dmin
 
         assert img.saveState
         assert np.all(np.isclose(img.dataRange, (dmin, dmax)))
 
-        # random value within the existing data range
-        randval         = dmin + np.random.random() * drange
-        rx, ry, rz      = randvox()
-        img[rx, ry, rz] = randval
+        # random value within the existing data range,
+        # making sure not to overwite the min or max
+        randval = dmin + np.random.random() * drange
+
+        while True:
+            rx, ry, rz = randvox()
+            if not (np.isclose(img[rx, ry, rz], dmin) or
+                    np.isclose(img[rx, ry, rz], dmax)):
+                img[rx, ry, rz] = randval
+                break
 
         assert np.isclose(img[rx, ry, rz], randval)
         assert notified.get('data', False)
@@ -808,16 +789,11 @@ def _test_Image_changeData(imgtype):
         assert np.isclose(img[maxx, maxy, maxz], newdmax)
         assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
 
-    finally:
-        shutil.rmtree(testdir)
-
 
 def  test_Image_2D_analyze(): _test_Image_2D(0)
 def  test_Image_2D_nifti1():  _test_Image_2D(1)
 def  test_Image_2D_nifti2():  _test_Image_2D(2)
 def _test_Image_2D(imgtype):
-
-    testdir = tempfile.mkdtemp()
 
     # The first shape tests when the
     # nifti dim0 field is set to 2,
@@ -833,7 +809,7 @@ def _test_Image_2D(imgtype):
                 (10, 1,  20, 5),
                 (1,  10, 20, 5)]
 
-    try:
+    with tempdir() as testdir:
 
         for shape in testdims:
 
@@ -858,9 +834,6 @@ def _test_Image_2D(imgtype):
             assert tuple(map(float, shape))  == tuple(map(float, image[:].shape))
             assert tuple(map(float, pixdim)) == tuple(map(float, image   .pixdim))
 
-    finally:
-        shutil.rmtree(testdir)
-
 
 def  test_Image_5D_analyze(): _test_Image_5D(0)
 def  test_Image_5D_nifti1():  _test_Image_5D(1)
@@ -878,7 +851,7 @@ def _test_Image_5D(imgtype):
 
     for dims in testdims:
 
-        with testdir() as td:
+        with tempdir() as td:
 
             path = op.join(td, 'test.nii')
 
@@ -970,21 +943,20 @@ def _test_Image_save(imgtype):
         return rvoxes
 
 
-    testdir   = tempfile.mkdtemp()
-    if imgtype == 0:
-        filename  = op.join(testdir, 'blob.img')
-        filename2 = op.join(testdir, 'blob_copy.img')
-    else:
-        filename  = op.join(testdir, 'blob.nii')
-        filename2 = op.join(testdir, 'blob_copy.nii')
+    with tempdir() as testdir:
+        if imgtype == 0:
+            filename  = op.join(testdir, 'blob.img')
+            filename2 = op.join(testdir, 'blob_copy.img')
+        else:
+            filename  = op.join(testdir, 'blob.nii')
+            filename2 = op.join(testdir, 'blob_copy.nii')
 
-    xform = np.eye(4)
-    xform[:3, 3] = [-10, 20, 30]
-    xform[ 0, 0] = 33
-    xform[ 1, 1] = 55
-    xform[ 2, 2] = 38
+        xform = np.eye(4)
+        xform[:3, 3] = [-10, 20, 30]
+        xform[ 0, 0] = 33
+        xform[ 1, 1] = 55
+        xform[ 2, 2] = 38
 
-    try:
         make_image(filename, imgtype)
 
         # Using mmap can cause a "Bus error"
@@ -1033,13 +1005,9 @@ def _test_Image_save(imgtype):
                 assert np.isclose(img[x, y, z], v)
 
 
-    finally:
-        shutil.rmtree(testdir)
-
-
 def test_image_resample(seed):
 
-    with testdir() as td:
+    with tempdir() as td:
 
         fname = op.join(td, 'test.nii')
 
