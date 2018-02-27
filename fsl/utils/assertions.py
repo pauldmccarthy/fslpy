@@ -12,11 +12,13 @@
 import os.path as op
 import nibabel as nib
 
+import fsl.data.melodicanalysis as fslma
+
 
 def assertFileExists(*args):
     """Raise an exception if the specified file/folder/s do not exist."""
     for f in args:
-        assert op.exists(f), "file/folder does not exist: {0}".format(f)
+        assert op.exists(f), 'file/folder does not exist: {}'.format(f)
 
 
 def assertIsNifti3D(*args):
@@ -25,7 +27,7 @@ def assertIsNifti3D(*args):
         assertIsNifti(f)
         d = nib.load(f)
         assert len(d.shape) == 3, \
-            "incorrect shape for 3D nifti: {0}:{1}".format(d.shape, f)
+            'incorrect shape for 3D nifti: {}:{}'.format(d.shape, f)
 
 
 def assertIsNifti4D(*args):
@@ -34,7 +36,7 @@ def assertIsNifti4D(*args):
         assertIsNifti(f)
         d = nib.load(f)
         assert len(d.shape) == 4, \
-            "incorrect shape for 4D nifti: {0}:{1}".format(d.shape, f)
+            'incorrect shape for 4D nifti: {}:{}'.format(d.shape, f)
 
 
 def assertIsNifti(*args):
@@ -42,7 +44,7 @@ def assertIsNifti(*args):
     for f in args:
         assert isinstance(f, nib.nifti1.Nifti1Image) or \
             f.endswith('.nii.gz') or f.endswith('.nii'), \
-            "file must be a nifti (.nii or .nii.gz): {0}".format(f)
+            'file must be a nifti (.nii or .nii.gz): {}'.format(f)
 
 
 def assertNiftiShape(shape, *args):
@@ -50,35 +52,27 @@ def assertNiftiShape(shape, *args):
     for fname in args:
         d = nib.load(fname)
         assert d.shape == shape, \
-            "incorrect shape ({2}) for nifti: {0}:{1}".format(d.shape, fname,
-                                                              shape)
+            'incorrect shape ({}) for nifti: {}:{}'.format(
+                shape, d.shape, fname)
 
 
 def assertIsSurfGifti(*args):
     """Raise an exception if the specified file/s are not surface gifti."""
     for fname in args:
         assert fname.endswith('.surf.gii'), \
-            "file must be a surface gifti (surf.gii): {0}".format(fname)
+            'file must be a surface gifti (surf.gii): {}'.format(fname)
 
 
 def assertIsFuncGifti(*args):
     """Raise an exception if the specified file/s are not functional gifti."""
     for fname in args:
         assert fname.endswith('.func.gii'), \
-            "file must be a functional gifti (func.gii): {0}".format(fname)
+            'file must be a functional gifti (func.gii): {}'.format(fname)
+
 
 def assertIsMelodicDir(path):
     """Raise an exception if the specified path is not a melodic directory.
 
-    :arg path:     Path to melodic directory
-    :type path:    string
+    :arg path:  Path to melodic directory
     """
-    assert op.exists(path), "melodic dir does not exist: {0}".format(path)
-    assert path.endswith('.ica'), \
-        "melodic directory must end in *.ica: {0}".format(path)
-    assert op.exists(op.join(path, 'melodic_IC.nii.gz')), \
-        "melodic directy must contain a file called melodic_IC.nii.gz"
-    assert op.exists(op.join(path, 'melodic_mix')), \
-        "melodic directy must contain a file called melodic_mix"
-    assert op.exists(op.join(path, 'melodic_FTmix')), \
-        "melodic directy must contain a file called melodic_FTmix"
+    assert fslma.isMelodicDir(path), 'not a melodic directory: {}'.format(path)
