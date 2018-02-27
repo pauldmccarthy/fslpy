@@ -1,43 +1,47 @@
+{% set data = load_setup_py_data() %}
 package:
-  name:    '{{ name }}'
-  version: '{{ version }}'
-
+  name: fslpy
+  version: {{ data['version']}}
 
 build:
   noarch: python
   script: python setup.py install --single-version-externally-managed --record=record.txt
 
 source:
-  path:
-    ../
+  path: ../
 
 requirements:
   build:
     - python {{ python }}
     - setuptools
-    - six 1.*
-    - deprecation 1.*
-    - numpy 1.*
-    - scipy >=0.18,<2
-    - nibabel 2.*
-    - sphinx 1.6.*
-    - sphinx_rtd_theme 0.*
-    - mock 2.*
-    - coverage 4.*
-    - pytest 3.*
-    - pytest-cov 2.*
-    - pytest-runner >=2.*,<=3.*
+    {% for package in data.get('setup_requires', {}) %}
+    - {{ package.lower() }}
+    {% endfor %}
 
   run:
-    - python
-    - six 1.*
-    - deprecation 1.*
-    - numpy 1.*
-    - scipy >=0.18,<2
-    - nibabel 2.*
+    - python 
+    {% for package in data.get('install_requires', {}) %}
+    - {{ package.lower() }}
+    {% endfor %}
 
   run_constrained:
-    - indexed_gzip >=0.7.0,<1
-    - wxpython >=3.0.2.0,<4.1
-    - trimesh >=2.22.28,<3
-    - rtree 0.8
+    {% for name, pkgs in data.get('extras_require', dict()).items() %}
+    {% for package in pkgs %}
+    - {{ package.lower() }}
+    {% endfor %}
+    {% endfor %}
+
+{% if 'test_suite' in data %}
+test:
+  requires:
+    {% for package in data.get('setup_requires', {}) %}
+    - {{ package.lower() }}
+    {% endfor %}     
+  source_files:
+    - {{ data['test_suite'] }}
+  commands:
+    - python -m pytest {{ data['test_suite'] }} -m "not (fsltest or wxtest or dicomtest or meshtest or igziptest or longtest)"
+{% endif %}
+
+about:
+  license_file: LICENSE
