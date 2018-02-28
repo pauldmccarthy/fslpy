@@ -6,7 +6,6 @@
 
    fsl.utils.assertions
    fsl.utils.cache
-   fsl.utils.callfsl
    fsl.utils.ensure
    fsl.utils.idle
    fsl.utils.imcp
@@ -15,6 +14,7 @@
    fsl.utils.notifier
    fsl.utils.path
    fsl.utils.platform
+   fsl.utils.run
    fsl.utils.settings
    fsl.utils.tempdir
    fsl.utils.transform
