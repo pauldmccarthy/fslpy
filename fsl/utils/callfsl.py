@@ -13,12 +13,17 @@ import               logging
 import subprocess as sp
 import os.path    as op
 
+import               deprecation
+
 from fsl.utils.platform import platform as fslplatform
 
 
 log = logging.getLogger(__name__)
 
 
+@deprecation.deprecated(deprecated_in='1.7.0',
+                        removed_in='2.0.0',
+                        details='Use fsl.utils.run.runfsl instead')
 def callFSL(*args):
     """Call a FSL command and return the result.
 
