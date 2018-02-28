@@ -40,3 +40,14 @@ def test_tempdir_root():
     with tempdir.tempdir() as root:
         with tempdir.tempdir(root=root) as td:
             assert op.dirname(td) == root
+
+
+def test_tempdir_changeto():
+
+    cwd = op.realpath(os.getcwd())
+
+    # make sure cwd is not changed
+    with tempdir.tempdir(changeto=False):
+        assert op.realpath(os.getcwd()) == cwd
+
+    assert op.realpath(os.getcwd()) == cwd
