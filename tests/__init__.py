@@ -94,7 +94,7 @@ class CaptureStdout(object):
 
 
 
-def testdir(contents=None, suffix=None):
+def testdir(contents=None, suffix=""):
     """Returnsa context manager which creates, changes to, and returns a
     temporary directory, and then deletes it on exit.
     """
