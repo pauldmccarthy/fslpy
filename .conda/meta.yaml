@@ -19,7 +19,7 @@ requirements:
     {% endfor %}
 
   run:
-    - python 
+    - python
     {% for package in data.get('install_requires', {}) %}
     - {{ package.lower() }}
     {% endfor %}
@@ -36,11 +36,11 @@ test:
   requires:
     {% for package in data.get('setup_requires', {}) %}
     - {{ package.lower() }}
-    {% endfor %}     
+    {% endfor %}
   source_files:
     - {{ data['test_suite'] }}
   commands:
-    - python -m pytest {{ data['test_suite'] }} -m "not (fsltest or wxtest or dicomtest or meshtest or igziptest or longtest)"
+    - python -m pytest {{ data['test_suite'] }} -m "not (fsltest or wxtest or dicomtest or meshtest or igziptest or noroottest or longtest)"
 {% endif %}
 
 about:
