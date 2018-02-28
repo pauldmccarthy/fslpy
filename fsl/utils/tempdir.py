@@ -21,22 +21,28 @@ import contextlib
 
 
 @contextlib.contextmanager
-def tempdir(root=None):
+def tempdir(root=None, changeto=True):
     """Returns a context manager which creates and returns a temporary
     directory, and then deletes it on exit.
 
-    :arg root: If provided, specifies a directroy in which to create the
-               new temporary directory. Otherwise the system default is used
-               (see the ``tempfile.mkdtemp`` documentation).
+    :arg root:     If provided, specifies a directroy in which to create the
+                   new temporary directory. Otherwise the system default is
+                   used (see the ``tempfile.mkdtemp`` documentation).
+
+    :arg changeto: If ``True`` (the default), current working directory is set
+                   to the new temporary directory before yielding, and restored
+                   afterwards.
     """
 
     testdir = tempfile.mkdtemp(dir=root)
     prevdir = os.getcwd()
     try:
 
-        os.chdir(testdir)
+        if changeto:
+            os.chdir(testdir)
         yield testdir
 
     finally:
-        os.chdir(prevdir)
+        if changeto:
+            os.chdir(prevdir)
         shutil.rmtree(testdir)
