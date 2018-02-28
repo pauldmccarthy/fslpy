@@ -16,8 +16,11 @@
 
 
 import               logging
+import               contextlib
 import subprocess as sp
 import os.path    as op
+
+import               six
 
 from fsl.utils.platform import platform as fslplatform
 
@@ -25,24 +28,62 @@ from fsl.utils.platform import platform as fslplatform
 log = logging.getLogger(__name__)
 
 
-def run(*args):
-    """Call a command and return its output.  You can pass the command and
-    arguments as a single string, or as an unpacked sequence.
+DRY_RUN = False
+"""If ``True``, the :func:`run` function will only log commands, but will not
+execute them.
+"""
+
+
+@contextlib.contextmanager
+def dryrun(*args):
+    """Context manager which causes all calls to :func:`run` to be logged but
+    not executed. See the :data:`DRY_RUN` flag.
+    """
+    global DRY_RUN
+
+    oldval  = DRY_RUN
+    DRY_RUN = True
+
+    try:
+        yield
+    finally:
+        DRY_RUN = oldval
+
+
+def _prepareArgs(args):
+    """Used by the :func:`run` function. Ensures that the given arguments is a
+    list of strings.
     """
 
-    # If we've been given a single argument,
-    # assume it is a string containing the
-    # command and its arguments. Otherwise,
-    # assume it is a sequence containing
-    # separate command and arguments.
     if len(args) == 1:
-        args = args[0].split()
 
-    args = list(args)
+        # Argument was a command string
+        if isinstance(args[0], six.string_types):
+            args = args[0].split()
 
-    log.debug('run: {}'.format(' '.join(args)))
+        # Argument was an unpacked sequence
+        else:
+            args = args[0]
 
-    result = sp.check_output(args).decode('utf-8').strip()
+    return list(args)
+
+
+def run(*args):
+    """Call a command and return its output. You can pass the command and
+    arguments as a single string, or as a regular or unpacked sequence.
+    """
+
+    args = _prepareArgs(args)
+
+    if DRY_RUN:
+        log.debug('dryrun: {}'.format(' '.join(args)))
+    else:
+        log.debug('run: {}'.format(' '.join(args)))
+
+    if DRY_RUN:
+        result = '<dryrun>'
+    else:
+        result = sp.check_output(args).decode('utf-8').strip()
 
     log.debug('result: {}'.format(result))
 
@@ -51,16 +92,13 @@ def run(*args):
 
 def runfsl(*args):
     """Call a FSL command and return its output. This function simply prepends
-    $FSLDIR/bin/ to the command before passing it to :func:`run`.
+    ``$FSLDIR/bin/`` to the command before passing it to :func:`run`.
     """
 
     if fslplatform.fsldir is None:
         raise RuntimeError('$FSLDIR is not set - FSL cannot be found!')
 
-    if len(args) == 1:
-        args = args[0].split()
-
-    args    = list(args)
+    args    = _prepareArgs(args)
     args[0] = op.join(fslplatform.fsldir, 'bin', args[0])
 
     return run(*args)
