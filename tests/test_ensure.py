@@ -22,7 +22,9 @@ def test_ensureIsImage():
 
         assert ensure.ensureIsImage(img) is img
 
-        loaded = ensure.ensureIsImage('image.nii')
+        loaded = [ensure.ensureIsImage('image.nii'),
+                  ensure.ensureIsImage('image')]
 
-        assert isinstance(loaded, nib.nifti1.Nifti1Image)
-        assert np.all(img.get_data() == loaded.get_data())
+        for l in loaded:
+            assert isinstance(l, nib.nifti1.Nifti1Image)
+            assert np.all(img.get_data() == l.get_data())
