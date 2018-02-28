@@ -18,10 +18,13 @@ import six
 
 import nibabel as nib
 
+import fsl.data.image as fslimage
+
 
 def ensureIsImage(img):
     """Ensures that the given ``img`` is an in-memory ``nibabel`` object.
     """
     if isinstance(img, six.string_types):
+        img = fslimage.addExt(img)
         img = nib.load(img)
     return img
