@@ -16,6 +16,8 @@ import               os
 import               shutil
 import               tempfile
 
+import               pytest
+
 import nibabel as nib
 
 import fsl.utils.imcp   as imcp
@@ -389,6 +391,7 @@ def test_imcp_script_shouldPass(move=False):
         shutil.rmtree(outdir)
 
 
+@pytest.mark.noroottest
 def test_imcp_script_shouldFail(move=False):
 
     # - len(srcs) > 1 and dest is not dir
@@ -508,6 +511,7 @@ def test_immv_script_shouldPass():
     test_imcp_script_shouldPass(move=True)
 
 
+@pytest.mark.noroottest
 def test_immv_script_shouldFail():
     test_imcp_script_shouldFail(move=True)
 
