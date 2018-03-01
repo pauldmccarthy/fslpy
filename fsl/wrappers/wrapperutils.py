@@ -176,7 +176,17 @@ def required(*reqargs):
             for reqarg in reqargs:
                 assert reqarg in kwargs
             return func(**kwargs)
-        return _update_wrapper(wrapper, func)
+
+        wrapper = _update_wrapper(wrapper, func)
+
+        # If this is a bound method, make
+        # sure that the instance is set on
+        # the wrapper function - this is
+        # needed by _FileOrThing decorators.
+        if hasattr(func, '__self__'):
+            wrapper.__self__ = func.__self__
+
+        return wrapper
 
     return decorator
 
@@ -320,25 +330,28 @@ class _FileOrThing(object):
     def __call__(self, func):
         """Creates and returns the real decorator function. """
 
-        self.__func          = func
-        self.__isFileOrThing = False
+        isFOT   = isinstance(getattr(func, '__self__', None), _FileOrThing)
+        wrapper = functools.partial(self.__wrapper, func, isFOT)
 
-        if hasattr(func, '__self__'):
-            self.__isFileOrThing = isinstance(func.__self__, _FileOrThing)
+        # TODO
+        wrapper = _update_wrapper(wrapper, func)
+        wrapper.__self__ = self
 
-        wrapper = functools.partial(self.__wrapper, func)
-
-        return _update_wrapper(wrapper, func)
+        return wrapper
 
 
-    def __wrapper(self, func, *args, **kwargs):
+    def __wrapper(self, func, isFileOrThing, *args, **kwargs):
         """Function which wraps ``func``, ensuring that any arguments of
         type ``Thing`` are saved to temporary files, and any arguments
         with the value :data:`RETURN` are loaded and returned.
-        """
 
-        func          = self.__func
-        isFileOrThing = self.__isFileOrThing
+        :arg func:          The func being wrapped.
+
+        :arg isFileOrThing: Set to ``True`` if ``func`` is a wrapper metho
+                            of another ``_FileOrThing`` instance. In this case,
+                            the output arguments will be flattenedinto a single
+                            tuple.
+        """
 
         kwargs = kwargs.copy()
         kwargs.update(argsToKwargs(func, args))
@@ -372,7 +385,7 @@ class _FileOrThing(object):
             if isFileOrThing:
                 things = result[1:]
                 result = result[0]
-                return tuple([result] + things + outthings)
+                return tuple([result] + list(things) + outthings)
             else:
                 return tuple([result] + outthings)
 
