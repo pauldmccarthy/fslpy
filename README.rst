@@ -97,7 +97,7 @@ Credits
 -------
 
 
-The `fsl.data.dicom <fsl/data/dicom/>`_ module is little more than a thin
+The `fsl.data.dicom <fsl/data/dicom.py>`_ module is little more than a thin
 wrapper around Chris Rorden's `dcm2niix
 <https://github.com/rordenlab/dcm2niix>`_ program.
 
