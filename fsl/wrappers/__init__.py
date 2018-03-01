@@ -12,7 +12,7 @@ from .wrapperutils import (applyArgStyle,   # noqa
                            required,
                            fileOrImage,
                            fileOrArray,
-                           RETURN,
+                           LOAD,
                            SHOW_IF_TRUE,
                            HIDE_IF_TRUE)
 from .bet          import (bet,)            # noqa
