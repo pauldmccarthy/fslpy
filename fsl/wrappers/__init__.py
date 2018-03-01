@@ -8,25 +8,31 @@
 them to be called from Python.
 """
 
-
-from .bet      import (bet,)            # noqa
-from .eddy     import (eddy_cuda,       # noqa
-                       topup)
-from .flirt    import (flirt,           # noqa
-                       invxfm,
-                       applyxfm,
-                       concatxfm,
-                       mcflirt)
-from .fnirt    import (fnirt,           # noqa
-                       applywarp,
-                       invwarp,
-                       convertwarp)
-from .fslmaths import (fslmaths,)       # noqa
-from .fugue    import (fugue,           # noqa
-                       sigloss)
-from .melodic  import (melodic,         # noqa
-                       fsl_regfilt)
-from .misc     import (fslreorient2std, # noqa
-                       fslroi,
-                       slicer,
-                       cluster)
+from .wrapperutils import (applyArgStyle,   # noqa
+                           required,
+                           fileOrImage,
+                           fileOrArray,
+                           RETURN,
+                           SHOW_IF_TRUE,
+                           HIDE_IF_TRUE)
+from .bet          import (bet,)            # noqa
+from .eddy         import (eddy_cuda,       # noqa
+                           topup)
+from .flirt        import (flirt,           # noqa
+                           invxfm,
+                           applyxfm,
+                           concatxfm,
+                           mcflirt)
+from .fnirt        import (fnirt,           # noqa
+                           applywarp,
+                           invwarp,
+                           convertwarp)
+from .fslmaths     import (fslmaths,)       # noqa
+from .fugue        import (fugue,           # noqa
+                           sigloss)
+from .melodic      import (melodic,         # noqa
+                           fsl_regfilt)
+from .misc         import (fslreorient2std, # noqa
+                           fslroi,
+                           slicer,
+                           cluster)

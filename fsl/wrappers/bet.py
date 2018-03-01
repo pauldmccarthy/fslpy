@@ -11,6 +11,10 @@ import fsl.utils.run        as run
 from . import wrapperutils  as wutils
 
 
+def pybet():   # ??
+    pass
+
+
 @wutils.fileOrImage('input', 'output')
 def bet(input, output, **kwargs):
     """Delete non-brain tissue from an image of the whole head.
@@ -20,7 +24,6 @@ def bet(input, output, **kwargs):
     :arg mask:
     :arg robust:
     :arg fracintensity:
-    :arg seg:
 
     Refer to the ``bet`` command-line help for details on all arguments.
     """

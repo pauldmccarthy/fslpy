@@ -20,60 +20,34 @@
 import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 import fsl.data.image       as fslimage
+from . import wrapperutils  as wutils
 
 
-def flirt(src, ref, out=None, omat=None, dof=None, cost=None, wmseg=None,
-          init=None, schedule=None, echospacing=None, pedir=None,
-          fieldmap=None, fieldmapmask=None, bbrslope=None, bbrtype=None,
-          interp=None, refweight=None, applyisoxfm=None, usesqform=False,
-          nosearch=False, verbose=0):
+@wutils.required('src', 'ref')
+@wutils.fileOrImage('src', 'ref', 'out', 'wmseg', 'fieldmap', 'fieldmapmask')
+@wutils.fileOrArray('init', 'omat', 'wmcoords', 'wmnorms')
+def flirt(src, ref, **kwargs):
     """FLIRT (FMRIB's Linear Image Registration Tool)."""
+
     asrt.assertIsNifti(src, ref)
-    asrt.assertFileExists(src, ref)
 
-    cmd = "flirt -in {0} -ref {1}".format(src, ref)
+    valmap = {
+        'usesqform'    : wutils.SHOW_IF_TRUE,
+        'displayinit'  : wutils.SHOW_IF_TRUE,
+        'noresample'   : wutils.SHOW_IF_TRUE,
+        'forcescaling' : wutils.SHOW_IF_TRUE,
+        'applyxfm'     : wutils.SHOW_IF_TRUE,
+        'nosearch'     : wutils.SHOW_IF_TRUE,
+        'noclamp'      : wutils.SHOW_IF_TRUE,
+        'noresampblur' : wutils.SHOW_IF_TRUE,
+        '2D'           : wutils.SHOW_IF_TRUE,
+        'v'            : wutils.SHOW_IF_TRUE,
+        'version'      : wutils.SHOW_IF_TRUE,
+        'help'         : wutils.SHOW_IF_TRUE,
+    }
 
-    if out is not None:
-        asrt.assertIsNifti(out)
-        cmd += " -out {0}".format(out)
-    if omat is not None:
-        cmd += " -omat {0}".format(omat)
-    if dof is not None:
-        cmd += " -dof {0}".format(dof)
-    if cost is not None:
-        cmd += " -cost {0}".format(cost)
-    if wmseg is not None:
-        asrt.assertIsNifti(wmseg)
-        cmd += " -wmseg {0}".format(wmseg)
-    if init is not None:
-        cmd += " -init {0}".format(init)
-    if schedule is not None:
-        cmd += " -schedule {0}".format(schedule)
-    if echospacing is not None:
-        cmd += " -echospacing {0}".format(echospacing)
-    if pedir is not None:
-        cmd += " -pedir {0}".format(pedir)
-    if fieldmap is not None:
-        cmd += " -fieldmap {0}".format(fieldmap)
-    if fieldmapmask is not None:
-        cmd += " -fieldmapmask {0}".format(fieldmapmask)
-    if bbrslope is not None:
-        cmd += " -bbrslope {0}".format(bbrslope)
-    if bbrtype is not None:
-        cmd += " -bbrtype {0}".format(bbrtype)
-    if interp is not None:
-        cmd += " -interp {0}".format(interp)
-    if refweight is not None:
-        asrt.assertIsNifti(refweight)
-        cmd += " -refweight {0}".format(refweight)
-    if applyisoxfm is not None:
-        cmd += " -applyisoxfm {0}".format(applyisoxfm)
-    if verbose is not None:
-        cmd += " -verbose {0}".format(verbose)
-    if usesqform:
-        cmd += " -usesqform"
-    if nosearch:
-        cmd += " -nosearch"
+    cmd  = ['flirt', '-in', src, '-ref', ref]
+    cmd += wutils.applyArgStyle('-', valmap=valmap, **kwargs)
 
     return run.runfsl(cmd)
 
@@ -94,13 +68,25 @@ def applyxfm(src, ref, mat, out, interp='spline'):
     cmd = "flirt -init {0} -in {1} -ref {2} -applyxfm -out {3} -interp {4}"
     return run.runfsl(cmd.format(mat, src, ref, out, interp))
 
-
+@wutils.required(   'inmat1', 'inmat2', 'outmat')
+@wutils.fileOrArray('inmat1', 'inmat2', 'outmat')
 def concatxfm(inmat1, inmat2, outmat):
     """Tool to concatenate two FSL transformation matrices."""
+
+    print('inmat1', inmat1)
+    print('inmat2', inmat2)
+    print('outmat', outmat)
+
     asrt.assertFileExists(inmat1, inmat2)
 
-    cmd = "convert_xfm -omat {0} -concat {1} {2}"
-    return run.runfsl(cmd.format(outmat, inmat2, inmat1))
+    cmd = ['convert_xfm',
+           '-omat',
+           outmat,
+           '-concat',
+           inmat2,
+           inmat1]
+
+    return run.runfsl(cmd)
 
 
 def mcflirt(infile, outfile, reffile=None, spline_final=True, plots=True,
