@@ -171,3 +171,10 @@ def test_assertIsMelodicDir():
             else:
                 with pytest.raises(AssertionError):
                     assertions.assertIsMelodicDir(dirname)
+
+
+
+def test_disabled():
+    with assertions.disabled():
+        assertions.assertFileExists('NOT', 'A', 'FILE', 'NO', 'WAY')
+        assertions.assertIsNifti('boo.txt')
