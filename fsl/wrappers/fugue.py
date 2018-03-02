@@ -1,42 +1,53 @@
 #!/usr/bin/env python
 #
-# fugue.py -
+# fugue.py - Wrappers for fugue/field map tools.
 #
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains wrappers for the FSL `FUGUE
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FUGUE>`_ tools, for EPI field map
+processing and distortion correction.
 """
-"""
 
 
-import fsl.utils.run as run
+import fsl.utils.run       as run
+from . import wrapperutils as wutils
 
 
+@wutils.fileOrImage('in', 'unwarp', 'warp', 'phasemap', 'savefmap',
+                    'loadfmap', 'saveshift', 'loadshift', 'mask')
 def fugue(**kwargs):
-    """FMRIB's Utility for Geometric Unwarping of EPIs."""
+    """Wrapper for the ``fugue`` command."""
 
-    cmd = "fugue"
+    valmap = {
+        'dwelltoasym' : wutils.SHOW_IF_TRUE,
+        'median'      : wutils.SHOW_IF_TRUE,
+        'despike'     : wutils.SHOW_IF_TRUE,
+        'nofill'      : wutils.SHOW_IF_TRUE,
+        'noextend'    : wutils.SHOW_IF_TRUE,
+        'pava'        : wutils.SHOW_IF_TRUE,
+        'phaseconj'   : wutils.SHOW_IF_TRUE,
+        'icorr'       : wutils.SHOW_IF_TRUE,
+        'icorronly'   : wutils.SHOW_IF_TRUE,
+        'unmaskfmap'  : wutils.SHOW_IF_TRUE,
+        'unmaskshift' : wutils.SHOW_IF_TRUE,
+        'nokspace'    : wutils.SHOW_IF_TRUE,
+        'nocheck'     : wutils.SHOW_IF_TRUE,
+        'verbose'     : wutils.SHOW_IF_TRUE,
+    }
 
-    if kwargs.pop('unmaskshift', False):
-        cmd += " --unmaskshift"
-    if kwargs.pop('despike', False):
-        cmd += " --despike"
-    if kwargs.pop('unmaskfmap', False):
-        cmd += " --unmaskfmap"
-
-    cmd += ' '.join(['--{}={}'.format(k, v) for k, v in kwargs.items()])
+    cmd = ['fugue'] + wutils.applyArgStyle('--=',  valmap=valmap, **kwargs)
 
     return run.runfsl(cmd)
 
 
-def sigloss(input, output, te=None, slicedir=None, mask=None):
-    """Estimate signal loss from a field map (in rad/s)."""
-    cmd = "sigloss -i {0} -s {1}".format(input, output)
+def sigloss(input, sigloss, **kwargs):
+    """Wrapper for the ``sigloss`` command."""
 
-    if te is not None:
-        cmd += " --te={0}".format(te)
-    if slicedir is not None:
-        cmd += " --slicedir={0}".format(slicedir)
-    if mask is not None:
-        cmd += " --mask={0}".format(mask)
+    valmap = {'verbose' : wutils.SHOW_IF_TRUE}
+
+    cmd  = ['sigloss', '--in', input, '--sigloss', sigloss]
+    cmd += wutils.applyArgStyle('--', valmap=valmap, **kwargs)
 
     return run.runfsl(cmd)

@@ -2,6 +2,7 @@
 #
 # bet.py - Wrapper for the FSL bet command.
 #
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :func:`bet` function, a wrapper for the FSL

@@ -2,6 +2,7 @@
 #
 # flirt.py - Wrappers for FLIRT commands.
 #
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides wrapper functions for the FSL `FLIRT
