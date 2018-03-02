@@ -85,7 +85,7 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style, valsep=' ', argmap=None, valmap=None, **kwargs):
+def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
@@ -118,7 +118,8 @@ def applyArgStyle(style, valsep=' ', argmap=None, valmap=None, **kwargs):
 
     :arg valsep: Controls how the values passed to command-line options
                  which expect multiple arguments are delimited - must be
-                 one of ``' '`` (the default), ``','`` or ``'"'``.
+                 one of ``' '``, ``','`` or ``'"'``. Defaults to ``' '``
+                 if ``'=' not in style``, ``','`` otherwise.
 
     :arg argmap: Dictionary of ``{kwarg-name : cli-name}`` mappings. This can
                  be used if you want to use different argument names in your
@@ -147,6 +148,10 @@ def applyArgStyle(style, valsep=' ', argmap=None, valmap=None, **kwargs):
 
     :returns:    A list containing the generated command-line options.
     """
+
+    if valsep is None:
+        if '=' in style: valsep = ','
+        else:            valsep = ' '
 
     if style not in ('-', '--', '-=', '--='):
         raise ValueError('Invalid style: {}'.format(style))
@@ -519,7 +524,7 @@ class _FileOrThing(object):
             if val is None:
                 continue
 
-            if val == LOAD:
+            if val is LOAD:
 
                 outfile = self.__prepOut(workdir, name, val)
 
