@@ -333,6 +333,16 @@ class _FileOrThing(object):
 
 
     **Using with other decorators**
+
+
+    ``_FileOrThing`` decorators can be chained with other ``_FileOrThing``
+    decorators, and other decorators.  When multiple ``_FileOrThing``
+    decorators are used on a single function, the outputs from each decorator
+    are merged together into a single dict-like object.
+
+
+    ``_FileOrThing`` decorators can be used with any other decorators
+    __as long as__ they do not manipulate the return value.
     """
 
 
