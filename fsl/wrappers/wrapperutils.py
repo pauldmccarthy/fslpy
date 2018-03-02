@@ -85,17 +85,40 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style, argmap=None, valmap=None, **kwargs):
+def applyArgStyle(style, valsep=' ', argmap=None, valmap=None, **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
 
+    The ``style`` and ``valsep`` arguments control how key-value pairs
+    are converted into command-line options:
+
+
+    =========  ==========  ===========================
+    ``style``  ``valsep``  Result
+    =========  ==========  ===========================
+    ``'-'``    ' '         ``-name val1 val2 val3``
+    ``'-'``    '"'         ``-name "val1 val2 val3"``
+    ``'-'``    ','         ``-name val1,val2,val3``
+    ``'--'``   ' '         ``--name val1 val2 val3``
+    ``'--'``   '"'         ``--name "val1 val2 val3"``
+    ``'--'``   ','         ``--name val1,val2,val3``
+    ``'-='``   ' '         Not supported
+    ``'-='``   '"'         ``-name="val1 val2 val3"``
+    ``'-='``   ','         ``-name=val1,val2,val3``
+    ``'--='``  ' '         Not supported
+    ``'--='``  '"'         ``--name="val1 val2 val3"``
+    ``'--='``  ','         ``--name=val1,val2,val3``
+    =========  ==========  ===========================
+
+
     :arg style:  Controls how the ``kwargs`` are converted into command-line
-                 options - must be one of the following:
-                  - `'-'`: ``-name val``
-                  - `'--'`: ``--name val``
-                  - `'-='`: ``-name=val``
-                  - `'--='`: ``--name=val``
+                 options - must be one of ``'-'``, ``'--'``, ``'-='``, or
+                 ``'--='``.
+
+    :arg valsep: Controls how the values passed to command-line options
+                 which expect multiple arguments are delimited - must be
+                 one of ``' '`` (the default), ``','`` or ``'"'``.
 
     :arg argmap: Dictionary of ``{kwarg-name : cli-name}`` mappings. This can
                  be used if you want to use different argument names in your
@@ -127,6 +150,15 @@ def applyArgStyle(style, argmap=None, valmap=None, **kwargs):
 
     if style not in ('-', '--', '-=', '--='):
         raise ValueError('Invalid style: {}'.format(style))
+    if valsep not in (' ', ',', '"'):
+        raise ValueError('Invalid valsep: {}'.format(valsep))
+
+    # we don't handle the case where '=' in
+    # style, and valsep == ' ', because no
+    # sane CLI app would do this. Right?
+    if '=' in style and valsep == ' ':
+        raise ValueError('Incompatible style and valsep: s={} v={}'.format(
+            style, valsep))
 
     if argmap is None: argmap = {}
     if valmap is None: valmap = {}
@@ -136,12 +168,24 @@ def applyArgStyle(style, argmap=None, valmap=None, **kwargs):
         elif style in ('--', '--='): arg = '--{}'.format(arg)
         return arg
 
+    # always returns a sequence
     def fmtval(val):
         if     isinstance(val, collections.Sequence) and \
            not isinstance(val, six.string_types):
-            return ' '.join([str(v) for v in val])
+
+            val = [str(v) for v in val]
+            if   valsep == ' ': return val
+            elif valsep == '"': return [' '   .join(val)]
+            else:               return [valsep.join(val)]
         else:
-            return str(val)
+            return [str(val)]
+
+    # val is assumed to be a sequence
+    def fmtargval(arg, val):
+        # if '=' in style, val will
+        # always be a single string
+        if '=' in style: return ['{}={}'.format(arg, val[0])]
+        else:            return [arg] + val
 
     args = []
 
@@ -151,14 +195,13 @@ def applyArgStyle(style, argmap=None, valmap=None, **kwargs):
         mapv = valmap.get(k, fmtval(v))
         k    = fmtarg(k)
 
-        if (mapv is SHOW_IF_TRUE and     v) or \
-           (mapv is HIDE_IF_TRUE and not v):
-            args.append(k)
 
-        elif '=' in style:
-            args.append('{}={}'.format(k, mapv))
+        if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
+            if (mapv is SHOW_IF_TRUE and     v) or \
+               (mapv is HIDE_IF_TRUE and not v):
+                args.append(k)
         else:
-            args.extend((k, mapv))
+            args.extend(fmtargval(k, mapv))
 
     return args
 
