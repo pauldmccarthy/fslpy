@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 #
-# flirt.py -
+# flirt.py - Wrappers for FLIRT commands.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
+"""This module provides wrapper functions for the FSL `FLIRT
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT>`_ tool, and other related
+tools.
 
 .. autosummary::
    :nosignatures:
 
    flirt
-   invxfm
    applyxfm
+   invxfm
    concatxfm
    mcflirt
 """
@@ -19,7 +21,6 @@
 
 import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
-import fsl.data.image       as fslimage
 from . import wrapperutils  as wutils
 
 
@@ -27,7 +28,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('src', 'ref', 'out', 'wmseg', 'fieldmap', 'fieldmapmask')
 @wutils.fileOrArray('init', 'omat', 'wmcoords', 'wmnorms')
 def flirt(src, ref, **kwargs):
-    """FLIRT (FMRIB's Linear Image Registration Tool)."""
+    """Wrapper around the ``flirt`` command. """
 
     asrt.assertIsNifti(src, ref)
 
@@ -52,30 +53,30 @@ def flirt(src, ref, **kwargs):
     return run.runfsl(cmd)
 
 
+@wutils.fileOrImage('src', 'ref', 'out')
+@wutils.fileOrArray('mat')
+def applyxfm(src, ref, mat, out, interp='spline'):
+    """Convenience function which runs ``flirt -applyxfm ...``."""
+    return flirt(src,
+                 ref,
+                 out=out,
+                 applyxfm=True,
+                 init=mat,
+                 interp=interp)
+
+
+@wutils.fileOrArray
 def invxfm(inmat, omat):
-    """Tool for inverting FSL transformation matrices."""
+    """Use ``convert_xfm`` to invert an affine."""
     asrt.assertFileExists(inmat)
 
-    cmd = "convert_xfm -omat {0} -inverse {1}".format(omat, inmat)
+    cmd = 'convert_xfm -omat {} -inverse {}'.format(omat, inmat)
     return run.runfsl(cmd)
 
 
-def applyxfm(src, ref, mat, out, interp='spline'):
-    """Tool for applying FSL transformation matrices."""
-    asrt.assertFileExists(src, ref)
-    asrt.assertIsNifti(src, ref)
-
-    cmd = "flirt -init {0} -in {1} -ref {2} -applyxfm -out {3} -interp {4}"
-    return run.runfsl(cmd.format(mat, src, ref, out, interp))
-
-@wutils.required(   'inmat1', 'inmat2', 'outmat')
 @wutils.fileOrArray('inmat1', 'inmat2', 'outmat')
 def concatxfm(inmat1, inmat2, outmat):
-    """Tool to concatenate two FSL transformation matrices."""
-
-    print('inmat1', inmat1)
-    print('inmat2', inmat2)
-    print('outmat', outmat)
+    """Use ``convert_xfm`` to concatenate two affines."""
 
     asrt.assertFileExists(inmat1, inmat2)
 
@@ -89,22 +90,14 @@ def concatxfm(inmat1, inmat2, outmat):
     return run.runfsl(cmd)
 
 
-def mcflirt(infile, outfile, reffile=None, spline_final=True, plots=True,
-            mats=True, refvol=None):
-    """Rigid-body motion correction using mcflirt."""
+@wutils.fileOrImage('infile', 'out', 'reffile')
+@wutils.fileOrArary('init')
+def mcflirt(infile, **kwargs):
+    """Wrapper around the ``mcflirt`` command."""
 
-    outfile = fslimage.removeExt(outfile)
-    cmd = "mcflirt -in {0} -out {1} -rmsrel -rmsabs".format(infile, outfile)
+    asrt.assertIsNifti(infile)
 
-    if reffile is not None:
-        cmd += " -reffile {0}".format(reffile)
-    if refvol is not None:
-        cmd += " -refvol {0}".format(refvol)
-    if spline_final:
-        cmd += " -spline_final"
-    if plots:
-        cmd += " -plots"
-    if mats:
-        cmd += " -mats"
+    cmd  = ['mcflirt', '-in', infile]
+    cmd += wutils.applyArgStyle('-', **kwargs)
 
     return run.runfsl(cmd)
