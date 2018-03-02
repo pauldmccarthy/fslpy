@@ -29,9 +29,17 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('src', 'ref', 'out', 'wmseg', 'fieldmap', 'fieldmapmask')
 @wutils.fileOrArray('init', 'omat', 'wmcoords', 'wmnorms')
 def flirt(src, ref, **kwargs):
-    """Wrapper for the ``flirt`` command. """
+    """Wrapper for the ``flirt`` command.
+
+    The ``twod`` argument may be used in place of the ``2D`` command line
+    option.
+    """
 
     asrt.assertIsNifti(src, ref)
+
+    argmap = {
+        'twod' : '2D'
+    }
 
     valmap = {
         'usesqform'    : wutils.SHOW_IF_TRUE,
@@ -47,7 +55,7 @@ def flirt(src, ref, **kwargs):
     }
 
     cmd  = ['flirt', '-in', src, '-ref', ref]
-    cmd += wutils.applyArgStyle('-', valmap=valmap, **kwargs)
+    cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return run.runfsl(cmd)
 

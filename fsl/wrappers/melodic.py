@@ -1,57 +1,82 @@
 #!/usr/bin/env python
 #
-# melodic.py -
+# melodic.py - Wrappers for melodic.
 #
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module provides wrapper functions for the FSL `MELODIC
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/MELODIC>`_ tool, and other
+related utilities.
+
+.. autosummary::
+   :nosignatures:
+
+   melodic
+   fsl_regfilt
+"""
+
 
 
 import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
+from . import wrapperutils  as wutils
 
 
-def melodic(input, outdir, dim=None, tr=None, mmthresh=None, report=True,
-            prefix=None, nomask=False, updatemask=False, nobet=False,
-            mask=None):
+@wutils.fileOrArray('mix', 'Tdes', 'Tcon', 'Sdes', 'Scon')
+@wutils.fileOrImage('input', 'mask', 'ICs', 'bgimage')
+def melodic(input, **kwargs):
     """Multivariate Exploratory Linear Optimised ICA."""
+
+    valmap = {
+        'Oall'         : wutils.SHOW_IF_TRUE,
+        'Ounmix'       : wutils.SHOW_IF_TRUE,
+        'Ostats'       : wutils.SHOW_IF_TRUE,
+        'Opca'         : wutils.SHOW_IF_TRUE,
+        'Owhite'       : wutils.SHOW_IF_TRUE,
+        'Oorig'        : wutils.SHOW_IF_TRUE,
+        'Omean'        : wutils.SHOW_IF_TRUE,
+        'verbose'      : wutils.SHOW_IF_TRUE,
+        'debug'        : wutils.SHOW_IF_TRUE,
+        'report'       : wutils.SHOW_IF_TRUE,
+        'CIFTI'        : wutils.SHOW_IF_TRUE,
+        'varnorm'      : wutils.SHOW_IF_TRUE,
+        'nomask'       : wutils.SHOW_IF_TRUE,
+        'nobet'        : wutils.SHOW_IF_TRUE,
+        'sep_vn'       : wutils.SHOW_IF_TRUE,
+        'disableMigp'  : wutils.SHOW_IF_TRUE,
+        'update_mask'  : wutils.HIDE_IF_TRUE,
+        'migp_shuffle' : wutils.HIDE_IF_TRUE,
+        'no_mm'        : wutils.SHOW_IF_TRUE,
+        'logPower'     : wutils.SHOW_IF_TRUE,
+    }
+
     asrt.assertIsNifti(input)
 
-    cmd = "melodic -i {0} -v --Oall --outdir={1}".format(input, outdir)
+    cmd  = ['melodic', '--in', input]
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    if mmthresh:
-        cmd += " --mmthresh={0}".format(mmthresh)
-    if dim:
-        cmd += " -d -{0}".format(dim)
-    if report:
-        cmd += " --report"
-    if tr:
-        cmd += " --tr={0}".format(tr)
-    if nomask:
-        cmd += " --nomask"
-    if updatemask:
-        cmd += " --update_mask"
-    if nobet:
-        cmd += " --nobet"
-    if prefix:
-        cmd = prefix + " " + cmd
-    if mask is not None:
-        cmd += " --mask={0}".format(mask)
     return run.runfsl(cmd)
 
 
-def fsl_regfilt(infile, outfile, mix, ics):
-    """Data de-noising by regression.
+@wutils.fileOrImage('input', 'out', 'mask', 'out_data')
+@wutils.fileOrArray('design', 'out_mix')
+def fsl_regfilt(input, out, design, **kwargs):
+    """Wrapper for the ``fsl_regfilt``command. """
 
-    Data de-noising by regressing out part of a design matrix
-    using simple OLS regression on 4D images
-    """
-    asrt.assertIsNifti(infile, outfile)
+    asrt.assertIsNifti(input, out)
 
-    icstr = '"'
-    for i in range(0, len(ics) - 1):
-        icstr = icstr + '{0},'.format(ics[i] + 1)
-    icstr = icstr + '{0}"'.format(ics[-1] + 1)
+    valmap = {
+        'freqfilt' : wutils.SHOW_IF_TRUE,
+        'freq_ic'  : wutils.HIDE_IF_TRUE,
+        'vn'       : wutils.SHOW_IF_TRUE,
+        'v'        : wutils.SHOW_IF_TRUE,
+    }
 
-    cmd = "fsl_regfilt -i {0} -o {1} -d {2} -f {3}".format(infile, outfile,
-                                                           mix, icstr)
+    cmd  = ['fsl_regfilt',
+            '--in={}'.format(input),
+            '--out={}'.format(out),
+            '--design={}'.format(design)]
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+
     return run.runfsl(cmd)
