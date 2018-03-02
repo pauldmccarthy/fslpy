@@ -16,10 +16,8 @@ from . import wrapperutils  as wutils
 
 @wutils.fileOrImage('input', 'output')
 def bet(input, output, **kwargs):
-    """Delete non-brain tissue from an image of the whole head.
+    """Wrapper for the ``bet`` command.
 
-    :arg input:         Image to be brain-extracted
-    :arg output:        Output image
     :arg mask:          Generate a brain mask
     :arg seg:           If ``False``, a brain extracted image is not
                         generated.
@@ -45,7 +43,7 @@ def bet(input, output, **kwargs):
     }
 
     cmd  = ['bet', input, output]
-    cmd += wutils.applyArgStyle('-', argmap, valmap, **kwargs)
+    cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return run.runfsl(*cmd)
 

@@ -28,7 +28,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('src', 'ref', 'out', 'wmseg', 'fieldmap', 'fieldmapmask')
 @wutils.fileOrArray('init', 'omat', 'wmcoords', 'wmnorms')
 def flirt(src, ref, **kwargs):
-    """Wrapper around the ``flirt`` command. """
+    """Wrapper for the ``flirt`` command. """
 
     asrt.assertIsNifti(src, ref)
 
@@ -43,8 +43,6 @@ def flirt(src, ref, **kwargs):
         'noresampblur' : wutils.SHOW_IF_TRUE,
         '2D'           : wutils.SHOW_IF_TRUE,
         'v'            : wutils.SHOW_IF_TRUE,
-        'version'      : wutils.SHOW_IF_TRUE,
-        'help'         : wutils.SHOW_IF_TRUE,
     }
 
     cmd  = ['flirt', '-in', src, '-ref', ref]
@@ -93,7 +91,7 @@ def concatxfm(inmat1, inmat2, outmat):
 @wutils.fileOrImage('infile', 'out', 'reffile')
 @wutils.fileOrArray('init')
 def mcflirt(infile, **kwargs):
-    """Wrapper around the ``mcflirt`` command."""
+    """Wrapper for the ``mcflirt`` command."""
 
     asrt.assertIsNifti(infile)
 
