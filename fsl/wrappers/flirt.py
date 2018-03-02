@@ -91,7 +91,7 @@ def concatxfm(inmat1, inmat2, outmat):
 
 
 @wutils.fileOrImage('infile', 'out', 'reffile')
-@wutils.fileOrArary('init')
+@wutils.fileOrArray('init')
 def mcflirt(infile, **kwargs):
     """Wrapper around the ``mcflirt`` command."""
 
