@@ -558,8 +558,8 @@ class _FileOrThing(object):
         allargs  = {k : v for k, v in zip(argnames, args)}
         allargs.update(kwargs)
 
-        if len(self.__things) == 0: things = self.__things
-        else:                       things = allargs.keys()
+        if len(self.__things) > 0: things = self.__things
+        else:                      things = allargs.keys()
 
         for name in things:
 
