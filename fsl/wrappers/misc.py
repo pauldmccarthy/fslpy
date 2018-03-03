@@ -1,47 +1,58 @@
 #!/usr/bin/env python
 #
-# misc.py -
+# misc.py - Wrappers for miscellaneous FSL command-line tools.
 #
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This module contains wrapper functions for various `FSL
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_ command-line tools.
+"""
 
 
 import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
+from . import wrapperutils  as wutils
 
 
-def fslreorient2std(input, output):
-    """reorient to match the approx. orientation of the standard (MNI152)."""
+@wutils.fileOrImage('input', 'output')
+def fslreorient2std(input, output=None):
+    """Wrapper for the ``fsreorient2std`` tool."""
 
-    asrt.assertIsNifti(input, output)
-    asrt.assertFileExists(input)
+    asrt.assertIsNifti(input)
 
-    cmd = 'fslreorient2std {0} {1}'.format(input, output)
+    cmd = ['fslreorient2std', input]
+
+    if output is not None:
+        cmd.append(output)
+
     return run.runfsl(cmd)
 
 
+@wutils.fileOrImage('input', 'output')
 def fslroi(input, output, xmin=None, xsize=None, ymin=None, ysize=None,
            zmin=None, zsize=None, tmin=None, tsize=None):
-    """Extract region of interest (ROI) from an image."""
+    """Wrapper for the ``fslroi`` tool."""
     assert ((tmin is not None and tsize is not None) or
             (xmin is not None and xsize is not None and
-            ymin is not None and ysize is not None and
-            zmin is not None and zsize is not None)), \
+             ymin is not None and ysize is not None and
+             zmin is not None and zsize is not None)), \
         "either time min/size or x/y/z min/size must be provided"
 
-    cmd = "fslroi {0} {1}".format(input, output)
+    cmd = ['fslroi', input, output]
 
     if xmin is not None:
-        cmd += " {0} {1} {2} {3} {4} {5}".format(xmin, xsize, ymin, ysize,
-                                                 zmin, zsize)
+        cmd += [str(v) for v in [xmin, xsize, ymin, ysize, zmin, zsize]]
     if tmin is not None:
-        cmd += " {0} {1}".format(tmin, tsize)
+        cmd += [str(tmin), str(tsize)]
 
     return run.runfsl(cmd)
 
 
+@wutils.fileOrImage('input', 'input2')
 def slicer(input, input2=None, label=None, lut=None, intensity=None,
            edgethreshold=None, x=None, y=None, z=None):
+    """Wrapper for the ``slicer`` command. """
 
     cmd = "slicer {0}".format(input)
 
@@ -65,17 +76,26 @@ def slicer(input, input2=None, label=None, lut=None, intensity=None,
     return run.runfsl(cmd)
 
 
-def cluster(infile, thresh, oindex=None, no_table=False):
-    """
-    Form clusters, report information about clusters and/or perform
-    cluster-based inference.
-    """
-    cmd = "cluster --in={0} --thresh={1}".format(infile, thresh)
 
-    if oindex is not None:
-        cmd += " -o {0}".format(oindex)
+@wutils.fileOrImage('input', 'cope', 'oindex', 'othresh', 'olmaxim', 'osize',
+                    'omax', 'omean', 'opvals', 'stdvol', 'warpvol',
+                    'empiricalNull')
+@wutils.fileOrArray('xfm')
+def cluster(input, thresh, **kwargs):
+    """Wrapper for the ``cluster`` command. """
 
-    if no_table:
-        cmd += " --no_table"
+    valmap = {
+        'fractional'     : wutils.SHOW_IF_TRUE,
+        'mm'             : wutils.SHOW_IF_TRUE,
+        'min'            : wutils.SHOW_IF_TRUE,
+        'no_table'       : wutils.SHOW_IF_TRUE,
+        'minclustersize' : wutils.SHOW_IF_TRUE,
+        'verbose'        : wutils.SHOW_IF_TRUE,
+        'voxthresh'      : wutils.SHOW_IF_TRUE,
+        'voxuncthresh'   : wutils.SHOW_IF_TRUE,
+    }
+
+    cmd  = ['cluster', '--in={}'.format(input), '--thresh={}'.format(thresh)]
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return run.runfsl(cmd)
