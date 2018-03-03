@@ -132,7 +132,7 @@ def run(*args, **kwargs):
     else:                 return tuple(results)
 
 
-def runfsl(*args):
+def runfsl(*args, **kwargs):
     """Call a FSL command and return its output. This function simply prepends
     ``$FSLDIR/bin/`` to the command before passing it to :func:`run`.
     """
@@ -143,7 +143,7 @@ def runfsl(*args):
     args    = _prepareArgs(args)
     args[0] = op.join(fslplatform.fsldir, 'bin', args[0])
 
-    return run(*args)
+    return run(*args, **kwargs)
 
 
 def fslsub(*args):

@@ -8,13 +8,71 @@
 """This module contains functions and decorators used by the FSL wrapper
 functions.
 
-.. autosummary::
-   :nosignatures:
 
-   applyArgStyle
-   required
-   fileOrImage
-   fileOrArray
+The :func:`cmdwrapper` and :func:`fslwrapper` functions are conenience
+decorators which allow you to write your wrapper function such that it simply
+generates the command-line needed to respectively run a standard shell
+command or a FSL command. For example::
+
+
+    @fslwrapper
+    def fslreorient2std(input, output):
+        return ['fslreorient2std', input, output]
+
+
+When this ``fslreorient2std`` function is called, the ``fslwrapper`` decorator
+will take care of invoking the command in a standardised way.
+
+
+.. note:: The :func:`fslwrapper` and :func:`cmdwrapper` should always be
+          the _first_ decorator applied to a function.
+
+
+The :func:`applyArgStyle` function can be used to automatically generate
+keyword arguments into command-line arguments, based on a set of standard
+patterns. For example::
+
+
+    @fslwrapper
+    def flirt(src, ref, **kwargs):
+        cmd  = ['flirt', '-in', src, '-ref', ref]
+        return cmd + applyArgStyle('-=', **kwargs)
+
+
+The :func:`fileOrImage` and :func:`fileOrArray` functions can be used to
+decorate a wrapper function such that in-memory ``nibabel`` images or Numpy
+arrays can be passed in as arguments - they will be automatically saved out to
+files, and then the file names passed into the wrapper function. For exmaple::
+
+
+    @fileOrImage('src', 'ref')
+    @fslwrapper
+    def flirt(src, ref, **kwargs):
+        cmd  = ['flirt', '-in', src, '-ref', ref]
+        return cmd + applyArgStyle('-=', **kwargs)
+
+
+Now this ``flirt`` function can be called either with file names, or
+``nibabel`` images.
+
+
+Command outputs can also be loaded back into memory by using the special
+:data:`LOAD` value when calling a wrapper function. For example::
+
+
+    @fileOrImage('src', 'ref', 'out')
+    @fslwrapper
+    def flirt(src, ref, **kwargs):
+        cmd  = ['flirt', '-in', src, '-ref', ref]
+        return cmd + applyArgStyle('-=', **kwargs)
+
+
+If we set the ``out`` argument to ``LOAD``, the output image will be loaded
+and returned::
+
+    src     = nib.load('src.nii')
+    ref     = nib.load('ref.nii')
+    aligned = flirt(src, ref, out=LOAD)['out']
 """
 
 
@@ -32,6 +90,7 @@ import nibabel as nib
 import numpy   as np
 
 import fsl.utils.tempdir as tempdir
+import fsl.utils.run     as run
 import fsl.data.image    as fslimage
 
 
@@ -65,6 +124,28 @@ def _unwrap(func):
         return _unwrap(func.__wrapped__)
 
     return func
+
+
+def cmdwrapper(func):
+    """This decorator can be used on functions which generate a command line.
+    It will pass the return value of the function to the
+    :func:`fsl.utils.run.run` function in a standardised manner.
+    """
+    def wrapper(*args, **kwargs):
+        cmd = func(*args, **kwargs)
+        return run.run(cmd, err=True)
+    return _update_wrapper(wrapper, func)
+
+
+def fslwrapper(func):
+    """This decorator can be used on functions which generate a FSL command
+    line. It will pass the return value of the function to the
+    :func:`fsl.utils.run.runfsl` function in a standardised manner.
+    """
+    def wrapper(*args, **kwargs):
+        cmd = func(*args, **kwargs)
+        return run.runfsl(cmd, err=True)
+    return _update_wrapper(wrapper, func)
 
 
 SHOW_IF_TRUE = object()
@@ -421,8 +502,10 @@ class _FileOrThing(object):
             return self.__output
 
 
-    def __init__(self, prepIn, prepOut, load, *things):
+    def __init__(self, func, prepIn, prepOut, load, *things):
         """Initialise a ``_FileOrThing`` decorator.
+
+        :arg func:    The function to be decorated.
 
         :arg prepIn:  Function which returns a file name to be used in
                       place of an input argument.
@@ -449,47 +532,17 @@ class _FileOrThing(object):
 
           - The argument value that was passed in
         """
+        self.__func    = func
         self.__prepIn  = prepIn
         self.__prepOut = prepOut
         self.__load    = load
         self.__things  = things
-        self.__func    = None
 
 
     def __call__(self, *args, **kwargs):
-        """Creates and returns the decorated function. """
-
-        # the first call will be our decorated
-        # function getting passed in.
-        if self.__func is None:
-            func        = args[0]
-            self.__func = func
-            return self
-
-        # Subsequent calls will be calls
-        # to the decorated function.
-        else:
-            return self.__wrapper(*args, **kwargs)
-
-
-    def __get__(self, instance, owner):
-        """Called when this ``_FileOrThing`` has been used to decorate a method
-        of a class. When it is accessed on an instance, the instance is added
-        as the first argument to the wrapper function.
-        """
-        if instance is None:
-            return self
-        else:
-            wrapper = functools.partial(self.__call__, instance)
-            return _update_wrapper(wrapper, self.__call__)
-
-
-    def __wrapper(self, *args, **kwargs):
         """Function which calls ``func``, ensuring that any arguments of
         type ``Thing`` are saved to temporary files, and any arguments
         with the value :data:`LOAD` are loaded and returned.
-
-        :arg func: The function being wrapped.
 
         All other arguments are passed through to ``func``.
         """
@@ -619,7 +672,15 @@ def fileOrImage(*imgargs):
         img = nib.load(path)
         return nib.nifti1.Nifti1Image(img.get_data(), None, img.header)
 
-    return _FileOrThing(prepIn, prepOut, load, *imgargs)
+    def decorator(func):
+        fot = _FileOrThing(func, prepIn, prepOut, load, *imgargs)
+
+        def wrapper(*args, **kwargs):
+            return fot(*args, **kwargs)
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator
 
 
 def fileOrArray(*arrargs):
@@ -643,4 +704,12 @@ def fileOrArray(*arrargs):
 
     load = np.loadtxt
 
-    return _FileOrThing(prepIn, prepOut, load, *arrargs)
+    def decorator(func):
+        fot = _FileOrThing(func, prepIn, prepOut, load, *arrargs)
+
+        def wrapper(*args, **kwargs):
+            return fot(*args, **kwargs)
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator
