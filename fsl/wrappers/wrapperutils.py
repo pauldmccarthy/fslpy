@@ -223,28 +223,32 @@ def required(*reqargs):
 
     def decorator(func):
         def wrapper(*args, **kwargs):
-            kwargs = argsToKwargs(func, args, kwargs)
+            argnames = namedPositionals(func, args)
             for reqarg in reqargs:
-                assert reqarg in kwargs
+                assert (reqarg in kwargs) or (reqarg in argnames)
             return func(**kwargs)
         return _update_wrapper(wrapper, func)
     return decorator
 
 
-def argsToKwargs(func, args, kwargs=None):
+def namedPositionals(func, args):
     """Given a function, and a sequence of positional arguments destined
-    for that function, converts the positional arguments into a dict
-    of keyword arguments. Used by the :class:`_FileOrThing` class.
+    for that function, identiifes the name for each positional argument.
+    Variable positional arguments are given an automatic name.
 
-    :arg func:   Function which will accept ``args`` as positionals.
-
-    :arg args:   Tuple of positional arguments to be passed to ``func``.
-
-    :arg kwargs: Optional. If provided, assumed to be keyword arguments
-                 to be passed to ``func``. The ``args`` are merged into
-                 ``kwargs``. A :exc:`ValueError` is raised if one of
-                 ``args`` is already present in ``kwargs``.
+    :arg func: Function which will accept ``args`` as positionals.
+    :arg args: Tuple of positional arguments to be passed to ``func``.
     """
+
+    # Current implementation will
+    # result in naming collisions
+    # for something like this:
+    #
+    # def func(args0, *args):
+    #     ...
+    # because of automatic vararg
+    # naming. But who would write
+    # a function like that anyway?
 
     # Remove any decorators
     # from the function
@@ -254,7 +258,9 @@ def argsToKwargs(func, args, kwargs=None):
     # get the names of positional
     # arguments in Python 2.x.
     if sys.version_info[0] < 3:
-        argnames = inspect.getargspec(func).args
+        spec     = inspect.getargspec(func)
+        argnames = spec.args
+        varargs  = spec.varargs
 
     # But getargspec is deprecated
     # in python 3.x
@@ -264,17 +270,20 @@ def argsToKwargs(func, args, kwargs=None):
         # python 3.5, but not in python 3.6.
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=DeprecationWarning)
-            argnames = inspect.getfullargspec(func).args
+            spec     = inspect.getfullargspec(func)
+            argnames = spec.args
+            varargs  = spec.varargs
 
-    if kwargs is None: kwargs = dict()
-    else:              kwargs = dict(kwargs)
+    # we only care about the arguments
+    # that are being passed in
+    argnames = argnames[:len(args)]
 
-    for name, val in zip(argnames, args):
-        if name in kwargs:
-            raise ValueError('Argument {} repeated'.format(name))
-        kwargs[name] = val
+    # make up names for varargs
+    nvarargs = len(args) - len(argnames)
+    if varargs is not None and nvarargs > 0:
+        argnames += ['{}{}'.format(varargs, i) for i in range(nvarargs)]
 
-    return kwargs
+    return argnames
 
 
 LOAD = object()
@@ -426,7 +435,9 @@ class _FileOrThing(object):
                       as its sole argument.
 
         :arg things:  Names of all arguments which will be handled by
-                      this ``_FileOrThing`` decorator.
+                      this ``_FileOrThing`` decorator. If not provided,
+                      *all* arguments passed to the function will be
+                      handled.
 
         The ``prepIn`` and ``prepOut`` functions must accept the following
         positional arguments:
@@ -442,15 +453,43 @@ class _FileOrThing(object):
         self.__prepOut = prepOut
         self.__load    = load
         self.__things  = things
+        self.__func    = None
 
 
     def __call__(self, func):
         """Creates and returns the decorated function. """
-        wrapper = functools.partial(self.__wrapper, func)
-        return _update_wrapper(wrapper, func)
+
+        self.__func = func
+
+        # Wrap the wrapper because update_wrapper
+        # will raise an error if we pass it
+        # self.__wrapper. This is because it is
+        # not possible to set attributes on bound
+        # methods.
+        def wrapper(*args, **kwargs):
+            return self.__wrapper(*args, **kwargs)
+
+        # We replace this __call__ method
+        # with the decorated function, so
+        # this instance is the decorator,
+        # and __get__ will work as intended.
+        self.__call__ = _update_wrapper(wrapper, func)
+        return self
 
 
-    def __wrapper(self, func, *args, **kwargs):
+    def __get__(self, instance, owner):
+        """Called when this ``_FileOrThing`` has been used to decorate a method
+        of a class. When it is accessed on an instance, the instance is added
+        as the first argument to the wrapper function.
+        """
+        if instance is None:
+            return self
+        else:
+            wrapper = functools.partial(self.__call__, instance)
+            return _update_wrapper(wrapper, self.__call__)
+
+
+    def __wrapper(self, *args, **kwargs):
         """Function which calls ``func``, ensuring that any arguments of
         type ``Thing`` are saved to temporary files, and any arguments
         with the value :data:`LOAD` are loaded and returned.
@@ -460,8 +499,8 @@ class _FileOrThing(object):
         All other arguments are passed through to ``func``.
         """
 
-        # Turn all positionals into keywords
-        kwargs = argsToKwargs(func, args, kwargs)
+        func     = self.__func
+        argnames = namedPositionals(func, args)
 
         # Create a tempdir to store any temporary
         # input/output things, but don't change
@@ -471,10 +510,11 @@ class _FileOrThing(object):
 
             # Replace any things with file names.
             # Also get a list of LOAD outputs
-            kwargs, outfiles = self.__prepareArgs(td, kwargs)
+            args, kwargs, outfiles = self.__prepareArgs(
+                td, argnames, args, kwargs)
 
             # Call the function
-            result = func(**kwargs)
+            result = func(*args, **kwargs)
 
             # make a _Reults object to store
             # the output. If we are decorating
@@ -495,7 +535,7 @@ class _FileOrThing(object):
             return result
 
 
-    def __prepareArgs(self, workdir, kwargs):
+    def __prepareArgs(self, workdir, argnames, args, kwargs):
         """Prepares all input and output arguments to be passed to the
         decorated function. Any arguments with a value of :data:`LOAD` are
         passed to the ``prepOut`` function specified at :meth:`__init__`.
@@ -503,23 +543,32 @@ class _FileOrThing(object):
 
         :arg workdir: Directory in which all temporary files should be stored.
 
+        :arg args:    Positional arguments to be passed to the decorated
+                      function.
+
         :arg kwargs:  Keyword arguments to be passed to the decorated function.
 
         :returns:     A tuple containing:
 
-                        - An updated copy of ``kwargs``, ready to be passed
-                          into the function
+                        - An updated copy of ``args``.
+
+                        - An updated copy of ``kwargs``.
 
                         - A dictionary of ``{ name : filename }`` mappings,
                           for all arguments with a value of ``LOAD``.
         """
 
-        kwargs   = dict(kwargs)
         outfiles = dict()
 
-        for name in self.__things:
+        allargs  = {k : v for k, v in zip(argnames, args)}
+        allargs.update(kwargs)
 
-            val = kwargs.get(name, None)
+        if len(self.__things) == 0: things = self.__things
+        else:                       things = allargs.keys()
+
+        for name in things:
+
+            val = allargs.get(name, None)
 
             if val is None:
                 continue
@@ -529,16 +578,19 @@ class _FileOrThing(object):
                 outfile = self.__prepOut(workdir, name, val)
 
                 if outfile is not None:
-                    kwargs[  name] = outfile
+                    allargs[ name] = outfile
                     outfiles[name] = outfile
             else:
 
                 infile = self.__prepIn(workdir, name, val)
 
                 if infile is not None:
-                    kwargs[name] = infile
+                    allargs[name] = infile
 
-        return kwargs, outfiles
+        args   = [allargs.pop(k) for k in argnames]
+        kwargs = allargs
+
+        return args, kwargs, outfiles
 
 
 def fileOrImage(*imgargs):
