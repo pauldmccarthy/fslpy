@@ -270,3 +270,24 @@ def test_fileOrImage():
         # array array array
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
         assert np.all(result.get_data() == expected)
+
+
+def test_chained_fileOrImageAndArray():
+    @wutils.fileOrImage('image')
+    @wutils.fileOrArray('array')
+    def func(image, array):
+        nib.load(image)
+        np.loadtxt(array)
+
+    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
+    array = np.array([[5, 6, 7, 8]])
+
+    with tempdir.tempdir():
+
+        nib.save(image, 'image.nii')
+        np.savetxt('array.txt', array)
+
+        func('image.nii', 'array.txt')
+        func('image.nii',  array)
+        func( image,      'array.txt')
+        func( image,       array)
