@@ -456,25 +456,20 @@ class _FileOrThing(object):
         self.__func    = None
 
 
-    def __call__(self, func):
+    def __call__(self, *args, **kwargs):
         """Creates and returns the decorated function. """
 
-        self.__func = func
+        # the first call will be our decorated
+        # function getting passed in.
+        if self.__func is None:
+            func        = args[0]
+            self.__func = func
+            return self
 
-        # Wrap the wrapper because update_wrapper
-        # will raise an error if we pass it
-        # self.__wrapper. This is because it is
-        # not possible to set attributes on bound
-        # methods.
-        def wrapper(*args, **kwargs):
+        # Subsequent calls will be calls
+        # to the decorated function.
+        else:
             return self.__wrapper(*args, **kwargs)
-
-        # We replace this __call__ method
-        # with the decorated function, so
-        # this instance is the decorator,
-        # and __get__ will work as intended.
-        self.__call__ = _update_wrapper(wrapper, func)
-        return self
 
 
     def __get__(self, instance, owner):
