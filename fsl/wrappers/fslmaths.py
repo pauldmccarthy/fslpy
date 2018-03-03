@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 #
-# fslmaths.py -
+# fslmaths.py - Wrapper for fslmaths.
 #
-# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+# Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 #
+"""This module provides the :class:`fslmaths` class, which acts as a wrapper
+for the ``fslmaths`` command-line tool.
+"""
 
 
-from fsl.utils.run import runfsl
+import fsl.utils.run as run
 
 
 class fslmaths(object):
@@ -150,6 +153,6 @@ class fslmaths(object):
         else:
             self.outputImage = self.inputImage
 
-        runfsl(self.toString())
+        run.runfsl(self.toString())
 
         return self.outputImage
