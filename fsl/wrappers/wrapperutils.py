@@ -46,7 +46,7 @@ def _update_wrapper(wrapper, wrapped, *args, **kwargs):
     wrapper = functools.update_wrapper(wrapper, wrapped, *args, **kwargs)
 
     # Python >= 3.4 does things right
-    if sys.version_info[0] * 10 + sys.version_info[1] < 3.4:
+    if (sys.version_info[0] * 10 + sys.version_info[1]) < 34:
         wrapper.__wrapped__ = wrapped
     return wrapper
 
@@ -57,7 +57,7 @@ def _unwrap(func):
     """
 
     # Python >= 3.4 has an inspect.unwrap function
-    if sys.version_info[0] * 10 + sys.version_info[1] < 3.4:
+    if (sys.version_info[0] * 10 + sys.version_info[1]) >= 34:
         return inspect.unwrap(func)
 
     # Otherwise we follow the __wrapped__ chain ourselves
