@@ -6,17 +6,13 @@
 #
 
 import shlex
-import collections
 
 import pytest
 
 import fsl.wrappers.wrapperutils as wutils
 
 
-
 def test_applyArgStyle():
-    """
-    """
 
     kwargs = {
         'name'  : 'val',
@@ -136,6 +132,28 @@ def test_applyArgStyle_argmap_valmap():
             '-', argmap=argmap, valmap=valmap, **kwargs) in expected
 
 
+def test_namedPositionals():
+    def func1(): pass
+    def func2(a, b, c): pass
+    def func3(a, b, c, d=None, e=None): pass
+    def func4(*args): pass
+    def func5(*args, **kwargs): pass
+    def func6(a, b, *args): pass
+    def func7(a, b, *args, **kwargs): pass
+
+    tests = [
+        (func1, [],        []),
+        (func2, [1, 2, 3], ['a', 'b', 'c']),
+        (func3, [1, 2, 3], ['a', 'b', 'c']),
+        (func4, [1, 2, 3], ['args0', 'args1', 'args2']),
+        (func5, [1, 2, 3], ['args0', 'args1', 'args2']),
+        (func6, [1, 2, 3], ['a', 'b', 'args0']),
+        (func7, [1, 2, 3], ['a', 'b', 'args0']),
+    ]
+
+    for func, args, expected in tests:
+        result = wutils.namedPositionals(func, args)
+        assert list(result) == list(expected)
 
 # TODO
 #  - test _FileOrImage LOAD tuple order
