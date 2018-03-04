@@ -52,7 +52,7 @@ def melodic(input, **kwargs):
 
     asrt.assertIsNifti(input)
 
-    cmd  = ['melodic', '--in', input]
+    cmd  = ['melodic', '--in={}'.format(input)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
@@ -77,6 +77,6 @@ def fsl_regfilt(input, out, design, **kwargs):
             '--in={}'.format(input),
             '--out={}'.format(out),
             '--design={}'.format(design)]
-    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    cmd += wutils.applyArgStyle('--=', valsep=',', valmap=valmap, **kwargs)
 
     return cmd

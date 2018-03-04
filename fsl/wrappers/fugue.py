@@ -17,8 +17,12 @@ from . import wrapperutils as wutils
 @wutils.fileOrImage('in', 'unwarp', 'warp', 'phasemap', 'savefmap',
                     'loadfmap', 'saveshift', 'loadshift', 'mask')
 @wutils.fslwrapper
-def fugue(**kwargs):
+def fugue(input=None, **kwargs):
     """Wrapper for the ``fugue`` command."""
+
+    argmap = {
+        'input' : 'in'
+    }
 
     valmap = {
         'dwelltoasym' : wutils.SHOW_IF_TRUE,
@@ -37,7 +41,12 @@ def fugue(**kwargs):
         'verbose'     : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fugue'] + wutils.applyArgStyle('--=',  valmap=valmap, **kwargs)
+    kwargs.update({'input' : input})
+
+    cmd = ['fugue'] + wutils.applyArgStyle('--=',
+                                           argmap=argmap,
+                                           valmap=valmap,
+                                           **kwargs)
 
     return cmd
 

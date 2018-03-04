@@ -151,7 +151,7 @@ class fslmaths(object):
         # will only be one entry in
         # the result dict.
         if output is None: return list(result.values())[0]
-        else:              return output
+        else:              return result
 
     @wutils.fileOrImage()
     @wutils.fslwrapper

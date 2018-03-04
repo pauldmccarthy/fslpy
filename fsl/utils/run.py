@@ -45,6 +45,8 @@ class FSLNotPresent(Exception):
 def dryrun(*args):
     """Context manager which causes all calls to :func:`run` to be logged but
     not executed. See the :data:`DRY_RUN` flag.
+
+    The returned standard output will be equal to ``' '.join(args)``.
     """
     global DRY_RUN
 
@@ -106,7 +108,7 @@ def run(*args, **kwargs):
         log.debug('run: {}'.format(' '.join(args)))
 
     if DRY_RUN:
-        stdout = '<dryrun>'
+        stdout = ' '.join(args)
         stderr = ''
     else:
         proc           = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
