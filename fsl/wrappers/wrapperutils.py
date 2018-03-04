@@ -24,7 +24,7 @@ When this ``fslreorient2std`` function is called, the ``fslwrapper`` decorator
 will take care of invoking the command in a standardised way.
 
 
-The :func:`applyArgStyle` function can be used to automatically generate
+The :func:`applyArgStyle` function can be used to automatically convert
 keyword arguments into command-line arguments, based on a set of standard
 patterns. For example::
 
@@ -59,7 +59,7 @@ Now this ``flirt`` function can be called either with file names, or
           function, they should be grouped together, e.g.::
 
               @fileOrImage('a', 'b')
-              @fileOrArray('c', 'd)
+              @fileOrArray('c', 'd')
               @fslwrapper
               def func(**kwargs):
                   ...
