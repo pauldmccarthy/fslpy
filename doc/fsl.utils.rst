@@ -10,6 +10,7 @@
    fsl.utils.idle
    fsl.utils.imcp
    fsl.utils.memoize
+   fsl.utils.meta
    fsl.utils.naninfrange
    fsl.utils.notifier
    fsl.utils.path

@@ -1,6 +1,7 @@
 deprecation
 nibabel
 nibabel.fileslice
+nibabel.freesurfer
 numpy
 numpy.linalg
 scipy

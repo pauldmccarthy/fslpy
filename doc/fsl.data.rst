@@ -12,6 +12,7 @@
    fsl.data.featdesign
    fsl.data.featimage
    fsl.data.fixlabels
+   fsl.data.freesurfer
    fsl.data.gifti
    fsl.data.image
    fsl.data.imagewrapper
@@ -21,6 +22,7 @@
    fsl.data.mghimage
    fsl.data.vest
    fsl.data.volumelabels
+   fsl.data.vtk
 
 .. automodule:: fsl.data
     :members:

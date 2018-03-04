@@ -8,6 +8,7 @@
    fsl.scripts
    fsl.utils
    fsl.version
+   fsl.wrappers
 
 .. automodule:: fsl
     :members:
