@@ -24,10 +24,6 @@ When this ``fslreorient2std`` function is called, the ``fslwrapper`` decorator
 will take care of invoking the command in a standardised way.
 
 
-.. note:: The :func:`fslwrapper` and :func:`cmdwrapper` should always be
-          the _first_ decorator applied to a function.
-
-
 The :func:`applyArgStyle` function can be used to automatically generate
 keyword arguments into command-line arguments, based on a set of standard
 patterns. For example::
@@ -54,6 +50,19 @@ files, and then the file names passed into the wrapper function. For exmaple::
 
 Now this ``flirt`` function can be called either with file names, or
 ``nibabel`` images.
+
+
+.. note:: Because the :func:`fileOrImage` and :func:`fileOrArray` decorators
+          manipulate the return value of the decorated function, they should
+          be applied *after* any other decorators. Furthermore, if you need to
+          apply both a ``fileOrImage`` and ``fileOrArray`` decorator to a
+          function, they should be grouped together, e.g.::
+
+              @fileOrImage('a', 'b')
+              @fileOrArray('c', 'd)
+              @fslwrapper
+              def func(**kwargs):
+                  ...
 
 
 Command outputs can also be loaded back into memory by using the special
@@ -99,7 +108,7 @@ def _update_wrapper(wrapper, wrapped, *args, **kwargs):
     implementation ensures that the wrapper function has an attribute
     called ``__wrapped__``, which refers to the ``wrapped`` function.
 
-    This behaviour is only required in Python versions < 3.4.
+    This custom function is only needed in Python versions < 3.4.
     """
 
     wrapper = functools.update_wrapper(wrapper, wrapped, *args, **kwargs)
@@ -292,26 +301,6 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
     return args
 
 
-def required(*reqargs):
-    """Decorator which makes sure that all specified arguments are present
-    before calling the decorated function. Arguments which are not present
-    will result in an :exc:`AssertionError`. Use as follows::
-
-        @required('foo')
-        def funcWhichRequires_foo(**kwargs):
-            foo = kwargs['foo']
-    """
-
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            argnames = namedPositionals(func, args)
-            for reqarg in reqargs:
-                assert (reqarg in kwargs) or (reqarg in argnames)
-            return func(**kwargs)
-        return _update_wrapper(wrapper, func)
-    return decorator
-
-
 def namedPositionals(func, args):
     """Given a function, and a sequence of positional arguments destined
     for that function, identiifes the name for each positional argument.
@@ -480,7 +469,7 @@ class _FileOrThing(object):
 
 
     ``_FileOrThing`` decorators can be used with any other decorators
-    __as long as__ they do not manipulate the return value.
+    **as long as** they do not manipulate the return value.
     """
 
 

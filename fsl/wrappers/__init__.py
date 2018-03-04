@@ -8,15 +8,28 @@
 them to be called from Python.
 
 
-Most of these wrapper functions strive to provide as-close an interface to the
-command-line tool as possible. Most functions use positional arguments for
-required options, and keyword arguments for all other options, with argument
-names equivalent to command line option names.
+For example, you can call BET like so::
+
+    from fsl.wrappers import bet
+    bet('struct', 'struct_brain')
+
+
+Most of these wrapper functions strive to provide an interface which is as
+close as possible to the underlying command-line tool. Most functions use
+positional arguments for required options, and keyword arguments for all other
+options, with argument names equivalent to command line option names.
 
 
 For options where this is not possible (e.g. ``flirt -2D``),an alias is used
 instead. Aliases may also be used to provide a more readable interface (e.g.
 the :func:`.bet` function uses ``mask`` instead of ``m``).
+
+
+One exception to the above is :class:`.fslmaths`, which provides a more
+object-oriented interface::
+
+    from fsl.wrappers import fslmaths
+    fslmaths('image.nii').mas('mask.nii').bin().run('output.nii')
 
 
 Wrapper functions for commands which accept NIfTI image or numeric text files
@@ -31,11 +44,23 @@ if we want to FLIRT two images and get the result, we can do this::
 
     src     = nib.load('src.nii')
     ref     = nib.load('ref.nii')
-    aligned = flirt(src, ref, out=LOAD)['out']
+    init    = np.eye(4)
+    aligned = flirt(src, ref, init=init, out=LOAD)['out']
 
 
-If you are writing wrapper functions, read through the :mod:`.wrapperutils`
-module - it contains several useful functions and decorators.
+Similarly, we can run a ``fslmaths`` command on in-memory images::
+
+    import nibabel as nib
+    from fsl.wrappers import fslmaths, LOAD
+
+    image  = nib.load('image.nii')
+    mask   = nib.load('mask.nii')
+    output = fslmaths(image).mas(mask).bin().run(LOAD)
+
+
+If you are *writing* wrapper functions, take a look at the
+:mod:`.wrapperutils` module - it contains several useful functions and
+decorators.
 """
 
 
