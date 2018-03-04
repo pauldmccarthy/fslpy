@@ -14,6 +14,7 @@ following sub-packages:
    fsl.utils
    fsl.scripts
    fsl.version
+   fsl.wrappers
 
 .. note:: The ``fsl`` namespace is a ``pkgutil``-style *namespace package* -
           it can be used across different projects - see
