@@ -10,12 +10,12 @@
 """
 
 
-import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
 @wutils.fileOrImage('input', 'output')
+@wutils.fslwrapper
 def fslreorient2std(input, output=None):
     """Wrapper for the ``fsreorient2std`` tool."""
 
@@ -26,10 +26,11 @@ def fslreorient2std(input, output=None):
     if output is not None:
         cmd.append(output)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('input', 'output')
+@wutils.fslwrapper
 def fslroi(input, output, xmin=None, xsize=None, ymin=None, ysize=None,
            zmin=None, zsize=None, tmin=None, tsize=None):
     """Wrapper for the ``fslroi`` tool."""
@@ -46,10 +47,11 @@ def fslroi(input, output, xmin=None, xsize=None, ymin=None, ysize=None,
     if tmin is not None:
         cmd += [str(tmin), str(tsize)]
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('input', 'input2')
+@wutils.fslwrapper
 def slicer(input, input2=None, label=None, lut=None, intensity=None,
            edgethreshold=None, x=None, y=None, z=None):
     """Wrapper for the ``slicer`` command. """
@@ -73,14 +75,14 @@ def slicer(input, input2=None, label=None, lut=None, intensity=None,
     if z is not None:
         cmd += " -z {0} {1}".format(z[0], z[1])
 
-    return run.runfsl(cmd)
-
+    return cmd
 
 
 @wutils.fileOrImage('input', 'cope', 'oindex', 'othresh', 'olmaxim', 'osize',
                     'omax', 'omean', 'opvals', 'stdvol', 'warpvol',
                     'empiricalNull')
 @wutils.fileOrArray('xfm')
+@wutils.fslwrapper
 def cluster(input, thresh, **kwargs):
     """Wrapper for the ``cluster`` command. """
 
@@ -98,4 +100,4 @@ def cluster(input, thresh, **kwargs):
     cmd  = ['cluster', '--in={}'.format(input), '--thresh={}'.format(thresh)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

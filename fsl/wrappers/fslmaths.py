@@ -9,7 +9,6 @@ for the ``fslmaths`` command-line tool.
 """
 
 
-import fsl.utils.run       as run
 from . import wrapperutils as wutils
 
 
@@ -155,6 +154,7 @@ class fslmaths(object):
         else:              return output
 
     @wutils.fileOrImage()
+    @wutils.fslwrapper
     def __run(self, *cmd):
         """Run the given ``fslmaths`` command. """
-        return run.runfsl([str(c) for c in cmd])
+        return [str(c) for c in cmd]

@@ -11,11 +11,11 @@
 
 
 import fsl.utils.assertions as asrt
-import fsl.utils.run        as run
 from . import wrapperutils  as wutils
 
 
 @wutils.fileOrImage('input', 'output')
+@wutils.fslwrapper
 def bet(input, output, **kwargs):
     """Wrapper for the ``bet`` command.
 
@@ -46,11 +46,12 @@ def bet(input, output, **kwargs):
     cmd  = ['bet', input, output]
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
-    return run.runfsl(*cmd)
+    return cmd
 
 
 @wutils.fileOrImage('input', 'output')
 @wutils.fileOrArray('matrix')
+@wutils.fslwrapper
 def robustfov(input, output=None, **kwargs):
     """Wrapper for the ``robustfov`` command. """
     asrt.assertIsNifti(input)
@@ -66,4 +67,4 @@ def robustfov(input, output=None, **kwargs):
     cmd  = ['robustfov', '-i', input]
     cmd += wutils.applyArgStyle('-', argmap=argmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

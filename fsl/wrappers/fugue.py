@@ -11,12 +11,12 @@ processing and distortion correction.
 """
 
 
-import fsl.utils.run       as run
 from . import wrapperutils as wutils
 
 
 @wutils.fileOrImage('in', 'unwarp', 'warp', 'phasemap', 'savefmap',
                     'loadfmap', 'saveshift', 'loadshift', 'mask')
+@wutils.fslwrapper
 def fugue(**kwargs):
     """Wrapper for the ``fugue`` command."""
 
@@ -39,9 +39,11 @@ def fugue(**kwargs):
 
     cmd = ['fugue'] + wutils.applyArgStyle('--=',  valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
+@wutils.fileOrImage('input', 'mask', 'sigloss')
+@wutils.fslwrapper
 def sigloss(input, sigloss, **kwargs):
     """Wrapper for the ``sigloss`` command."""
 
@@ -50,4 +52,4 @@ def sigloss(input, sigloss, **kwargs):
     cmd  = ['sigloss', '--in', input, '--sigloss', sigloss]
     cmd += wutils.applyArgStyle('--', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

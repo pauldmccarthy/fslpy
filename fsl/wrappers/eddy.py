@@ -18,13 +18,13 @@ estimation and eddy-current distortion correction.
 """
 
 
-import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
 @wutils.fileOrImage('imain', 'mask', 'field')
 @wutils.fileOrArray('index', 'acqp', 'bvecs', 'bvals', 'field_mat')
+@wutils.fslwrapper
 def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
     """Wrapper for the ``eddy_cuda`` command."""
 
@@ -58,11 +58,12 @@ def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
                    'out'   : out})
 
     cmd = ['eddy_cuda'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('imain', 'fout', 'iout')
 @wutils.fileOrArray('datain')
+@wutils.fslwrapper
 def topup(imain, datain, **kwargs):
     """Wrapper for the ``topup`` command."""
 
@@ -76,4 +77,4 @@ def topup(imain, datain, **kwargs):
     cmd  = ['topup', '--imain={}'.format(imain), '--datain={}'.format(datain)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

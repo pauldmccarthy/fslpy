@@ -19,7 +19,6 @@ non-linear registration of 3D images.
 """
 
 
-import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
@@ -27,6 +26,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('src', 'ref', 'inwarp', 'cout', 'iout', 'fout', 'jout',
                     'refout', 'refmask', 'inmask')
 @wutils.fileOrArray('aff')
+@wutils.fslwrapper
 def fnirt(src, ref, **kwargs):
     """Wrapper for the ``fnirt`` command."""
 
@@ -35,11 +35,12 @@ def fnirt(src, ref, **kwargs):
     cmd  = ['fnirt', '--in={}'.format(src), '--ref={}'.format(ref)]
     cmd += wutils.applyArgStyle('--=', **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('src', 'ref', 'out', 'warp', 'mask')
 @wutils.fileOrArray('premat', 'postmat')
+@wutils.fslwrapper
 def applywarp(src, ref, out, warp, **kwargs):
     """Wrapper for the ``applywarp`` command. """
 
@@ -59,10 +60,11 @@ def applywarp(src, ref, out, warp, **kwargs):
 
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('warp', 'ref', 'out')
+@wutils.fslwrapper
 def invwarp(warp, ref, out, **kwargs):
     """Wrapper for the ``invwarp`` command."""
 
@@ -83,11 +85,12 @@ def invwarp(warp, ref, out, **kwargs):
 
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('out', 'ref', 'warp1', 'warp2', 'shiftmap')
 @wutils.fileOrArray('premat', 'midmat', 'postmat')
+@wutils.fslwrapper
 def convertwarp(out, ref, **kwargs):
     """Wrapper for the ``convertwarp`` command."""
 
@@ -105,4 +108,4 @@ def convertwarp(out, ref, **kwargs):
     cmd  = ['convertwarp', '--ref={}'.format(ref), '--out={}'.format(out)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

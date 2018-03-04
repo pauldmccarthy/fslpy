@@ -20,14 +20,13 @@ tools.
 """
 
 
-import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
-@wutils.required('src', 'ref')
 @wutils.fileOrImage('src', 'ref', 'out', 'wmseg', 'fieldmap', 'fieldmapmask')
 @wutils.fileOrArray('init', 'omat', 'wmcoords', 'wmnorms')
+@wutils.fslwrapper
 def flirt(src, ref, **kwargs):
     """Wrapper for the ``flirt`` command.
 
@@ -57,11 +56,9 @@ def flirt(src, ref, **kwargs):
     cmd  = ['flirt', '-in', src, '-ref', ref]
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
-@wutils.fileOrImage('src', 'ref', 'out')
-@wutils.fileOrArray('mat')
 def applyxfm(src, ref, mat, out, interp='spline'):
     """Convenience function which runs ``flirt -applyxfm ...``."""
     return flirt(src,
@@ -72,16 +69,16 @@ def applyxfm(src, ref, mat, out, interp='spline'):
                  interp=interp)
 
 
-@wutils.fileOrArray
+@wutils.fileOrArray()
+@wutils.fslwrapper
 def invxfm(inmat, omat):
     """Use ``convert_xfm`` to invert an affine."""
     asrt.assertFileExists(inmat)
-
-    cmd = 'convert_xfm -omat {} -inverse {}'.format(omat, inmat)
-    return run.runfsl(cmd)
+    return ['convert_xfm', '-omat', omat, '-inverse', inmat]
 
 
 @wutils.fileOrArray('inmat1', 'inmat2', 'outmat')
+@wutils.fslwrapper
 def concatxfm(inmat1, inmat2, outmat):
     """Use ``convert_xfm`` to concatenate two affines."""
 
@@ -94,11 +91,12 @@ def concatxfm(inmat1, inmat2, outmat):
            inmat2,
            inmat1]
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('infile', 'out', 'reffile')
 @wutils.fileOrArray('init')
+@wutils.fslwrapper
 def mcflirt(infile, **kwargs):
     """Wrapper for the ``mcflirt`` command."""
 
@@ -107,4 +105,4 @@ def mcflirt(infile, **kwargs):
     cmd  = ['mcflirt', '-in', infile]
     cmd += wutils.applyArgStyle('-', **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd

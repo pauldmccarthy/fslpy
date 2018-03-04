@@ -17,14 +17,13 @@ related utilities.
 """
 
 
-
-import fsl.utils.run        as run
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
 @wutils.fileOrArray('mix', 'Tdes', 'Tcon', 'Sdes', 'Scon')
 @wutils.fileOrImage('input', 'mask', 'ICs', 'bgimage')
+@wutils.fslwrapper
 def melodic(input, **kwargs):
     """Multivariate Exploratory Linear Optimised ICA."""
 
@@ -56,11 +55,12 @@ def melodic(input, **kwargs):
     cmd  = ['melodic', '--in', input]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
 
 
 @wutils.fileOrImage('input', 'out', 'mask', 'out_data')
 @wutils.fileOrArray('design', 'out_mix')
+@wutils.fslwrapper
 def fsl_regfilt(input, out, design, **kwargs):
     """Wrapper for the ``fsl_regfilt``command. """
 
@@ -79,4 +79,4 @@ def fsl_regfilt(input, out, design, **kwargs):
             '--design={}'.format(design)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
-    return run.runfsl(cmd)
+    return cmd
