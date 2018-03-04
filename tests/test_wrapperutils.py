@@ -5,8 +5,9 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os
-import shlex
+import os.path as op
+import            os
+import            shlex
 
 import pytest
 
@@ -14,7 +15,11 @@ import numpy as np
 import nibabel as nib
 
 import fsl.utils.tempdir         as tempdir
+import fsl.utils.run             as run
 import fsl.wrappers.wrapperutils as wutils
+
+
+from . import mockFSLDIR
 
 
 def test_applyArgStyle():
@@ -160,10 +165,6 @@ def test_namedPositionals():
         result = wutils.namedPositionals(func, args)
         assert list(result) == list(expected)
 
-# TODO
-#  - test _FileOrImage LOAD tuple order
-
-
 
 def test_fileOrArray():
 
@@ -231,6 +232,7 @@ def test_fileOrImage():
 
         img1     = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
         img2     = nib.nifti1.Nifti1Image(np.array([[5,  6], [ 7,  8]]), np.eye(4))
+        img3     = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
         expected = np.array([[5, 12], [21, 32]])
         nib.save(img1, 'img1.nii')
         nib.save(img2, 'img2.nii')
@@ -271,6 +273,12 @@ def test_fileOrImage():
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
         assert np.all(result.get_data() == expected)
 
+        # in-memory image, file, file
+        result = func(img3, img2='img2.nii', output='output.nii')
+        assert np.all(nib.load('output.nii').get_data() == expected)
+        os.remove('output.nii')
+
+
 
 def test_chained_fileOrImageAndArray():
     @wutils.fileOrImage('image')
@@ -291,3 +299,23 @@ def test_chained_fileOrImageAndArray():
         func('image.nii',  array)
         func( image,      'array.txt')
         func( image,       array)
+
+
+def test_cmdwrapper():
+    @wutils.cmdwrapper
+    def func(a, b):
+        return ['func', str(a), str(b)]
+
+    with run.dryrun():
+        assert func(1, 2)[0] == 'func 1 2'
+
+
+
+def test_fslwrapper():
+    @wutils.fslwrapper
+    def func(a, b):
+        return ['func', str(a), str(b)]
+
+    with run.dryrun(), mockFSLDIR() as fsldir:
+        expected = '{} 1 2'.format(op.join(fsldir, 'bin', 'func'))
+        assert func(1, 2)[0] == expected

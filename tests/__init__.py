@@ -21,29 +21,27 @@ import nibabel   as nib
 
 from six import StringIO
 
-import fsl.data.image as fslimage
+import fsl.data.image                     as fslimage
+from   fsl.utils.tempdir import              tempdir
+from   fsl.utils.platform import platform as fslplatform
 
 
 logging.getLogger().setLevel(logging.WARNING)
 
 
-
 @contextlib.contextmanager
-def tempdir():
-    """Returnsa context manager which creates and returns a temporary
-    directory, and then deletes it on exit.
-    """
+def mockFSLDIR():
 
-    testdir = tempfile.mkdtemp()
-    prevdir = os.getcwd()
+    oldval = fslplatform.fsldir
+
     try:
-
-        os.chdir(testdir)
-        yield testdir
-
+        with tempdir() as td:
+            fsldir = op.join(td, 'fsl')
+            os.makedirs(fsldir)
+            fslplatform.fsldir = fsldir
+            yield fsldir
     finally:
-        os.chdir(prevdir)
-        shutil.rmtree(testdir)
+        fslplatform.fsldir = oldval
 
 
 def touch(fname):
