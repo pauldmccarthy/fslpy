@@ -18,10 +18,10 @@ wrappers around functionality provided by Chris Rorden's ``dcm2niix`` program:
    scanDir
    loadSeries
 
+See: https://github.com/rordenlab/dcm2niix/
+
 .. note:: These functions will not work if an executable called ``dcm2niix``
           cannot be found.
-
-.. see:: https://github.com/rordenlab/dcm2niix/
 """
 
 

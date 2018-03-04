@@ -8,7 +8,7 @@
 directories. It currently only contains one function:
 
 .. autosummary::
-   :nosignature:
+   :nosignatures:
 
    tempdir
 """

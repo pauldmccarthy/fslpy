@@ -32,9 +32,9 @@ class MGHImage(fslimage.Image):
     """The ``MGHImage`` class is a NIFTI :class:`Image` which has been converted
     from a Freesurfer ``.mgh`` file.
 
-    .. see:: https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat
-
-    .. see:: http://nipy.org/nibabel/reference/nibabel.freesurfer.html
+    See:
+     - https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat
+     - http://nipy.org/nibabel/reference/nibabel.freesurfer.html
     """
 
     def __init__(self, image, *args, **kwargs):

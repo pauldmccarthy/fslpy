@@ -129,7 +129,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     selected vertex set.
 
 
-    **Metadata*
+    **Metadata**
 
 
     The ``Mesh`` class also inherits from the :class:`Meta` class, so
@@ -625,13 +625,14 @@ class Mesh(notifier.Notifier, meta.Meta):
                         triangle vertices.
 
         :returns:       A tuple containing
+
                           - A ``(m, 2, 3)`` array containing ``m`` vertices:
                             of a set of lines, defining the plane intersection
 
                           - A ``(m,)`` array containing the indices of the
                             ``m`` triangles that were intersected.
 
-                          - (if ``distances is True``) A ``(m, 2, 3)`` arra
+                          - (if ``distances is True``) A ``(m, 2, 3)`` array
                             containing the barycentric coordinates of each
                             line vertex with respect to its intersected
                             triangle.

@@ -12,7 +12,7 @@ A handful of convenience functions are also in this module:
 .. autosummary::
    :nosignatures:
 
-   loadVTKPolyDataFile
+   loadVTKPolydataFile
    getFIRSTPrefix
    findReferenceImage
 

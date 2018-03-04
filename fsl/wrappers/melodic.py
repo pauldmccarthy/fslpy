@@ -5,8 +5,8 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides wrapper functions for the FSL `MELODIC
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/MELODIC>`_ tool, and other
+"""This module provides wrapper functions for the FSL
+`MELODIC <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/MELODIC>`_ tool, and other
 related utilities.
 
 .. autosummary::
@@ -25,7 +25,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('input', 'mask', 'ICs', 'bgimage')
 @wutils.fslwrapper
 def melodic(input, **kwargs):
-    """Multivariate Exploratory Linear Optimised ICA."""
+    """Wrapper for the ``melodic`` command."""
 
     valmap = {
         'Oall'         : wutils.SHOW_IF_TRUE,
@@ -62,7 +62,7 @@ def melodic(input, **kwargs):
 @wutils.fileOrArray('design', 'out_mix')
 @wutils.fslwrapper
 def fsl_regfilt(input, out, design, **kwargs):
-    """Wrapper for the ``fsl_regfilt``command. """
+    """Wrapper for the ``fsl_regfilt`` command. """
 
     asrt.assertIsNifti(input, out)
 
