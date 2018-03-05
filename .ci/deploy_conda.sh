@@ -2,4 +2,4 @@
 
 set -e
 
-rsync -rv dist/*conda.tar.gz "condadeploy:"
+rsync -rv dist/conda-bld/ --exclude 'repodata*' --exclude "*json" "condadeploy:"
