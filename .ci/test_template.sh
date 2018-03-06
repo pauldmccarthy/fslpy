@@ -40,14 +40,16 @@ xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_idle.py"
 sleep 5
 xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
 
-# We run the immv/imcpy tests as the nobody
+# We run the immv/imcp tests as the nobody
 # user because some tests expect permission
 # denied errors when looking at files, and
 # root never gets denied. Make everything in
 # this directory writable by anybody (which,
 # unintuitively, includes nobody)
 chmod -R a+w `pwd`
-su -s /bin/bash -c 'source /test.venv/bin/activate && python setup.py test --addopts="$TEST_OPTS tests/test_immv_imcp.py"' nobody
+cmd="source /test.venv/bin/activate && python setup.py test"
+cmd="$cmd --addopts='$TEST_OPTS tests/test_immv_imcp.py'"
+su -s /bin/bash -c "$cmd" nobody
 
 # All other tests can be run as normal.
 python setup.py test --addopts="$TEST_OPTS -m 'not longtest' --ignore=tests/test_idle.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py"
