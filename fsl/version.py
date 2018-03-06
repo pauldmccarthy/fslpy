@@ -60,7 +60,7 @@ def parseVersionString(versionString):
     # number will end with '.dev', but
     # we ignore this for the purposes of
     # comparison.
-    if len(components) == 4 and components[3] == 'dev':
+    if len(components) == 4 and components[3].startswith('dev'):
         components = components[:3]
 
     # Major, minor, and point
