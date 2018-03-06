@@ -2,6 +2,53 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.7.0 (Tuesday March 6th 2018)
+------------------------------
+
+
+Added
+^^^^^
+
+
+* The :mod:`fsl.utils.assertions` module contains a range of functions
+  which can be used to assert that some condition is met.
+* The :mod:`fsl.utils.ensure` module contains a range of functions (currently
+  just one) which can be used to ensure that some condiution is met.
+
+
+Changed
+^^^^^^^
+
+
+* The :mod:`.settings` module now saves its files in a format that is
+  compatible with Python 2 and 3.
+* The :func:`.tempdir` function now accepts a ``root`` argument, which
+  specifies the location in which the temporary directory should be created.
+* An image's data source can now be set via  :meth:`.Image.__init__`.
+* :meth:`.MGHImage` objects now have a :meth:`.MGHImage.save` method.
+* Adjustments to the ``conda`` package build and deployment process.
+* The :func:`.ImageWrapper.canonicalShape` function has been moved
+  to the :mod:`.image` class.
+* The :func:`.ImageWrapper.naninfrange` function has been moved
+  into its own :mod:`.naninfrange` module.
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug in the :class:`.MutexFactory` class.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :func:`.ImageWrapper.canonicalShape` (moved to the :mod:`.image` module)
+* :func:`.ImageWrapper.naninfrange` function (moved to the :mod:`.naninfrange`
+  module)
+
+
 1.6.8 (Monday February 12th 2018)
 ---------------------------------
 
