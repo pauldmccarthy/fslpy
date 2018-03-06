@@ -30,6 +30,6 @@ conda build --output-folder=dist/conda-bld .conda
 for pyver in 2.7 3.4 3.5 3.6; do
     conda create -y --name "test$pyver" python=$pyver
     source activate test$pyver
-    conda install -y -c file://`pwd`/dist $name
+    conda install -y -c file://`pwd`/dist/conda-bld $name
     source deactivate
 done
