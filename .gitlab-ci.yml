@@ -257,7 +257,7 @@ build-conda-dist:
   artifacts:
     expire_in: 1 day
     paths:
-      - dist/*conda.tar.gz
+      - dist/conda-bld
 
 
 ##############
