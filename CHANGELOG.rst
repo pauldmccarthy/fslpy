@@ -61,7 +61,7 @@ Deprecated
 
 
 * More further adjustments to the ``conda`` package build.
-* Adjustments to pypi source distribution - the `requirements-extra.txt` file
+* Adjustments to pypi source distribution - the ``requirements-extra.txt`` file
   was not being included.
 
 
