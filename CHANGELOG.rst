@@ -2,6 +2,25 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.7.1 (Monday March 12th 2018)
+------------------------------
+
+
+
+Changed
+^^^^^^^
+
+
+* Adjusted :func:`.parseVersionString` so it accepts ``.dev*`` suffixes.
+
+
+Fixed
+^^^^^
+
+
+* Remobved deprecated use of :func:`.imagewrapper.canonicalShape`.
+
+
 1.7.0 (Tuesday March 6th 2018)
 ------------------------------
 
