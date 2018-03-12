@@ -177,6 +177,8 @@ class ImageWrapper(notifier.Notifier):
                         data range is updated directly on reads/writes.
         """
 
+        import fsl.data.image as fslimage
+
         self.__image      = image
         self.__name       = name
         self.__taskThread = None
@@ -205,7 +207,7 @@ class ImageWrapper(notifier.Notifier):
         # __getitem__ to force the
         # result to have the correct
         # dimensionality.
-        self.__canonicalShape = canonicalShape(image.shape)
+        self.__canonicalShape = fslimage.canonicalShape(image.shape)
 
         # The internal state is stored
         # in these attributes - they're
