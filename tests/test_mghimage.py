@@ -12,9 +12,10 @@ import            shutil
 import numpy   as np
 import nibabel as nib
 
-import fsl.utils.tempdir as tempdir
-import fsl.data.mghimage as fslmgh
-import fsl.data.image    as fslimage
+import fsl.utils.tempdir   as tempdir
+import fsl.utils.transform as transform
+import fsl.data.mghimage   as fslmgh
+import fsl.data.image      as fslimage
 
 
 datadir = op.join(op.abspath(op.dirname(__file__)), 'testdata')
@@ -27,9 +28,16 @@ def test_MGHImage():
     # Load from a file
     img      = fslmgh.MGHImage(testfile)
     nbimg    = nib.load(testfile)
+    v2s      = nbimg.header.get_vox2ras_tkr()
+    w2s      = transform.concat(v2s, transform.invert(nbimg.affine))
 
-    assert np.all(np.isclose(img[:],            nbimg.get_data()))
-    assert np.all(np.isclose(img.voxToWorldMat, nbimg.affine))
+    assert np.all(np.isclose(img[:],             nbimg.get_data()))
+    assert np.all(np.isclose(img.voxToWorldMat,  nbimg.affine))
+    assert np.all(np.isclose(img.voxToSurfMat,   v2s))
+    assert np.all(np.isclose(img.surfToVoxMat,   transform.invert(v2s)))
+    assert np.all(np.isclose(img.worldToSurfMat, w2s))
+    assert np.all(np.isclose(img.surfToWorldMat, transform.invert(w2s)))
+
     assert img.name         == op.basename(testfile)
     assert img.dataSource   == testfile
     assert img.mghImageFile == testfile
