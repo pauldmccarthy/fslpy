@@ -6,11 +6,6 @@
 #
 """This module provides the :class:`MGHImage` class, which can be used to load
 Freesurfer ``mgh``/``mgz`` image files.
-
-.. autosummary::
-   :nosignatures:
-
-   looksLikeMGHImage
 """
 
 
@@ -19,8 +14,9 @@ import os.path as op
 import            six
 import nibabel as nib
 
-import fsl.utils.path as fslpath
-import fsl.data.image as fslimage
+import fsl.utils.path      as fslpath
+import fsl.utils.transform as transform
+import fsl.data.image      as fslimage
 
 
 ALLOWED_EXTENSIONS = ['.mgz', '.mgh']
@@ -58,8 +54,9 @@ class MGHImage(fslimage.Image):
             name     = 'MGH image'
             filename = None
 
-        data   = image.get_data()
-        affine = image.affine
+        data     = image.get_data()
+        affine   = image.affine
+        vox2surf = image.header.get_vox2ras_tkr()
 
         fslimage.Image.__init__(self,
                                 data,
@@ -69,6 +66,11 @@ class MGHImage(fslimage.Image):
 
         if filename is not None:
             self.setMeta('mghImageFile', filename)
+
+        self.__voxToSurfMat   = vox2surf
+        self.__surfToVoxMat   = transform.invert(vox2surf)
+        self.__surfToWorldMat = transform.concat(affine, self.__surfToVoxMat)
+        self.__worldToSurfMat = transform.invert(self.__surfToWorldMat)
 
 
     def save(self, filename=None):
@@ -90,3 +92,37 @@ class MGHImage(fslimage.Image):
         name. Otherwise returns ``None``.
         """
         return self.getMeta('mghImageFile', None)
+
+
+    @property
+    def voxToSurfMat(self):
+        """Returns an affine which can be used to transform voxel
+        coordinates into the surface coordinate system for this image.
+
+        See: https://surfer.nmr.mgh.harvard.edu/fswiki/CoordinateSystems
+        """
+        return self.__voxToSurfMat
+
+
+    @property
+    def surfToVoxMat(self):
+        """Returns an affine which can be used to transform surface
+        coordinates into the voxel coordinate system for this image.
+        """
+        return self.__surfToVoxMat
+
+
+    @property
+    def surfToWorldMat(self):
+        """Returns an affine which can be used to transform surface
+        coordinates into the world coordinate system for this image.
+        """
+        return self.__surfToWorldMat
+
+
+    @property
+    def worldToSurfMat(self):
+        """Returns an affine which can be used to transform world
+        coordinates into the surface coordinate system for this image.
+        """
+        return self.__worldToSurfMat
