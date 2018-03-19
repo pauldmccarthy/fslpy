@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.8.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* Added the :meth:`.MGHImage.voxToSurfaceMat` property, giving access to the
+  voxel-to-surface affine for an MGH image.
+
+
 1.7.1 (Monday March 12th 2018)
 ------------------------------
 
