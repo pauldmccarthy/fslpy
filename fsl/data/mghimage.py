@@ -99,6 +99,7 @@ class MGHImage(fslimage.Image):
         """Returns an affine which can be used to transform voxel
         coordinates into the surface coordinate system for this image.
 
+        See: http://www.grahamwideman.com/gw/brain/fs/coords/fscoords.htm
         See: https://surfer.nmr.mgh.harvard.edu/fswiki/CoordinateSystems
         """
         return self.__voxToSurfMat
