@@ -21,7 +21,7 @@ from fsl.utils.platform import platform as fslplatform
 log = logging.getLogger(__name__)
 
 
-@deprecation.deprecated(deprecated_in='1.7.0',
+@deprecation.deprecated(deprecated_in='1.8.0',
                         removed_in='2.0.0',
                         details='Use fsl.utils.run.runfsl instead')
 def callFSL(*args):
