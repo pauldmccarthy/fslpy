@@ -141,8 +141,9 @@ def cmdwrapper(func):
     :func:`fsl.utils.run.run` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
+        submit = kwargs.pop('submit', None)
         cmd = func(*args, **kwargs)
-        return run.run(cmd, err=True)
+        return run.run(cmd, err=True, submit=submit)
     return _update_wrapper(wrapper, func)
 
 
@@ -152,8 +153,9 @@ def fslwrapper(func):
     :func:`fsl.utils.run.runfsl` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
+        submit = kwargs.pop('submit', None)
         cmd = func(*args, **kwargs)
-        return run.runfsl(cmd, err=True)
+        return run.runfsl(cmd, err=True, submit=submit)
     return _update_wrapper(wrapper, func)
 
 
