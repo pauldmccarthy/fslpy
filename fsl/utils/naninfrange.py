@@ -9,6 +9,8 @@ the range of a numpy array, ignoring infinite and nan values.
 """
 
 
+import warnings
+
 import numpy as np
 
 
@@ -27,8 +29,10 @@ def naninfrange(data):
     # But np.nanmin/nanmax are substantially
     # faster than the alternate, so we try it
     # first.
-    dmin = np.nanmin(data)
-    dmax = np.nanmax(data)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        dmin = np.nanmin(data)
+        dmax = np.nanmax(data)
 
     # If there are no nans/infs in the data,
     # we can just use nanmin/nanmax
