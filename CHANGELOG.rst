@@ -2,6 +2,37 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.8.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :mod:`.wrappers` package, containing wrapper functions for a range of
+  FSL tools.
+* New :mod:`fsl.utils.run` module, to replace the :mod:`fsl.utils.callfsl`
+  module.
+* Assertions (in the :mod:`.assertions` module) can be disabled with the
+  new :func:`.assertions.disabled` context manager.
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.tempdir` function has an option to not change to the newly
+  created directory.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The :mod:`fsl.utils.callfsl` module (replaced with :mod:`fsl.utils.run`).
+
+
 1.7.2 (Monday March 19th 2018)
 ------------------------------
 
@@ -30,7 +61,7 @@ Fixed
 ^^^^^
 
 
-* Remobved deprecated use of :func:`.imagewrapper.canonicalShape`.
+* Removed deprecated use of :func:`.imagewrapper.canonicalShape`.
 
 
 1.7.0 (Tuesday March 6th 2018)
