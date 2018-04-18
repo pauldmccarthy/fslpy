@@ -19,21 +19,14 @@ def pytest_addoption(parser):
                      action='store',
                      default=50,
                      help='Number of test iterations for imagewrapper')
-    
+
     parser.addoption('--testdir',
                      action='store',
                      help='FSLeyes test data directory')
 
     parser.addoption('--seed',
                      type=int,
-                     help='Seed for random number generator') 
-
-
-    
-@pytest.fixture
-def testdir(request):
-    """FSLeyes test data directory."""
-    return op.expanduser(request.config.getoption('--testdir'))
+                     help='Seed for random number generator')
 
 
 @pytest.fixture
@@ -44,12 +37,12 @@ def niters(request):
 
 @pytest.fixture
 def seed(request):
-    
+
     seed = request.config.getoption('--seed')
 
     if seed is None:
         seed = np.random.randint(2 ** 32)
-        
+
     np.random.seed(seed)
     random   .seed(seed)
     print('Seed for random number generator: {}'.format(seed))
