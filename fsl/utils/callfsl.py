@@ -4,7 +4,9 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides the :func:`callFSL` function, which can be
+"""Deprecated - use :mod:`fsl.utils.run` instead.
+
+This module provides the :func:`callFSL` function, which can be
 used to call a FSL command, and retrieve the result.
 """
 
