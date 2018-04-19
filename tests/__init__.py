@@ -21,6 +21,10 @@ import nibabel   as nib
 
 from six import StringIO
 
+
+try: from unittest import mock
+except ImportError: import mock
+
 import fsl.data.image                     as fslimage
 from   fsl.utils.tempdir import              tempdir
 from   fsl.utils.platform import platform as fslplatform
@@ -37,9 +41,14 @@ def mockFSLDIR():
     try:
         with tempdir() as td:
             fsldir = op.join(td, 'fsl')
-            os.makedirs(fsldir)
+            bindir = op.join(fsldir, 'bin')
+            os.makedirs(bindir)
             fslplatform.fsldir = fsldir
-            yield fsldir
+
+            path = op.pathsep.join((bindir, os.environ['PATH']))
+
+            with mock.patch.dict(os.environ, {'PATH': path}):
+                yield fsldir
     finally:
         fslplatform.fsldir = oldval
 

@@ -20,8 +20,9 @@ import pytest
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
+import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image
+from . import make_random_image, mockFSLDIR
 
 
 def test_run():
@@ -58,7 +59,9 @@ def test_run():
         assert stderr.strip() == expstderr
 
         # test return code
-        stdout, ret = run.run('./script.sh 1 2 3', ret=True)
+        res = run.run('./script.sh 1 2 3', ret=True)
+        print(res)
+        stdout, ret = res
         assert stdout.strip() == expstdout
         assert ret == 0
         stdout, stderr, ret = run.run('./script.sh 1 2 3', err=True, ret=True)
@@ -123,7 +126,6 @@ def test_runfsl():
             with pytest.raises(run.FSLNotPresent):
                 run.runfsl('fslhd image')
 
-
             # FSLDIR/bin exists - should be good
             fsldir = op.abspath('./fsl')
             fslhd  = op.join(fsldir, 'bin', 'fslhd')
@@ -138,3 +140,43 @@ def test_runfsl():
                 assert run.runfsl('fslhd image').strip() == 'image'
     finally:
         fslplatform.fsldir = old_fsldir
+
+
+mock_fsl_sub = textwrap.dedent("""
+#!/usr/bin/env bash
+jid=12345
+cmd=$1
+name=`basename $cmd`
+$cmd > "$name".o"$jid"
+touch "$name".e"$jid"
+echo $jid
+exit 0
+""").strip()
+
+
+def test_run_submit():
+
+    def mkexec(path, contents):
+        with open(path, 'wt') as f:
+            f.write(contents)
+        os.chmod(path, 0o755)
+
+    test_script = textwrap.dedent("""
+    #!/usr/bin/env bash
+    echo test_script running
+    exit 0
+    """).strip()
+
+    with tempdir.tempdir(), mockFSLDIR():
+
+        mkexec(op.expandvars('$FSLDIR/bin/fsltest'), test_script)
+        mkexec(op.expandvars('$FSLDIR/bin/fsl_sub'), mock_fsl_sub)
+
+        jid = run.run('fsltest', submit=True)[0]
+
+        assert jid == '12345'
+
+        stdout, stderr = fslsub.output(jid, 'fsltest')
+
+        assert stdout.strip() == 'test_script running'
+        assert stderr.strip() == ''
