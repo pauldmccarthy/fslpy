@@ -138,7 +138,7 @@ def run(*args, **kwargs):
 
     if DRY_RUN:
         stderr = ''
-        if submit is not None:
+        if submit is None:
             stdout = ' '.join(args)
         else:
             stdout = '[submit] ' + ' '.join(args)
