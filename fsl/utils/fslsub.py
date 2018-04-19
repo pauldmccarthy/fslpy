@@ -33,17 +33,20 @@ Example usage, building a short pipeline::
 
    submit
    info
+   output
    wait
+   func_to_cmd
 """
 
 
-import logging
 from six import string_types, BytesIO
 import subprocess as sp
+import os.path as op
 import time
 import pickle
 import sys
 import tempfile
+import logging
 
 
 log = logging.getLogger(__name__)
@@ -141,7 +144,7 @@ def info(job_id):
     try:
         result = sp.call(['qstat', '-j', job_id]).decode('utf-8')
     except FileNotFoundError:
-        log.debug("qstat not found; assumes not not cluster")
+        log.debug("qstat not found; assuming not on cluster")
         return {}
     if 'Following jobs do not exist:' in result:
         return {}
@@ -150,6 +153,38 @@ def info(job_id):
         key, value = line.split(':', nsplit=1)
         res[key.strip()] = value.strip()
     return res
+
+
+def output(job_id, command, cwd='.', name=None):
+    """Returns the output of the given job.
+
+    :arg job_id:  String with job id
+    :arg command: Command that was run
+    :arg cwd:     Directory from which command was submitted - defaults to
+                  the current directory.
+    :arg name:    Job name if it was specified.
+    :returns:     A tuple containing the standard output and standard error.
+    """
+
+    if name is None:
+        name = op.basename(command)
+
+    stdout = op.join(cwd, '{}.o{}'.format(name, job_id))
+    stderr = op.join(cwd, '{}.e{}'.format(name, job_id))
+
+    if op.exists(stdout):
+        with open(stdout, 'rt') as f:
+            stdout = f.read()
+    else:
+        stdout = None
+
+    if op.exists(stderr):
+        with open(stderr, 'rt') as f:
+            stderr = f.read()
+    else:
+        stderr = None
+
+    return stdout, stderr
 
 
 def wait(job_ids):
@@ -212,4 +247,5 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     with open(filename, 'w') as python_file:
         python_file.write(python_cmd)
 
+    # TODO use current interpreter (e.g. fslpython)?
     return "python " + filename + ('; rm ' + filename if clean else '')

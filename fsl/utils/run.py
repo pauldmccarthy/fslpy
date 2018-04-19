@@ -112,9 +112,9 @@ def run(*args, **kwargs):
                  ``err``), and return code (if ``ret``).
     """
 
-    err    = kwargs.get('err', False)
-    ret    = kwargs.get('ret', False)
-    submit = kwargs.get('ret', None)
+    err    = kwargs.get('err',    False)
+    ret    = kwargs.get('ret',    False)
+    submit = kwargs.get('submit', None)
     args   = _prepareArgs(args)
 
     if not bool(submit):
@@ -185,5 +185,5 @@ def runfsl(*args, **kwargs):
 
 
 def wait(job_ids):
-    """Calls :func:`.fslsub.wait` for the given ``job_ids``. """
+    """Proxy for :func:`.fslsub.wait`. """
     return fslsub.wait(job_ids)
