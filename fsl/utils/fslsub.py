@@ -42,6 +42,7 @@ Example usage, building a short pipeline::
 from six import string_types, BytesIO
 import subprocess as sp
 import os.path as op
+import glob
 import time
 import pickle
 import sys
@@ -155,22 +156,26 @@ def info(job_id):
     return res
 
 
-def output(job_id, command, cwd='.', name=None):
+def output(job_id, cwd='.', command=None, name=None):
     """Returns the output of the given job.
 
-    :arg job_id:  String with job id
-    :arg command: Command that was run
+    :arg job_id:  String containing job ID.
     :arg cwd:     Directory from which command was submitted - defaults to
                   the current directory.
-    :arg name:    Job name if it was specified.
+    :arg command: Command that was run. Not currently used.
+    :arg name:    Job name if it was specified. Not currently used.
     :returns:     A tuple containing the standard output and standard error.
     """
 
-    if name is None:
-        name = op.basename(command)
+    stdout = list(glob.glob(op.join(cwd, '*.o{}'.format(job_id))))
+    stderr = list(glob.glob(op.join(cwd, '*.e{}'.format(job_id))))
 
-    stdout = op.join(cwd, '{}.o{}'.format(name, job_id))
-    stderr = op.join(cwd, '{}.e{}'.format(name, job_id))
+    if len(stdout) != 1 or len(stderr) != 1:
+        raise ValueError('No/too many error/output files for job {}: stdout: '
+                         '{}, stderr: {}'.format(job_id, stdout, stderr))
+
+    stdout = stdout[0]
+    stderr = stderr[0]
 
     if op.exists(stdout):
         with open(stdout, 'rt') as f:
