@@ -8,6 +8,10 @@
 import os.path as op
 import            os
 import            shlex
+import            textwrap
+
+try: from unittest import mock
+except ImportError: import mock
 
 import pytest
 
@@ -16,10 +20,12 @@ import nibabel as nib
 
 import fsl.utils.tempdir         as tempdir
 import fsl.utils.run             as run
+import fsl.utils.fslsub          as fslsub
 import fsl.wrappers.wrapperutils as wutils
 
 
 from . import mockFSLDIR
+from .test_run import mock_submit
 
 
 def test_applyArgStyle():
@@ -310,7 +316,6 @@ def test_cmdwrapper():
         assert func(1, 2)[0] == 'func 1 2'
 
 
-
 def test_fslwrapper():
     @wutils.fslwrapper
     def func(a, b):
@@ -319,3 +324,73 @@ def test_fslwrapper():
     with run.dryrun(), mockFSLDIR() as fsldir:
         expected = '{} 1 2'.format(op.join(fsldir, 'bin', 'func'))
         assert func(1, 2)[0] == expected
+
+
+_test_script = textwrap.dedent("""
+#!/usr/bin/env bash
+echo "test_script running: $1 $2"
+exit 0
+""").strip()
+
+
+def _test_script_func(a, b):
+    return ['test_script', str(a), str(b)]
+
+
+def test_cmdwrapper_submit():
+
+    test_func = wutils.cmdwrapper(_test_script_func)
+    newpath = op.pathsep.join(('.', os.environ['PATH']))
+
+    with tempdir.tempdir(), \
+         mock.patch('fsl.utils.fslsub.submit', mock_submit), \
+         mock.patch.dict(os.environ, {'PATH' : newpath}):
+
+        with open('test_script', 'wt') as f:
+            f.write(_test_script)
+        os.chmod('test_script', 0o755)
+
+        jid = test_func(1, 2, submit=True)
+
+        assert jid == ('12345',)
+
+        stdout, stderr = fslsub.output('12345')
+
+        assert stdout.strip() == 'test_script running: 1 2'
+        assert stderr.strip() == ''
+
+
+def test_fslwrapper_submit():
+
+    test_func = wutils.fslwrapper(_test_script_func)
+
+    with mockFSLDIR() as fsldir, \
+         mock.patch('fsl.utils.fslsub.submit', mock_submit):
+
+        test_file = op.join(fsldir, 'bin', 'test_script')
+
+        with open(test_file, 'wt') as f:
+            f.write(_test_script)
+        os.chmod(test_file, 0o755)
+
+        jid = test_func(1, 2, submit=True)
+
+        assert jid == ('12345',)
+
+        stdout, stderr = fslsub.output('12345')
+
+        assert stdout.strip() == 'test_script running: 1 2'
+        assert stderr.strip() == ''
+
+        kwargs = {'name' : 'abcde', 'ram' : '4GB'}
+
+        jid = test_func(1, 2, submit=kwargs)
+
+        assert jid == ('12345',)
+
+        stdout, stderr = fslsub.output('12345')
+
+        experr = '\n'.join(['{}: {}'.format(k, v) for k, v in kwargs.items()])
+
+        assert stdout.strip() == 'test_script running: 1 2'
+        assert stderr.strip() == experr

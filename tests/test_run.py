@@ -15,6 +15,7 @@ try:  from unittest import mock
 # python 2
 except ImportError: import mock
 
+import six
 import pytest
 
 import fsl.utils.tempdir                  as tempdir
@@ -22,7 +23,7 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image, mockFSLDIR
+from . import make_random_image, mockFSLDIR, touch
 
 
 def test_run():
@@ -142,16 +143,25 @@ def test_runfsl():
         fslplatform.fsldir = old_fsldir
 
 
-mock_fsl_sub = textwrap.dedent("""
-#!/usr/bin/env bash
-jid=12345
-cmd=$1
-name=`basename $cmd`
-$cmd > "$name".o"$jid"
-touch "$name".e"$jid"
-echo $jid
-exit 0
-""").strip()
+def mock_submit(cmd, **kwargs):
+    if isinstance(cmd, six.string_types):
+        name = cmd.split()[0]
+    else:
+        name = cmd[0]
+
+    name = op.basename(name)
+
+    jid = '12345'
+    output = run.run(cmd)
+
+    with open('{}.o{}'.format(name, jid), 'wt') as f:
+        f.write(output)
+
+    with open('{}.e{}'.format(name, jid), 'wt') as f:
+        for k, v in kwargs.items():
+            f.write('{}: {}\n'.format(k, v))
+
+    return (jid,)
 
 
 def test_run_submit():
@@ -167,16 +177,30 @@ def test_run_submit():
     exit 0
     """).strip()
 
-    with tempdir.tempdir(), mockFSLDIR():
+    with tempdir.tempdir(), \
+         mockFSLDIR(), \
+         mock.patch('fsl.utils.fslsub.submit', mock_submit):
 
         mkexec(op.expandvars('$FSLDIR/bin/fsltest'), test_script)
-        mkexec(op.expandvars('$FSLDIR/bin/fsl_sub'), mock_fsl_sub)
 
         jid = run.run('fsltest', submit=True)[0]
 
         assert jid == '12345'
 
-        stdout, stderr = fslsub.output(jid, 'fsltest')
+        stdout, stderr = fslsub.output(jid)
 
         assert stdout.strip() == 'test_script running'
         assert stderr.strip() == ''
+
+        kwargs = {'name' : 'abcde', 'ram' : '4GB'}
+
+        jid = run.run('fsltest', submit=kwargs)[0]
+
+        assert jid == '12345'
+
+        stdout, stderr = fslsub.output(jid)
+
+        experr = '\n'.join(['{}: {}'.format(k, v) for k, v in kwargs.items()])
+
+        assert stdout.strip() == 'test_script running'
+        assert stderr.strip() == experr
