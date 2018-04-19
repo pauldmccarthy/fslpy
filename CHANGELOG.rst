@@ -14,6 +14,8 @@ Added
   FSL tools.
 * New :mod:`fsl.utils.run` module, to replace the :mod:`fsl.utils.callfsl`
   module.
+* New :mod:`fsl.utils.fslsub` module, containing a :func:`.fslsub.submit`
+  function which submits a cluster job via ``fsl_sub`` (by Michiel Cottaar).
 * Assertions (in the :mod:`.assertions` module) can be disabled with the
   new :func:`.assertions.disabled` context manager.
 
