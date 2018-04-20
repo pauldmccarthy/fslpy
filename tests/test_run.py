@@ -23,7 +23,7 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image, mockFSLDIR, touch
+from . import make_random_image, mockFSLDIR
 
 
 def test_run():
@@ -158,8 +158,8 @@ def mock_submit(cmd, **kwargs):
         f.write(output)
 
     with open('{}.e{}'.format(name, jid), 'wt') as f:
-        for k, v in kwargs.items():
-            f.write('{}: {}\n'.format(k, v))
+        for k in sorted(kwargs.keys()):
+            f.write('{}: {}\n'.format(k, kwargs[k]))
 
     return (jid,)
 
@@ -200,7 +200,8 @@ def test_run_submit():
 
         stdout, stderr = fslsub.output(jid)
 
-        experr = '\n'.join(['{}: {}'.format(k, v) for k, v in kwargs.items()])
+        experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
+                            for k in sorted(kwargs.keys())])
 
         assert stdout.strip() == 'test_script running'
         assert stderr.strip() == experr
