@@ -13,6 +13,18 @@ For example, you can call BET like so::
     from fsl.wrappers import bet
     bet('struct', 'struct_brain')
 
+If you would like a command to be submitted as a cluster job, all wrappers
+accept a ``submit`` keyword argument, which may be given a value of ``True``
+indicating that the job should be submitted with default settings, or a
+dictionary with submission settings::
+
+    from fsl.wrappers import fnirt
+    fnirt('srf', 'ref', 'out', submit=True)
+    fnirt('srf', 'ref', 'out', submit={'queue' : 'long.q', 'ram' : '4GB'})
+
+
+See the :mod:`.fslsub` module for more details.
+
 
 Most of these wrapper functions strive to provide an interface which is as
 close as possible to the underlying command-line tool. Most functions use
