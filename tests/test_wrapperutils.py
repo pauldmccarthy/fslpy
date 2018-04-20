@@ -390,7 +390,8 @@ def test_fslwrapper_submit():
 
         stdout, stderr = fslsub.output('12345')
 
-        experr = '\n'.join(['{}: {}'.format(k, v) for k, v in kwargs.items()])
+        experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
+                            for k in sorted(kwargs.keys())])
 
         assert stdout.strip() == 'test_script running: 1 2'
         assert stderr.strip() == experr
