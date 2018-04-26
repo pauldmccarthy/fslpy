@@ -16,6 +16,7 @@ to interpret command line arguments as neuroimageing objects (.e.g, NIFTI image 
    :nosignatures:
 
     Image
+    ImageOut
     Mesh
     Atlas
 """
