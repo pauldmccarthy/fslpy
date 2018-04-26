@@ -6,7 +6,7 @@
 #
 
 import argparse
-from fsl.utils import parse_data, tempdir
+from fsl.utils import parse_data, tempdir, path
 import os.path as op
 from fsl.data.vtk import VTKMesh
 from fsl.data.gifti import GiftiMesh
@@ -14,6 +14,7 @@ from fsl.data.image import Image
 from fsl.data.atlases import Atlas
 from pytest import raises
 from .test_image import make_image
+import os
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -82,6 +83,36 @@ def test_image():
         make_image(double_filename, 0)
         with raises(SystemExit):
             image_parser.parse_args([double_filename])
+
+
+def test_image_out():
+    image_parser = argparse.ArgumentParser("Reads an image")
+    image_parser.add_argument("image_out", type=parse_data.ImageOut)
+    for fsl_output_type, extension in (
+            ('NIFTI', '.nii'),
+            ('NIFTI_PAIR', '.img'),
+            ('NIFTI_GZ', '.nii.gz')
+    ):
+        os.environ['FSLOUTPUTTYPE'] = fsl_output_type
+        args = image_parser.parse_args(['test'])
+        assert path.hasExt(args.image_out, extension)
+        assert args.image_out == 'test' + extension
+
+        args = image_parser.parse_args(['test.nii'])
+        assert path.hasExt(args.image_out, '.nii')
+        assert args.image_out == 'test.nii'
+
+        args = image_parser.parse_args(['test.nii.gz'])
+        assert path.hasExt(args.image_out, '.nii.gz')
+        assert args.image_out == 'test.nii.gz'
+
+        args = image_parser.parse_args(['test.img'])
+        assert path.hasExt(args.image_out, '.img')
+        assert args.image_out == 'test.img'
+
+        args = image_parser.parse_args(['test.surf.gii'])
+        assert path.hasExt(args.image_out, extension)
+        assert args.image_out == 'test.surf.gii' + extension
 
 
 def test_atlas():

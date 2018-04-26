@@ -40,6 +40,16 @@ def Image(filename):
     return image.Image(full_filename)
 
 
+def ImageOut(basename):
+    """
+    Uses the FSL convention to create a complete image output filename
+
+    :param basename: filename provided by the user
+    :return: filename with extension
+    """
+    return image.addExt(basename, mustExist=False)
+
+
 def Mesh(filename):
     """
     Reads in a mesh from either a GIFTI (.surf.gii) or a VTK (.vtk) file
