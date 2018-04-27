@@ -252,5 +252,4 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     with open(filename, 'w') as python_file:
         python_file.write(python_cmd)
 
-    # TODO use current interpreter (e.g. fslpython)?
-    return "python " + filename + ('; rm ' + filename if clean else '')
+    return sys.executable + " " + filename + ('; rm ' + filename if clean else '')
