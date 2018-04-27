@@ -156,19 +156,19 @@ def info(job_id):
     return res
 
 
-def output(job_id, cwd='.', command=None, name=None):
+def output(job_id, logdir='.', command=None, name=None):
     """Returns the output of the given job.
 
     :arg job_id:  String containing job ID.
-    :arg cwd:     Directory from which command was submitted - defaults to
+    :arg logdir:  Directory containing the log - defaults to
                   the current directory.
     :arg command: Command that was run. Not currently used.
     :arg name:    Job name if it was specified. Not currently used.
     :returns:     A tuple containing the standard output and standard error.
     """
 
-    stdout = list(glob.glob(op.join(cwd, '*.o{}'.format(job_id))))
-    stderr = list(glob.glob(op.join(cwd, '*.e{}'.format(job_id))))
+    stdout = list(glob.glob(op.join(logdir, '*.o{}'.format(job_id))))
+    stderr = list(glob.glob(op.join(logdir, '*.e{}'.format(job_id))))
 
     if len(stdout) != 1 or len(stderr) != 1:
         raise ValueError('No/too many error/output files for job {}: stdout: '
