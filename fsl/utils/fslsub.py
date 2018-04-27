@@ -237,6 +237,7 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     :arg args:    positional arguments
     :arg kwargs:  keyword arguments
     :arg tmp_dir: directory where to store the temporary file
+    :arg clean:   if True removes the submitted script after running it
     :return:      string which will run the function
     """
     pickle_bytes = BytesIO()
