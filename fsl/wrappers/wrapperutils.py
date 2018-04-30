@@ -305,7 +305,7 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
 
 def namedPositionals(func, args):
     """Given a function, and a sequence of positional arguments destined
-    for that function, identiifes the name for each positional argument.
+    for that function, identifies the name for each positional argument.
     Variable positional arguments are given an automatic name.
 
     :arg func: Function which will accept ``args`` as positionals.
