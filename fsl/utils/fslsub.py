@@ -256,7 +256,6 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     :return:      string which will run the function
     """
     pickle_bytes = BytesIO()
-    pickle.dump((func.__module__, func.__name__, args, kwargs), pickle_bytes)
     if func.__module__ == '__main__':
         pickle.dump(('script', importlib.import_module('__main__').__file__, func.__name__,
                      args, kwargs), pickle_bytes)
