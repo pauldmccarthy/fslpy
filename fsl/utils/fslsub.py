@@ -48,6 +48,7 @@ import pickle
 import sys
 import tempfile
 import logging
+import importlib
 
 
 log = logging.getLogger(__name__)
@@ -79,6 +80,7 @@ def submit(command,
     :arg email:          Who to email after job completion
     :arg wait_for:       Place a hold on this task until the job-ids in this
                          string or tuple are complete
+    :arg job_name:       Specify job name as it will appear on the queue
     :arg ram:            Max total RAM to use for job (integer in MB)
     :arg logdir:         where to output logfiles
     :arg mail_options:   Change the SGE mail options, see qsub for details
@@ -219,9 +221,18 @@ from six import BytesIO
 from importlib import import_module
 
 pickle_bytes = BytesIO({})
-module_name, func_name, args, kwargs = pickle.load(pickle_bytes)
+name_type, name, func_name, args, kwargs = pickle.load(pickle_bytes)
 
-func = getattr(import_module(module_name), func_name)
+if name_type == 'module':
+    # retrieves a function defined in an external module
+    func = getattr(import_module(name), func_name)
+elif name_type == 'script':
+    # retrieves a function defined in the __main__ script
+    local_execute = {{'__name__': '__not_main__'}}
+    exec(open(name, 'r').read(), local_execute)
+    func = local_execute[func_name]
+else:
+    raise ValueError('Unknown name_type: %r' % name_type)
 
 res = func(*args, **kwargs)
 if res is not None:
@@ -233,6 +244,10 @@ if res is not None:
 def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     """Defines the command needed to run the function from the command line
 
+    WARNING: if submitting a function defined in the __main__ script,
+    the script will be run again to retrieve this function. Make sure there is a
+    "if __name__ == '__main__'" guard to prevent the full script from being rerun.
+
     :arg func:    function to be run
     :arg args:    positional arguments
     :arg kwargs:  keyword arguments
@@ -242,6 +257,12 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     """
     pickle_bytes = BytesIO()
     pickle.dump((func.__module__, func.__name__, args, kwargs), pickle_bytes)
+    if func.__module__ == '__main__':
+        pickle.dump(('script', importlib.import_module('__main__').__file__, func.__name__,
+                     args, kwargs), pickle_bytes)
+    else:
+        pickle.dump(('module', func.__module__, func.__name__,
+                     args, kwargs), pickle_bytes)
     python_cmd = _external_job.format(sys.executable,
                                       func.__name__,
                                       pickle_bytes.getvalue())
