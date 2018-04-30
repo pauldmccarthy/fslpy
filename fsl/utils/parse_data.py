@@ -80,6 +80,3 @@ def Atlas(name):
         atlas_names = tuple(desc.atlasID for desc in atlases.listAtlases())
         raise argparse.ArgumentTypeError('Requested atlas %r not one of: %r' % (name, atlas_names))
     return atlases.loadAtlas(name)
-
-
-

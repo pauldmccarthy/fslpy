@@ -75,6 +75,11 @@ def test_callfsl():
         with mock.patch('fsl.utils.callfsl.sp.check_output',
                         mock_check_output):
             callfsl.callFSL(cmd)
-        fslplatform.fsldir = None
-        with pytest.raises(Exception):
-            callfsl.callFSL(cmd)
+
+        try:
+            oldval = fslplatform.fsldir
+            fslplatform.fsldir = None
+            with pytest.raises(Exception):
+                callfsl.callFSL(cmd)
+        finally:
+            fslplatform.fsldir = oldval
