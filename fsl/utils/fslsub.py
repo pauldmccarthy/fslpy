@@ -156,19 +156,19 @@ def info(job_id):
     return res
 
 
-def output(job_id, cwd='.', command=None, name=None):
+def output(job_id, logdir='.', command=None, name=None):
     """Returns the output of the given job.
 
     :arg job_id:  String containing job ID.
-    :arg cwd:     Directory from which command was submitted - defaults to
+    :arg logdir:  Directory containing the log - defaults to
                   the current directory.
     :arg command: Command that was run. Not currently used.
     :arg name:    Job name if it was specified. Not currently used.
     :returns:     A tuple containing the standard output and standard error.
     """
 
-    stdout = list(glob.glob(op.join(cwd, '*.o{}'.format(job_id))))
-    stderr = list(glob.glob(op.join(cwd, '*.e{}'.format(job_id))))
+    stdout = list(glob.glob(op.join(logdir, '*.o{}'.format(job_id))))
+    stderr = list(glob.glob(op.join(logdir, '*.e{}'.format(job_id))))
 
     if len(stdout) != 1 or len(stderr) != 1:
         raise ValueError('No/too many error/output files for job {}: stdout: '
@@ -237,6 +237,7 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     :arg args:    positional arguments
     :arg kwargs:  keyword arguments
     :arg tmp_dir: directory where to store the temporary file
+    :arg clean:   if True removes the submitted script after running it
     :return:      string which will run the function
     """
     pickle_bytes = BytesIO()
@@ -252,5 +253,4 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     with open(filename, 'w') as python_file:
         python_file.write(python_cmd)
 
-    # TODO use current interpreter (e.g. fslpython)?
-    return "python " + filename + ('; rm ' + filename if clean else '')
+    return sys.executable + " " + filename + ('; rm ' + filename if clean else '')
