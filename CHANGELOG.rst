@@ -20,6 +20,8 @@ Added
   new :func:`.assertions.disabled` context manager.
 * New :mod:`fsl.utils.parse_data` module containing various neuroimaging
   data constructors for use with ``argparse``.
+* The :func:`.memoize.skipUnchanged` decorator has an ``invalidate`` function
+  which allows its cache to be cleared.
 
 
 Changed
