@@ -242,7 +242,29 @@ def test_skipUnchanged():
     wrapped('key4', np.zeros((1, 4)))
     assert timesCalled['key4'] == 2
 
+    timesCalled['key1'] = 0
+    timesCalled['key2'] = 0
+    timesCalled['key3'] = 0
 
+    wrapped('key1', 1)
+    wrapped('key2', 2)
+    wrapped('key3', 3)
+    assert timesCalled['key1'] == 1
+    assert timesCalled['key2'] == 1
+    assert timesCalled['key3'] == 1
+    wrapped('key1', 1)
+    wrapped('key2', 2)
+    wrapped('key3', 3)
+    assert timesCalled['key1'] == 1
+    assert timesCalled['key2'] == 1
+    assert timesCalled['key3'] == 1
+    wrapped.invalidate()
+    wrapped('key1', 1)
+    wrapped('key2', 2)
+    wrapped('key3', 3)
+    assert timesCalled['key1'] == 2
+    assert timesCalled['key2'] == 2
+    assert timesCalled['key3'] == 2
 
 
 def test_Instanceify():
