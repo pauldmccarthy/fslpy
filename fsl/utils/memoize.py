@@ -205,6 +205,18 @@ def skipUnchanged(func):
     *not* called. If the given value is different from the cached value (or
     there is no value), the decorated function is called.
 
+
+    The ``invalidate`` method may be called on a ``skipUnchanged``-decorated
+    function to clear the internal cache. For example::
+
+        @skipUnchanged
+        def setval(name, value):
+            # ...
+
+        # ...
+
+        setval.invalidate()
+
     .. note:: This decorator ignores the return value of the decorated
               function.
 
@@ -215,6 +227,10 @@ def skipUnchanged(func):
     import numpy as np
 
     cache = {}
+
+    # TODO merge skipUnchanged and Memoize somehow
+    def invalidate():
+        cache.clear()
 
     def wrapper(name, value, *args, **kwargs):
 
@@ -242,6 +258,8 @@ def skipUnchanged(func):
         cache[name] = value
 
         return True
+
+    wrapper.invalidate = invalidate
 
     return wrapper
 
