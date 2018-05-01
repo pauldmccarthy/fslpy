@@ -18,6 +18,10 @@ Added
   function which submits a cluster job via ``fsl_sub`` (by Michiel Cottaar).
 * Assertions (in the :mod:`.assertions` module) can be disabled with the
   new :func:`.assertions.disabled` context manager.
+* New :mod:`fsl.utils.parse_data` module containing various neuroimaging
+  data constructors for use with ``argparse``.
+* The :func:`.memoize.skipUnchanged` decorator has an ``invalidate`` function
+  which allows its cache to be cleared.
 
 
 Changed
