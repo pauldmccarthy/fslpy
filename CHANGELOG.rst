@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.8.0 (Under development)
--------------------------
+1.8.0 (Wednesday May 2nd 2018)
+------------------------------
 
 
 Added
@@ -15,7 +15,7 @@ Added
 * New :mod:`fsl.utils.run` module, to replace the :mod:`fsl.utils.callfsl`
   module.
 * New :mod:`fsl.utils.fslsub` module, containing a :func:`.fslsub.submit`
-  function which submits a cluster job via ``fsl_sub`` (by Michiel Cottaar).
+  function which submits a cluster job via ``fsl_sub``.
 * Assertions (in the :mod:`.assertions` module) can be disabled with the
   new :func:`.assertions.disabled` context manager.
 * New :mod:`fsl.utils.parse_data` module containing various neuroimaging
