@@ -24,6 +24,26 @@ Development model
  - Coding conventions are adhered to (unless there is good reason not to).
 
 
+Commit messages
+---------------
+
+
+To aid readability, all commit messages should be prefixed with one or more of
+the following labels (this convention has been inherited from `nibabel
+<https://github.com/nipy/nibabel>`_):
+
+  * *BF* : bug fix
+  * *RF* : refactoring
+  * *NF* : new feature
+  * *BW* : addresses backward-compatibility
+  * *OPT* : optimization
+  * *BK* : breaks something and/or tests fail
+  * *PL* : making pylint happier
+  * *DOC*: for all kinds of documentation related commits
+  * *TEST*: for adding or changing tests
+  * *MAINT*: for administrative/maintenance changes
+
+
 Version number
 --------------
 
