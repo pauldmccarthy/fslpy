@@ -6,7 +6,7 @@ name=$1
 version=$2
 
 # add any extra channels that are needed
-for channel in $CONDA_CHANNELS; do
+for channel in $FSL_CONDA_CHANNELS; do
     conda config  --append channels $channel
 done
 
