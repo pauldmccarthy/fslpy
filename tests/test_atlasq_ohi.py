@@ -77,7 +77,7 @@ def test_coords(seed):
         if label is None:
             return expected + 'Unclassified'
         else:
-            return expected + atlas.desc.labels[int(label)].name
+            return expected + atlas.desc.find(value=int(label)).name
 
     capture = CaptureStdout()
 
