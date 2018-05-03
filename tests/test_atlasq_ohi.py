@@ -155,8 +155,8 @@ def test_mask(seed):
         exp           = []
 
         for lbl, prop in zip(labels, props):
-            exp.append('{}:{:0.4f}'.format(desc.labels[int(lbl)].name,
-                                           prop))
+            name = desc.find(value=int(lbl)).name
+            exp.append('{}:{:0.4f}'.format(name, prop))
 
         return '\n'.join(exp)
 
