@@ -315,7 +315,7 @@ def ohi(namespace):
             labels = labels[0]
 
             if labels is None: label = 'Unclassified'
-            else:              label = atlasDesc.labels[int(labels)].name
+            else:              label = atlasDesc.find(value=int(labels)).name
             print('<b>{}</b><br>{}'.format(atlasDesc.name, label))
 
         elif atlasDesc.atlasType == 'probabilistic':
