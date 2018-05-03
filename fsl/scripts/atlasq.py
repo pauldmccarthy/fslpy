@@ -275,17 +275,27 @@ def ohi(namespace):
         dumpatlases()
         return
 
+    # atlasquery always uses 2mm atlas
+    # versions when a 2mm is available
+    reses = [p[0] for p in atlasDesc.pixdims]
+
+    if 2 in reses: res = 2
+    else:          res = max(reses)
+
     # Mask query.
     if namespace.ohiMask is not None:
 
-        # atlasquery always uses 2mm atlas versions
         mask          = fslimage.Image(namespace.ohiMask)
-        labels, props = maskQuery(atlasDesc, [mask], resolution=2)
+        labels, props = maskQuery(atlasDesc, [mask], resolution=res)
         labels        = labels[0]
         props         = props[ 0]
 
         for lbl, prop in zip(labels, props):
-            lbl = atlasDesc.labels[int(lbl)].name
+
+            if atlasDesc.atlasType == 'probabilistic':
+                lbl = atlasDesc.labels[int(lbl)].name
+            elif atlasDesc.atlasType == 'label':
+                lbl = atlasDesc.find(value=int(lbl)).name
             print('{}:{:0.4f}'.format(lbl, prop))
 
     # Coordinate query
@@ -295,7 +305,7 @@ def ohi(namespace):
         labels, props = coordQuery(atlasDesc,
                                    [coord],
                                    False,
-                                   resolution=2)
+                                   resolution=res)
 
         labels = labels[0]
         props  = props[ 0]
