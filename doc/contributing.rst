@@ -42,6 +42,7 @@ the following labels (this convention has been inherited from `nibabel
   * *DOC*: for all kinds of documentation related commits
   * *TEST*: for adding or changing tests
   * *MAINT*: for administrative/maintenance changes
+  * *CI*: for continuous-integration changes
 
 
 Version number

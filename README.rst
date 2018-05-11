@@ -48,12 +48,10 @@ Some extra dependencies are listed in `requirements.txt
    on the mesh.
 
 
+If you are using Linux, need to install wxPython first, as binaries are not
+available on PyPI. Change the URL for your specific platform::
 
-To install these additional dependencies, you first need to install wxPython,
-which is still in pre-relaes.
-
- - **macOS**: ``pip install --pre wxPython``
- - **Linux** (change the URL for your specific platform): ``pip install --only-binary wxpython -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-16.04/ wxpython``
+    pip install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-16.04/ wxpython
 
 
 The ``rtree`` library also assumes that ``libspatialindex`` is installed on
