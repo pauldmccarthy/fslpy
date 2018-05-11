@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.8.1 (Friday May 11th 2018)
+----------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.fileOrImage` decorator function now accepts :class:`.Image`
+  objects as well as ``nibabel`` image objects.
+
+
 1.8.0 (Thursday May 3rd 2018)
 -----------------------------
 
