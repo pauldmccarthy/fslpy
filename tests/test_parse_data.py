@@ -15,6 +15,7 @@ from fsl.data.atlases import Atlas
 from pytest import raises
 from .test_image import make_image
 import os
+import pytest
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -115,6 +116,7 @@ def test_image_out():
         assert args.image_out == 'test.surf.gii' + extension
 
 
+@pytest.mark.fsltest
 def test_atlas():
     atlas_parser = argparse.ArgumentParser('reads an atlas')
     atlas_parser.add_argument('atlas', type=parse_data.Atlas)

@@ -21,6 +21,7 @@ import nibabel as nib
 import fsl.utils.tempdir         as tempdir
 import fsl.utils.run             as run
 import fsl.utils.fslsub          as fslsub
+import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
@@ -284,6 +285,28 @@ def test_fileOrImage():
         assert np.all(nib.load('output.nii').get_data() == expected)
         os.remove('output.nii')
 
+        # fslimage, file, load
+        result = func(fslimage.Image(img1), img2='img2.nii',
+                      output=wutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # fslimage, fslimage, load
+        result = func(fslimage.Image(img1), img2=fslimage.Image(img2),
+                      output=wutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # fslimage, nib.image, load
+        result = func(fslimage.Image(img1), img2=img2,
+                      output=wutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # nib.image, nib.image, load
+        result = func(img1, img2=img2, output=wutils.LOAD)['output']
+        assert isinstance(result, nib.nifti1.Nifti1Image)
+        assert np.all(result.get_data()[:] == expected)
 
 
 def test_chained_fileOrImageAndArray():
