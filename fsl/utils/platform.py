@@ -88,7 +88,6 @@ def isWidgetAlive(widget):
 
     import wx
 
-
     if platform.wxFlavour == platform.WX_PHOENIX:
         excType = RuntimeError
     elif platform.wxFlavour == platform.WX_PYTHON:
@@ -116,6 +115,7 @@ class Platform(notifier.Notifier):
        os
        frozen
        fsldir
+       fsldevdir
        haveGui
        canHaveGui
        inSSHSession
@@ -146,8 +146,9 @@ class Platform(notifier.Notifier):
         self.__glRenderer   = None
         self.__glIsSoftware = None
         self.__fslVersion   = None
-        self.__fsldir       = None
-        self.fsldir         = os.environ.get('FSLDIR', None)
+
+        # initialise fsldir - see fsldir.setter
+        self.fsldir = self.fsldir
 
         # Determine if a display is available. We do
         # this once at init (instead of on-demand in
@@ -284,7 +285,13 @@ class Platform(notifier.Notifier):
                   any registered listeners are notified via the
                   :class:`.Notifier` interface.
         """
-        return self.__fsldir
+        return os.environ.get('FSLDIR', None)
+
+
+    @property
+    def fsldevdir(self):
+        """The FSL development directory location. """
+        return os.environ.get('FSLDEVDIR', None)
 
 
     @fsldir.setter
@@ -301,9 +308,9 @@ class Platform(notifier.Notifier):
         elif not op.exists(value): value = None
         elif not op.isdir(value):  value = None
 
-        self.__fsldir = value
-
-        if value is not None:
+        if value is None:
+            os.environ.pop('FSLDIR', None)
+        else:
             os.environ['FSLDIR'] = value
 
             # Set the FSL version field if we can
@@ -314,6 +321,26 @@ class Platform(notifier.Notifier):
                     self.__fslVersion = f.read().strip()
 
         self.notify(value=value)
+
+
+    @fsldevdir.setter
+    def fsldevdir(self, value):
+        """Changes the value of the :attr:`fsldevdir` property, and notifies
+        any registered listeners.
+        """
+
+        if value is not None:
+            value = value.strip()
+
+        if   value is None:        pass
+        elif value == '':          value = None
+        elif not op.exists(value): value = None
+        elif not op.isdir(value):  value = None
+
+        if value is None:
+            os.environ.pop('FSLDEVDIR', None)
+        else:
+            os.environ['FSLDEVDIR'] = value
 
 
     @property

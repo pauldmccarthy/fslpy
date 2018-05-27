@@ -40,6 +40,10 @@ execute them.
 """
 
 
+FSL_PREFIX = None
+"""Global override for the FSL executable location used by :func:`runfsl`. """
+
+
 class FSLNotPresent(Exception):
     """Error raised by the :func:`runfsl` function when ``$FSLDIR`` cannot
     be found.
@@ -239,11 +243,19 @@ def runfsl(*args, **kwargs):
     ``$FSLDIR/bin/`` to the command before passing it to :func:`run`.
     """
 
-    if fslplatform.fsldir is None:
+    prefix = None
+
+    if FSL_PREFIX is not None:
+        prefix = FSL_PREFIX
+    elif fslplatform.fsldevdir is not None:
+        prefix = op.join(fslplatform.fsldevdir, 'bin')
+    elif fslplatform.fsldir is not None:
+        prefix = op.join(fslplatform.fsldir, 'bin')
+    else:
         raise FSLNotPresent('$FSLDIR is not set - FSL cannot be found!')
 
     args    = _prepareArgs(args)
-    args[0] = op.join(fslplatform.fsldir, 'bin', args[0])
+    args[0] = op.join(prefix, args[0])
 
     return run(*args, **kwargs)
 
