@@ -8,6 +8,7 @@
 
 import os.path as op
 import            os
+import            shutil
 import            textwrap
 
 # python 3
@@ -161,11 +162,13 @@ def test_runfsl():
 
     test_script = textwrap.dedent("""
     #!/bin/bash
-    echo $@
+    echo {}
     exit 0
     """).strip()
 
-    old_fsldir = fslplatform.fsldir
+    old_fsldir    = fslplatform.fsldir
+    old_fsldevdir = fslplatform.fsldevdir
+
 
     try:
         with tempdir.tempdir():
@@ -173,24 +176,51 @@ def test_runfsl():
             make_random_image('image.nii.gz')
 
             # no FSLDIR - should error
-            fslplatform.fsldir = None
+            fslplatform.fsldir    = None
+            fslplatform.fsldevdir = None
             with pytest.raises(run.FSLNotPresent):
-                run.runfsl('fslhd image')
+                run.runfsl('fslhd')
 
             # FSLDIR/bin exists - should be good
             fsldir = op.abspath('./fsl')
             fslhd  = op.join(fsldir, 'bin', 'fslhd')
             os.makedirs(op.join(fsldir, 'bin'))
             with open(fslhd, 'wt') as f:
-                f.write(test_script)
+                f.write(test_script.format('fsldir'))
             os.chmod(fslhd, 0o777)
 
             fslplatform.fsldir = fsldir
-            path = op.pathsep.join((fsldir, os.environ['PATH']))
-            with mock.patch.dict(os.environ, {'PATH' : path}):
-                assert run.runfsl('fslhd image').strip() == 'image'
+            assert run.runfsl('fslhd').strip() == 'fsldir'
+
+            # FSLDEVDIR should take precedence
+            fsldevdir = './fsldev'
+            fslhd  = op.join(fsldevdir, 'bin', 'fslhd')
+            shutil.copytree(fsldir, fsldevdir)
+            with open(fslhd, 'wt') as f:
+                f.write(test_script.format('fsldevdir'))
+
+            fslplatform.fsldevdir = fsldevdir
+            fslplatform.fsldir    = None
+            assert run.runfsl('fslhd').strip() == 'fsldevdir'
+
+            # FSL_PREFIX should override all
+            override = './override'
+            fslhd    = op.join(override, 'fslhd')
+            os.makedirs(override)
+            with open(fslhd, 'wt') as f:
+                f.write(test_script.format('override'))
+            os.chmod(fslhd, 0o777)
+
+
+            fslplatform.fsldir    = None
+            fslplatform.fsldevdir = None
+            run.FSL_PREFIX = override
+            assert run.runfsl('fslhd').strip() == 'override'
+
     finally:
-        fslplatform.fsldir = old_fsldir
+        fslplatform.fsldir    = old_fsldir
+        fslplatform.fsldevdir = old_fsldevdir
+        run.FSL_PREFIX        = None
 
 
 def mock_submit(cmd, **kwargs):
