@@ -67,6 +67,9 @@ class CaptureStdout(object):
     def reset(self):
         self.__mock_stdout = StringIO('')
         self.__mock_stderr = StringIO('')
+        self.__mock_stdout.mode = 'w'
+        self.__mock_stderr.mode = 'w'
+        return self
 
     def __enter__(self):
         self.__real_stdout = sys.stdout

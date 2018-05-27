@@ -23,7 +23,7 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image, mockFSLDIR
+from . import make_random_image, mockFSLDIR, CaptureStdout
 
 
 def test_run():
@@ -43,31 +43,30 @@ def test_run():
             f.write(test_script.format(0))
         os.chmod('script.sh', 0o755)
 
-        expstdout = "standard output - arguments: 1 2 3"
-        expstderr = "standard error"
+        expstdout = "standard output - arguments: 1 2 3\n"
+        expstderr = "standard error\n"
 
         # test:
         #   - single string
         #   - packed sequence
         #   - unpacked sequence
-        assert run.run('./script.sh 1 2 3').strip() == expstdout
-        assert run.run(('./script.sh', '1', '2', '3')) == expstdout
+        assert run.run('./script.sh 1 2 3')             == expstdout
+        assert run.run(('./script.sh', '1', '2', '3'))  == expstdout
         assert run.run(*('./script.sh', '1', '2', '3')) == expstdout
 
         # test stdout/stderr
         stdout, stderr = run.run('./script.sh 1 2 3', err=True)
-        assert stdout.strip() == expstdout
-        assert stderr.strip() == expstderr
+        assert stdout == expstdout
+        assert stderr == expstderr
 
         # test return code
         res = run.run('./script.sh 1 2 3', ret=True)
-        print(res)
         stdout, ret = res
-        assert stdout.strip() == expstdout
+        assert stdout == expstdout
         assert ret == 0
         stdout, stderr, ret = run.run('./script.sh 1 2 3', err=True, ret=True)
-        assert stdout.strip() == expstdout
-        assert stderr.strip() == expstderr
+        assert stdout == expstdout
+        assert stderr == expstderr
         assert ret == 0
 
         # return code != 0
@@ -79,8 +78,59 @@ def test_run():
             run.run('./script.sh 1 2 3')
 
         stdout, ret = run.run('./script.sh 1 2 3', ret=True)
-        assert stdout.strip() == expstdout
+        assert stdout == expstdout
         assert ret == 255
+
+
+def test_run_tee():
+    test_script = textwrap.dedent("""
+    #!/bin/bash
+
+    echo "standard output - arguments: $@"
+    echo "standard error" >&2
+    exit 0
+    """).strip()
+
+    with tempdir.tempdir():
+        with open('script.sh', 'wt') as f:
+            f.write(test_script)
+        os.chmod('script.sh', 0o755)
+
+        expstdout = "standard output - arguments: 1 2 3\n"
+        expstderr = "standard error\n"
+
+        capture = CaptureStdout()
+
+        with capture:
+            stdout = run.run('./script.sh 1 2 3', tee=True)
+
+        assert stdout         == expstdout
+        assert capture.stdout == expstdout
+
+        with capture.reset():
+            stdout, stderr = run.run('./script.sh 1 2 3', err=True, tee=True)
+
+        assert stdout         == expstdout
+        assert stderr         == expstderr
+        assert capture.stdout == expstdout
+        assert capture.stderr == expstderr
+
+        with capture.reset():
+            stdout, stderr, ret = run.run('./script.sh 1 2 3',
+                                          err=True, ret=True, tee=True)
+
+        assert ret            == 0
+        assert stdout         == expstdout
+        assert stderr         == expstderr
+        assert capture.stdout == expstdout
+        assert capture.stderr == expstderr
+
+        with capture.reset():
+            stdout, ret = run.run('./script.sh 1 2 3', ret=True, tee=True)
+
+        assert ret            == 0
+        assert stdout         == expstdout
+        assert capture.stdout == expstdout
 
 
 def test_dryrun():
@@ -189,8 +239,8 @@ def test_run_submit():
 
         stdout, stderr = fslsub.output(jid)
 
-        assert stdout.strip() == 'test_script running'
-        assert stderr.strip() == ''
+        assert stdout == 'test_script running\n'
+        assert stderr == ''
 
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
 
@@ -201,7 +251,7 @@ def test_run_submit():
         stdout, stderr = fslsub.output(jid)
 
         experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
-                            for k in sorted(kwargs.keys())])
+                            for k in sorted(kwargs.keys())]) + '\n'
 
-        assert stdout.strip() == 'test_script running'
-        assert stderr.strip() == experr
+        assert stdout == 'test_script running\n'
+        assert stderr == experr
