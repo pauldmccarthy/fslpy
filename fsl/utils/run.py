@@ -127,11 +127,16 @@ def run(*args, **kwargs):
     # the process stdout/err on separate threads
     # to avoid deadlocks.
     def forward(in_, *outs):
+
+        # not all file-likes have a mode attribute -
+        # if not present, assume a string stream
+        omodes = [getattr(o, 'mode', 'w') for o in outs]
+
         def realForward():
             for line in in_:
-                for o in outs:
-                    if 'b' in o.mode: o.write(line)
-                    else:             o.write(line.decode('utf-8'))
+                for i, o in enumerate(outs):
+                    if 'b' in omodes[i]: o.write(line)
+                    else:                o.write(line.decode('utf-8'))
 
         t = threading.Thread(target=realForward)
         t.daemon = True
