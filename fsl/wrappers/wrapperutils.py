@@ -142,8 +142,10 @@ def cmdwrapper(func):
     """
     def wrapper(*args, **kwargs):
         submit = kwargs.pop('submit', None)
-        cmd = func(*args, **kwargs)
-        return run.run(cmd, err=True, submit=submit)
+        stderr = kwargs.pop('stderr', True)
+        log    = kwargs.pop('log',    {'tee' : True})
+        cmd    = func(*args, **kwargs)
+        return run.run(cmd, stderr=stderr, log=log, submit=submit)
     return _update_wrapper(wrapper, func)
 
 
@@ -154,8 +156,10 @@ def fslwrapper(func):
     """
     def wrapper(*args, **kwargs):
         submit = kwargs.pop('submit', None)
-        cmd = func(*args, **kwargs)
-        return run.runfsl(cmd, err=True, submit=submit)
+        stderr = kwargs.pop('stderr', True)
+        log    = kwargs.pop('log',    {'tee' : True})
+        cmd    = func(*args, **kwargs)
+        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit)
     return _update_wrapper(wrapper, func)
 
 
