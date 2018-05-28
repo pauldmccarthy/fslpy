@@ -27,6 +27,12 @@ import fsl.utils.fslsub                   as fslsub
 from . import make_random_image, mockFSLDIR, CaptureStdout
 
 
+def mkexec(path, contents):
+    with open(path, 'wt') as f:
+        f.write(contents)
+    os.chmod(path, 0o755)
+
+
 def test_run():
 
     test_script = textwrap.dedent("""
@@ -40,9 +46,7 @@ def test_run():
     with tempdir.tempdir():
 
         # return code == 0
-        with open('script.sh', 'wt') as f:
-            f.write(test_script.format(0))
-        os.chmod('script.sh', 0o755)
+        mkexec('script.sh', test_script.format(0))
 
         expstdout = "standard output - arguments: 1 2 3\n"
         expstderr = "standard error\n"
@@ -56,29 +60,34 @@ def test_run():
         assert run.run(*('./script.sh', '1', '2', '3')) == expstdout
 
         # test stdout/stderr
-        stdout, stderr = run.run('./script.sh 1 2 3', err=True)
+        stdout, stderr = run.run('./script.sh 1 2 3', stderr=True)
         assert stdout == expstdout
         assert stderr == expstderr
 
         # test return code
-        res = run.run('./script.sh 1 2 3', ret=True)
+        res = run.run('./script.sh 1 2 3', exitcode=True)
         stdout, ret = res
         assert stdout == expstdout
         assert ret == 0
-        stdout, stderr, ret = run.run('./script.sh 1 2 3', err=True, ret=True)
+        stdout, stderr, ret = run.run('./script.sh 1 2 3', stderr=True,
+                                      exitcode=True)
         assert stdout == expstdout
         assert stderr == expstderr
         assert ret == 0
 
+        # stdout=False
+        res = run.run('./script.sh 1 2 3', stdout=False)
+        assert res == ()
+        stderr = run.run('./script.sh 1 2 3', stdout=False, stderr=True)
+        assert stderr == expstderr
+
         # return code != 0
-        with open('./script.sh', 'wt') as f:
-            f.write(test_script.format(255))
-        os.chmod('./script.sh', 0o755)
+        mkexec('./script.sh', test_script.format(255))
 
         with pytest.raises(RuntimeError):
             run.run('./script.sh 1 2 3')
 
-        stdout, ret = run.run('./script.sh 1 2 3', ret=True)
+        stdout, ret = run.run('./script.sh 1 2 3', exitcode=True)
         assert stdout == expstdout
         assert ret == 255
 
@@ -93,9 +102,7 @@ def test_run_tee():
     """).strip()
 
     with tempdir.tempdir():
-        with open('script.sh', 'wt') as f:
-            f.write(test_script)
-        os.chmod('script.sh', 0o755)
+        mkexec('script.sh', test_script)
 
         expstdout = "standard output - arguments: 1 2 3\n"
         expstderr = "standard error\n"
@@ -103,13 +110,14 @@ def test_run_tee():
         capture = CaptureStdout()
 
         with capture:
-            stdout = run.run('./script.sh 1 2 3', tee=True)
+            stdout = run.run('./script.sh 1 2 3', log={'tee' : True})
 
         assert stdout         == expstdout
         assert capture.stdout == expstdout
 
         with capture.reset():
-            stdout, stderr = run.run('./script.sh 1 2 3', err=True, tee=True)
+            stdout, stderr = run.run('./script.sh 1 2 3', stderr=True,
+                                     log={'tee' : True})
 
         assert stdout         == expstdout
         assert stderr         == expstderr
@@ -118,7 +126,9 @@ def test_run_tee():
 
         with capture.reset():
             stdout, stderr, ret = run.run('./script.sh 1 2 3',
-                                          err=True, ret=True, tee=True)
+                                          stderr=True,
+                                          exitcode=True,
+                                          log={'tee' : True})
 
         assert ret            == 0
         assert stdout         == expstdout
@@ -127,7 +137,9 @@ def test_run_tee():
         assert capture.stderr == expstderr
 
         with capture.reset():
-            stdout, ret = run.run('./script.sh 1 2 3', ret=True, tee=True)
+            stdout, ret = run.run('./script.sh 1 2 3',
+                                  exitcode=True,
+                                  log={'tee' : True})
 
         assert ret            == 0
         assert stdout         == expstdout
@@ -142,9 +154,7 @@ def test_dryrun():
     """).strip()
 
     with tempdir.tempdir():
-        with open('./script.sh', 'wt') as f:
-            f.write(test_script)
-        os.chmod('./script.sh', 0o755)
+        mkexec('./script.sh', test_script)
 
         run.run('./script.sh')
         assert op.exists('foo')
@@ -169,7 +179,6 @@ def test_runfsl():
     old_fsldir    = fslplatform.fsldir
     old_fsldevdir = fslplatform.fsldevdir
 
-
     try:
         with tempdir.tempdir():
 
@@ -185,9 +194,8 @@ def test_runfsl():
             fsldir = op.abspath('./fsl')
             fslhd  = op.join(fsldir, 'bin', 'fslhd')
             os.makedirs(op.join(fsldir, 'bin'))
-            with open(fslhd, 'wt') as f:
-                f.write(test_script.format('fsldir'))
-            os.chmod(fslhd, 0o777)
+
+            mkexec(fslhd, test_script.format('fsldir'))
 
             fslplatform.fsldir = fsldir
             assert run.runfsl('fslhd').strip() == 'fsldir'
@@ -196,8 +204,8 @@ def test_runfsl():
             fsldevdir = './fsldev'
             fslhd  = op.join(fsldevdir, 'bin', 'fslhd')
             shutil.copytree(fsldir, fsldevdir)
-            with open(fslhd, 'wt') as f:
-                f.write(test_script.format('fsldevdir'))
+
+            mkexec(fslhd, test_script.format('fsldevdir'))
 
             fslplatform.fsldevdir = fsldevdir
             fslplatform.fsldir    = None
@@ -207,10 +215,7 @@ def test_runfsl():
             override = './override'
             fslhd    = op.join(override, 'fslhd')
             os.makedirs(override)
-            with open(fslhd, 'wt') as f:
-                f.write(test_script.format('override'))
-            os.chmod(fslhd, 0o777)
-
+            mkexec(fslhd, test_script.format('override'))
 
             fslplatform.fsldir    = None
             fslplatform.fsldevdir = None
@@ -285,3 +290,80 @@ def test_run_submit():
 
         assert stdout == 'test_script running\n'
         assert stderr == experr
+
+
+def test_run_streams():
+    """
+    """
+
+    test_script = textwrap.dedent("""
+    #!/usr/bin/env bash
+    echo standard output
+    echo standard error >&2
+    exit 0
+    """).strip()
+
+    expstdout = 'standard output\n'
+    expstderr = 'standard error\n'
+
+    with tempdir.tempdir():
+        mkexec('./script.sh', test_script)
+
+        with open('my_stdout', 'wt') as stdout, \
+             open('my_stderr', 'wt') as stderr:
+
+            stdout, stderr = run.run('./script.sh',
+                                     stderr=True,
+                                     log={'stdout' : stdout,
+                                          'stderr' : stderr})
+
+        assert stdout                         == expstdout
+        assert stderr                         == expstderr
+        assert open('my_stdout', 'rt').read() == expstdout
+        assert open('my_stderr', 'rt').read() == expstderr
+
+
+        capture = CaptureStdout()
+
+        with open('my_stdout', 'wt') as stdout, \
+             open('my_stderr', 'wt') as stderr, \
+             capture.reset():
+
+            stdout, stderr = run.run('./script.sh',
+                                     stderr=True,
+                                     log={'tee'    : True,
+                                          'stdout' : stdout,
+                                          'stderr' : stderr})
+
+        assert stdout                         == expstdout
+        assert stderr                         == expstderr
+        assert capture.stdout                 == expstdout
+        assert capture.stderr                 == expstderr
+        assert open('my_stdout', 'rt').read() == expstdout
+        assert open('my_stderr', 'rt').read() == expstderr
+
+
+def test_run_logcmd():
+    test_script = textwrap.dedent("""
+    #!/usr/bin/env bash
+    echo output $@
+    exit 0
+    """).strip()
+
+    expstdout = './script.sh 1 2 3\noutput 1 2 3\n'
+
+    with tempdir.tempdir():
+        mkexec('script.sh', test_script)
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
+        assert stdout == expstdout
+
+        mkexec('script.sh', test_script)
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
+        assert stdout == expstdout
+
+        with open('my_stdout', 'wt') as stdoutf:
+            stdout = run.run('./script.sh 1 2 3',
+                             log={'cmd' : True, 'stdout' : stdoutf})
+
+        assert stdout                         == expstdout
+        assert open('my_stdout', 'rt').read() == expstdout
