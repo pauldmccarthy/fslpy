@@ -490,6 +490,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
 
 
+    @property
     def ndim(self):
         """Returns the number of dimensions in this image. This number may not
         match the number of dimensions specified in the NIFTI header, as
