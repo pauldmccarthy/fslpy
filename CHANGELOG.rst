@@ -2,6 +2,42 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.9.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :meth:`.Image.data` property method, for easy access to image data
+  as a ``numpy`` array.
+* New ``log`` option to the :func:`.run.run` function, allowing more
+  fine-grained control over sub-process output streams.
+* New :meth:`.Platform.fsldevdir` property, allowing the ``$FSLDEVDIR``
+  environment variable to be queried/changed.
+
+
+Changed
+^^^^^^^
+
+
+* :meth:`.Image.ndims` has been renamed to :meth:`.Image.ndim`, to align
+  more closely with ``numpy`` naming conventions.
+* The ``err`` and ``ret`` parameters to the :func:`.run.run` function have
+  been renamed to ``stderr`` and ``exitcode`` respectively.
+* The :func:`.runfsl` function will give priority to the ``$FSLDEVDIR``
+  environment variable if it is set.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :meth:`.Image.ndims`.
+* The ``err`` and ``ret`` parameters to :func:`.run.run`.
+
+
 1.8.1 (Friday May 11th 2018)
 ----------------------------
 

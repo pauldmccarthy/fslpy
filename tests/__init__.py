@@ -36,7 +36,8 @@ logging.getLogger().setLevel(logging.WARNING)
 @contextlib.contextmanager
 def mockFSLDIR():
 
-    oldval = fslplatform.fsldir
+    oldfsldir    = fslplatform.fsldir
+    oldfsldevdir = fslplatform.fsldevdir
 
     try:
         with tempdir() as td:
@@ -44,13 +45,15 @@ def mockFSLDIR():
             bindir = op.join(fsldir, 'bin')
             os.makedirs(bindir)
             fslplatform.fsldir = fsldir
+            fslplatform.fsldevdir = None
 
             path = op.pathsep.join((bindir, os.environ['PATH']))
 
             with mock.patch.dict(os.environ, {'PATH': path}):
                 yield fsldir
     finally:
-        fslplatform.fsldir = oldval
+        fslplatform.fsldir    = oldfsldir
+        fslplatform.fsldevdir = oldfsldevdir
 
 
 def touch(fname):
@@ -67,6 +70,9 @@ class CaptureStdout(object):
     def reset(self):
         self.__mock_stdout = StringIO('')
         self.__mock_stderr = StringIO('')
+        self.__mock_stdout.mode = 'w'
+        self.__mock_stderr.mode = 'w'
+        return self
 
     def __enter__(self):
         self.__real_stdout = sys.stdout

@@ -285,11 +285,12 @@ def _test_Image_atts(imgtype):
             i    = fslimage.Image(path)
 
             assert tuple(i.shape)                       == tuple(expdims)
+            assert tuple(i.data.shape)                  == tuple(expdims)
             assert tuple(i.pixdim)                      == tuple(exppixdims)
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
-            assert i.ndims      == expndims
+            assert i.ndim       == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
             assert i.dataSource == fslpath.addExt(path,
@@ -859,8 +860,9 @@ def _test_Image_5D(imgtype):
 
             img = fslimage.Image(path)
 
-            assert img.shape == dims
-            assert img.ndims == 5
+            assert img.shape      == dims
+            assert img.ndim       == 5
+            assert img.data.shape == dims
 
 
 def test_Image_voxToScaledVox_analyze(): _test_Image_voxToScaledVox(0)

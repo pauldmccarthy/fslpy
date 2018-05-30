@@ -39,8 +39,19 @@ def bet(input, output, **kwargs):
 
     valmap = {
         'm' : wutils.SHOW_IF_TRUE,
-        'R' : wutils.SHOW_IF_TRUE,
+        'o' : wutils.SHOW_IF_TRUE,
+        's' : wutils.SHOW_IF_TRUE,
         'n' : wutils.HIDE_IF_TRUE,
+        't' : wutils.SHOW_IF_TRUE,
+        'e' : wutils.SHOW_IF_TRUE,
+        'R' : wutils.SHOW_IF_TRUE,
+        'S' : wutils.SHOW_IF_TRUE,
+        'B' : wutils.SHOW_IF_TRUE,
+        'Z' : wutils.SHOW_IF_TRUE,
+        'F' : wutils.SHOW_IF_TRUE,
+        'A' : wutils.SHOW_IF_TRUE,
+        'v' : wutils.SHOW_IF_TRUE,
+        'd' : wutils.SHOW_IF_TRUE,
     }
 
     cmd  = ['bet', input, output]

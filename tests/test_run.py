@@ -8,6 +8,7 @@
 
 import os.path as op
 import            os
+import            shutil
 import            textwrap
 
 # python 3
@@ -23,7 +24,13 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image, mockFSLDIR
+from . import make_random_image, mockFSLDIR, CaptureStdout
+
+
+def mkexec(path, contents):
+    with open(path, 'wt') as f:
+        f.write(contents)
+    os.chmod(path, 0o755)
 
 
 def test_run():
@@ -39,48 +46,104 @@ def test_run():
     with tempdir.tempdir():
 
         # return code == 0
-        with open('script.sh', 'wt') as f:
-            f.write(test_script.format(0))
-        os.chmod('script.sh', 0o755)
+        mkexec('script.sh', test_script.format(0))
 
-        expstdout = "standard output - arguments: 1 2 3"
-        expstderr = "standard error"
+        expstdout = "standard output - arguments: 1 2 3\n"
+        expstderr = "standard error\n"
 
         # test:
         #   - single string
         #   - packed sequence
         #   - unpacked sequence
-        assert run.run('./script.sh 1 2 3').strip() == expstdout
-        assert run.run(('./script.sh', '1', '2', '3')) == expstdout
+        assert run.run('./script.sh 1 2 3')             == expstdout
+        assert run.run(('./script.sh', '1', '2', '3'))  == expstdout
         assert run.run(*('./script.sh', '1', '2', '3')) == expstdout
 
         # test stdout/stderr
-        stdout, stderr = run.run('./script.sh 1 2 3', err=True)
-        assert stdout.strip() == expstdout
-        assert stderr.strip() == expstderr
+        stdout, stderr = run.run('./script.sh 1 2 3', stderr=True)
+        assert stdout == expstdout
+        assert stderr == expstderr
 
         # test return code
-        res = run.run('./script.sh 1 2 3', ret=True)
-        print(res)
+        res = run.run('./script.sh 1 2 3', exitcode=True)
         stdout, ret = res
-        assert stdout.strip() == expstdout
+        assert stdout == expstdout
         assert ret == 0
-        stdout, stderr, ret = run.run('./script.sh 1 2 3', err=True, ret=True)
-        assert stdout.strip() == expstdout
-        assert stderr.strip() == expstderr
+        stdout, stderr, ret = run.run('./script.sh 1 2 3', stderr=True,
+                                      exitcode=True)
+        assert stdout == expstdout
+        assert stderr == expstderr
         assert ret == 0
 
+        # stdout=False
+        res = run.run('./script.sh 1 2 3', stdout=False)
+        assert res == ()
+        stderr = run.run('./script.sh 1 2 3', stdout=False, stderr=True)
+        assert stderr == expstderr
+
         # return code != 0
-        with open('./script.sh', 'wt') as f:
-            f.write(test_script.format(255))
-        os.chmod('./script.sh', 0o755)
+        mkexec('./script.sh', test_script.format(255))
 
         with pytest.raises(RuntimeError):
             run.run('./script.sh 1 2 3')
 
-        stdout, ret = run.run('./script.sh 1 2 3', ret=True)
-        assert stdout.strip() == expstdout
+        stdout, ret = run.run('./script.sh 1 2 3', exitcode=True)
+        assert stdout == expstdout
         assert ret == 255
+
+
+def test_run_tee():
+    test_script = textwrap.dedent("""
+    #!/bin/bash
+
+    echo "standard output - arguments: $@"
+    echo "standard error" >&2
+    exit 0
+    """).strip()
+
+    with tempdir.tempdir():
+        mkexec('script.sh', test_script)
+
+        expstdout = "standard output - arguments: 1 2 3\n"
+        expstderr = "standard error\n"
+
+        capture = CaptureStdout()
+
+        with capture:
+            stdout = run.run('./script.sh 1 2 3', log={'tee' : True})
+
+        assert stdout         == expstdout
+        assert capture.stdout == expstdout
+
+        with capture.reset():
+            stdout, stderr = run.run('./script.sh 1 2 3', stderr=True,
+                                     log={'tee' : True})
+
+        assert stdout         == expstdout
+        assert stderr         == expstderr
+        assert capture.stdout == expstdout
+        assert capture.stderr == expstderr
+
+        with capture.reset():
+            stdout, stderr, ret = run.run('./script.sh 1 2 3',
+                                          stderr=True,
+                                          exitcode=True,
+                                          log={'tee' : True})
+
+        assert ret            == 0
+        assert stdout         == expstdout
+        assert stderr         == expstderr
+        assert capture.stdout == expstdout
+        assert capture.stderr == expstderr
+
+        with capture.reset():
+            stdout, ret = run.run('./script.sh 1 2 3',
+                                  exitcode=True,
+                                  log={'tee' : True})
+
+        assert ret            == 0
+        assert stdout         == expstdout
+        assert capture.stdout == expstdout
 
 
 def test_dryrun():
@@ -91,9 +154,7 @@ def test_dryrun():
     """).strip()
 
     with tempdir.tempdir():
-        with open('./script.sh', 'wt') as f:
-            f.write(test_script)
-        os.chmod('./script.sh', 0o755)
+        mkexec('./script.sh', test_script)
 
         run.run('./script.sh')
         assert op.exists('foo')
@@ -111,11 +172,12 @@ def test_runfsl():
 
     test_script = textwrap.dedent("""
     #!/bin/bash
-    echo $@
+    echo {}
     exit 0
     """).strip()
 
-    old_fsldir = fslplatform.fsldir
+    old_fsldir    = fslplatform.fsldir
+    old_fsldevdir = fslplatform.fsldevdir
 
     try:
         with tempdir.tempdir():
@@ -123,24 +185,47 @@ def test_runfsl():
             make_random_image('image.nii.gz')
 
             # no FSLDIR - should error
-            fslplatform.fsldir = None
+            fslplatform.fsldir    = None
+            fslplatform.fsldevdir = None
             with pytest.raises(run.FSLNotPresent):
-                run.runfsl('fslhd image')
+                run.runfsl('fslhd')
 
             # FSLDIR/bin exists - should be good
             fsldir = op.abspath('./fsl')
             fslhd  = op.join(fsldir, 'bin', 'fslhd')
             os.makedirs(op.join(fsldir, 'bin'))
-            with open(fslhd, 'wt') as f:
-                f.write(test_script)
-            os.chmod(fslhd, 0o777)
+
+            mkexec(fslhd, test_script.format('fsldir'))
 
             fslplatform.fsldir = fsldir
-            path = op.pathsep.join((fsldir, os.environ['PATH']))
-            with mock.patch.dict(os.environ, {'PATH' : path}):
-                assert run.runfsl('fslhd image').strip() == 'image'
+            assert run.runfsl('fslhd').strip() == 'fsldir'
+
+            # FSLDEVDIR should take precedence
+            fsldevdir = './fsldev'
+            fslhd  = op.join(fsldevdir, 'bin', 'fslhd')
+            shutil.copytree(fsldir, fsldevdir)
+
+            mkexec(fslhd, test_script.format('fsldevdir'))
+
+            fslplatform.fsldevdir = fsldevdir
+            fslplatform.fsldir    = None
+            assert run.runfsl('fslhd').strip() == 'fsldevdir'
+
+            # FSL_PREFIX should override all
+            override = './override'
+            fslhd    = op.join(override, 'fslhd')
+            os.makedirs(override)
+            mkexec(fslhd, test_script.format('override'))
+
+            fslplatform.fsldir    = None
+            fslplatform.fsldevdir = None
+            run.FSL_PREFIX = override
+            assert run.runfsl('fslhd').strip() == 'override'
+
     finally:
-        fslplatform.fsldir = old_fsldir
+        fslplatform.fsldir    = old_fsldir
+        fslplatform.fsldevdir = old_fsldevdir
+        run.FSL_PREFIX        = None
 
 
 def mock_submit(cmd, **kwargs):
@@ -189,8 +274,8 @@ def test_run_submit():
 
         stdout, stderr = fslsub.output(jid)
 
-        assert stdout.strip() == 'test_script running'
-        assert stderr.strip() == ''
+        assert stdout == 'test_script running\n'
+        assert stderr == ''
 
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
 
@@ -201,7 +286,84 @@ def test_run_submit():
         stdout, stderr = fslsub.output(jid)
 
         experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
-                            for k in sorted(kwargs.keys())])
+                            for k in sorted(kwargs.keys())]) + '\n'
 
-        assert stdout.strip() == 'test_script running'
-        assert stderr.strip() == experr
+        assert stdout == 'test_script running\n'
+        assert stderr == experr
+
+
+def test_run_streams():
+    """
+    """
+
+    test_script = textwrap.dedent("""
+    #!/usr/bin/env bash
+    echo standard output
+    echo standard error >&2
+    exit 0
+    """).strip()
+
+    expstdout = 'standard output\n'
+    expstderr = 'standard error\n'
+
+    with tempdir.tempdir():
+        mkexec('./script.sh', test_script)
+
+        with open('my_stdout', 'wt') as stdout, \
+             open('my_stderr', 'wt') as stderr:
+
+            stdout, stderr = run.run('./script.sh',
+                                     stderr=True,
+                                     log={'stdout' : stdout,
+                                          'stderr' : stderr})
+
+        assert stdout                         == expstdout
+        assert stderr                         == expstderr
+        assert open('my_stdout', 'rt').read() == expstdout
+        assert open('my_stderr', 'rt').read() == expstderr
+
+
+        capture = CaptureStdout()
+
+        with open('my_stdout', 'wt') as stdout, \
+             open('my_stderr', 'wt') as stderr, \
+             capture.reset():
+
+            stdout, stderr = run.run('./script.sh',
+                                     stderr=True,
+                                     log={'tee'    : True,
+                                          'stdout' : stdout,
+                                          'stderr' : stderr})
+
+        assert stdout                         == expstdout
+        assert stderr                         == expstderr
+        assert capture.stdout                 == expstdout
+        assert capture.stderr                 == expstderr
+        assert open('my_stdout', 'rt').read() == expstdout
+        assert open('my_stderr', 'rt').read() == expstderr
+
+
+def test_run_logcmd():
+    test_script = textwrap.dedent("""
+    #!/usr/bin/env bash
+    echo output $@
+    exit 0
+    """).strip()
+
+    expstdout = './script.sh 1 2 3\noutput 1 2 3\n'
+
+    with tempdir.tempdir():
+        mkexec('script.sh', test_script)
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
+        assert stdout == expstdout
+
+        mkexec('script.sh', test_script)
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
+        assert stdout == expstdout
+
+        with open('my_stdout', 'wt') as stdoutf:
+            stdout = run.run('./script.sh 1 2 3',
+                             log={'cmd' : True, 'stdout' : stdoutf})
+
+        assert stdout                         == expstdout
+        assert open('my_stdout', 'rt').read() == expstdout

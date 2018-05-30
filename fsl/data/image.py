@@ -491,13 +491,22 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     @property
-    def ndims(self):
+    def ndim(self):
         """Returns the number of dimensions in this image. This number may not
         match the number of dimensions specified in the NIFTI header, as
         trailing dimensions of length 1 are ignored. But it is guaranteed to be
         at least 3.
         """
         return len(self.__shape)
+
+
+    @property
+    @deprecation.deprecated(deprecated_in='1.9.0',
+                            removed_in='2.0.0',
+                            details='Use ndim instead')
+    def ndims(self):
+        """Deprecated - use :mod::meth:``ndim`` instead. """
+        return self.ndim()
 
 
     @deprecation.deprecated(deprecated_in='1.1.0',
@@ -1004,6 +1013,17 @@ class Image(Nifti):
         """Returns a reference to the ``nibabel`` NIFTI image instance.
         """
         return self.__nibImage
+
+
+    @property
+    def data(self):
+        """Returns the image data as a ``numpy`` array.
+
+        .. warning:: Calling this method will cause the entire image to be
+                     loaded into memory.
+        """
+        self.__imageWrapper.loadData()
+        return self[:]
 
 
     @property
