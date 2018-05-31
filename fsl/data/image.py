@@ -506,7 +506,7 @@ class Nifti(notifier.Notifier, meta.Meta):
                             details='Use ndim instead')
     def ndims(self):
         """Deprecated - use :mod::meth:``ndim`` instead. """
-        return self.ndim()
+        return self.ndim
 
 
     @deprecation.deprecated(deprecated_in='1.1.0',
