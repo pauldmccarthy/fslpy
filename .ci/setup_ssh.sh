@@ -33,6 +33,7 @@ if [[ -f /.dockerenv ]]; then
  if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
    echo "$SSH_PRIVATE_KEY_DOC_DEPLOY"   > $HOME/.ssh/id_doc_deploy;
    echo "$SSH_PRIVATE_KEY_CONDA_DEPLOY" > $HOME/.ssh/id_conda_deploy;
+   echo "$SSH_PRIVATE_KEY_CONDA_INDEX"  > $HOME/.ssh/id_conda_index;
  fi;
 
  chmod go-rwx $HOME/.ssh/id_*;
@@ -62,6 +63,11 @@ if [[ -f /.dockerenv ]]; then
  echo "    HostName ${CONDA_HOST##*@}"              >> $HOME/.ssh/config;
  echo "    User ${CONDA_HOST%@*}"                   >> $HOME/.ssh/config;
  echo "    IdentityFile $HOME/.ssh/id_conda_deploy" >> $HOME/.ssh/config;
+
+ echo "Host condaindex"                             >> $HOME/.ssh/config;
+ echo "    HostName ${CONDA_HOST##*@}"              >> $HOME/.ssh/config;
+ echo "    User ${CONDA_HOST%@*}"                   >> $HOME/.ssh/config;
+ echo "    IdentityFile $HOME/.ssh/id_conda_index"  >> $HOME/.ssh/config;
 
  echo "Host fsldownload"                            >> $HOME/.ssh/config;
  echo "    HostName ${FSL_HOST##*@}"                >> $HOME/.ssh/config;

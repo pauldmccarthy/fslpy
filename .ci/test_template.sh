@@ -14,12 +14,12 @@ fi;
 
 source /test.venv/bin/activate
 
-pip install -r requirements.txt
-pip install -r requirements-extra.txt
-pip install -r requirements-dev.txt
+pip install --retries 10 -r requirements.txt
+pip install --retries 10 -r requirements-extra.txt
+pip install --retries 10 -r requirements-dev.txt
 
 # style stage
-if [ "$TEST_STYLE"x != "x" ]; then pip install pylint flake8; fi;
+if [ "$TEST_STYLE"x != "x" ]; then pip install --retries 10 pylint flake8; fi;
 if [ "$TEST_STYLE"x != "x" ]; then flake8                           fsl || true; fi;
 if [ "$TEST_STYLE"x != "x" ]; then pylint --output-format=colorized fsl || true; fi;
 if [ "$TEST_STYLE"x != "x" ]; then exit 0; fi
