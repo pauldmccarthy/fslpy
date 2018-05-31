@@ -291,6 +291,7 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
             assert i.ndim       == expndims
+            assert i.ndims      == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
             assert i.dataSource == fslpath.addExt(path,
