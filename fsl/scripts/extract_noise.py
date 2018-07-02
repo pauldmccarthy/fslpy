@@ -118,6 +118,8 @@ def parseArgs(args):
 
     # Convert confound files to absolute
     # paths, error if any do not exist.
+    if args.conffile is None:
+        args.conffile = []
     for i, cf in enumerate(args.conffile):
         if not op.exists(cf):
             print('Confound file does not exist: {}'.format(cf))
@@ -153,8 +155,8 @@ def genComponentIndexList(comps, ncomps):
 
         allcomps.extend([c - 1 for c in ccomps])
 
-    if any([cc < 0 or cc >= ncomps for cc in ccomps]):
-        raise ValueError('Invalid component indices: {}'.format(ccomps))
+    if any([c < 0 or c >= ncomps for c in allcomps]):
+        raise ValueError('Invalid component indices: {}'.format(allcomps))
 
     return list(sorted(set(allcomps)))
 
@@ -214,12 +216,13 @@ def main(argv=None):
     args = parseArgs(argv)
 
     try:
-        comps = genComponentIndexList(args.components)
-        ts    = melanalysis.getComponentTimeSeries(args.icadir)
-        ts    = ts[:, comps]
-        confs = loadConfoundFiles(args.conffiles, ts.shape[0])
+        ts           = melanalysis.getComponentTimeSeries(args.icadir)
+        npts, ncomps = ts.shape
+        confs        = loadConfoundFiles(args.conffile, npts)
+        comps        = genComponentIndexList(args.components, ncomps)
+        ts           = ts[:, comps]
 
-    except ValueError as e:
+    except Exception as e:
         print(e)
         sys.exit(1)
 
