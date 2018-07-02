@@ -28,16 +28,16 @@ with warnings.catch_warnings():
 
 
 DTYPE = np.float64
-
-
+name  = "extract_noise"
+desc  = 'Extract component time series from a MELODIC .ica directory'
 usage = """
+{name}: {desc}
 Usage:
-  extract_noise <.ica directory> [-o outfile] <fixfile>
-  extract_noise <.ica directory> [-o outfile] <component> [<component> ...]
-""".strip()
-
-
-desc = 'Extract component time series from a MELODIC .ica directory'
+  {name} <.ica directory> [-o outfile] <fixfile>
+  {name} <.ica directory> [-o outfile] <component> [<component> ...]
+  {name} <.ica directory> [-o outfile] [-c conffile] [-c conffile] <fixfile>
+  {name} <.ica directory> [-o outfile] [-c conffile] [-c conffile] <component> [<component> ...]
+""".format(name=name, desc=desc).strip()  # noqa
 
 
 helps = {
@@ -69,7 +69,7 @@ def parseArgs(args):
         print(usage)
         sys.exit(0)
 
-    parser = argparse.ArgumentParser(prog='extract_noise',
+    parser = argparse.ArgumentParser(prog=name,
                                      usage=usage,
                                      description=desc)
 
@@ -144,7 +144,6 @@ def genComponentIndexList(comps, ncomps):
     """
 
     allcomps = []
-    badcomps = []
 
     for c in comps:
         if isinstance(c, int):
@@ -152,12 +151,10 @@ def genComponentIndexList(comps, ncomps):
         else:
             ccomps = fixlabels.loadLabelFile(c, returnIndices=True)[2]
 
-        badcomps.extend([cc     for cc in ccomps if cc >= ncomps])
-        allcomps.extend([cc - 1 for cc in ccomps if cc <  ncomps])
+        allcomps.extend([c - 1 for c in ccomps])
 
-    if len(badcomps) > 0:
-        print('Warning: Ignoring components: {}'.format(badcomps),
-              file=sys.stderr)
+    if any([cc < 0 or cc >= ncomps for cc in ccomps]):
+        raise ValueError('Invalid component indices: {}'.format(ccomps))
 
     return list(sorted(set(allcomps)))
 
@@ -185,32 +182,21 @@ def loadConfoundFiles(conffiles, npts):
             mat = np.atleast_2d(mat).T
 
         if mat.shape[0] != npts:
-            print('Warning: confound file {} does not have correct number of '
-                  'points (expected {}, has {}). Output will be truncated or '
-                  'padded with NaNs.'.format(cfile, npts, mat.shape[1]),
-                  file=sys.stderr)
-            matrices.append(mat)
+            raise ValueError('Confound file {} does not have correct number '
+                             'of points (expected {}, has {})'.format(
+                                 cfile, npts, mat.shape[0]))
 
-    totalcols = sum([m.shape[0] for m in matrices])
-    confounds = np.zeros((npts, totalcols), dtype=DTYPE)
+        matrices.append(mat)
+
+    ncols     = sum([m.shape[1] for m in matrices])
+    confounds = np.zeros((npts, ncols), dtype=DTYPE)
 
     coli = 0
+
     for mat in matrices:
-        ncols = mat.shape[1]
-
-        # too many timepoints - truncate
-        if mat.shape[0] > npts:
-            mat = mat[:npts, :]
-
-        # too few timepoints - pad with NaN
-        elif mat.shape[0] < npts:
-            tmat           = mat
-            mat            = np.zeros((npts, ncols), dtype=DTYPE)
-            mat[:npts,  :] = tmat
-            mat[ npts:, :] = np.nan
-
-        confounds[:, coli:coli + ncols] = mat
-        coli = coli + ncols
+        matcols                           = mat.shape[1]
+        confounds[:, coli:coli + matcols] = mat
+        coli                              = coli + matcols
 
     return confounds
 
@@ -226,12 +212,18 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args  = parseArgs(argv)
-    comps = genComponentIndexList(args.components)
-    ts    = melanalysis.getComponentTimeSeries(args.icadir)
-    ts    = ts[:, comps]
-    confs = loadConfoundFiles(args.conffiles, ts.shape[0])
-    ts    = np.hstack((ts, confs))
 
+    try:
+        comps = genComponentIndexList(args.components)
+        ts    = melanalysis.getComponentTimeSeries(args.icadir)
+        ts    = ts[:, comps]
+        confs = loadConfoundFiles(args.conffiles, ts.shape[0])
+
+    except ValueError as e:
+        print(e)
+        sys.exit(1)
+
+    ts = np.hstack((ts, confs))
     np.savetxt(args.outfile, ts, fmt='%10.5f')
 
 
