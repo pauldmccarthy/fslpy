@@ -211,7 +211,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    args  = parseArgs(argv)
+    args = parseArgs(argv)
 
     try:
         comps = genComponentIndexList(args.components)
