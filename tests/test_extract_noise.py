@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import sys
 
 import numpy as np
 
@@ -84,3 +85,73 @@ def test_loadConfoundFiles():
 
         with pytest.raises(ValueError):
             extn.loadConfoundFiles(conffiles, npts)
+
+
+def test_extract_noise():
+
+    with tempdir.tempdir() as td:
+
+        # (npts, ncomps)
+        melmix = np.random.randint(1, 100, (100, 20))
+        np.savetxt('melodic_mix', melmix)
+
+        sys.argv = ['extract_noise', td] + '-o out.txt 1 2 3'.split()
+        extn.main()
+        assert np.all(np.loadtxt('out.txt') == melmix[:, :3])
+
+        with open('labels.txt', 'wt') as f:
+            f.write('4, 5, 6, 7')
+
+        extn.main([td] + '-o out.txt -ow 1 2 3 labels.txt'.split())
+        assert np.all(np.loadtxt('out.txt') == melmix[:, :7])
+
+        conf1 = np.random.randint(1, 100, (100, 1))
+        conf2 = np.random.randint(1, 100, (100, 5))
+        np.savetxt('conf1.txt', conf1)
+        np.savetxt('conf2.txt', conf2)
+
+        exp = np.hstack((melmix[:, :3], conf1, conf2))
+        extn.main([td] + '-o out.txt -c conf1.txt -c conf2.txt -ow 1 2 3'.split())
+        assert np.all(np.loadtxt('out.txt') == exp)
+
+
+def test_extract_noise_usage():
+
+    with pytest.raises(SystemExit) as e:
+        extn.main([])
+    assert e.value.code == 0
+
+def test_extract_noise_badargs():
+
+    with pytest.raises(SystemExit) as e:
+        extn.main(['non-existent.ica', '1', '2', '3'])
+    assert e.value.code != 0
+
+    with tempdir.tempdir() as td:
+        with pytest.raises(SystemExit) as e:
+            extn.main([td, 'non-existent.txt', '1', '2', '3'])
+        assert e.value.code != 0
+
+        with open('outfile.txt', 'wt') as f:
+            f.write('a')
+
+        # overwrite not specified
+        with pytest.raises(SystemExit) as e:
+            extn.main([td, '-o', 'outfile.txt', '1', '2', '3'])
+        assert e.value.code != 0
+
+        with pytest.raises(SystemExit) as e:
+            extn.main([td, '-c', 'non-existent.txt', '1', '2', '3'])
+        assert e.value.code != 0
+
+
+        # bad data
+        melmix = np.random.randint(1, 100, (100, 5))
+        np.savetxt('melodic_mix', melmix)
+
+        with open('labels.txt', 'wt') as f:
+            f.write('-1, 0, 1, 2')
+
+        with pytest.raises(SystemExit) as e:
+            extn.main([td, 'labels.txt', '1', '2', '3'])
+        assert e.value.code != 0
