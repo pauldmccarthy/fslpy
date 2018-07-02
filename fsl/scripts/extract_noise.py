@@ -5,7 +5,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
+"""This module defines the ``extract_noise`` script, for extracting component
+time series from a MELODIC ``.ica`` directory.
 """
 
 
@@ -129,11 +130,21 @@ def parseArgs(args):
     return args
 
 
-def genComponentIndexList(comps):
-    """
+def genComponentIndexList(comps, ncomps):
+    """Turns the given sequence of integers and file paths into a list
+    of 0-based component indices.
+
+    :arg comps:  Sequence containing 1-based component indices, and/or paths
+                 to FIX/AROMA label text files.
+
+    :arg ncomps: Number of components in the input data - indices larger than
+                 this will be ignored.
+
+    :returns:    List of 0-based component indices.
     """
 
     allcomps = []
+    badcomps = []
 
     for c in comps:
         if isinstance(c, int):
@@ -141,13 +152,27 @@ def genComponentIndexList(comps):
         else:
             ccomps = fixlabels.loadLabelFile(c, returnIndices=True)[2]
 
-        allcomps.extend([cc - 1 for cc in ccomps])
+        badcomps.extend([cc     for cc in ccomps if cc >= ncomps])
+        allcomps.extend([cc - 1 for cc in ccomps if cc <  ncomps])
+
+    if len(badcomps) > 0:
+        print('Warning: Ignoring components: {}'.format(badcomps),
+              file=sys.stderr)
 
     return list(sorted(set(allcomps)))
 
 
 def loadConfoundFiles(conffiles, npts):
-    """
+    """Loads the given confound files, and copies them all into a single 2D
+    ``(npoints, nconfounds)`` matrix.
+
+    :arg conffiles: Sequence of paths to files containing confound time series
+                    (where each row corresponds to a time point, and each
+                    column corresponds to a single confound).
+
+    :arg npts:      Expected number of time points
+
+    :returns:       A ``(npoints, nconfounds)`` ``numpy`` matrix.
     """
 
     matrices = []
@@ -162,7 +187,8 @@ def loadConfoundFiles(conffiles, npts):
         if mat.shape[0] != npts:
             print('Warning: confound file {} does not have correct number of '
                   'points (expected {}, has {}). Output will be truncated or '
-                  'padded with NaNs.'.format(cfile, npts, mat.shape[1]))
+                  'padded with NaNs.'.format(cfile, npts, mat.shape[1]),
+                  file=sys.stderr)
             matrices.append(mat)
 
     totalcols = sum([m.shape[0] for m in matrices])
