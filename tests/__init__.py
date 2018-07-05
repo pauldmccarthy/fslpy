@@ -11,8 +11,9 @@ import              os
 import              sys
 import              glob
 import              shutil
-import              tempfile
+import              fnmatch
 import              logging
+import              tempfile
 import              contextlib
 import itertools as it
 import os.path   as op
@@ -187,12 +188,17 @@ def make_dummy_image_file(path):
         make_dummy_file(path)
 
 
-def cleardir(dir):
+def cleardir(dir, pat=None):
     """Deletes everything in the given directory, but not the directory
     itself.
     """
     for f in os.listdir(dir):
+
+        if pat is not None and not fnmatch.fnmatch(f, pat):
+            continue
+
         f = op.join(dir, f)
+
         if   op.isfile(f): os.remove(f)
         elif op.isdir(f):  shutil.rmtree(f)
 

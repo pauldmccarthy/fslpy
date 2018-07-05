@@ -25,7 +25,7 @@ import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from . import mockFSLDIR
+from . import mockFSLDIR, cleardir
 from .test_run import mock_submit
 
 
@@ -307,6 +307,53 @@ def test_fileOrImage():
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
         assert isinstance(result, nib.nifti1.Nifti1Image)
         assert np.all(result.get_data()[:] == expected)
+
+
+def test_fileOrImage_outprefix():
+
+    import logging
+    logging.basicConfig()
+    logging.getLogger('fsl.wrappers').setLevel(logging.DEBUG)
+
+    @wutils.fileOrImage('img', outprefix='output_base')
+    def basefunc(img, output_base):
+        img = nib.load(img).get_data()
+
+        out1 = nib.nifti1.Nifti1Image(img * 5,  np.eye(4))
+        out2 = nib.nifti1.Nifti1Image(img * 10, np.eye(4))
+
+        nib.save(out1, '{}_times5.nii.gz' .format(output_base))
+        nib.save(out2, '{}_times10.nii.gz'.format(output_base))
+
+    with tempdir.tempdir() as td:
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        exp1 = img.get_data() * 5
+        exp2 = img.get_data() * 10
+        nib.save(img, 'img.nii')
+
+        basefunc('img.nii', 'myout')
+        assert np.all(nib.load('myout_times5.nii.gz') .get_data() == exp1)
+        assert np.all(nib.load('myout_times10.nii.gz').get_data() == exp2)
+        cleardir(td, 'myout*')
+
+        basefunc(img, 'myout')
+        assert np.all(nib.load('myout_times5.nii.gz') .get_data() == exp1)
+        assert np.all(nib.load('myout_times10.nii.gz').get_data() == exp2)
+        cleardir(td, 'myout*')
+
+        res = basefunc(img, 'myout', myout_times5=wutils.LOAD)
+        assert np.all(res['myout_times5'].get_data() == exp1)
+        cleardir(td, 'myout*')
+
+        res = basefunc(img, 'myout', myout_times10=wutils.LOAD)
+        assert np.all(res['myout_times10'].get_data() == exp2)
+        cleardir(td, 'myout*')
+
+        res = basefunc(img, 'myout', myout=wutils.LOAD)
+        assert np.all(res['myout_times5'] .get_data() == exp1)
+        assert np.all(res['myout_times10'].get_data() == exp2)
+        cleardir(td, 'myout*')
+
 
 
 def test_chained_fileOrImageAndArray():
