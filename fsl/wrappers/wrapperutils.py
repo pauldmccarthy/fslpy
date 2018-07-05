@@ -90,6 +90,8 @@ import            os
 import            sys
 import            glob
 import            shutil
+import            random
+import            string
 import            fnmatch
 import            inspect
 import            logging
@@ -616,14 +618,16 @@ class _FileOrThing(object):
                 for filename in allPrefixed:
 
                     basename = op.basename(filename)
-                    for prefix in prefixes:
-                        if fnmatch.fnmatch(basename, '{}*'.format(prefix)):
+                    for prefPat, prefName in prefixes.items():
+                        if fnmatch.fnmatch(basename, '{}*'.format(prefPat)):
 
-                            log.debug('Loading prefixed output %s: %s',
-                                      prefix, filename)
+                            log.debug('Loading prefixed output %s [%s]: %s',
+                                      prefPat, prefName, filename)
 
                             fval             = self.__load(filename)
                             basename         = self.__removeExt(basename)
+                            basename         = basename.replace(prefPat,
+                                                                prefName)
                             result[basename] = fval
                             break
 
@@ -669,15 +673,15 @@ class _FileOrThing(object):
                         - A dictionary of ``{ name : filename }`` mappings,
                           for all arguments with a value of ``LOAD``.
 
-                        - A list   ``[ filename ]`` paths, for all
-                          output-prefix arguments with a value of ``LOAD``.
+                        - A dictionary   ``{ filepat : replstr }`` paths, for
+                          all output-prefix arguments with a value of ``LOAD``.
         """
 
         # These containers keep track
         # of output files which are to
         # be loaded into memory
         outfiles      = dict()
-        prefixedFiles = []
+        prefixedFiles = dict()
 
         allargs  = {k : v for k, v in zip(argnames, args)}
         allargs.update(kwargs)
@@ -696,9 +700,23 @@ class _FileOrThing(object):
         # accept an output prefix which contains
         # a directory path.
         if prefix is not None:
+
+            # If prefix is set to LOAD,
+            # all generated output files
+            # should be loaded - we use a
+            # randomly generated prefix,
+            # and add it to prefixedFiles,
+            # so that every file which
+            # starts with it will be
+            # loaded.
+            if prefix is LOAD:
+                prefix = random.sample(string.ascii_letters, 10)
+                prefix = ''.join(prefix)
+
             realPrefix                = prefix
             prefix                    = op.basename(prefix)
             allargs[self.__outprefix] = op.join(workdir, prefix)
+            prefixedFiles[prefix]     = self.__outprefix
 
         if len(self.__things) > 0: things = self.__things
         else:                      things = allargs.keys()
@@ -717,7 +735,8 @@ class _FileOrThing(object):
             # be given a value of LOAD
             if isprefixed and val is not LOAD:
                 raise ValueError('Cannot specify name of prefixed file - the '
-                                 'name is  defined by the output prefix')
+                                 'name is defined by the output prefix: '
+                                 '{}'.format(name))
 
             if val is LOAD:
 
@@ -728,7 +747,7 @@ class _FileOrThing(object):
                 # function. So we don't pass it
                 # through.
                 if isprefixed:
-                    prefixedFiles.append(name)
+                    prefixedFiles[name] = name
                     allargs.pop(name)
 
                 # regular output-file argument
