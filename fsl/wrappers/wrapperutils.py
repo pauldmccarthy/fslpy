@@ -511,8 +511,8 @@ class _FileOrThing(object):
                  prepOut,
                  load,
                  removeExt,
-                 *things,
-                 outprefix=None):
+                 *args,
+                 **kwargs):
         """Initialise a ``_FileOrThing`` decorator.
 
         :arg func:      The function to be decorated.
@@ -530,15 +530,17 @@ class _FileOrThing(object):
         :arg removeExt: Function which can remove a file extension from a file
                         path.
 
-        :arg things:    Names of all arguments which will be handled by
-                        this ``_FileOrThing`` decorator. If not provided,
-                        *all* arguments passed to the function will be
-                        handled.
+        :arg outprefix: Must be passed as a keyword argument. The name of a
+                        positional or keyword argument to the function, which
+                        specifies an output file name prefix.  All other
+                        arguments with names that begin with this prefix may
+                        be interpreted as things to ``LOAD``.
 
-        :arg outprefix: The name of a positional or keyword argument to the
-                        function, which specifies an output file name prefix.
-                        All other arguments with names that begin with this
-                        prefix may be interpreted as things to ``LOAD``.
+        All other positional arguments are interpreted as the names of the
+        arguments to the function which will be handled by this
+        ``_FileOrThing`` decorator. If not provided, *all* arguments passed to
+        the function will be handled.
+
 
         The ``prepIn`` and ``prepOut`` functions must accept the following
         positional arguments:
@@ -555,8 +557,8 @@ class _FileOrThing(object):
         self.__prepOut   = prepOut
         self.__load      = load
         self.__removeExt = removeExt
-        self.__things    = things
-        self.__outprefix = outprefix
+        self.__things    = args
+        self.__outprefix = kwargs.get('outprefix', None)
 
 
     def __call__(self, *args, **kwargs):
