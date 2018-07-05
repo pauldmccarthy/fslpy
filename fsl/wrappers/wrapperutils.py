@@ -102,8 +102,9 @@ import            six
 import nibabel as nib
 import numpy   as np
 
-import fsl.utils.tempdir as tempdir
 import fsl.utils.run     as run
+import fsl.utils.path    as fslpath
+import fsl.utils.tempdir as tempdir
 import fsl.data.image    as fslimage
 
 
@@ -504,7 +505,14 @@ class _FileOrThing(object):
             return self.__output
 
 
-    def __init__(self, func, prepIn, prepOut, load, *things, outprefix=None):
+    def __init__(self,
+                 func,
+                 prepIn,
+                 prepOut,
+                 load,
+                 removeExt,
+                 *things,
+                 outprefix=None):
         """Initialise a ``_FileOrThing`` decorator.
 
         :arg func:      The function to be decorated.
@@ -519,6 +527,9 @@ class _FileOrThing(object):
                         that were set to :data:`LOAD`. Must accept a file path
                         as its sole argument.
 
+        :arg removeExt: Function which can remove a file extension from a file
+                        path.
+
         :arg things:    Names of all arguments which will be handled by
                         this ``_FileOrThing`` decorator. If not provided,
                         *all* arguments passed to the function will be
@@ -526,9 +537,8 @@ class _FileOrThing(object):
 
         :arg outprefix: The name of a positional or keyword argument to the
                         function, which specifies an output file name prefix.
-                        All other arguments which begin with this prefix (
-                        more specifically, which begin with ``[prefix]_``)
-                        may be interpreted as things to load.
+                        All other arguments with names that begin with this
+                        prefix may be interpreted as things to ``LOAD``.
 
         The ``prepIn`` and ``prepOut`` functions must accept the following
         positional arguments:
@@ -544,6 +554,7 @@ class _FileOrThing(object):
         self.__prepIn    = prepIn
         self.__prepOut   = prepOut
         self.__load      = load
+        self.__removeExt = removeExt
         self.__things    = things
         self.__outprefix = outprefix
 
@@ -570,7 +581,7 @@ class _FileOrThing(object):
             # Replace any things with file names.
             # Also get a list of LOAD outputs
             args = self.__prepareArgs(td, argnames, args, kwargs)
-            args, kwargs, prefix, outfiles, prefixedFiles = args
+            args, kwargs, basePrefix, outfiles, prefixes = args
 
             # Call the function
             result = func(*args, **kwargs)
@@ -594,29 +605,31 @@ class _FileOrThing(object):
                 result[oname] = oval
 
             # Load or move output-prefixed files
-            if prefix is not None:
+            if basePrefix is not None:
 
-                prefixDir   = op.abspath(op.dirname(prefix))
-                prefix      = op.basename(prefix)
-                allPrefixed = glob.glob(op.join(td, '{}_*'.format(prefix)))
+                prefixDir   = op.abspath(op.dirname(basePrefix))
+                basePrefix  = op.basename(basePrefix)
+                allPrefixed = glob.glob(op.join(td, '{}*'.format(basePrefix)))
 
                 for filename in allPrefixed:
 
                     basename = op.basename(filename)
-                    for argname in prefixedFiles:
-                        if fnmatch.fnmatch(basename, '{}*'.format(argname)):
+                    for prefix in prefixes:
+                        if fnmatch.fnmatch(basename, '{}*'.format(prefix)):
 
                             log.debug('Loading prefixed output %s: %s',
-                                      argname, filename)
+                                      prefix, filename)
 
-                            fval = self.__load(filename)
-
-                            if argname in result: result[argname].append(fval)
-                            else:                 result[argname] = [fval]
+                            fval             = self.__load(filename)
+                            basename         = self.__removeExt(basename)
+                            result[basename] = fval
                             break
 
                     # if file did not match any pattern,
-                    # move it into real prefix
+                    # move it into the real prefix, where
+                    # the function would have saved it
+                    # if we had not modified the prefix
+                    # (see __prepareArgs)
                     else:
                         log.debug('Moving prefixed output %s into %s',
                                   filename, prefixDir)
@@ -691,7 +704,7 @@ class _FileOrThing(object):
         for name, val in list(allargs.items()):
 
             # is this argument referring
-            # to a prefixd output?
+            # to a prefixed output?
             isprefixed = (prefix is not None and
                           name.startswith(prefix))
 
@@ -722,6 +735,7 @@ class _FileOrThing(object):
                     outfiles[name] = outfile
                     allargs[ name] = outfile
 
+            # Assumed to be an input file
             else:
                 infile = self.__prepIn(workdir, name, val)
 
@@ -791,7 +805,13 @@ def fileOrImage(*args, **kwargs):
             raise RuntimeError('Cannot handle type: {}'.format(intypes))
 
     def decorator(func):
-        fot = _FileOrThing(func, prepIn, prepOut, load, *args, **kwargs)
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslimage.removeExt,
+                           *args,
+                           **kwargs)
 
         def wrapper(*args, **kwargs):
             result = fot(*args, **kwargs)
@@ -825,7 +845,13 @@ def fileOrArray(*args, **kwargs):
     load = np.loadtxt
 
     def decorator(func):
-        fot = _FileOrThing(func, prepIn, prepOut, load, *args, **kwargs)
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslpath.removeExt,
+                           *args,
+                           **kwargs)
 
         def wrapper(*args, **kwargs):
             return fot(*args, **kwargs)

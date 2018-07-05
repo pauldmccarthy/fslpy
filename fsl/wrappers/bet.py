@@ -14,7 +14,7 @@ import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
-@wutils.fileOrImage('input', 'output')
+@wutils.fileOrImage('input', 'output', outprefix='output')
 @wutils.fslwrapper
 def bet(input, output, **kwargs):
     """Wrapper for the ``bet`` command.
