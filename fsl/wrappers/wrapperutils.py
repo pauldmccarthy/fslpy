@@ -726,6 +726,11 @@ class _FileOrThing(object):
 
         for name, val in list(allargs.items()):
 
+            # don't process the
+            # outprefix argument
+            if name == self.__outprefix:
+                continue
+
             # is this argument referring
             # to a prefixed output?
             isprefixed = (prefix is not None and
