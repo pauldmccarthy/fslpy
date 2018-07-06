@@ -710,13 +710,13 @@ class _FileOrThing(object):
             # starts with it will be
             # loaded.
             if prefix is LOAD:
-                prefix = random.sample(string.ascii_letters, 10)
-                prefix = ''.join(prefix)
+                prefix                = random.sample(string.ascii_letters, 10)
+                prefix                = ''.join(prefix)
+                prefixedFiles[prefix] = self.__outprefix
 
             realPrefix                = prefix
             prefix                    = op.basename(prefix)
             allargs[self.__outprefix] = op.join(workdir, prefix)
-            prefixedFiles[prefix]     = self.__outprefix
 
         if len(self.__things) > 0: things = self.__things
         else:                      things = allargs.keys()
