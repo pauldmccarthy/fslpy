@@ -355,6 +355,53 @@ def test_fileOrImage_outprefix():
         cleardir(td, 'myout*')
 
 
+def test_fileOrImage_outprefix_differentTypes():
+
+    @wutils.fileOrImage('img', outprefix='outpref')
+    def func(img, outpref):
+
+        img  = nib.load(img)
+        img  = nib.nifti1.Nifti1Image(img.get_data() * 2, np.eye(4))
+        text = '1234567890'
+
+        nib.save(img, '{}_image.nii.gz' .format(outpref))
+
+        with open('{}_text.txt'.format(outpref), 'wt') as f:
+            f.write(text)
+
+    with tempdir.tempdir() as td:
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        expi = img.get_data() * 2
+        expt = '1234567890'
+
+        func(img, 'myout')
+        assert np.all(nib.load('myout_image.nii.gz') .get_data() == expi)
+        with open('myout_text.txt', 'rt') as f:
+            assert f.read().strip() == expt
+        cleardir(td, 'myout*')
+
+        res = func(img, 'myout', myout_image=wutils.LOAD)
+        assert list(res.keys()) == ['myout_image']
+        assert np.all(res['myout_image'].get_data() == expi)
+        cleardir(td, 'myout*')
+
+        res = func(img, 'myout', myout=wutils.LOAD)
+        assert list(res.keys()) == ['myout_image']
+        assert np.all(res['myout_image'].get_data() == expi)
+        cleardir(td, 'myout*')
+
+        res = func(img, 'myout', myout_text=wutils.LOAD)
+        assert list(res.keys()) == []
+        cleardir(td, 'myout*')
+
+
+
+
+# test directory
+
+
+
+
 
 def test_chained_fileOrImageAndArray():
     @wutils.fileOrImage('image')
