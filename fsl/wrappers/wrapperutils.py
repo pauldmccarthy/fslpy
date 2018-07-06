@@ -624,12 +624,15 @@ class _FileOrThing(object):
                             log.debug('Loading prefixed output %s [%s]: %s',
                                       prefPat, prefName, filename)
 
-                            fval             = self.__load(filename)
-                            basename         = self.__removeExt(basename)
-                            basename         = basename.replace(prefPat,
-                                                                prefName)
-                            result[basename] = fval
-                            break
+                            # if the load function returns
+                            # None, this file is probably
+                            # not of the correct type.
+                            fval = self.__load(filename)
+                            if fval is not None:
+                                basename = self.__removeExt(basename)
+                                basename = basename.replace(prefPat, prefName)
+                                result[basename] = fval
+                                break
 
                     # if file did not match any pattern,
                     # move it into the real prefix, where
@@ -807,6 +810,10 @@ def fileOrImage(*args, **kwargs):
         return op.join(workdir, '{}.nii.gz'.format(name))
 
     def load(path):
+
+        if not fslimage.looksLikeImage(path):
+            return None
+
         # create an independent in-memory
         # copy of the image file
         img = nib.load(path)
@@ -863,7 +870,9 @@ def fileOrArray(*args, **kwargs):
     def prepOut(workdir, name, val):
         return op.join(workdir, '{}.txt'.format(name))
 
-    load = np.loadtxt
+    def load(path):
+        try:              return np.loadtxt(path)
+        except Exception: return None
 
     def decorator(func):
         fot = _FileOrThing(func,
