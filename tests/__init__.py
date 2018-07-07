@@ -203,6 +203,11 @@ def cleardir(dir, pat=None):
         elif op.isdir(f):  shutil.rmtree(f)
 
 
+def checkdir(dir, *expfiles):
+    for f in expfiles:
+        assert op.exists(op.join(dir, f))
+
+
 def random_voxels(shape, nvoxels=1):
     randVoxels = np.vstack(
         [np.random.randint(0, s, nvoxels) for s in shape[:3]]).T

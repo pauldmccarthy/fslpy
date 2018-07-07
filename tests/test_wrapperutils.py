@@ -25,7 +25,7 @@ import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from . import mockFSLDIR, cleardir
+from . import mockFSLDIR, cleardir, checkdir
 from .test_run import mock_submit
 
 
@@ -311,10 +311,6 @@ def test_fileOrImage():
 
 def test_fileOrImage_outprefix():
 
-    import logging
-    logging.basicConfig()
-    logging.getLogger('fsl.wrappers').setLevel(logging.DEBUG)
-
     @wutils.fileOrImage('img', outprefix='output_base')
     def basefunc(img, output_base):
         img = nib.load(img).get_data()
@@ -324,6 +320,7 @@ def test_fileOrImage_outprefix():
 
         nib.save(out1, '{}_times5.nii.gz' .format(output_base))
         nib.save(out2, '{}_times10.nii.gz'.format(output_base))
+
 
     with tempdir.tempdir() as td:
         img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
@@ -395,12 +392,64 @@ def test_fileOrImage_outprefix_differentTypes():
         cleardir(td, 'myout*')
 
 
+def test_fileOrImage_outprefix_directory():
 
+    import logging
+    logging.basicConfig()
+    logging.getLogger('fsl.wrappers').setLevel(logging.DEBUG)
 
-# test directory
+    @wutils.fileOrImage('img', outprefix='outpref')
+    def func(img, outpref):
+        img  = nib.load(img)
+        img2 = nib.nifti1.Nifti1Image(img.get_data() * 2, np.eye(4))
+        img4 = nib.nifti1.Nifti1Image(img.get_data() * 4, np.eye(4))
 
+        outdir = op.abspath('{}_imgs'.format(outpref))
 
+        os.mkdir(outdir)
 
+        nib.save(img2, op.join(outdir, 'img2.nii.gz'))
+        nib.save(img4, op.join(outdir, 'img4.nii.gz'))
+
+    with tempdir.tempdir() as td:
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        exp2 = img.get_data() * 2
+        exp4 = img.get_data() * 4
+
+        res = func(img, 'myout')
+        assert len(res) == 0
+        checkdir(td,
+                 op.join('myout_imgs', 'img2.nii.gz'),
+                 op.join('myout_imgs', 'img4.nii.gz'))
+        cleardir(td, 'myout*')
+
+        res = func(img, 'myout', myout_imgs=wutils.LOAD)
+        assert len(res) == 2
+        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
+        assert np.all(res['myout_imgs/img4'].get_data() == exp4)
+
+        res = func(img, 'myout', **{'myout_imgs/img2' : wutils.LOAD})
+        assert len(res) == 1
+        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
+
+        res = func(img, 'myout', **{'myout_imgs/img' : wutils.LOAD})
+        assert len(res) == 2
+        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
+        assert np.all(res['myout_imgs/img4'].get_data() == exp4)
+
+        os.mkdir('foo')
+        res = func(img, 'foo/myout')
+        assert len(res) == 0
+        checkdir(td,
+                 op.join('foo', 'myout_imgs', 'img2.nii.gz'),
+                 op.join('foo', 'myout_imgs', 'img4.nii.gz'))
+        cleardir(td, 'foo')
+
+        os.mkdir('foo')
+        res = func(img, 'foo/myout', **{'foo/myout' : wutils.LOAD})
+        assert len(res) == 2
+        assert np.all(res['foo/myout_imgs/img2'].get_data() == exp2)
+        assert np.all(res['foo/myout_imgs/img4'].get_data() == exp4)
 
 
 def test_chained_fileOrImageAndArray():
