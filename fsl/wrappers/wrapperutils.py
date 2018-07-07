@@ -85,20 +85,22 @@ and returned::
 """
 
 
-import os.path as op
-import            os
-import            sys
-import            glob
-import            shutil
-import            random
-import            string
-import            fnmatch
-import            inspect
-import            logging
-import            tempfile
-import            warnings
-import            functools
-import            collections
+import itertools as it
+import os.path   as op
+import              os
+import              re
+import              sys
+import              glob
+import              shutil
+import              random
+import              string
+import              fnmatch
+import              inspect
+import              logging
+import              tempfile
+import              warnings
+import              functools
+import              collections
 
 import            six
 import nibabel as nib
@@ -585,66 +587,13 @@ class _FileOrThing(object):
             # Replace any things with file names.
             # Also get a list of LOAD outputs
             args = self.__prepareArgs(td, argnames, args, kwargs)
-            args, kwargs, basePrefix, outfiles, prefixes = args
+            args, kwargs, outprefix, outfiles, prefixes = args
 
             # Call the function
             result = func(*args, **kwargs)
 
-            # make a _Results object to store
-            # the output. If we are decorating
-            # another _FileOrThing, the
-            # results will get merged together
-            # into a single _Results dict.
-            if not isinstance(result, _FileOrThing._Results):
-                result = _FileOrThing._Results(result)
-
-            # Load the LOADed outputs
-            for oname, ofile in outfiles.items():
-
-                log.debug('Loading output %s: %s', oname, ofile)
-
-                if op.exists(ofile): oval = self.__load(ofile)
-                else:                oval = None
-
-                result[oname] = oval
-
-            # Load or move output-prefixed files
-            if basePrefix is not None:
-
-                prefixDir   = op.abspath(op.dirname(basePrefix))
-                basePrefix  = op.basename(basePrefix)
-                allPrefixed = glob.glob(op.join(td, '{}*'.format(basePrefix)))
-
-                for filename in allPrefixed:
-
-                    basename = op.basename(filename)
-                    for prefPat, prefName in prefixes.items():
-                        if fnmatch.fnmatch(basename, '{}*'.format(prefPat)):
-
-                            log.debug('Loading prefixed output %s [%s]: %s',
-                                      prefPat, prefName, filename)
-
-                            # if the load function returns
-                            # None, this file is probably
-                            # not of the correct type.
-                            fval = self.__load(filename)
-                            if fval is not None:
-                                basename = self.__removeExt(basename)
-                                basename = basename.replace(prefPat, prefName)
-                                result[basename] = fval
-                                break
-
-                    # if file did not match any pattern,
-                    # move it into the real prefix, where
-                    # the function would have saved it
-                    # if we had not modified the prefix
-                    # (see __prepareArgs)
-                    else:
-                        log.debug('Moving prefixed output %s into %s',
-                                  filename, prefixDir)
-                        shutil.move(filename, prefixDir)
-
-            return result
+            return self.__generateResult(
+                td, result, outprefix, outfiles, prefixes)
 
 
     def __prepareArgs(self, workdir, argnames, args, kwargs):
@@ -718,8 +667,14 @@ class _FileOrThing(object):
                 prefixedFiles[prefix] = self.__outprefix
 
             realPrefix                = prefix
-            prefix                    = op.basename(prefix)
-            allargs[self.__outprefix] = op.join(workdir, prefix)
+            fakePrefix                = op.join(workdir, prefix)
+            allargs[self.__outprefix] = fakePrefix
+
+
+            pdir = op.dirname(fakePrefix)
+
+            if pdir != '' and not op.exists(pdir):
+                os.makedirs(pdir)
 
         if len(self.__things) > 0: things = self.__things
         else:                      things = allargs.keys()
@@ -771,10 +726,88 @@ class _FileOrThing(object):
                 if infile is not None:
                     allargs[name] = infile
 
+        if realPrefix is not None and len(prefixedFiles) == 0:
+            allargs[self.__outprefix] = realPrefix
+
         args   = [allargs.pop(k) for k in argnames]
         kwargs = allargs
 
         return args, kwargs, realPrefix, outfiles, prefixedFiles
+
+
+    def __generateResult(
+            self, workdir, result, outprefix, outfiles, prefixes):
+        """Loads function outputs and returns a :class:`_Results` object.
+
+        Called by :meth:`__call__` after the decorated function has been
+        called. Figures out what files should be loaded, and loads them into
+        a ``_Results`` object.
+
+        :arg workdir:   Directory which contains the function outputs.
+        :arg result:    Function return value.
+        :arg outprefix: Original output prefix that was passed into the
+                        function (or ``None`` if one wasn't passed)
+        :arg outfiles:  Dictionary containing output files to be loaded (see
+                        :meth:`__prepareArgs`).
+        :arg prefixes:  Dictionary containing output-prefix patterns to be
+                        loaded (see :meth:`__prepareArgs`).
+
+        :returns:       A ``_Results`` object containing all loaded outputs.
+        """
+
+        # make a _Results object to store
+        # the output. If we are decorating
+        # another _FileOrThing, the
+        # results will get merged together
+        # into a single _Results dict.
+        if not isinstance(result, _FileOrThing._Results):
+            result = _FileOrThing._Results(result)
+
+        # Load the LOADed outputs
+        for oname, ofile in outfiles.items():
+
+            log.debug('Loading output %s: %s', oname, ofile)
+
+            if op.exists(ofile): oval = self.__load(ofile)
+            else:                oval = None
+
+            result[oname] = oval
+
+        # No output prefix - we're done
+        if outprefix is None or len(prefixes) == 0:
+            return result
+
+        # Load or move output-prefixed files.
+        # Find all files with a name that
+        # matches the prefix that was passed
+        # in (recursing into matching sub-
+        # directories too).
+        allPrefixed = glob.glob(op.join(workdir, '{}*'.format(outprefix)))
+        allPrefixed = [fslpath.allFiles(f) if op.isdir(f) else [f]
+                       for f in allPrefixed]
+
+        for prefixed in it.chain(*allPrefixed):
+            fullpath = prefixed
+            prefixed = op.relpath(prefixed, workdir)
+
+            for prefPat, prefName in prefixes.items():
+                if not fnmatch.fnmatch(prefixed, '{}*'.format(prefPat)):
+                    continue
+
+                log.debug('Loading prefixed output %s [%s]: %s',
+                          prefPat, prefName, prefixed)
+
+                # if the load function returns
+                # None, this file is probably
+                # not of the correct type.
+                fval = self.__load(fullpath)
+                if fval is not None:
+                    prefixed = self.__removeExt(prefixed)
+                    prefixed = re.sub('^' + prefPat, prefName, prefixed)
+                    result[prefixed] = fval
+                    break
+
+        return result
 
 
 def fileOrImage(*args, **kwargs):
