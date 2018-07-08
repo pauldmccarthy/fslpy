@@ -121,8 +121,10 @@ def test_allFiles():
     ]
 
     with testdir(create) as td:
-        assert fslpath.allFiles('.') == [op.join('.', c) for c in create]
-        assert fslpath.allFiles(td)  == [op.join(td,  c) for c in create]
+        assert (sorted(fslpath.allFiles('.')) ==
+                sorted([op.join('.', c) for c in create]))
+        assert (sorted(fslpath.allFiles(td))  ==
+                sorted([op.join(td,  c) for c in create]))
 
 
 def test_hasExt():
