@@ -19,7 +19,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('imgs', 'A', 's', 'manualseg', outprefix='out')
 @wutils.fileOrArray('a')
 @wutils.fslwrapper
-def fast(imgs, out="fast", **kwargs):
+def fast(imgs, out='fast', **kwargs):
     """Wrapper for the ``fast`` command.
 
     :arg imgs:      Input image(s)
@@ -31,8 +31,7 @@ def fast(imgs, out="fast", **kwargs):
     if isinstance(imgs, six.string_types):
         imgs = [imgs]
 
-    for i in imgs:
-        asrt.assertIsNifti(imgs)
+    asrt.assertIsNifti(*imgs)
 
     argmap = {
         'n_classes' : 'class',
