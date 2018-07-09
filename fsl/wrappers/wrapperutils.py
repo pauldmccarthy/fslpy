@@ -721,7 +721,15 @@ class _FileOrThing(object):
 
             # Assumed to be an input file
             else:
-                infile = self.__prepIn(workdir, name, val)
+                if isinstance(val, (list, tuple)):
+                    infile = list(val)
+                    for i, v in enumerate(val):
+                        v = self.__prepIn(workdir, name, v)
+                        if v is not None:
+                            infile[i] = v
+
+                else:
+                    infile = self.__prepIn(workdir, name, val)
 
                 if infile is not None:
                     allargs[name] = infile
