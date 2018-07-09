@@ -497,24 +497,91 @@ def test_fileOrThing_outprefix_directory():
 
 
 def test_chained_fileOrImageAndArray():
-    @wutils.fileOrImage('image')
-    @wutils.fileOrArray('array')
-    def func(image, array):
-        nib.load(image)
-        np.loadtxt(array)
+    @wutils.fileOrImage('image', 'outimage')
+    @wutils.fileOrArray('array', 'outarray')
+    def func(image, array, outimage, outarray):
+        image = nib.load(image)
+        array = np.loadtxt(array)
+
+        outimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+
+        np.savetxt(outarray, array * 2)
+        outimg.to_filename(outimage)
 
     image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
     array = np.array([[5, 6, 7, 8]])
+
+    expimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+    exparr = array * 2
 
     with tempdir.tempdir():
 
         nib.save(image, 'image.nii')
         np.savetxt('array.txt', array)
 
-        func('image.nii', 'array.txt')
-        func('image.nii',  array)
-        func( image,      'array.txt')
-        func( image,       array)
+        func('image.nii', 'array.txt', 'outimg.nii', 'outarr.txt')
+        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('outarr.txt') == exparr)
+
+        func('image.nii', array, 'outimg.nii', 'outarr.txt')
+        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('outarr.txt') == exparr)
+
+        func( image, 'array.txt', 'outimg.nii', 'outarr.txt')
+        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('outarr.txt') == exparr)
+
+        func( image, array, 'outimg.nii', 'outarr.txt')
+        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('outarr.txt') == exparr)
+
+        res = func(image, array, wutils.LOAD, 'outarr.txt')
+        assert np.all(res['outimage'].get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('outarr.txt') == exparr)
+
+        res = func(image, array, 'outimg.nii', wutils.LOAD)
+        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(res['outarray'] == exparr)
+
+        res = func(image, array, wutils.LOAD, wutils.LOAD)
+        assert np.all(res['outimage'].get_data() == expimg.get_data())
+        assert np.all(res['outarray'] == exparr)
+
+
+def test_fileOrThing_chained_outprefix():
+
+    import logging
+    logging.basicConfig()
+    logging.getLogger('fsl.wrappers').setLevel(logging.DEBUG)
+
+    @wutils.fileOrImage('image', 'outimage', outprefix='out')
+    @wutils.fileOrArray('array', 'outarray', outprefix='out')
+    def func(image, array, out, **kwa):
+
+        image = nib.load(image)
+        array = np.loadtxt(array)
+
+        outimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+        outarr = array * 2
+
+        np.savetxt('{}_array.txt'.format(out), outarr)
+        outimg.to_filename('{}_image.nii'.format(out))
+
+    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
+    array = np.array([[5, 6, 7, 8]])
+
+    expimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+    exparr = array * 2
+
+    with tempdir.tempdir():
+
+        func(image, array, 'myout')
+        assert np.all(nib.load('myout_image.nii').get_data() == expimg.get_data())
+        assert np.all(np.loadtxt('myout_array.txt') == exparr)
+
+        res = func(image, array, wutils.LOAD)
+        assert np.all(res['out_image'].get_data() == expimg.get_data())
+        assert np.all(res['out_array'] == exparr)
 
 
 def test_cmdwrapper():
