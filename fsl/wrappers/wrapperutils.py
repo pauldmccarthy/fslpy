@@ -487,7 +487,8 @@ class _FileOrThing(object):
 
 
     ``_FileOrThing`` decorators can be used with any other decorators
-    **as long as** they do not manipulate the return value.
+    **as long as** they do not manipulate the return value, and as long as
+    the ``_FileOrThing`` decorators are adjacent to each other.
     """
 
 
@@ -576,31 +577,69 @@ class _FileOrThing(object):
         func     = self.__func
         argnames = namedPositionals(func, args)
 
+        # If this _FileOrThing is being called
+        # by another _FileOrThing don't create
+        # another working directory. We do this
+        # sneakily, by setting an attribute on
+        # the wrapped function which stores the
+        # current working directory.
+        wrapped     = _unwrap(func)
+        fot_workdir = getattr(wrapped, '_fot_workdir', None)
+        parent      = fot_workdir is None
+
         # Create a tempdir to store any temporary
         # input/output things, but don't change
         # into it, as file paths passed to the
         # function may be relative.
-        with tempdir.tempdir(changeto=False) as td:
+        with tempdir.tempdir(changeto=False, override=fot_workdir) as td:
 
             log.debug('Redirecting LOADed outputs to %s', td)
 
             # Replace any things with file names.
             # Also get a list of LOAD outputs
-            args = self.__prepareArgs(td, argnames, args, kwargs)
+            args = self.__prepareArgs(parent, td, argnames, args, kwargs)
             args, kwargs, outprefix, outfiles, prefixes = args
 
+            # The prefix/patterns may be
+            # overridden by a parent FoT
+            outprefix = getattr(wrapped, '_fot_outprefix', outprefix)
+            prefixes  = getattr(wrapped, '_fot_prefixes',  prefixes)
+
+            # if there are any other FileOrThings
+            # in the decorator chain, get them to
+            # use our working directory, and
+            # prefixes, instead of creating their
+            # own.
+            if parent:
+                setattr(wrapped, '_fot_workdir',   td)
+                setattr(wrapped, '_fot_outprefix', outprefix)
+                setattr(wrapped, '_fot_prefixes',  prefixes)
+
             # Call the function
-            result = func(*args, **kwargs)
+            try:
+                result = func(*args, **kwargs)
+
+            finally:
+                # if we're the top-level FileOrThing
+                # decorator, remove the attributes we
+                # added above.
+                if parent:
+                    delattr(wrapped, '_fot_workdir')
+                    delattr(wrapped, '_fot_outprefix')
+                    delattr(wrapped, '_fot_prefixes')
 
             return self.__generateResult(
                 td, result, outprefix, outfiles, prefixes)
 
 
-    def __prepareArgs(self, workdir, argnames, args, kwargs):
+    def __prepareArgs(self, parent, workdir, argnames, args, kwargs):
         """Prepares all input and output arguments to be passed to the
         decorated function. Any arguments with a value of :data:`LOAD` are
         passed to the ``prepOut`` function specified at :meth:`__init__`.
         All other arguments are passed through the ``prepIn`` function.
+
+        :arg parent:  ``True`` if this ``_FileOrThing`` is the first in a
+                      chain of ``_FileOrThing`` decorators.
 
         :arg workdir: Directory in which all temporary files should be stored.
 
@@ -642,6 +681,13 @@ class _FileOrThing(object):
         prefix     = allargs.get(self.__outprefix, None)
         realPrefix = None
 
+        # Prefixed outputs are only
+        # managed by the parent
+        # _FileOrthing in a chain of
+        # FoT decorators.
+        if not parent:
+            prefix = None
+
         # If so, replace it with a new output
         # prefix which will redirect all output
         # to the temp dir.
@@ -670,9 +716,14 @@ class _FileOrThing(object):
             fakePrefix                = op.join(workdir, prefix)
             allargs[self.__outprefix] = fakePrefix
 
+            log.debug('Replacing output prefix: %s -> %s',
+                      realPrefix, fakePrefix)
 
+            # If the prefix specifies a
+            # directory, make sure it
+            # exists (remember that we're
+            # in a temporary directory)
             pdir = op.dirname(fakePrefix)
-
             if pdir != '' and not op.exists(pdir):
                 os.makedirs(pdir)
 
@@ -721,6 +772,8 @@ class _FileOrThing(object):
 
             # Assumed to be an input file
             else:
+                # sequences may be
+                # accepted for inputs
                 if isinstance(val, (list, tuple)):
                     infile = list(val)
                     for i, v in enumerate(val):
