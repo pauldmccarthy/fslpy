@@ -204,6 +204,8 @@ def test_loadVertexData_annot():
         loaded = mesh.loadVertexData(vdfile)
         ergbal, enames = mesh.getVertexDataColourTable(vdfile)
 
+        enames = [n.decode() for n in enames]
+
         assert np.all(np.isclose(loaded, labels.reshape(-1, 1)))
         assert list(enames) == list(names)
         assert np.all(np.isclose(ergbal[:, :4], rgba))

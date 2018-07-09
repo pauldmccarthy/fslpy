@@ -35,7 +35,8 @@ filtered_func_data.ica
  ['Unclassified Noise'],
  ['Unclassified Noise'],
  ['Unclassified Noise'],
- ['Signal']]))
+ ['Signal']],
+[2, 5, 6, 7]))
 
 
 goodfiles.append(("""
@@ -92,7 +93,8 @@ REST.ica/filtered_func_data.ica
  ['Unclassified noise'],
  ['Unclassified noise'],
  ['Unclassified noise'],
- ['Unknown']]))
+ ['Unknown']],
+[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 22, 23, 24]))
 
 goodfiles.append(("""
 [2, 5, 6, 7]
@@ -104,7 +106,8 @@ None,
  ['Signal'],
  ['Unclassified noise'],
  ['Unclassified noise'],
- ['Unclassified noise']]))
+ ['Unclassified noise']],
+[2, 5, 6, 7]))
 
 goodfiles.append(("""
 2, 5, 6, 7
@@ -116,7 +119,8 @@ None,
  ['Unknown'],
  ['Movement'],
  ['Movement'],
- ['Movement']]))
+ ['Movement']],
+[2, 5, 6, 7]))
 
 
 goodfiles.append(("""
@@ -127,11 +131,12 @@ path/to/analysis.ica
 """,
 'path/to/analysis.ica',
 [['Unclassified noise'],
- ['Signal', 'Blob']]))
+ ['Signal', 'Blob']],
+[1]))
 
 def test_loadLabelFile_good():
 
-    for filecontents, expMelDir, expLabels in goodfiles:
+    for filecontents, expMelDir, expLabels, expIdxs in goodfiles:
 
         with tests.testdir() as testdir:
 
@@ -143,9 +148,15 @@ def test_loadLabelFile_good():
                 f.write(filecontents.strip())
 
             resMelDir, resLabels = fixlabels.loadLabelFile(fname)
-
             assert resMelDir == expMelDir
-            
+            assert len(resLabels) == len(expLabels)
+            for exp, res in zip(expLabels, resLabels):
+                assert exp == res
+
+            resMelDir, resLabels, resIdxs = fixlabels.loadLabelFile(
+                fname, returnIndices=True)
+            assert resMelDir == expMelDir
+            assert resIdxs   == expIdxs
             assert len(resLabels) == len(expLabels)
             for exp, res in zip(expLabels, resLabels):
                 assert exp == res
@@ -309,7 +320,7 @@ def test_loadLabelFile_customLabels():
             if i in included:
                 assert ilbls[0] == incLabel
             else:
-                assert ilbls[0] == excLabel 
+                assert ilbls[0] == excLabel
 
 
 def test_saveLabelFile():
@@ -328,7 +339,7 @@ def test_saveLabelFile():
     4, Label1, True
     5, Unknown, False
     """).strip()
-    
+
     with tests.testdir() as testdir:
         fname = op.join(testdir, 'fname.txt')
 
@@ -344,12 +355,12 @@ def test_saveLabelFile():
         exp = '{}\n{}'.format(dirname, expected)
         with open(fname, 'rt') as f:
             assert f.read().strip() == exp
-            
+
         # dirname=None, listBad=True
         fixlabels.saveLabelFile(labels, fname)
         exp = '.\n{}\n[1, 3, 4]'.format(expected)
-        with open(fname, 'rt') as f: 
-            assert f.read().strip() == exp 
+        with open(fname, 'rt') as f:
+            assert f.read().strip() == exp
 
         # Custom signal labels
         sigLabels = ['Label1']
@@ -364,5 +375,5 @@ def test_saveLabelFile():
         """).strip()
 
         fixlabels.saveLabelFile(labels, fname, signalLabels=sigLabels)
-        with open(fname, 'rt') as f: 
-            assert f.read().strip() == exp 
+        with open(fname, 'rt') as f:
+            assert f.read().strip() == exp

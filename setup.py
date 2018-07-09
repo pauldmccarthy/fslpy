@@ -124,11 +124,12 @@ setup(
 
     entry_points={
         'console_scripts' : [
-            'immv       = fsl.scripts.immv:main',
-            'imcp       = fsl.scripts.imcp:main',
-            'imglob     = fsl.scripts.imglob:main',
-            'atlasq     = fsl.scripts.atlasq:main',
-            'atlasquery = fsl.scripts.atlasq:atlasquery_emulation',
+            'immv          = fsl.scripts.immv:main',
+            'imcp          = fsl.scripts.imcp:main',
+            'imglob        = fsl.scripts.imglob:main',
+            'atlasq        = fsl.scripts.atlasq:main',
+            'atlasquery    = fsl.scripts.atlasq:atlasquery_emulation',
+            'extract_noise = fsl.scripts.extract_noise:main',
         ]
     }
 )

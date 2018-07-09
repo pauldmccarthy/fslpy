@@ -30,6 +30,18 @@ from fsl.utils.tempdir import tempdir
 from . import make_random_image
 from . import make_dummy_file
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
+
+try:
+    import indexed_gzip as igzip
+except ImportError:
+    igzip           = mock.MagicMock()
+    igzip.ZranError = mock.MagicMock()
+
 
 def make_image(filename=None,
                imgtype=1,
@@ -116,8 +128,8 @@ def test_load():
     shouldRaise = [('notexist',        fslpath.PathError),
                    ('notexist.nii.gz', fslpath.PathError),
                    ('ambiguous',       fslpath.PathError),
-                   ('notnifti',        ImageFileError),
-                   ('notnifti.nii.gz', ImageFileError)]
+                   ('notnifti',        (ImageFileError, igzip.ZranError)),
+                   ('notnifti.nii.gz', (ImageFileError, igzip.ZranError))]
 
 
     with tempdir() as testdir:
