@@ -318,13 +318,8 @@ def test_fileOrThing_sequence():
         if isinstance(arrs, six.string_types):
             arrs = [arrs]
 
-        print('Loading from files', arrs)
-
         arrs = [np.loadtxt(a) for a in arrs]
-
         res  = np.sum(arrs, axis=0)
-
-        print('result', res)
 
         np.savetxt(out, res)
 

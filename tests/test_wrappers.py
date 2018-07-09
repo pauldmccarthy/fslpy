@@ -272,3 +272,18 @@ def test_fslmaths():
         assert result.output[0] == expected
 
         # TODO test LOAD output
+
+def test_fast():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+
+        cmd = op.join(fsldir, 'bin', 'fast')
+
+        result   = fw.fast('input', 'myseg', n_classes=3)
+        expected = [cmd, '-v', '--out=myseg', '--class=3', 'input']
+
+        assert result.output[0] == ' '.join(expected)
+
+        result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3)
+        expected = [cmd, '-v', '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
+
+        assert result.output[0] == ' '.join(expected)
