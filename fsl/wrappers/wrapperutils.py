@@ -141,11 +141,13 @@ def cmdwrapper(func):
     :func:`fsl.utils.run.run` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
+        stdout = kwargs.pop('stdout', True)
+        stderr = kwargs.pop('stderr', False)
+        exitcode = kwargs.pop('exitcode', False)
         submit = kwargs.pop('submit', None)
-        stderr = kwargs.pop('stderr', True)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.run(cmd, stderr=stderr, log=log, submit=submit)
+        return run.run(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
@@ -155,11 +157,13 @@ def fslwrapper(func):
     :func:`fsl.utils.run.runfsl` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
+        stdout = kwargs.pop('stdout', True)
+        stderr = kwargs.pop('stderr', False)
+        exitcode = kwargs.pop('exitcode', False)
         submit = kwargs.pop('submit', None)
-        stderr = kwargs.pop('stderr', True)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit)
+        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
