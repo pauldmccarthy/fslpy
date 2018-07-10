@@ -181,7 +181,7 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
+def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=False, **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
@@ -240,6 +240,9 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
                  The argument for any options not specified in the ``valmap``
                  will be converted into strings.
 
+    :arg singlechar_args: If True, single character arguments always take a single
+                          hyphen prefix (e.g. -h) regardless of the style
+
     :arg kwargs: Arguments to be converted into command-line options.
 
     :returns:    A list containing the generated command-line options.
@@ -265,7 +268,7 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
     if valmap is None: valmap = {}
 
     def fmtarg(arg):
-        if   style in ('-',  '-='):  arg =  '-{}'.format(arg)
+        if   style in ('-',  '-=') or (singlechar_args and len(arg) == 1):  arg =  '-{}'.format(arg)
         elif style in ('--', '--='): arg = '--{}'.format(arg)
         return arg
 
