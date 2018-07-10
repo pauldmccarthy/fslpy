@@ -577,11 +577,7 @@ class _FileOrThing(object):
 
             # Load the LOADed outputs
             for oname, ofile in outfiles.items():
-
-                if not op.exists(ofile): oval = None
-                else:                    oval = self.__load(ofile)
-
-                result[oname] = oval
+                if op.exists(ofile): result[oname] = self.__load(ofile)
 
             return result
 
