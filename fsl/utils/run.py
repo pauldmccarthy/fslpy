@@ -107,7 +107,7 @@ def _forwardStream(in_, *outs):
     omodes = [getattr(o, 'mode', 'w') for o in outs]
 
     def realForward():
-        for line in in_:
+        for line in iter(in_.readline, b''):
             for i, o in enumerate(outs):
                 if 'b' in omodes[i]: o.write(line)
                 else:                o.write(line.decode('utf-8'))
