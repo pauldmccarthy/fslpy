@@ -299,10 +299,11 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=
 
     for k, v in kwargs.items():
 
+        if v is None: continue
+
         k    = argmap.get(k, k)
         mapv = valmap.get(k, fmtval(v))
         k    = fmtarg(k)
-
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
@@ -621,6 +622,7 @@ class _FileOrThing(object):
             val = allargs.get(name, None)
 
             if val is None:
+                allargs.pop(name, None)
                 continue
 
             if val is LOAD:
