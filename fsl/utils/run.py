@@ -163,8 +163,8 @@ def run(*args, **kwargs):
                      - stderr: Optional file-like object to which the command's
                                standard error stream can be forwarded.
 
-                     - cmd:    If ``True``, the command itself is logged to the
-                               standard output stream(s).
+                     - cmd:    Optional file-like object to which the command itself 
+                               is logged.
 
     :returns:      If ``submit`` is provided, the return value of
                    :func:`.fslsub` is returned. Otherwise returns a single
@@ -191,7 +191,7 @@ def run(*args, **kwargs):
     tee            = log   .get('tee',      False)
     logStdout      = log   .get('stdout',   None)
     logStderr      = log   .get('stderr',   None)
-    logCmd         = log   .get('cmd',      False)
+    logCmd         = log   .get('cmd',      None)
     args           = _prepareArgs(args)
 
     if not bool(submit):
@@ -269,8 +269,8 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
     :arg logStderr: Optional file-like object to which the command's standard
                     error stream can be forwarded.
 
-    :arg logCmd:    If ``True``, the command itself is logged to the standard
-                    output stream(s).
+    :arg logCmd:    Optional file-like object to which the command itself is
+                    logged.
 
     :arg args:      Command to run
 
@@ -305,15 +305,13 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
             if logStdout is not None: outstreams.append(logStdout)
             if logStderr is not None: errstreams.append(logStderr)
 
-            # log the command to
-            # stdout if requested
-            if logCmd:
+            # log the command if requested
+            if logCmd is not None:
                 cmd = ' '.join(args) + '\n'
-                for o in outstreams:
-                    if 'b' in getattr(o, 'mode', 'w'):
-                        o.write(cmd.encode('utf-8'))
-                    else:
-                        o.write(cmd)
+                if 'b' in getattr(logCmd, 'mode', 'w'):
+                    logCmd.write(cmd.encode('utf-8'))
+                else:
+                    logCmd.write(cmd)
 
             stdoutt = _forwardStream(proc.stdout, *outstreams)
             stderrt = _forwardStream(proc.stderr, *errstreams)
@@ -368,6 +366,7 @@ def runfsl(*args, **kwargs):
             break
 
     return run(*args, **kwargs)
+
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """
