@@ -59,14 +59,15 @@ def flirt(src, ref, **kwargs):
     return cmd
 
 
-def applyxfm(src, ref, mat, out, interp='spline'):
+def applyxfm(src, ref, mat, out, interp='spline', **kwargs):
     """Convenience function which runs ``flirt -applyxfm ...``."""
     return flirt(src,
                  ref,
                  out=out,
                  applyxfm=True,
                  init=mat,
-                 interp=interp)
+                 interp=interp,
+                 **kwargs)
 
 
 @wutils.fileOrArray()
