@@ -655,8 +655,11 @@ def fileOrImage(*imgargs):
 
         infile = None
 
-        if isinstance(val, (fslimage.Image, nib.nifti1.Nifti1Image)):
-            intypes.append(type(val))
+        if isinstance(val, fslimage.Image):
+            intypes.append(fslimage.Image)
+
+        elif isinstance(val, nib.nifti1.Nifti1Image):
+            intypes.append(nib.nifti1.Nifti1Image)
 
         if isinstance(val, fslimage.Image):
             val = val.nibImage
