@@ -337,26 +337,37 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
 
 
 def runfsl(*args, **kwargs):
-    """Call a FSL command and return its output. This function simply prepends
-    ``$FSLDIR/bin/`` to the command before passing it to :func:`run`.
-    """
+    """Call a FSL command and return its output. 
+    
+      This function searches for the command in the following
+      locations (ordered by priority):
+      
+      1. ``FSL_PREFIX``
+      2. ``$FSLDEVDIR/bin``
+      3. ``$FSLDIR/bin``
 
-    prefix = None
+      If found, the full path to the command is then passed to :func:`run`.
+    """
+    prefixes = []
 
     if FSL_PREFIX is not None:
-        prefix = FSL_PREFIX
-    elif fslplatform.fsldevdir is not None:
-        prefix = op.join(fslplatform.fsldevdir, 'bin')
-    elif fslplatform.fsldir is not None:
-        prefix = op.join(fslplatform.fsldir, 'bin')
-    else:
+        prefixes.append(FSL_PREFIX)
+    if fslplatform.fsldevdir is not None:
+        prefixes.append(op.join(fslplatform.fsldevdir, 'bin'))
+    if fslplatform.fsldir is not None:
+        prefixes.append(op.join(fslplatform.fsldir, 'bin'))
+    
+    if not prefixes:
         raise FSLNotPresent('$FSLDIR is not set - FSL cannot be found!')
 
-    args    = _prepareArgs(args)
-    args[0] = op.join(prefix, args[0])
+    args = _prepareArgs(args)
+    for prefix in prefixes:
+        cmdpath = op.join(prefix, args[0])
+        if op.isfile(cmdpath):
+            args[0] = cmdpath
+            break
 
     return run(*args, **kwargs)
-
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """
