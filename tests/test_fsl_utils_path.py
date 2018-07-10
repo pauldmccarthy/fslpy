@@ -110,6 +110,23 @@ def test_shallowest():
         assert fslpath.shallowest(path, suffixes) == output
 
 
+def test_allFiles():
+    create = [
+        'a/1',
+        'a/2',
+        'a/b/1',
+        'a/b/2',
+        'a/b/c/1',
+        'a/b/d/1',
+    ]
+
+    with testdir(create) as td:
+        assert (sorted(fslpath.allFiles('.')) ==
+                sorted([op.join('.', c) for c in create]))
+        assert (sorted(fslpath.allFiles(td))  ==
+                sorted([op.join(td,  c) for c in create]))
+
+
 def test_hasExt():
 
     tests = [

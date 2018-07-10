@@ -15,14 +15,23 @@ import fsl.utils.run                      as run
 from . import mockFSLDIR
 
 
-def checkResult(cmd, base, args):
+def checkResult(cmd, base, args, stripdir=None):
     """We can't control the order in which command line args are generated,
     so we need to test all possible orderings.
 
-    :arg cmd:  Generated command
-    :arg base: Beginning of expected command
-    :arg args: Sequence of expected arguments
+    :arg cmd:      Generated command
+    :arg base:     Beginning of expected command
+    :arg args:     Sequence of expected arguments
+    :arg stripdir: Sequence of indices indicating arguments
+                   for whihc any leading directory should be ignored.
     """
+
+    if stripdir is not None:
+        cmd = list(cmd.split())
+        for si in stripdir:
+            cmd[si] = op.basename(cmd[si])
+        cmd = ' '.join(cmd)
+
     permutations = it.permutations(args, len(args))
     possible     = [' '.join([base] + list(p))  for p in permutations]
 
@@ -34,7 +43,7 @@ def test_bet():
         bet      = op.join(fsldir, 'bin', 'bet')
         result   = fw.bet('input', 'output', mask=True, c=(10, 20, 30))
         expected = (bet + ' input output', ('-m', '-c 10 20 30'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.output[0], *expected, stripdir=[2])
 
 
 def test_robustfov():
@@ -263,3 +272,18 @@ def test_fslmaths():
         assert result.output[0] == expected
 
         # TODO test LOAD output
+
+def test_fast():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+
+        cmd = op.join(fsldir, 'bin', 'fast')
+
+        result   = fw.fast('input', 'myseg', n_classes=3)
+        expected = [cmd, '-v', '--out=myseg', '--class=3', 'input']
+
+        assert result.output[0] == ' '.join(expected)
+
+        result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3)
+        expected = [cmd, '-v', '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
+
+        assert result.output[0] == ' '.join(expected)

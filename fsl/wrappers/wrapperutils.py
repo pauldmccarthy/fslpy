@@ -85,22 +85,34 @@ and returned::
 """
 
 
-import os.path as op
-import            os
-import            sys
-import            inspect
-import            tempfile
-import            warnings
-import            functools
-import            collections
+import itertools as it
+import os.path   as op
+import              os
+import              re
+import              sys
+import              glob
+import              shutil
+import              random
+import              string
+import              fnmatch
+import              inspect
+import              logging
+import              tempfile
+import              warnings
+import              functools
+import              collections
 
 import            six
 import nibabel as nib
 import numpy   as np
 
-import fsl.utils.tempdir as tempdir
 import fsl.utils.run     as run
+import fsl.utils.path    as fslpath
+import fsl.utils.tempdir as tempdir
 import fsl.data.image    as fslimage
+
+
+log = logging.getLogger(__name__)
 
 
 def _update_wrapper(wrapper, wrapped, *args, **kwargs):
@@ -483,7 +495,8 @@ class _FileOrThing(object):
 
 
     ``_FileOrThing`` decorators can be used with any other decorators
-    **as long as** they do not manipulate the return value.
+    **as long as** they do not manipulate the return value, and as long as
+    the ``_FileOrThing`` decorators are adjacent to each other.
     """
 
 
@@ -505,25 +518,42 @@ class _FileOrThing(object):
             return self.__output
 
 
-    def __init__(self, func, prepIn, prepOut, load, *things):
+    def __init__(self,
+                 func,
+                 prepIn,
+                 prepOut,
+                 load,
+                 removeExt,
+                 *args,
+                 **kwargs):
         """Initialise a ``_FileOrThing`` decorator.
 
-        :arg func:    The function to be decorated.
+        :arg func:      The function to be decorated.
 
-        :arg prepIn:  Function which returns a file name to be used in
-                      place of an input argument.
+        :arg prepIn:    Function which returns a file name to be used in
+                        place of an input argument.
 
-        :arg prepOut: Function which generates a file name to use for
-                      arguments that were set to :data:`LOAD`.
+        :arg prepOut:   Function which generates a file name to use for
+                        arguments that were set to :data:`LOAD`.
 
-        :arg load:    Function which is called to load items for arguments
-                      that were set to :data:`LOAD`. Must accept a file path
-                      as its sole argument.
+        :arg load:      Function which is called to load items for arguments
+                        that were set to :data:`LOAD`. Must accept a file path
+                        as its sole argument.
 
-        :arg things:  Names of all arguments which will be handled by
-                      this ``_FileOrThing`` decorator. If not provided,
-                      *all* arguments passed to the function will be
-                      handled.
+        :arg removeExt: Function which can remove a file extension from a file
+                        path.
+
+        :arg outprefix: Must be passed as a keyword argument. The name of a
+                        positional or keyword argument to the function, which
+                        specifies an output file name prefix.  All other
+                        arguments with names that begin with this prefix may
+                        be interpreted as things to ``LOAD``.
+
+        All other positional arguments are interpreted as the names of the
+        arguments to the function which will be handled by this
+        ``_FileOrThing`` decorator. If not provided, *all* arguments passed to
+        the function will be handled.
+
 
         The ``prepIn`` and ``prepOut`` functions must accept the following
         positional arguments:
@@ -535,11 +565,13 @@ class _FileOrThing(object):
 
           - The argument value that was passed in
         """
-        self.__func    = func
-        self.__prepIn  = prepIn
-        self.__prepOut = prepOut
-        self.__load    = load
-        self.__things  = things
+        self.__func      = func
+        self.__prepIn    = prepIn
+        self.__prepOut   = prepOut
+        self.__load      = load
+        self.__removeExt = removeExt
+        self.__things    = args
+        self.__outprefix = kwargs.get('outprefix', None)
 
 
     def __call__(self, *args, **kwargs):
@@ -553,18 +585,46 @@ class _FileOrThing(object):
         func     = self.__func
         argnames = namedPositionals(func, args)
 
+        # If this _FileOrThing is being called
+        # by another _FileOrThing don't create
+        # another working directory. We do this
+        # sneakily, by setting an attribute on
+        # the wrapped function which stores the
+        # current working directory.
+        wrapped     = _unwrap(func)
+        fot_workdir = getattr(wrapped, '_fot_workdir', None)
+        parent      = fot_workdir is None
+
         # Create a tempdir to store any temporary
         # input/output things, but don't change
         # into it, as file paths passed to the
         # function may be relative.
-        with tempdir.tempdir(changeto=False) as td:
+        with tempdir.tempdir(changeto=False, override=fot_workdir) as td:
+
+            log.debug('Redirecting LOADed outputs to %s', td)
 
             # Replace any things with file names.
             # Also get a list of LOAD outputs
-            args, kwargs, outfiles = self.__prepareArgs(
-                td, argnames, args, kwargs)
+            args = self.__prepareArgs(parent, td, argnames, args, kwargs)
+            args, kwargs, outprefix, outfiles, prefixes = args
+
+            # The prefix/patterns may be
+            # overridden by a parent FoT
+            outprefix = getattr(wrapped, '_fot_outprefix', outprefix)
+            prefixes  = getattr(wrapped, '_fot_prefixes',  prefixes)
+
+            # if there are any other FileOrThings
+            # in the decorator chain, get them to
+            # use our working directory, and
+            # prefixes, instead of creating their
+            # own.
+            if parent:
+                setattr(wrapped, '_fot_workdir',   td)
+                setattr(wrapped, '_fot_outprefix', outprefix)
+                setattr(wrapped, '_fot_prefixes',  prefixes)
 
             # Call the function
+<<<<<<< HEAD
             result = func(*args, **kwargs)
 
             # make a _Reults object to store
@@ -578,15 +638,32 @@ class _FileOrThing(object):
             # Load the LOADed outputs
             for oname, ofile in outfiles.items():
                 if op.exists(ofile): result[oname] = self.__load(ofile)
+=======
+            try:
+                result = func(*args, **kwargs)
 
-            return result
+            finally:
+                # if we're the top-level FileOrThing
+                # decorator, remove the attributes we
+                # added above.
+                if parent:
+                    delattr(wrapped, '_fot_workdir')
+                    delattr(wrapped, '_fot_outprefix')
+                    delattr(wrapped, '_fot_prefixes')
+>>>>>>> enh/wrappers
+
+            return self.__generateResult(
+                td, result, outprefix, outfiles, prefixes)
 
 
-    def __prepareArgs(self, workdir, argnames, args, kwargs):
+    def __prepareArgs(self, parent, workdir, argnames, args, kwargs):
         """Prepares all input and output arguments to be passed to the
         decorated function. Any arguments with a value of :data:`LOAD` are
         passed to the ``prepOut`` function specified at :meth:`__init__`.
         All other arguments are passed through the ``prepIn`` function.
+
+        :arg parent:  ``True`` if this ``_FileOrThing`` is the first in a
+                      chain of ``_FileOrThing`` decorators.
 
         :arg workdir: Directory in which all temporary files should be stored.
 
@@ -601,47 +678,229 @@ class _FileOrThing(object):
 
                         - An updated copy of ``kwargs``.
 
+                        - The output file prefix that was actually passed in
+                          (it is subsequently modified so that prefixed outputs
+                          are redirected to a temporary location). All prefixed
+                          outputs that are not ``LOAD``ed should be moved into
+                          this directory. ``None`` if there is no output
+                          prefix.
+
                         - A dictionary of ``{ name : filename }`` mappings,
                           for all arguments with a value of ``LOAD``.
+
+                        - A dictionary   ``{ filepat : replstr }`` paths, for
+                          all output-prefix arguments with a value of ``LOAD``.
         """
 
-        outfiles = dict()
+        # These containers keep track
+        # of output files which are to
+        # be loaded into memory
+        outfiles      = dict()
+        prefixedFiles = dict()
 
         allargs  = {k : v for k, v in zip(argnames, args)}
         allargs.update(kwargs)
 
+        # Has an output prefix been specified?
+        prefix     = allargs.get(self.__outprefix, None)
+        realPrefix = None
+
+        # Prefixed outputs are only
+        # managed by the parent
+        # _FileOrthing in a chain of
+        # FoT decorators.
+        if not parent:
+            prefix = None
+
+        # If so, replace it with a new output
+        # prefix which will redirect all output
+        # to the temp dir.
+        #
+        # Importantly, here we assume that the
+        # underlying function (and hence the
+        # underlying command-line tool) will
+        # accept an output prefix which contains
+        # a directory path.
+        if prefix is not None:
+
+            # If prefix is set to LOAD,
+            # all generated output files
+            # should be loaded - we use a
+            # randomly generated prefix,
+            # and add it to prefixedFiles,
+            # so that every file which
+            # starts with it will be
+            # loaded.
+            if prefix is LOAD:
+                prefix                = random.sample(string.ascii_letters, 10)
+                prefix                = ''.join(prefix)
+                prefixedFiles[prefix] = self.__outprefix
+
+            realPrefix                = prefix
+            fakePrefix                = op.join(workdir, prefix)
+            allargs[self.__outprefix] = fakePrefix
+
+            log.debug('Replacing output prefix: %s -> %s',
+                      realPrefix, fakePrefix)
+
+            # If the prefix specifies a
+            # directory, make sure it
+            # exists (remember that we're
+            # in a temporary directory)
+            pdir = op.dirname(fakePrefix)
+            if pdir != '' and not op.exists(pdir):
+                os.makedirs(pdir)
+
         if len(self.__things) > 0: things = self.__things
         else:                      things = allargs.keys()
 
-        for name in things:
+        for name, val in list(allargs.items()):
 
-            val = allargs.get(name, None)
+            # don't process the
+            # outprefix argument
+            if name == self.__outprefix:
+                continue
 
+            # is this argument referring
+            # to a prefixed output?
+            isprefixed = (prefix is not None and
+                          name.startswith(prefix))
+
+<<<<<<< HEAD
             if val is None:
                 allargs.pop(name, None)
+=======
+            if not (isprefixed or name in things):
+>>>>>>> enh/wrappers
                 continue
+
+            # Prefixed output files may only
+            # be given a value of LOAD
+            if isprefixed and val is not LOAD:
+                raise ValueError('Cannot specify name of prefixed file - the '
+                                 'name is defined by the output prefix: '
+                                 '{}'.format(name))
 
             if val is LOAD:
 
-                outfile = self.__prepOut(workdir, name, val)
+                # this argument refers to an output
+                # that is generated from the output
+                # prefix argument, and doesn't map
+                # directly to an argument of the
+                # function. So we don't pass it
+                # through.
+                if isprefixed:
+                    prefixedFiles[name] = name
+                    allargs.pop(name)
 
-                if outfile is not None:
-                    allargs[ name] = outfile
+                # regular output-file argument
+                else:
+                    outfile = self.__prepOut(workdir, name, val)
                     outfiles[name] = outfile
-            else:
+                    allargs[ name] = outfile
 
-                infile = self.__prepIn(workdir, name, val)
+            # Assumed to be an input file
+            else:
+                # sequences may be
+                # accepted for inputs
+                if isinstance(val, (list, tuple)):
+                    infile = list(val)
+                    for i, v in enumerate(val):
+                        v = self.__prepIn(workdir, name, v)
+                        if v is not None:
+                            infile[i] = v
+
+                else:
+                    infile = self.__prepIn(workdir, name, val)
 
                 if infile is not None:
                     allargs[name] = infile
 
+        if realPrefix is not None and len(prefixedFiles) == 0:
+            allargs[self.__outprefix] = realPrefix
+
         args   = [allargs.pop(k) for k in argnames]
         kwargs = allargs
 
-        return args, kwargs, outfiles
+        return args, kwargs, realPrefix, outfiles, prefixedFiles
 
 
-def fileOrImage(*imgargs):
+    def __generateResult(
+            self, workdir, result, outprefix, outfiles, prefixes):
+        """Loads function outputs and returns a :class:`_Results` object.
+
+        Called by :meth:`__call__` after the decorated function has been
+        called. Figures out what files should be loaded, and loads them into
+        a ``_Results`` object.
+
+        :arg workdir:   Directory which contains the function outputs.
+        :arg result:    Function return value.
+        :arg outprefix: Original output prefix that was passed into the
+                        function (or ``None`` if one wasn't passed)
+        :arg outfiles:  Dictionary containing output files to be loaded (see
+                        :meth:`__prepareArgs`).
+        :arg prefixes:  Dictionary containing output-prefix patterns to be
+                        loaded (see :meth:`__prepareArgs`).
+
+        :returns:       A ``_Results`` object containing all loaded outputs.
+        """
+
+        # make a _Results object to store
+        # the output. If we are decorating
+        # another _FileOrThing, the
+        # results will get merged together
+        # into a single _Results dict.
+        if not isinstance(result, _FileOrThing._Results):
+            result = _FileOrThing._Results(result)
+
+        # Load the LOADed outputs
+        for oname, ofile in outfiles.items():
+
+            log.debug('Loading output %s: %s', oname, ofile)
+
+            if op.exists(ofile): oval = self.__load(ofile)
+            else:                oval = None
+
+            result[oname] = oval
+
+        # No output prefix - we're done
+        if outprefix is None or len(prefixes) == 0:
+            return result
+
+        # Load or move output-prefixed files.
+        # Find all files with a name that
+        # matches the prefix that was passed
+        # in (recursing into matching sub-
+        # directories too).
+        allPrefixed = glob.glob(op.join(workdir, '{}*'.format(outprefix)))
+        allPrefixed = [fslpath.allFiles(f) if op.isdir(f) else [f]
+                       for f in allPrefixed]
+
+        for prefixed in it.chain(*allPrefixed):
+            fullpath = prefixed
+            prefixed = op.relpath(prefixed, workdir)
+
+            for prefPat, prefName in prefixes.items():
+                if not fnmatch.fnmatch(prefixed, '{}*'.format(prefPat)):
+                    continue
+
+                log.debug('Loading prefixed output %s [%s]: %s',
+                          prefPat, prefName, prefixed)
+
+                # if the load function returns
+                # None, this file is probably
+                # not of the correct type.
+                fval = self.__load(fullpath)
+                if fval is not None:
+                    prefixed = self.__removeExt(prefixed)
+                    prefixed = re.sub('^' + prefPat, prefName, prefixed)
+                    result[prefixed] = fval
+                    break
+
+        return result
+
+
+def fileOrImage(*args, **kwargs):
     """Decorator which can be used to ensure that any NIfTI images are saved
     to file, and output images can be loaded and returned as ``nibabel``
     image objects or :class:`.Image` objects.
@@ -682,6 +941,10 @@ def fileOrImage(*imgargs):
         return op.join(workdir, '{}.nii.gz'.format(name))
 
     def load(path):
+
+        if not fslimage.looksLikeImage(path):
+            return None
+
         # create an independent in-memory
         # copy of the image file
         img = nib.load(path)
@@ -701,7 +964,13 @@ def fileOrImage(*imgargs):
             raise RuntimeError('Cannot handle type: {}'.format(intypes))
 
     def decorator(func):
-        fot = _FileOrThing(func, prepIn, prepOut, load, *imgargs)
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslimage.removeExt,
+                           *args,
+                           **kwargs)
 
         def wrapper(*args, **kwargs):
             result = fot(*args, **kwargs)
@@ -713,7 +982,7 @@ def fileOrImage(*imgargs):
     return decorator
 
 
-def fileOrArray(*arrargs):
+def fileOrArray(*args, **kwargs):
     """Decorator which can be used to ensure that any Numpy arrays are saved
     to text files, and output files can be loaded and returned as Numpy arrays.
     """
@@ -732,10 +1001,18 @@ def fileOrArray(*arrargs):
     def prepOut(workdir, name, val):
         return op.join(workdir, '{}.txt'.format(name))
 
-    load = np.loadtxt
+    def load(path):
+        try:              return np.loadtxt(path)
+        except Exception: return None
 
     def decorator(func):
-        fot = _FileOrThing(func, prepIn, prepOut, load, *arrargs)
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslpath.removeExt,
+                           *args,
+                           **kwargs)
 
         def wrapper(*args, **kwargs):
             return fot(*args, **kwargs)
