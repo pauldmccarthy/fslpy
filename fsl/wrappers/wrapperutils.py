@@ -624,21 +624,6 @@ class _FileOrThing(object):
                 setattr(wrapped, '_fot_prefixes',  prefixes)
 
             # Call the function
-<<<<<<< HEAD
-            result = func(*args, **kwargs)
-
-            # make a _Reults object to store
-            # the output. If we are decorating
-            # another _FileOrThing, the
-            # results will get merged together
-            # into a single _Results dict.
-            if not isinstance(result, _FileOrThing._Results):
-                result = _FileOrThing._Results(result)
-
-            # Load the LOADed outputs
-            for oname, ofile in outfiles.items():
-                if op.exists(ofile): result[oname] = self.__load(ofile)
-=======
             try:
                 result = func(*args, **kwargs)
 
@@ -650,7 +635,6 @@ class _FileOrThing(object):
                     delattr(wrapped, '_fot_workdir')
                     delattr(wrapped, '_fot_outprefix')
                     delattr(wrapped, '_fot_prefixes')
->>>>>>> enh/wrappers
 
             return self.__generateResult(
                 td, result, outprefix, outfiles, prefixes)
@@ -766,12 +750,7 @@ class _FileOrThing(object):
             isprefixed = (prefix is not None and
                           name.startswith(prefix))
 
-<<<<<<< HEAD
-            if val is None:
-                allargs.pop(name, None)
-=======
             if not (isprefixed or name in things):
->>>>>>> enh/wrappers
                 continue
 
             # Prefixed output files may only
