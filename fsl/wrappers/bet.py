@@ -35,6 +35,7 @@ def bet(input, output, **kwargs):
         'robust'        : 'R',
         'fracintensity' : 'f',
         'seg'           : 'n',
+        'centre'        : 'c',
     }
 
     valmap = {
@@ -55,6 +56,14 @@ def bet(input, output, **kwargs):
     }
 
     cmd  = ['bet', input, output]
+
+    # The 'centre' argument requires three co-ordinates and can't be passed
+    # as a single value, so needs to be handled separately. Assume it is 
+    # passed as a Python sequence
+    centre = kwargs.pop("c", None)
+    if centre is not None:
+        cmd += ['c', ] + list(centre)
+
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd
