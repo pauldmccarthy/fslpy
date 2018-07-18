@@ -90,8 +90,11 @@ def submit(command,
                          queuing options
     :arg multi_threaded: Submit a multi-threaded task - Set to a tuple
                          containing two elements:
+
                           - <pename>: a PE configures for the requested queues
+
                           - <threads>: number of threads to run
+
     :arg verbose:        If True, use verbose mode
 
     :return:             tuple of submitted job ids

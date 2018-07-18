@@ -6,6 +6,7 @@
 
    fsl.wrappers.bet
    fsl.wrappers.eddy
+   fsl.wrappers.fast
    fsl.wrappers.flirt
    fsl.wrappers.fnirt
    fsl.wrappers.fslmaths

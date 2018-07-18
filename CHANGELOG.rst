@@ -2,6 +2,32 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.10.0 (Wednesday July 18th 2018)
+---------------------------------
+
+
+Added
+^^^^^
+
+
+* A new script, :mod:`.extract_noise`, which can be used to extract ICA
+  component time courses from a MELODIC ICA analysis.
+* New :func:`.path.allFiles` function which returns all files underneath a
+  directory.
+* The :func:`.fileOrImage` and :func:`.fileOrArray` decorators now support
+  loading of files which are specified with an output basename.
+* New :mod:`.fast` wrapper function for the FSL FAST tool.
+
+
+Changed
+^^^^^^^
+
+
+* When using the :func:`.run.run` function, the command output/error streams
+  are now forwarded immediately.
+* Removed dependency on ``pytest-runner``.
+
+
 1.9.0 (Monday June 4th 2018)
 ----------------------------
 

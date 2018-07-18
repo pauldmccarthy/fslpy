@@ -81,6 +81,7 @@ from .bet          import (bet,             # noqa
                            robustfov)
 from .eddy         import (eddy_cuda,       # noqa
                            topup)
+from .fast         import (fast,)           # noqa
 from .flirt        import (flirt,           # noqa
                            invxfm,
                            applyxfm,

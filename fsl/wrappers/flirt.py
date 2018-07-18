@@ -94,15 +94,29 @@ def concatxfm(inmat1, inmat2, outmat):
     return cmd
 
 
-@wutils.fileOrImage('infile', 'out', 'reffile')
-@wutils.fileOrArray('init')
+@wutils.fileOrImage('infile', 'out', 'reffile', outprefix='out')
+@wutils.fileOrArray('init', outprefix='out')
 @wutils.fslwrapper
 def mcflirt(infile, **kwargs):
     """Wrapper for the ``mcflirt`` command."""
 
     asrt.assertIsNifti(infile)
 
+    argmap = {
+        'twod' : '2d',
+    }
+
+    valmap = {
+        '2d'      : wutils.SHOW_IF_TRUE,
+        'gdt'     : wutils.SHOW_IF_TRUE,
+        'meanvol' : wutils.SHOW_IF_TRUE,
+        'stats'   : wutils.SHOW_IF_TRUE,
+        'mats'    : wutils.SHOW_IF_TRUE,
+        'plots'   : wutils.SHOW_IF_TRUE,
+        'report'  : wutils.SHOW_IF_TRUE,
+    }
+
     cmd  = ['mcflirt', '-in', infile]
-    cmd += wutils.applyArgStyle('-', **kwargs)
+    cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd

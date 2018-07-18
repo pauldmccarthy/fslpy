@@ -13,6 +13,7 @@ paths.
 
    deepest
    shallowest
+   allFiles
    hasExt
    addExt
    removeExt
@@ -24,8 +25,9 @@ paths.
 """
 
 
-import            glob
 import os.path as op
+import            os
+import            glob
 
 
 class PathError(Exception):
@@ -76,6 +78,20 @@ def shallowest(path, suffixes):
         return path
 
     return None
+
+
+def allFiles(root):
+    """Return a list containing all files which exist underneath the specified
+    ``root`` directory.
+    """
+
+    files = []
+
+    for dirpath, _, filenames in os.walk(root):
+        filenames = [op.join(dirpath, f) for f in filenames]
+        files.extend(filenames)
+
+    return files
 
 
 def hasExt(path, allowedExts):

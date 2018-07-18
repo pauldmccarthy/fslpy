@@ -51,3 +51,15 @@ def test_tempdir_changeto():
         assert op.realpath(os.getcwd()) == cwd
 
     assert op.realpath(os.getcwd()) == cwd
+
+
+def test_tempdir_override():
+    with tempdir.tempdir() as parent:
+
+        # tempdir should not create/change to
+        # a new temp directory, but should
+        # stay in the override directory
+        with tempdir.tempdir(override=parent):
+            assert op.realpath(os.getcwd()) == op.realpath(parent)
+        # override should not be deleted
+        assert op.exists(parent)
