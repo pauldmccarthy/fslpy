@@ -39,8 +39,12 @@ except ImportError:
 try:
     import indexed_gzip as igzip
 except ImportError:
+
+    class MockError(Exception):
+        pass
+
     igzip           = mock.MagicMock()
-    igzip.ZranError = mock.MagicMock()
+    igzip.ZranError = MockError
 
 
 def make_image(filename=None,
