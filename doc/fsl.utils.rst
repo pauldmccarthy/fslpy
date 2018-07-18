@@ -7,6 +7,7 @@
    fsl.utils.assertions
    fsl.utils.cache
    fsl.utils.ensure
+   fsl.utils.fslsub
    fsl.utils.idle
    fsl.utils.imcp
    fsl.utils.memoize
