@@ -41,7 +41,7 @@ def fnirt(src, ref, **kwargs):
 @wutils.fileOrImage('src', 'ref', 'out', 'warp', 'mask')
 @wutils.fileOrArray('premat', 'postmat')
 @wutils.fslwrapper
-def applywarp(src, ref, out, warp, **kwargs):
+def applywarp(src, ref, out, **kwargs):
     """Wrapper for the ``applywarp`` command. """
 
     valmap = {
@@ -55,8 +55,7 @@ def applywarp(src, ref, out, warp, **kwargs):
     cmd = ['applywarp',
            '--in={}'.format(src),
            '--ref={}'.format(ref),
-           '--out={}'.format(out),
-           '--warp={}'.format(warp)]
+           '--out={}'.format(out)]
 
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
