@@ -41,7 +41,7 @@ def seed(request):
     seed = request.config.getoption('--seed')
 
     if seed is None:
-        seed = np.random.randint(2 ** 32)
+        seed = np.random.randint(2 ** 30)
 
     np.random.seed(seed)
     random   .seed(seed)

@@ -167,10 +167,9 @@ def test_loadVertexData_mgh():
         mesh = fslfs.FreesurferMesh('lh.pial')
         assert np.all(np.isclose(mesh.loadVertexData('lh.vdata.mgh'), data.reshape(-1, 1)))
 
-
-
-
-
+        del img
+        del mesh
+        img = None
 
 
 def test_loadVertexData_annot():

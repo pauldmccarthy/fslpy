@@ -314,6 +314,7 @@ def _test_Image_atts(imgtype):
                                                   allowedExts=allowedExts,
                                                   mustExist=True,
                                                   fileGroups=fileGroups)
+            i = None
 
 
 def  test_Image_atts2_analyze(): _test_Image_atts2(0)
@@ -530,7 +531,7 @@ def _test_Image_orientation(imgtype, voxorient):
 
         make_image(imagefile, imgtype, (10, 10, 10), pixdims, np.float32)
 
-        image = fslimage.Image(imagefile)
+        image = fslimage.Image(imagefile, mmap=False)
 
         # analyze images are always assumed to be
         # stored in radiological (LAS) orientation
@@ -566,6 +567,7 @@ def _test_Image_orientation(imgtype, voxorient):
         assert image.getOrientation(0, affine) == expectvox0Orientation
         assert image.getOrientation(1, affine) == expectvox1Orientation
         assert image.getOrientation(2, affine) == expectvox2Orientation
+        image = None
 
 
 def  test_Image_sqforms_nifti1_normal():   _test_Image_sqforms(1, 1, 1)
@@ -693,6 +695,8 @@ def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
             # ANALYZE affine is not editable
             with pytest.raises(Exception):
                 img.voxToWorldMat = newXform
+            del img
+            del image
             return
 
         img.voxToWorldMat = newXform
@@ -709,6 +713,9 @@ def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
         assert np.all(np.isclose(img.worldToVoxMat, invx))
         assert img.getXFormCode('sform') == expSformCode
         assert img.getXFormCode('qform') == expQformCode
+        del img
+        del image
+        image = None
 
 
 def  test_Image_changeData_analyze(seed): _test_Image_changeData(0)
@@ -724,14 +731,15 @@ def _test_Image_changeData(imgtype):
 
         make_image(imagefile, imgtype)
 
-        img = fslimage.Image(imagefile)
+        img = fslimage.Image(imagefile, mmap=False)
+        shape = img.shape
 
         notified = {}
 
         def randvox():
-            return (np.random.randint(0, img.shape[0]),
-                    np.random.randint(0, img.shape[1]),
-                    np.random.randint(0, img.shape[2]))
+            return (np.random.randint(0, shape[0]),
+                    np.random.randint(0, shape[1]),
+                    np.random.randint(0, shape[2]))
 
         def onData(*a):
             notified['data'] = True
@@ -806,6 +814,10 @@ def _test_Image_changeData(imgtype):
         assert notified.get('dataRange', False)
         assert np.isclose(img[maxx, maxy, maxz], newdmax)
         assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
+        img.deregister('name1', 'data')
+        img.deregister('name2', 'data')
+        img.deregister('name3', 'data')
+        img = None
 
 
 def  test_Image_2D_analyze(): _test_Image_2D(0)
@@ -851,6 +863,7 @@ def _test_Image_2D(imgtype):
             assert tuple(map(float, shape))  == tuple(map(float, image   .shape))
             assert tuple(map(float, shape))  == tuple(map(float, image[:].shape))
             assert tuple(map(float, pixdim)) == tuple(map(float, image   .pixdim))
+            image = None
 
 
 def  test_Image_5D_analyze(): _test_Image_5D(0)
@@ -880,6 +893,8 @@ def _test_Image_5D(imgtype):
             assert img.shape      == dims
             assert img.ndim       == 5
             assert img.data.shape == dims
+            del img
+            img = None
 
 
 def test_Image_voxToScaledVox_analyze(): _test_Image_voxToScaledVox(0)
@@ -917,6 +932,7 @@ def _test_Image_voxToScaledVox(imgtype):
 
         assert np.all(np.isclose(expected,    img.voxToScaledVoxMat))
         assert np.all(np.isclose(invexpected, img.scaledVoxToVoxMat))
+        img = None
 
 
 def test_Image_sameSpace():
@@ -1022,6 +1038,7 @@ def _test_Image_save(imgtype):
 
             for (x, y, z), v in zip(randvoxes, randvals):
                 assert np.isclose(img[x, y, z], v)
+            img2 = None
 
 
 def test_image_resample(seed):
@@ -1035,7 +1052,7 @@ def test_image_resample(seed):
 
             shape = np.random.randint(5, 100, 3)
             make_random_image(fname, shape)
-            img = fslimage.Image(fname)
+            img = fslimage.Image(fname, mmap=False)
 
             # resampling to the same shape should be a no-op
             samei, samex = img.resample(shape)
@@ -1049,7 +1066,8 @@ def test_image_resample(seed):
                 resampled, xf = img.resample(rshape, order=0)
 
                 img.save('base.nii.gz')
-                fslimage.Image(resampled, xform=xf).save('res.nii.gz')
+                fslimage.Image(resampled, xform=xf,
+                               mmap=False).save('res.nii.gz')
 
                 assert tuple(resampled.shape) == tuple(rshape)
 
@@ -1102,6 +1120,8 @@ def test_image_resample(seed):
 
         resampled = img.resample((15, 15, 15), slc)[0]
         assert tuple(resampled.shape) == (15, 15, 15)
+        del img
+        img = None
 
 
 def  test_Image_init_xform_nifti1():  _test_Image_init_xform(1)
@@ -1141,7 +1161,6 @@ def _test_Image_init_xform(imgtype):
         assert np.all(np.isclose(xform,  sform))
         assert fsform_code == sform_code
         assert fqform_code == qform_code
-
 
         # an image created off
         # an xform only should
@@ -1183,3 +1202,7 @@ def _test_Image_init_xform(imgtype):
         assert np.all(np.isclose(xform,  rxform))
         assert fsform_code == sform_code
         assert fqform_code == qform_code
+
+        del fimg
+        del img
+        img = None
