@@ -26,7 +26,7 @@ import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from . import mockFSLDIR, cleardir, checkdir
+from . import mockFSLDIR, cleardir, checkdir, testdir
 from .test_run import mock_submit
 
 
@@ -469,20 +469,20 @@ def test_fileOrThing_outprefix_directory():
 
         res = func(img, 'myout', myout_imgs=wutils.LOAD)
         assert len(res) == 2
-        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
-        assert np.all(res['myout_imgs/img4'].get_data() == exp4)
+        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
+        assert np.all(res[op.join('myout_imgs', 'img4')].get_data() == exp4)
 
-        res = func(img, 'myout', **{'myout_imgs/img2' : wutils.LOAD})
+        res = func(img, 'myout', **{op.join('myout_imgs', 'img2') : wutils.LOAD})
         assert len(res) == 1
-        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
+        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
 
-        res = func(img, 'myout', **{'myout_imgs/img' : wutils.LOAD})
+        res = func(img, 'myout', **{op.join('myout_imgs', 'img') : wutils.LOAD})
         assert len(res) == 2
-        assert np.all(res['myout_imgs/img2'].get_data() == exp2)
-        assert np.all(res['myout_imgs/img4'].get_data() == exp4)
+        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
+        assert np.all(res[op.join('myout_imgs', 'img4')].get_data() == exp4)
 
         os.mkdir('foo')
-        res = func(img, 'foo/myout')
+        res = func(img, op.join('foo', 'myout'))
         assert len(res) == 0
         checkdir(td,
                  op.join('foo', 'myout_imgs', 'img2.nii.gz'),
@@ -490,10 +490,10 @@ def test_fileOrThing_outprefix_directory():
         cleardir(td, 'foo')
 
         os.mkdir('foo')
-        res = func(img, 'foo/myout', **{'foo/myout' : wutils.LOAD})
+        res = func(img, op.join('foo', 'myout'), **{op.join('foo', 'myout') : wutils.LOAD})
         assert len(res) == 2
-        assert np.all(res['foo/myout_imgs/img2'].get_data() == exp2)
-        assert np.all(res['foo/myout_imgs/img4'].get_data() == exp4)
+        assert np.all(res[op.join('foo', 'myout_imgs', 'img2')].get_data() == exp2)
+        assert np.all(res[op.join('foo', 'myout_imgs', 'img4')].get_data() == exp4)
 
 
 def test_chained_fileOrImageAndArray():
@@ -614,6 +614,7 @@ def _test_script_func(a, b):
     return ['test_script', str(a), str(b)]
 
 
+@pytest.mark.unixtest
 def test_cmdwrapper_submit():
 
     test_func = wutils.cmdwrapper(_test_script_func)
@@ -637,6 +638,7 @@ def test_cmdwrapper_submit():
         assert stderr.strip() == ''
 
 
+@pytest.mark.unixtest
 def test_fslwrapper_submit():
 
     test_func = wutils.fslwrapper(_test_script_func)

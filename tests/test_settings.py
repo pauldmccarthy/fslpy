@@ -326,6 +326,9 @@ def test_listFiles():
                  'namespace2/setting2.txt',
                  'namespace2/setting3.txt']
 
+    ns1files = [op.join(*f.split('/')) for f in ns1files]
+    ns2files = [op.join(*f.split('/')) for f in ns2files]
+
     with tests.testdir() as testdir:
 
         s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
@@ -338,12 +341,11 @@ def test_listFiles():
 
         assert list(sorted(s.listFiles())) == list(sorted(ns1files + ns2files))
 
-        assert list(sorted(s.listFiles('namespace1/*'))) == list(sorted(ns1files))
-        assert list(sorted(s.listFiles('namespace2/*'))) == list(sorted(ns2files))
-        assert list(sorted(s.listFiles('namespace?/*'))) == list(sorted(ns1files + ns2files))
+        assert list(sorted(s.listFiles(op.join('namespace1', '*')))) == list(sorted(ns1files))
+        assert list(sorted(s.listFiles(op.join('namespace2', '*')))) == list(sorted(ns2files))
+        assert list(sorted(s.listFiles(op.join('namespace?', '*')))) == list(sorted(ns1files + ns2files))
         assert list(sorted(s.listFiles('*.txt')))        == list(sorted(ns1files + ns2files))
-
-        assert list(sorted(s.listFiles('*/setting1.txt'))) == list(sorted([ns1files[0]] + [ns2files[0]]))
+        assert list(sorted(s.listFiles(op.join('*', 'setting1.txt')))) == list(sorted([ns1files[0]] + [ns2files[0]]))
 
 
 def test_filePath():
@@ -351,6 +353,7 @@ def test_filePath():
     testfiles  = ['file1.txt',
                   'dir1/file2.txt',
                   'dir1/dir2/file3.txt']
+    testfiles = [op.join(*f.split('/')) for f in testfiles]
 
     with tests.testdir() as testdir:
 

@@ -29,6 +29,7 @@ featdirs   = ['1stlevel_1.feat', '1stlevel_2.feat', '1stlevel_2.feat',
               '2ndlevel_2.gfeat/cope1.feat', '2ndlevel_2.gfeat/cope2.feat',
               '2ndlevel_realdata.gfeat/cope1.feat',
               '2ndlevel_realdata.gfeat/cope2.feat']
+featdirs = [op.join(*d.split('/')) for d in featdirs]
 shapes = [(64,  64,  5, 45),
           (64,  64,  5, 45),
           (64,  64,  5, 45),

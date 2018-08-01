@@ -141,6 +141,9 @@ def test_getDataFile():
     ]
 
     for paths, meldir, expected in testcases:
+        paths = [op.join(*p.split('/')) for p in paths]
+        if expected is not None:
+            expected = op.join(*expected.split('/'))
         with tests.testdir(paths) as testdir:
             assert mela.getDataFile(meldir) == expected
 
@@ -151,9 +154,11 @@ def test_getMeanFile():
              'analysis.ica/melodic_FTmix',
              'analysis.ica/mean.nii.gz']
 
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir   = op.join(testdir, 'analysis.ica')
-        expected = op.join(testdir, 'analysis.ica/mean.nii.gz')
+        expected = op.join(testdir, 'analysis.ica', 'mean.nii.gz')
 
         assert mela.getMeanFile(meldir) == expected
 
@@ -161,6 +166,8 @@ def test_getMeanFile():
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix',
              'analysis.ica/mean.txt']
+
+    paths = [op.join(*p.split('/')) for p in paths]
 
     with tests.testdir(paths) as testdir:
         meldir = op.join(testdir, 'analysis.ica')
@@ -173,14 +180,18 @@ def test_getICFile():
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix']
 
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir   = op.join(testdir, 'analysis.ica')
-        expected = op.join(testdir, 'analysis.ica/melodic_IC.nii.gz')
+        expected = op.join(testdir, 'analysis.ica', 'melodic_IC.nii.gz')
         assert mela.getICFile(meldir) == expected
 
     paths = ['analysis.ica/melodic_IC.txt',
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix']
+
+    paths = [op.join(*p.split('/')) for p in paths]
 
     with tests.testdir(paths) as testdir:
         meldir = op.join(testdir, 'analysis.ica')
@@ -193,13 +204,17 @@ def test_getMixFile():
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix']
 
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir   = op.join(testdir, 'analysis.ica')
-        expected = op.join(testdir, 'analysis.ica/melodic_mix')
+        expected = op.join(testdir, 'analysis.ica', 'melodic_mix')
         assert mela.getMixFile(meldir) == expected
 
     paths = ['analysis.ica/melodic_IC.ni.gz',
              'analysis.ica/melodic_FTmix']
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir = op.join(testdir, 'analysis.ica')
         assert mela.getMixFile(meldir) is None
@@ -208,14 +223,17 @@ def test_getFTMixFile():
     paths = ['analysis.ica/melodic_IC.nii.gz',
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix']
+    paths = [op.join(*p.split('/')) for p in paths]
 
     with tests.testdir(paths) as testdir:
         meldir   = op.join(testdir, 'analysis.ica')
-        expected = op.join(testdir, 'analysis.ica/melodic_FTmix')
+        expected = op.join(testdir, 'analysis.ica', 'melodic_FTmix')
         assert mela.getFTMixFile(meldir) == expected
 
     paths = ['analysis.ica/melodic_IC.ni.gz',
              'analysis.ica/melodic_mix']
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir = op.join(testdir, 'analysis.ica')
         assert mela.getFTMixFile(meldir) is None
@@ -225,15 +243,18 @@ def test_getReportFile():
              'analysis.ica/filtfunc.ica/melodic_mix',
              'analysis.ica/filtfunc.ica/melodic_FTmix',
              'analysis.ica/report.html']
+    paths = [op.join(*p.split('/')) for p in paths]
 
     with tests.testdir(paths) as testdir:
-        meldir   = op.join(testdir, 'analysis.ica/filtfunc.ica')
-        expected = op.join(testdir, 'analysis.ica/report.html')
+        meldir   = op.join(testdir, 'analysis.ica', 'filtfunc.ica')
+        expected = op.join(testdir, 'analysis.ica', 'report.html')
         assert op.abspath(mela.getReportFile(meldir)) == expected
 
     paths = ['analysis.ica/filtfunc.ica/melodic_IC.ni.gz',
              'analysis.ica/filtfunc.ica/melodic_mix',
              'analysis.ica/filtfunc.ica/melodic_FTmix']
+    paths = [op.join(*p.split('/')) for p in paths]
+
     with tests.testdir(paths) as testdir:
         meldir = op.join(testdir, 'analysis.ica')
         assert mela.getReportFile(meldir) is None
