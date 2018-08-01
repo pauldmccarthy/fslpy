@@ -91,7 +91,6 @@ import              os
 import              re
 import              sys
 import              glob
-import              shutil
 import              random
 import              string
 import              fnmatch
@@ -864,6 +863,7 @@ class _FileOrThing(object):
                 fval = self.__load(fullpath)
                 if fval is not None:
                     prefixed = self.__removeExt(prefixed)
+                    prefPat  = prefPat.replace('\\', '\\\\')
                     prefixed = re.sub('^' + prefPat, prefName, prefixed)
                     result[prefixed] = fval
                     break

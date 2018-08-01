@@ -65,7 +65,7 @@ def shallowest(path, suffixes):
     path = path.strip()
 
     # We've reached the root of the file system
-    if path == op.sep or path == '':
+    if path == op.sep or path == '' or op.splitdrive(path)[1] == '':
         return None
 
     path   = path.rstrip(op.sep)
