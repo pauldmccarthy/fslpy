@@ -137,6 +137,7 @@ def imcp(src,
 
         img = nib.load(src)
         nib.save(img, dest)
+        img = None
 
         if move:
             # if input is an image pair, we
