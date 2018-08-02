@@ -915,7 +915,7 @@ def fileOrImage(*args, **kwargs):
 
         # create an independent in-memory
         # copy of the image file
-        img = nib.load(path)
+        img = nib.load(path, mmap=False)
 
         # if any arguments were fsl images,
         # that takes precedence.
