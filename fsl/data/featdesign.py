@@ -169,29 +169,14 @@ class FEATFSFDesign(object):
         if level == 1: getEVs = getFirstLevelEVs
         else:          getEVs = getHigherLevelEVs
 
-        self.__settings = collections.OrderedDict(settings.items())
-        self.__design   = np.array(designMatrix)
-        self.__numEVs   = self.__design.shape[1]
-        self.__evs      = getEVs(featDir, self.__settings, self.__design)
+        self.__loadVoxEVs = loadVoxelwiseEVs
+        self.__settings   = collections.OrderedDict(settings.items())
+        self.__design     = np.array(designMatrix)
+        self.__numEVs     = self.__design.shape[1]
+        self.__evs        = getEVs(featDir, self.__settings, self.__design)
 
         if len(self.__evs) != self.__numEVs:
             raise FSFError('Number of EVs does not match design.mat')
-
-        # Load the voxelwise images now,
-        # so they're ready to be used by
-        # the getDesign method.
-        for ev in self.__evs:
-
-            if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
-                continue
-
-            ev.image = None
-
-            # The path to some voxelwise
-            # EVs may not be present -
-            # see the VoxelwisEV class.
-            if loadVoxelwiseEVs and (ev.filename is not None):
-                ev.image = fslimage.Image(ev.filename)
 
 
     def getEVs(self):
@@ -224,7 +209,7 @@ class FEATFSFDesign(object):
             if not isinstance(ev, (VoxelwiseEV, VoxelwiseConfoundEV)):
                 continue
 
-            if ev.image is None:
+            if (not self.__loadVoxEVs) or (ev.filename is None):
                 log.warning('Voxel EV image missing '
                             'for ev {}'.format(ev.index))
                 continue
@@ -300,14 +285,15 @@ class VoxelwiseEV(NormalEV):
 
     ============ ======================================================
     ``filename`` Path to the image file containing the data for this EV
+    ``image``    Reference to the :class:`.Image` object
     ============ ======================================================
 
     .. note:: The file for voxelwise EVs in a higher level analysis are not
               copied into the FEAT directory, so if the user has removed them,
               or moved the .gfeat directory, the file path here will not be
               valid. Therefore, a ``VoxelwiseEV`` will test to see if the
-              file exists, and will set the ``filename`` attribute to ``None``
-              it it does not exist.
+              file exists, and will set the ``filename`` and ``image``
+              attributes to ``None`` it it does not exist.
     """
 
     def __init__(self, realIdx, origIdx, title, filename):
@@ -329,6 +315,27 @@ class VoxelwiseEV(NormalEV):
             log.warning('Voxelwise EV file does not '
                         'exist: {}'.format(filename))
             self.filename = None
+
+        self.__image = None
+
+
+    def __del__(self):
+        """Clears any reference to the voxelwise EV image. """
+        self.__image = None
+
+
+    @property
+    def image(self):
+        """Returns the :class:`.Image` containing the voxelwise EV data. """
+
+        if self.filename is None:
+            return None
+
+        if self.__image is not None:
+            return self.__image
+
+        self.__image = fslimage.Image(self.filename, mmap=False)
+        return self.__image
 
 
 class ConfoundEV(EV):

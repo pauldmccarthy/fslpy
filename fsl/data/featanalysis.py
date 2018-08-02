@@ -427,48 +427,49 @@ def loadClusterResults(featdir, settings, contrast):
         # whitespace, and discarding
         # empty lines
         lines = f.readlines()
-        lines = [l.strip() for l in lines]
-        lines = [l         for l in lines if l != '']
 
-        # the first line should contain column
-        # names, and each other line should
-        # contain the data for one cluster
-        colNames     = lines[0]
-        clusterLines = lines[1:]
+    lines = [line.strip() for line in lines]
+    lines = [line         for line in lines if line != '']
 
-        # each line should be tab-separated
-        colNames     =  colNames.split('\t')
-        clusterLines = [cl      .split('\t') for cl in clusterLines]
+    # the first line should contain column
+    # names, and each other line should
+    # contain the data for one cluster
+    colNames     = lines[0]
+    clusterLines = lines[1:]
 
-        # Turn each cluster line into a
-        # Cluster instance. An error will
-        # be raised if the columm names
-        # are unrecognised (i.e. not in
-        # the colmap above), or if the
-        # file is poorly formed.
-        clusters = [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
+    # each line should be tab-separated
+    colNames     =  colNames.split('\t')
+    clusterLines = [cl      .split('\t') for cl in clusterLines]
 
-        # Make sure all coordinates are in voxels -
-        # for first level analyses, the coordXform
-        # will be an identity transform (the coords
-        # are already in voxels). But for higher
-        # level, the coords are in mm, and need to
-        # be transformed to voxels.
-        for c in clusters:
+    # Turn each cluster line into a
+    # Cluster instance. An error will
+    # be raised if the columm names
+    # are unrecognised (i.e. not in
+    # the colmap above), or if the
+    # file is poorly formed.
+    clusters = [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
 
-            zmax    = [c.zmaxx,    c.zmaxy,    c.zmaxz]
-            zcog    = [c.zcogx,    c.zcogy,    c.zcogz]
-            copemax = [c.copemaxx, c.copemaxy, c.copemaxz]
+    # Make sure all coordinates are in voxels -
+    # for first level analyses, the coordXform
+    # will be an identity transform (the coords
+    # are already in voxels). But for higher
+    # level, the coords are in mm, and need to
+    # be transformed to voxels.
+    for c in clusters:
 
-            zmax    = transform.transform([zmax],    coordXform)[0].round()
-            zcog    = transform.transform([zcog],    coordXform)[0].round()
-            copemax = transform.transform([copemax], coordXform)[0].round()
+        zmax    = [c.zmaxx,    c.zmaxy,    c.zmaxz]
+        zcog    = [c.zcogx,    c.zcogy,    c.zcogz]
+        copemax = [c.copemaxx, c.copemaxy, c.copemaxz]
 
-            c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
-            c.zcogx,   c.zcogy,    c.zcogz    = zcog
-            c.copemax, c.copemaxy, c.copemaxz = copemax
+        zmax    = transform.transform([zmax],    coordXform)[0].round()
+        zcog    = transform.transform([zcog],    coordXform)[0].round()
+        copemax = transform.transform([copemax], coordXform)[0].round()
 
-        return clusters
+        c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
+        c.zcogx,   c.zcogy,    c.zcogz    = zcog
+        c.copemax, c.copemaxy, c.copemaxz = copemax
+
+    return clusters
 
 
 def getDataFile(featdir):
