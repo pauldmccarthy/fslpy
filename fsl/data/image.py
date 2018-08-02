@@ -986,11 +986,13 @@ class Image(Nifti):
     def __del__(self):
         """Closes any open file handles, and clears some references. """
 
+        self.header         = None
         self.__nibImage     = None
         self.__imageWrapper = None
 
         if getattr(self, '__fileobj', None) is not None:
             self.__fileobj.close()
+            self.__fileobj = None
 
 
     def getImageWrapper(self):
