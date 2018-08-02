@@ -357,6 +357,9 @@ def loadClusterResults(featdir, settings, contrast):
         clusterFile = op.join(
             featdir, 'cluster_zstat{}_std.txt'.format(contrast + 1))
 
+        if not op.exists(clusterFile):
+            return None
+
         # In higher levle analysis run in some standard
         # space, the cluster coordinates are in standard
         # space. We transform them to voxel coordinates.
@@ -364,9 +367,6 @@ def loadClusterResults(featdir, settings, contrast):
         coordXform = fslimage.Image(
             getDataFile(featdir),
             loadData=False).worldToVoxMat
-
-        if not op.exists(clusterFile):
-            return None
 
     log.debug('Loading cluster results for contrast {} from {}'.format(
         contrast, clusterFile))

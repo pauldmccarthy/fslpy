@@ -95,6 +95,16 @@ class FEATImage(fslimage.Image):
             self.name = '{}: {}'.format(self.__analysisName, self.name)
 
 
+    def __del__(self):
+        """Clears references to any loaded images."""
+        self.__design     = None
+        self.__residuals  = None
+        self.__pes        = None
+        self.__copes      = None
+        self.__zstats     = None
+        self.__clustMasks = None
+
+
     def getFEATDir(self):
         """Returns the FEAT directory this image is contained in."""
         return self.__featDir
@@ -245,14 +255,13 @@ class FEATImage(fslimage.Image):
         """Returns the COPE image for the given contrast (0-indexed). """
 
         if self.__copes[con] is None:
-            copefile = featanalysis.getPEFile(self.__featDir, con)
+            copefile = featanalysis.getCOPEFile(self.__featDir, con)
             self.__copes[con] = fslimage.Image(
                 copefile,
                 name='{}: COPE{} ({})'.format(
                     self.__analysisName,
                     con + 1,
                     self.contrastNames()[con]))
-
         return self.__copes[con]
 
 
