@@ -359,7 +359,10 @@ def test_imcp_script_shouldPass(move=False):
 
                 imcp_args[:-1] = [op.join(tindir, a) for a in imcp_args[:-1]]
                 imcp_args[ -1] =  op.join(toutdir, imcp_args[-1])
-                imcp_args      = [op.relpath(a, reldir) for a in imcp_args]
+
+                for i, a in enumerate(imcp_args):
+                    if op.splitdrive(a)[0] == op.splitdrive(reldir)[0]:
+                        imcp_args[i] = op.relpath(a, reldir)
 
                 print('indir before:    ', os.listdir(tindir))
                 print('outdir before:   ', os.listdir(toutdir))
