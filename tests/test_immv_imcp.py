@@ -347,8 +347,10 @@ def test_imcp_script_shouldPass(move=False):
                                           ' '.join(infiles)
 
                         for inf in infiles:
-                            img     = nib.load(op.join(tindir, inf))
+                            img     = nib.load(op.join(tindir, inf),
+                                               mmap=False)
                             imghash = hash(img.get_data().tobytes())
+                            img = None
                             imageHashes.append(imghash)
 
                 print('adj files_to_expect: ', files_to_expect)
@@ -357,7 +359,10 @@ def test_imcp_script_shouldPass(move=False):
 
                 imcp_args[:-1] = [op.join(tindir, a) for a in imcp_args[:-1]]
                 imcp_args[ -1] =  op.join(toutdir, imcp_args[-1])
-                imcp_args      = [op.relpath(a, reldir) for a in imcp_args]
+
+                for i, a in enumerate(imcp_args):
+                    if op.splitdrive(a)[0] == op.splitdrive(reldir)[0]:
+                        imcp_args[i] = op.relpath(a, reldir)
 
                 print('indir before:    ', os.listdir(tindir))
                 print('outdir before:   ', os.listdir(toutdir))
@@ -375,8 +380,6 @@ def test_imcp_script_shouldPass(move=False):
 
                 # too hard if indir == outdir
                 if move and tindir != toutdir:
-                    real_print('indir: ',  tindir)
-                    real_print('outdir: ', toutdir)
                     infiles = os.listdir(tindir)
                     infiles = [f for f in infiles if op.isfile(f)]
                     infiles = [f for f in infiles if op.isfile(f)]

@@ -103,17 +103,12 @@ with the following commands:
 """
 
 
-import              os
-import os.path   as op
-import itertools as it
-import              glob
-import              shutil
-import numpy     as np
+import os.path as op
+import numpy   as np
 
 import pytest
 
 import tests
-import fsl.data.image        as fslimage
 import fsl.data.featdesign   as featdesign
 import fsl.data.featanalysis as featanalysis
 
@@ -172,6 +167,9 @@ def test_FEATFSFDesign():
         assert des.getDesign().shape == desshape
         assert des.getDesign(rvox).shape == desshape
 
+        del des
+        des = None
+
 
 def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
 
@@ -214,6 +212,8 @@ def test_FEATFSFDesign_firstLevelVoxelwiseEV(seed):
             for i, evidx in enumerate(voxevIdxs):
                 expect = np.arange(i, i + 45) + offset
                 assert np.all(np.isclose(matrix[:, evidx], expect))
+        del design
+        design = None
 
 
 def test_getFirstLevelEVs_1():
@@ -240,6 +240,8 @@ def test_getFirstLevelEVs_1():
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
+    del evs
+    evs = None
 
 
 def test_getFirstLevelEVs_2():
@@ -267,6 +269,8 @@ def test_getFirstLevelEVs_2():
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
+    del evs
+    evs = None
 
 
 def test_getFirstLevelEVs_3():
@@ -307,7 +311,6 @@ def test_getFirstLevelEVs_3():
                 (featdesign.ConfoundEV,           {'index' : 30, 'confIndex'   : 0}),
                 (featdesign.ConfoundEV,           {'index' : 31, 'confIndex'   : 1})]
 
-
     evs = featdesign.getFirstLevelEVs(featdir, settings, matrix)
 
     assert len(evs) == 32
@@ -317,6 +320,10 @@ def test_getFirstLevelEVs_3():
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
+
+    del evs
+    evs = None
+
 
 def test_getFirstLevelEVs_realdata():
     featdir  = op.join(datadir, '1stlevel_realdata.feat')
@@ -336,7 +343,8 @@ def test_getFirstLevelEVs_realdata():
         assert isinstance(evs[i], evtype)
         for k, v in atts.items():
             assert getattr(evs[i], k) == v
-
+    del evs
+    evs = None
 
 
 def test_getHigherLevelEVs_1():
@@ -351,8 +359,8 @@ def test_getHigherLevelEVs_1():
     assert isinstance(evs[0], featdesign.NormalEV)
     assert evs[0].index     == 0
     assert evs[0].origIndex == 0
-
-
+    del evs
+    evs = None
 
 
 def test_getHigherLevelEVs_2():
@@ -368,7 +376,8 @@ def test_getHigherLevelEVs_2():
     assert evs[0].index     == 0
     assert evs[0].origIndex == 0
     assert isinstance(evs[1], featdesign.VoxelwiseEV)
-
+    del evs
+    evs = None
 
 
 def test_loadDesignMat():

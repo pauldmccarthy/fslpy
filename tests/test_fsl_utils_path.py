@@ -75,6 +75,10 @@ def test_deepest():
     ]
 
     for path, suffixes, output in tests:
+
+        path = op.join(*path.split('/'))
+        if output is not None:
+            output = op.join(*output.split('/'))
         assert fslpath.deepest(path, suffixes) == output
 
 
@@ -107,6 +111,11 @@ def test_shallowest():
     ]
 
     for path, suffixes, output in tests:
+
+        path = op.join(*path.split('/'))
+        if output is not None:
+            output = op.join(*output.split('/'))
+
         assert fslpath.shallowest(path, suffixes) == output
 
 
@@ -119,6 +128,8 @@ def test_allFiles():
         'a/b/c/1',
         'a/b/d/1',
     ]
+
+    create = [op.join(*c.split('/')) for c in create]
 
     with testdir(create) as td:
         assert (sorted(fslpath.allFiles('.')) ==

@@ -98,11 +98,11 @@ def test_MelodicImage_create():
     paths = ['analysis.ica/melodic_IC.nii.gz',
              'analysis.ica/melodic_mix',
              'analysis.ica/melodic_FTmix']
+    paths = [op.join(*p.split('/')) for p in paths]
     with tests.testdir(paths) as testdir:
-        path = op.join(testdir, 'analysis.ica/melodic_IC.nii.gz')
+        path = op.join(testdir, 'analysis.ica', 'melodic_IC.nii.gz')
         with pytest.raises(Exception):
             meli.MelodicImage(path)
-
 
     for ic_prefix in ['melodic_IC', 'melodic_oIC']:
 
@@ -114,9 +114,10 @@ def test_MelodicImage_create():
 
             # Should be able to specify the
             # melodic dir, or the IC image
-            meli.MelodicImage(meldir)
-            meli.MelodicImage(icfile)
-            meli.MelodicImage(icfilenosuf)
+            i = meli.MelodicImage(meldir)
+            i = meli.MelodicImage(icfile)
+            i = meli.MelodicImage(icfilenosuf)
+            i = None
 
 
 def test_MelodicImage_atts():
@@ -136,6 +137,8 @@ def test_MelodicImage_atts():
         assert img.getDataFile()            == mela.getDataFile(meldir)
         assert img.getMeanFile()            == mela.getMeanFile(meldir)
 
+        img = None
+
 
 def test_MelodicImage_componentData():
     with tests.testdir() as testdir:
@@ -150,6 +153,8 @@ def test_MelodicImage_componentData():
             assert np.all(img.getComponentTimeSeries(   ic) == expectTS[:, ic])
             assert np.all(img.getComponentPowerSpectrum(ic) == expectPS[:, ic])
 
+        img = None
+
 
 def test_MelodicImage_tr():
 
@@ -160,11 +165,15 @@ def test_MelodicImage_tr():
 
         assert img.tr == 1
 
+        img = None
+
     # Otherwise, it should be set to the datafile tr
     with tests.testdir() as testdir:
         meldir = _create_dummy_melodic_analysis(testdir, tr=5)
         img    = meli.MelodicImage(meldir)
         assert img.tr == 5
+
+        img = None
 
     # The TR can be updated
     with tests.testdir() as testdir:
@@ -182,3 +191,5 @@ def test_MelodicImage_tr():
 
         assert cbCalled[0]
         assert img.tr == 8
+
+        img = None

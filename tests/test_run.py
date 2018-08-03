@@ -27,6 +27,9 @@ import fsl.utils.fslsub                   as fslsub
 from . import make_random_image, mockFSLDIR, CaptureStdout
 
 
+pytestmark = pytest.mark.unixtest
+
+
 def mkexec(path, contents):
     with open(path, 'wt') as f:
         f.write(contents)

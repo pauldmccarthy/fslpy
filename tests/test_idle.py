@@ -622,5 +622,5 @@ def test_mutex():
 
             # Either t1 has to start and
             # finish before t2 or vice versa
-            assert (t[0].method2start > t[0].method1end or
-                    t[0].method1start > t[0].method2end)
+            assert (t[0].method2start >= t[0].method1end or
+                    t[0].method1start >= t[0].method2end)

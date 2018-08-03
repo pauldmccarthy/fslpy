@@ -2,6 +2,23 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.10.1 (Friday August 3rd 2018)
+-------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Minor adjustmenets to improve Windows compatibility.
+
+
+Fixed
+^^^^^
+
+* The .mod:`.FEATImage.getCOPE` method was returning PE images.
+
+
 1.10.0 (Wednesday July 18th 2018)
 ---------------------------------
 

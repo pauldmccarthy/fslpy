@@ -6,6 +6,9 @@
 #
 """This module provides some functions for running shell commands.
 
+.. note:: The functions in this module are only known to work in Unix-like
+          environments.
+
 .. autosummary::
    :nosignatures:
 

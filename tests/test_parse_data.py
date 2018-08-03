@@ -79,6 +79,7 @@ def test_image():
                     image_parser.parse_args([filename + '.hdr'])
                 with raises(SystemExit):
                     image_parser.parse_args([filename + '.nii.gz'])
+            args = None
 
         double_filename = op.join(testdir, 'image1')
         make_image(double_filename, 0)

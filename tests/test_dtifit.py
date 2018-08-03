@@ -21,19 +21,19 @@ def test_getDTIFitDataPrefix_and_isDTIFitPath():
         for s in suffixes:
             path = op.join(dir, '{}{}'.format(prefix, s))
             with open(path, 'wt') as f:
-                f.write(path) 
+                f.write(path)
 
     prefixes    = ['dti', 'blob', 'random-prefix', '01234']
     suffixes    = ['_V1.nii', '_V2.nii', '_V3.nii',
                    '_L1.nii', '_L2.nii', '_L3.nii']
     badSuffixes = ['_V1.txt', '_V2.nii', '_V3.nii',
-                   '_L1.txt', '_L2.tar', '_L3.nii'] 
+                   '_L1.txt', '_L2.tar', '_L3.nii']
 
 
     # Valid dtifit directories
     with tests.testdir() as testdir:
         for p in prefixes:
-            
+
             tests.cleardir(testdir)
             make_dtifit_dir(testdir, p, suffixes)
             assert dtifit.getDTIFitDataPrefix(testdir) == p
@@ -82,6 +82,7 @@ def test_looksLikeTensorImage():
             img = fslimage.Image(fname)
 
             assert dtifit.looksLikeTensorImage(img) == expected
+            img = None
 
 
 def test_decomposeTensorMatrix():
@@ -102,7 +103,7 @@ def test_decomposeTensorMatrix():
         [[ 0.701921939849854, -0.711941838264465,  0.021080270409584],
          [-0.700381875038147, -0.695301055908203, -0.16131255030632 ],
          [-0.129502296447754, -0.098464585840702,  0.986678183078766]],
-        [[-0.993700802326202, -0.104962401092052, -0.039262764155865], 
+        [[-0.993700802326202, -0.104962401092052, -0.039262764155865],
          [-0.081384353339672,  0.916762292385101, -0.391054302453995],
          [-0.077040620148182,  0.385395616292953,  0.919529736042023]],
         [[ 0.068294189870358, -0.666985750198364,  0.741933941841125],
@@ -112,7 +113,7 @@ def test_decomposeTensorMatrix():
     tensorMatrices = tensorMatrices.reshape(1, 1, 3, 6)
     expEigVals     = expEigVals    .reshape(1, 1, 3, 3)
     expEigVecs     = expEigVecs    .reshape(1, 1, 3, 3, 3)
- 
+
     v1, v2, v3, l1, l2, l3 = dtifit.decomposeTensorMatrix(tensorMatrices)
 
     expV1 = expEigVecs[:, :, :, 0]
@@ -129,7 +130,7 @@ def test_decomposeTensorMatrix():
     # Vector signs are arbitrary
     for vox in range(3):
         for resvec, expvec in zip([v1, v2, v3], [expV1, expV2, expV3]):
-            
+
             resvec = resvec[:, :, vox]
             expvec = expvec[:, :, vox]
 
@@ -172,3 +173,7 @@ def test_DTIFitTensor():
         assert np.all(np.isclose(dtiobj.voxToWorldMat, v1.voxToWorldMat))
         assert np.all(np.isclose(dtiobj.shape[:3],     v1.shape[:3]))
         assert np.all(np.isclose(dtiobj.pixdim[:3],    v1.pixdim[:3]))
+
+        del v1
+        del dtiobj
+        v1 = None
