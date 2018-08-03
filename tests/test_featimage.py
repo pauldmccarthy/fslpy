@@ -91,7 +91,7 @@ def test_FEATImage_attributes():
                     clustMasks=False)
             else:
                 featdir = op.join(datadir, featdir)
-                
+
             # Now create a FEATImage. We validate its
             # attributes against the values returned by
             # the functions in featdesign/featanalysis.
@@ -126,12 +126,16 @@ def test_FEATImage_attributes():
                 expect = featanalysis.loadClusterResults(featdir, settings, ci)
                 assert len(result) == len(expect)
                 assert all([rc.nvoxels == ec.nvoxels for rc, ec in zip(result, expect)])
+            del design
+            del fi
+            fi = None
+
 
 
 def test_FEATImage_imageAccessors():
 
     for featdir in TEST_ANALYSES.keys():
-        
+
         shape = TEST_ANALYSES[featdir]['shape']
         xform = TEST_ANALYSES[featdir]['xform']
         
@@ -153,25 +157,26 @@ def test_FEATImage_imageAccessors():
             nevs  = fi.numEVs()
             ncons = fi.numContrasts()
 
-            # Testing the FEATImage intenral cache
+            # Testing the FEATImage internal cache
             for i in range(2):
                 assert fi.getResiduals().shape == shape4D
-
                 for ev in range(nevs):
                     assert fi.getPE(ev).shape == shape
                 for con in range(ncons):
                     assert fi.getCOPE(       con).shape == shape
                     assert fi.getZStats(     con).shape == shape
                     assert fi.getClusterMask(con).shape == shape
-            
+            del fi
+            fi = None
+
 
 def test_FEATImage_nostats():
-    
+
     featdir = op.join(datadir, '1stlevel_nostats.feat')
     shape   = (4, 4, 5, 45)
 
     with tests.testdir() as testdir:
-        
+
         featdir = tests.make_mock_feat_analysis(featdir, testdir, shape)
         fi      = featimage.FEATImage(featdir)
 
@@ -182,13 +187,15 @@ def test_FEATImage_nostats():
 
         with pytest.raises(Exception):
             fi.fit([1, 2, 3], (2, 2, 2))
-            
+
         with pytest.raises(Exception):
-            fi.partialFit([1, 2, 3], (2, 2, 2)) 
-                    
+            fi.partialFit([1, 2, 3], (2, 2, 2))
+        del fi
+        fi = None
+
 
 def test_FEATImage_fit_firstLevel():
-    
+
     featdir  = op.join(datadir, '1stlevel_realdata.feat')
     fi       = featimage.FEATImage(featdir)
     expect   = np.array([
@@ -203,8 +210,8 @@ def test_FEATImage_fit_firstLevel():
         10287.91883737,  10325.38456267,  10341.92299781,  10347.17916861,
         10348.58339616,  10348.89634025,  10348.93522057,  10345.25397481,
         10288.9236822 ,  10315.64160242,  10449.39567496,  10558.66999883,
-        10597.64918744]) 
-    
+        10597.64918744])
+
     # bad contrast
     with pytest.raises(Exception):
         fi.fit([1, 2, 3, 4, 5, 6, 7], (2, 2, 2))
@@ -215,20 +222,24 @@ def test_FEATImage_fit_firstLevel():
 
     result = fi.fit([1, 1, 1, 1], (2, 2, 2))
     assert np.all(np.isclose(result, expect))
+    del fi
+    fi = None
 
 
 def test_FEATImage_fit_higherLevel():
-    
+
     featdir = op.join(datadir, '2ndlevel_realdata.gfeat/cope1.feat')
     fi      = featimage.FEATImage(featdir)
     expect  = np.array([86.37929535, 86.37929535, 86.37929535])
     result = fi.fit([1], (5, 5, 5))
-    
+
     assert np.all(np.isclose(result, expect))
+    del fi
+    fi = None
 
 
 def test_FEATImage_partialFit():
-    
+
     featdir = op.join(datadir, '1stlevel_realdata.feat')
     fi      = featimage.FEATImage(featdir)
     expect  = np.array([
@@ -245,14 +256,16 @@ def test_FEATImage_partialFit():
         10203.21032619,  10136.1942605 ,  10128.23728873,  10416.78984136,
         10118.51262128])
     result = fi.partialFit([1, 1, 1, 1], (2, 2, 2))
-    
+
     assert np.all(np.isclose(result, expect))
+    del fi
+    fi = None
 
 
 def test_modelFit(seed):
 
     for i in range(500):
-        
+
         # 2 evs, 20 timepoints
         # First EV is a boxcar,
         # second is a random regressor
@@ -265,12 +278,12 @@ def test_modelFit(seed):
             design[:, ev] = design[:, ev] - design[:, ev].mean()
 
         # Generate some random PEs, and
-        # generate the data that would 
+        # generate the data that would
         # have resulted in them
         pes      = np.random.random(2)
         expect   = np.dot(design, pes)
         contrast = [1] * design.shape[1]
-        
+
         result1 = featimage.modelFit(expect, design, contrast, pes, True)
         result2 = featimage.modelFit(expect, design, contrast, pes, False)
 

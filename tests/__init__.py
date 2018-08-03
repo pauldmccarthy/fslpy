@@ -294,7 +294,8 @@ def make_mock_feat_analysis(featdir,
 
     if indata:
         filtfunc = op.join(featdir, 'filtered_func_data.nii.gz')
-        make_random_image(filtfunc, shape4D, xform)
+        img = make_random_image(filtfunc, shape4D, xform)
+        del img
 
     # and some dummy voxelwise EV files
     if voxEVs:
@@ -311,7 +312,10 @@ def make_mock_feat_analysis(featdir,
             data = data.reshape(list(shape) + [1]).repeat(timepoints, axis=3)
             data[..., :] += range(i, i + timepoints)
 
-            nib.save(nib.nifti1.Nifti1Image(data, xform), vf)
+            img = nib.nifti1.Nifti1Image(data, xform)
+
+            nib.save(img, vf)
+            del img
 
     otherFiles  = []
     otherShapes = []
@@ -342,7 +346,8 @@ def make_mock_feat_analysis(featdir,
         otherShapes.extend([shape] * len(files))
 
     for f, s in zip(otherFiles, otherShapes):
-        make_random_image(f, s, xform)
+        img = make_random_image(f, s, xform)
+        del img
 
     return featdir
 
