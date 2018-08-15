@@ -858,7 +858,6 @@ class _FileOrThing(object):
         for prefixed in it.chain(*allPrefixed):
             fullpath = prefixed
             prefixed = op.relpath(prefixed, workdir)
-
             for prefPat, prefName in prefixes.items():
                 if not fnmatch.fnmatch(prefixed, '{}*'.format(prefPat)):
                     continue
@@ -871,9 +870,13 @@ class _FileOrThing(object):
                 # not of the correct type.
                 fval = self.__load(fullpath)
                 if fval is not None:
-                    prefixed = self.__removeExt(prefixed)
-                    prefixed = re.sub('^' + prefPat, prefName, prefixed)
-                    result[prefixed] = fval
+                    noext = self.__removeExt(prefixed)
+                    noext = re.sub('^' + prefPat, prefName, noext)
+                    if noext not in result:
+                        result[noext] = fval
+                    else:
+                        withext = re.sub('^' + prefPat, prefName, prefixed)
+                        result[withext] = fval
                     break
 
         return result
