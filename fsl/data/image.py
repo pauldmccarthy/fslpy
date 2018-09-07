@@ -1171,7 +1171,9 @@ class Image(Nifti):
         # memory-mapped, nibabel does all of
         # the hard work.
         newnibimage = False
-        ismmap      = isinstance(self[0, 0, :10], np.memmap)
+        sample      = self[(slice(0, 5),) + (0,) * (len(self.shape) - 1)]
+        ismmap      = isinstance(sample, np.memmap)
+
         if self.__fileobj is None and (not ismmap):
             nib.save(self.__nibImage, filename)
 
