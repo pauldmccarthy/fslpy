@@ -257,6 +257,55 @@ def coverageDataRange(data, coverage, slices=None):
     return np.min(volmin), np.max(volmax)
 
 
+def test_expectedShape():
+
+    tests = [
+        ((slice(None), ), (10,),
+         (1, (10, ))),
+
+        ((slice(None), slice(None)),
+         (10, 10), (2, (10, 10))),
+
+        ((slice(None), slice(None), slice(None)),
+         (10, 10, 10), (3, (10, 10, 10))),
+
+        ((slice(None), slice(None), slice(None)),
+         (10, 10, 10), (3, (10, 10, 10))),
+
+        ((slice(None), slice(None), slice(None), slice(None)),
+         (10, 10, 10, 10), (4, (10, 10, 10, 10))),
+
+        ((1, slice(None), slice(None)),
+         (10, 10, 10), (2, (10, 10))),
+
+        ((slice(1, 3), slice(None), slice(None)),
+         (10, 10, 10), (3, (2, 10, 10))),
+
+        ((slice(None), 1, slice(None)),
+         (10, 10, 10), (2, (10, 10))),
+
+        ((slice(None), slice(1, 3), slice(None)),
+         (10, 10, 10), (3, (10, 2, 10))),
+
+        ((slice(None), slice(None), 1),
+         (10, 10, 10), (2, (10, 10))),
+
+        ((slice(None), slice(None), slice(1, 3), ),
+         (10, 10, 10), (3, (10, 10, 2))),
+
+        ((slice(None), slice(None), slice(1, 20), ),
+         (10, 10, 10), (3, (10, 10, 9))),
+    ]
+
+    for slc, shape, exp in tests:
+
+        explen, exp = exp
+        gotlen, got = imagewrap.expectedShape(slc, shape)
+
+        assert explen     == gotlen
+        assert tuple(exp) == tuple(got)
+
+
 def test_sliceObjToSliceTuple():
 
     func  = imagewrap.sliceObjToSliceTuple
