@@ -35,8 +35,10 @@ and file names:
 
 import                      os
 import os.path           as op
+import                      shutil
 import                      string
 import                      logging
+import                      tempfile
 
 import                      six
 import                      deprecation
@@ -1165,10 +1167,40 @@ class Image(Nifti):
         log.debug('Saving {} to {}'.format(self.name, filename))
 
         # If this Image is not managing its
-        # own file object, nibabel does all
-        # of the hard work.
-        if self.__fileobj is None:
+        # own file object, and the image is not
+        # memory-mapped, nibabel does all of
+        # the hard work.
+        newnibimage = False
+        ismmap      = isinstance(self[0, 0, :10], np.memmap)
+        if self.__fileobj is None and (not ismmap):
             nib.save(self.__nibImage, filename)
+
+        # If the image is memory-mapped, we need
+        # to close and re-open the image
+        elif self.__fileobj is None:
+
+            # We save the image out to a temp file,
+            # then close the old image, move the
+            # temp file to the real destination,
+            # then re-open the file.
+            newnibimage     = True
+            tmphd, tmpfname = tempfile.mkstemp(suffix=op.splitext(filename)[1])
+            os.close(tmphd)
+
+            try:
+                nib.save(self.__nibImage, tmpfname)
+
+                self.__nibImage = None
+                self.header     = None
+
+                shutil.copy(tmpfname, filename)
+
+                self.__nibImage = nib.load(filename)
+                self.header     = self.__nibImage.header
+
+            except Exception:
+                os.remove(tmpfname)
+                raise
 
         # Otherwise we've got our own file
         # handle to an IndexedGzipFile
@@ -1190,15 +1222,19 @@ class Image(Nifti):
             # compressed data. And then be able to
             # transfer the index generated from the
             # write to a new read-only file handle.
+            newnibimage = True
             nib.save(self.__nibImage, filename)
             self.__fileobj.close()
             self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
             self.header = self.__nibImage.header
 
-            # We have to create a new ImageWrapper
-            # instance too, as we have just destroyed
-            # the nibabel image we gave to the last
-            # one.
+        # If we've created a new nibabel image,
+        # we have to create a new ImageWrapper
+        # instance too, as we have just destroyed
+        # the nibabel image we gave to the last
+        # one.
+        if newnibimage:
+
             self.__imageWrapper.deregister(self.__lName)
             self.__imageWrapper = imagewrapper.ImageWrapper(
                 self.nibImage,
