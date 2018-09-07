@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.10.2 (Friday September 7th 2018)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* The :meth:`.Image.save` method was not handling memory-mapped images
+  correctly.
+
+
 1.10.1 (Friday August 3rd 2018)
 -------------------------------
 
@@ -16,7 +28,7 @@ Changed
 Fixed
 ^^^^^
 
-* The .mod:`.FEATImage.getCOPE` method was returning PE images.
+* The :mod:`.FEATImage.getCOPE` method was returning PE images.
 
 
 1.10.0 (Wednesday July 18th 2018)
