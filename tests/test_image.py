@@ -994,29 +994,29 @@ def _test_Image_save(imgtype):
 
         make_image(filename, imgtype)
 
-        # Using mmap can cause a "Bus error"
-        # under docker. No idea why.
-        img = fslimage.Image(filename, mmap=False)
-
-        randvoxes = randvoxes(5)
-        randvals  = [np.random.random() for i in range(5)]
-
-        for (x, y, z), v in zip(randvoxes, randvals):
-            img[x, y, z] = v
-
-        if imgtype > 0:
-            img.voxToWorldMat = xform
-
         # Save to original location, and
-        # to a different location
+        # to a different location. And
+        # test both with and without mmap
         targets = [None, filename, filename2]
+        mmaps   = [False, True]
 
-        for t in targets:
+        for target, mmap in it.product(targets, mmaps):
 
-            img.save(t)
+            img = fslimage.Image(filename, mmap=mmap)
 
-            if t is None: expDataSource = filename
-            else:         expDataSource = t
+            rvoxs = randvoxes(5)
+            rvals = [np.random.random() for i in range(5)]
+
+            for (x, y, z), v in zip(rvoxs, rvals):
+                img[x, y, z] = v
+
+            if imgtype > 0:
+                img.voxToWorldMat = xform
+
+            img.save(target)
+
+            if target is None: expDataSource = filename
+            else:              expDataSource = target
 
             assert img.saveState
             assert img.dataSource == expDataSource
@@ -1024,7 +1024,7 @@ def _test_Image_save(imgtype):
             if imgtype > 0:
                 assert np.all(np.isclose(img.voxToWorldMat, xform))
 
-            for (x, y, z), v in zip(randvoxes, randvals):
+            for (x, y, z), v in zip(rvoxs, rvals):
                 assert np.isclose(img[x, y, z], v)
 
             # Load the image back in
@@ -1036,7 +1036,7 @@ def _test_Image_save(imgtype):
             if imgtype > 0:
                 assert np.all(np.isclose(img.voxToWorldMat, xform))
 
-            for (x, y, z), v in zip(randvoxes, randvals):
+            for (x, y, z), v in zip(rvoxs, rvals):
                 assert np.isclose(img[x, y, z], v)
             img2 = None
 
