@@ -825,6 +825,8 @@ def expectedShape(sliceobj, shape):
         if start is None: start = 0
         if stop  is None: stop  = shape[i]
 
+        stop = min(stop, shape[i])
+
         expShape.append(stop - start)
 
     return len(expShape), expShape
