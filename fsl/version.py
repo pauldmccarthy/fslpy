@@ -31,8 +31,14 @@ is compatible with PEP 440 (https://www.python.org/dev/peps/pep-0440/):
     which primarily involve bug-fixes and minor changes.
 
 
-The sole exception to the above convention are development versions, which end
-in ``'.dev'``.
+The sole exceptions to the above convention are:
+
+  - development versions, where the point release number is followed by a
+    development release identifier of the form ``'.devN'``, where ``N``
+    denotes a specific development release.
+
+  - Builds, where the version number ends in ``'+buildN'``, where ``N``
+    denotes a specific build.
 """
 
 
@@ -53,7 +59,9 @@ def parseVersionString(versionString):
     An error is raised if the ``versionString`` is invalid.
     """
 
-    components = versionString.split('.')
+    # Ignore build if present
+    versionString = versionString.split('+')[0]
+    components    = versionString.split('.')
 
     # Truncate after three elements -
     # a development (unreleased version
@@ -79,6 +87,8 @@ def parseVersionString(versionString):
 
 def compareVersions(v1, v2, ignorePoint=False):
     """Compares the given ``fslpy`` version numbers.
+
+    Both developemnt versions and build numbers are ignored in the comparison.
 
     :arg v1:          Version number to compare
     :arg v2:          Version number to compare
