@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.10.3 (Sunday September 9th 2018)
+----------------------------------
+
+
+Added
+^^^^^
+
+
+* The :func:`.parseVersionString` function accepts (and ignores) `local
+  version identifer
+  <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_
+  strings.
+
+
 1.10.2 (Friday September 7th 2018)
 ----------------------------------
 
