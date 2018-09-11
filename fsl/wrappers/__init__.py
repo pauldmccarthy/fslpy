@@ -82,6 +82,7 @@ from .bet          import (bet,             # noqa
 from .eddy         import (eddy_cuda,       # noqa
                            topup)
 from .fast         import (fast,)           # noqa
+from .fsl_anat     import (fsl_anat,)       # noqa
 from .flirt        import (flirt,           # noqa
                            invxfm,
                            applyxfm,
