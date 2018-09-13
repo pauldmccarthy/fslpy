@@ -23,6 +23,7 @@ import pytest
 
 import tests
 import fsl.utils.settings as settings
+import fsl.utils.tempdir  as tempdir
 
 
 def test_initialise():
@@ -431,3 +432,88 @@ def test_writeConfigFile():
         with open(op.join(testdir, 'config.pkl'), 'rb') as f:
             readback = pickle.load(f)
             assert testdata == readback
+
+
+
+def test_set():
+
+    with tempdir.tempdir(changeto=False) as td1,\
+         tempdir.tempdir(changeto=False) as td2:
+
+        s1 = settings.Settings(cfgdir=td1, writeOnExit=False)
+        s2 = settings.Settings(cfgdir=td2, writeOnExit=False)
+
+        settings.set(s1)
+        with settings.writeFile('file1') as f:
+            f.write('hi!')
+        assert os.listdir(td1) == ['file1']
+        assert os.listdir(td2) == []
+
+        settings.set(s2)
+        with settings.writeFile('file2') as f:
+            f.write('hi!')
+        assert os.listdir(td1) == ['file1']
+        assert os.listdir(td2) == ['file2']
+
+        settings.set(s1)
+        with settings.writeFile('file3') as f:
+            f.write('hi!')
+        assert os.listdir(td1) == ['file1', 'file3']
+        assert os.listdir(td2) == ['file2']
+
+        settings.set(s2)
+        with settings.writeFile('file4') as f:
+            f.write('hi!')
+        assert os.listdir(td1) == ['file1', 'file3']
+        assert os.listdir(td2) == ['file2', 'file4']
+
+
+def test_use():
+
+    with tempdir.tempdir(changeto=False) as td1,\
+         tempdir.tempdir(changeto=False) as td2:
+
+        s1 = settings.Settings(cfgdir=td1, writeOnExit=False)
+        s2 = settings.Settings(cfgdir=td2, writeOnExit=False)
+
+        with settings.use(s1):
+            with settings.writeFile('file1') as f:
+                f.write('hi!')
+
+        assert os.listdir(td1) == ['file1']
+        assert os.listdir(td2) == []
+
+        with settings.use(s2):
+            with settings.writeFile('file2') as f:
+                f.write('hi!')
+
+        settings.set(s1)
+        with settings.writeFile('file3') as f:
+                f.write('hi!')
+
+        with settings.use(s2):
+            with settings.writeFile('file4') as f:
+                f.write('hi!')
+
+        assert os.listdir(td1) == ['file1', 'file3']
+        assert os.listdir(td2) == ['file2', 'file4']
+
+        # should go back to s1
+        with settings.writeFile('file5') as f:
+            f.write('hi!')
+
+        assert os.listdir(td1) == ['file1', 'file3', 'file5']
+        assert os.listdir(td2) == ['file2', 'file4']
+
+        try:
+            with settings.use(s2):
+                raise Exception('hur')
+        except Exception:
+            pass
+
+        # should go back to s1
+        with settings.writeFile('file6') as f:
+            f.write('hi!')
+
+        assert os.listdir(td1) == ['file1', 'file3', 'file5', 'file6']
+        assert os.listdir(td2) == ['file2', 'file4']
