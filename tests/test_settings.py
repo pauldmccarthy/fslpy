@@ -458,14 +458,14 @@ def test_set():
         settings.set(s1)
         with settings.writeFile('file3') as f:
             f.write('hi!')
-        assert os.listdir(td1) == ['file1', 'file3']
-        assert os.listdir(td2) == ['file2']
+        assert sorted(os.listdir(td1)) == ['file1', 'file3']
+        assert        os.listdir(td2)  == ['file2']
 
         settings.set(s2)
         with settings.writeFile('file4') as f:
             f.write('hi!')
-        assert os.listdir(td1) == ['file1', 'file3']
-        assert os.listdir(td2) == ['file2', 'file4']
+        assert sorted(os.listdir(td1)) == ['file1', 'file3']
+        assert sorted(os.listdir(td2)) == ['file2', 'file4']
 
 
 def test_use():
@@ -495,15 +495,15 @@ def test_use():
             with settings.writeFile('file4') as f:
                 f.write('hi!')
 
-        assert os.listdir(td1) == ['file1', 'file3']
-        assert os.listdir(td2) == ['file2', 'file4']
+        assert sorted(os.listdir(td1)) == ['file1', 'file3']
+        assert sorted(os.listdir(td2)) == ['file2', 'file4']
 
         # should go back to s1
         with settings.writeFile('file5') as f:
             f.write('hi!')
 
-        assert os.listdir(td1) == ['file1', 'file3', 'file5']
-        assert os.listdir(td2) == ['file2', 'file4']
+        assert sorted(os.listdir(td1)) == ['file1', 'file3', 'file5']
+        assert sorted(os.listdir(td2)) == ['file2', 'file4']
 
         try:
             with settings.use(s2):
@@ -515,5 +515,5 @@ def test_use():
         with settings.writeFile('file6') as f:
             f.write('hi!')
 
-        assert os.listdir(td1) == ['file1', 'file3', 'file5', 'file6']
-        assert os.listdir(td2) == ['file2', 'file4']
+        assert sorted(os.listdir(td1)) == ['file1', 'file3', 'file5', 'file6']
+        assert sorted(os.listdir(td2)) == ['file2', 'file4']
