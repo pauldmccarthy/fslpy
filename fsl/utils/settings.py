@@ -25,6 +25,16 @@ the following functions can be called at the module-level:
    Settings.clear
 
 
+Some functions are also available to replace the module-level :class:`Settings`
+instance:
+
+.. autosummary::
+   :nosignatures:
+
+   set
+   use
+
+
 These functions will have no effect before :func:`initialise` is called.
 
 Two types of configuration data are available:
@@ -67,15 +77,9 @@ storing configuration files.
 """
 
 
-def initialise(*args, **kwargs):
-    """Initialise the ``settings`` module. This function creates a
-    :class:`Settings` instance, and enables the module-level
-    functions. All settings are passed through to :meth:`Settings.__init__`.
-    """
-
-    mod = sys.modules[__name__]
-
-    settings       = Settings(*args, **kwargs)
+def set(settings):
+    """Set the module-level :class:`Settings` instance. """
+    mod            = sys.modules[__name__]
     mod.settings   = settings
     mod.read       = settings.read
     mod.write      = settings.write
@@ -87,6 +91,31 @@ def initialise(*args, **kwargs):
     mod.readAll    = settings.readAll
     mod.listFiles  = settings.listFiles
     mod.clear      = settings.clear
+
+
+def initialise(*args, **kwargs):
+    """Initialise the ``settings`` module. This function creates a
+    :class:`Settings` instance, and enables the module-level
+    functions. All settings are passed through to :meth:`Settings.__init__`.
+    """
+    set(Settings(*args, **kwargs))
+
+
+@contextlib.contextmanager
+def use(settings):
+    """Temporarily replace the module-level :class:`Settings` object
+    with the given one.
+    """
+
+    mod = sys.modules[__name__]
+    old = getattr(mod, 'settings', None)
+
+    try:
+        set(settings)
+        yield
+    finally:
+        if old is not None:
+            set(old)
 
 
 # These are all overwritten by
@@ -391,7 +420,7 @@ class Settings(object):
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f, protocol=2)
-        except (IOError, pickle.PicklingError, EOFError):
+        except (FileNotFoundError, IOError, pickle.PicklingError, EOFError):
             log.warning('Unable to save {} configuration file '
                         '{}'.format(self.__configID, configFile),
                         exc_info=True)

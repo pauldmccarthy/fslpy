@@ -11,7 +11,7 @@
 #
 #    3. doc:    Building API documentation
 #
-#    4. build:  Building source, wheel and conda distributions
+#    4. build:  Building source and wheel distributions
 #
 #    5. deploy: Uploading the build outputs to pypi/hosting servers, and the
 #               documentation to a hosting server.
@@ -64,12 +64,6 @@ stages:
 #   - SSH_PRIVATE_KEY_DOC_DEPLOY     - private key for rsyncing documentation
 #                                      to remote host (DOC_HOST)
 #
-#   - SSH_PRIVATE_KEY_CONDA_DEPLOY   - private key for rsyncing conda builds
-#                                      to remote host (CONDA_HOST)
-#
-#   - SSH_PRIVATE_KEY_CONDA_INDEX    - private key for updating conda channel
-#                                      (on CONDA_HOST)
-#
 #   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
 #
 #   - DOC_HOST:                      - Username@host to upload documentation to
@@ -77,12 +71,6 @@ stages:
 #
 #   - FSL_HOST:                      - Username@host to download FSL data from
 #                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
-#
-#   - CONDA_HOST:                    - Username@host to upload conda build to
-#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
-#
-#   - CONDA_CHANNELS                 - List of additional conda channels to
-#                                      use for conda build.
 #
 #   - TWINE_USERNAME:                - Username to use when uploading to pypi
 #
@@ -244,25 +232,6 @@ build-pypi-dist:
       - dist/*
 
 
-build-conda-dist:
-  <<: *only_releases
-  <<: *patch_version
-
-  stage: build
-  image: continuumio/miniconda3
-
-  tags:
-    - docker
-
-  script:
-   - bash ./.ci/build_conda_dist.sh fslpy "$CI_COMMIT_REF_NAME"
-
-  artifacts:
-    expire_in: 1 day
-    paths:
-      - dist/conda-bld
-
-
 ##############
 # Deploy stage
 ##############
@@ -300,21 +269,3 @@ deploy-pypi:
 
   script:
     - bash ./.ci/deploy_pypi.sh
-
-
-
-deploy-conda:
-  <<: *only_releases
-  <<: *setup_ssh
-  stage: deploy
-  when:  manual
-  image: python:3.5
-
-  tags:
-    - docker
-
-  dependencies:
-    - build-conda-dist
-
-  script:
-    - bash ./.ci/deploy_conda.sh

@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.11.0 (Thursday September 13th 2018)
+-------------------------------------
+
+
+Added
+^^^^^
+
+
+* A couple of new convenience functions to the :mod:`.settings` module.
+
+
+Changed
+^^^^^^^
+
+
+* Development (test and documentation dependencies) are no longer listed
+  in ``setup.py`` - they now need to be installed manually.
+* Removed conda build infrastructure.
+
+
 1.10.3 (Sunday September 9th 2018)
 ----------------------------------
 
