@@ -23,10 +23,6 @@ basedir = op.dirname(__file__)
 with open(op.join(basedir, 'requirements.txt'), 'rt') as f:
     install_requires = [l.strip() for l in f.readlines()]
 
-# Development/test dependencies are listed in requirements-dev.txt
-with open(op.join(basedir, 'requirements-dev.txt'), 'rt') as f:
-    dev_requires = [l.strip() for l in f.readlines()]
-
 # Optional dependencies are listed in requirements-extra.txt
 with open(op.join(basedir, 'requirements-extra.txt'), 'rt') as f:
     extra_requires = {'extras' : [l.strip() for l in f.readlines()]}
@@ -116,7 +112,6 @@ setup(
 
     install_requires=install_requires,
     extras_require=extra_requires,
-    setup_requires=dev_requires,
 
     test_suite='tests',
 
