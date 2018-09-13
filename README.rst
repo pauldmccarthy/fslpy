@@ -29,7 +29,7 @@ Install ``fslpy`` and its core dependencies via pip::
     pip install fslpy
 
 
-``fslpy`` is also available on `conda-forge <https://conda-forge.org/>`_:
+``fslpy`` is also available on `conda-forge <https://conda-forge.org/>`_::
 
     conda install -c conda-forge fslpy
 
@@ -44,16 +44,16 @@ All of the core dependencies of ``fslpy`` are listed in the `requirements.txt
 Some extra dependencies are listed in `requirements.txt
 <requirements-extra.txt>`_ which provide addditional functionality:
 
- - ``wxPython``: The `fsl.utils.idle <fsl/utils/idle.py>`_ module has
-   functionality  to schedule functions on the ``wx`` idle loop.
+- ``wxPython``: The `fsl.utils.idle <fsl/utils/idle.py>`_ module has
+  functionality  to schedule functions on the ``wx`` idle loop.
 
- - ``indexed_gzip``: The `fsl.data.image.Image <fsl/data/image.py>`_ class
-   can use ``indexed_gzip`` to keep large compressed images on disk instead
-   of decompressing and loading them into memory..
+- ``indexed_gzip``: The `fsl.data.image.Image <fsl/data/image.py>`_ class
+  can use ``indexed_gzip`` to keep large compressed images on disk instead
+  of decompressing and loading them into memory..
 
- - ``trimesh``/``rtree``: The `fsl.data.mesh.TriangleMesh <fsl/data/mesh.py>`_
-   class has some methods which use ``trimesh`` to perform geometric queries
-   on the mesh.
+- ``trimesh``/``rtree``: The `fsl.data.mesh.TriangleMesh <fsl/data/mesh.py>`_
+  class has some methods which use ``trimesh`` to perform geometric queries
+  on the mesh.
 
 
 If you are using Linux, need to install wxPython first, as binaries are not
@@ -89,10 +89,6 @@ The HTML documentation will be generated and saved in the ``doc/html/``
 directory.
 
 
-If you are interested in contributing to ``fslpy``, check out the
-`contributing guide <doc/contributing.rst>`_.
-
-
 Tests
 -----
 
@@ -103,6 +99,14 @@ Run the test suite via::
 
 A test report will be generated at ``report.html``, and a code coverage report
 will be generated in ``htmlcov/``.
+
+
+Contributing
+------------
+
+
+If you are interested in contributing to ``fslpy``, check out the
+`contributing guide <doc/contributing.rst>`_.
 
 
 Credits
