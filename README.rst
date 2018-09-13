@@ -11,6 +11,9 @@ fslpy
 .. image:: https://img.shields.io/pypi/v/fslpy.svg
    :target: https://pypi.python.org/pypi/fslpy/
 
+.. image:: https://anaconda.org/conda-forge/fslpy/badges/version.svg
+   :target: https://anaconda.org/conda-forge/fslpy
+
 
 The ``fslpy`` project is a `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_
 programming library written in Python. It is used by `FSLeyes
@@ -24,6 +27,11 @@ Installation
 Install ``fslpy`` and its core dependencies via pip::
 
     pip install fslpy
+
+
+``fslpy`` is also available on `conda-forge <https://conda-forge.org/>`_:
+
+    conda install -c conda-forge fslpy
 
 
 Dependencies
