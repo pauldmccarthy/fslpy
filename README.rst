@@ -64,12 +64,17 @@ the rest of the extra dependencies::
     pip install fslpy[extras]
 
 
+Dependencies for testing and documentation are listed in the
+`requirements-dev.txt <requirements-dev.txt>`_ file.
+
+
 Documentation
 -------------
 
 ``fslpy`` is documented using `sphinx <http://http://sphinx-doc.org/>`_. You
 can build the API documentation by running::
 
+    pip install -r requirements-dev.txt
     python setup.py doc
 
 The HTML documentation will be generated and saved in the ``doc/html/``
@@ -85,6 +90,7 @@ Tests
 
 Run the test suite via::
 
+    pip install -r requirements-dev.txt
     python setup.py test
 
 A test report will be generated at ``report.html``, and a code coverage report
