@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.11.1 (Friday September 14th 2018
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a Python 2 incompatibility in the :mod:`.settings` module.
+
+
 1.11.0 (Thursday September 13th 2018)
 -------------------------------------
 
