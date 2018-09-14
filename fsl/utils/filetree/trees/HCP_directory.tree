@@ -1,0 +1,53 @@
+{subject} (directory)
+    MNINonLinear
+        ->HCP_Surface space=164k_fs_LR (mni_164k)
+        BiasField.nii.gz
+        Native (mni_native)
+            ->HCP_Surface space=native (mni_native)
+        ROIs
+        T1w.nii.gz
+        T1w_restore.2.nii.gz (T1w_restore_2)
+        T1w_restore.nii.gz
+        T1w_restore_brain.nii.gz
+        T2w.nii.gz
+        T2w_restore.2.nii.gz (T2w_restore_2)
+        T2w_restore.nii.gz
+        T2w_restore_brain.nii.gz
+        aparc+aseg.nii.gz (mni_aparc)
+        aparc.a2009s+aseg.nii.gz (min_aparc_a2009s)
+        brainmask_fs.nii.gz (mni_brainmask)
+        fsaverage_LR32k (mni_32k)
+            ->HCP_Surface space=32k_fs_LR (mni_32k)
+        ribbon.nii.gz (mni_ribbon)
+        wmparc.nii.gz (mni_wmparc)
+        xfms
+            NonlinearRegJacobians.nii.gz
+            acpc_dc2standard.nii.gz
+            standard2acpc_dc.nii.gz
+    T1w (acpc_dc)
+        Diffusion
+            ->Diffusion (Diffusion)
+        Diffusion.bedpostX (bedpost)
+            ->BedpostX (bedpost)
+        {subject}_3T.csv
+        BiasField_acpc_dc.nii.gz
+        Native (T1w_native)
+            ->HCP_Surface space=native (T1w_native)
+        T1wDividedByT2w.nii.gz
+        T1wDividedByT2w_ribbon.nii.gz
+        T1w_acpc_dc.nii.gz
+        T1w_acpc_dc_restore.nii.gz
+        T1w_acpc_dc_restore_brain.nii.gz
+        T1w_acpc_dc_restore_1.25.nii.gz (T1w_diffusion)
+        T2w_acpc_dc.nii.gz
+        T2w_acpc_dc_restore.nii.gz
+        T2w_acpc_dc_restore_brain.nii.gz
+        aparc+aseg.nii.gz (T1w_aparc)
+        aparc.a2009s+aseg.nii.gz (T1w_apard_a2009s)
+        brainmask_fs.nii.gz (T1w_brainmask)
+        fsaverage_LR32k (T1w_32k)
+            ->HCP_Surface space=32k_fs_LR (T1w_32k)
+        ribbon.nii.gz (T1w_ribbon)
+        wmparc.nii.gz (T1w_wmparc)
+    release-notes
+

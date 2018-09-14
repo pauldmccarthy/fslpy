@@ -1,0 +1,5 @@
+basename = topup_output
+
+{basename} (basename)
+{basename}_fieldcoef.nii.gz (fieldcoef)
+{basename}_movpar.txt (movement)

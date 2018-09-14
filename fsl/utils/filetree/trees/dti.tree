@@ -1,0 +1,14 @@
+basename = dti
+
+{basename} (basename)
+{basename}_MD.nii.gz (MD)
+{basename}_FA.nii.gz (FA)
+{basename}_MO.nii.gz (MO)
+{basename}_V1.nii.gz (V1)
+{basename}_V2.nii.gz (V2)
+{basename}_V3.nii.gz (V3)
+{basename}_L1.nii.gz (L1)
+{basename}_L2.nii.gz (L2)
+{basename}_L3.nii.gz (L3)
+
+{basename}_MK.nii.gz (MK)

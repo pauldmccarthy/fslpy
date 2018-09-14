@@ -1,0 +1,5 @@
+data.nii.gz
+nodif_brain_mask.nii.gz
+bvals
+bvecs
+grad_dev.nii.gz

@@ -1,0 +1,46 @@
+basename=fdt
+
+probtrackx.log (log_cmd)
+{basename}.log (log_settings)
+waytotal
+
+# single seed tracking
+coords = {x}_{y}_{z}   # default format for coords
+{basename}_{coords}.nii.gz (single_path) # --opd output
+{basename}_{coords}_length.nii.gz (single_path_length)  # --ompl output
+{basename}_{coords}_alt.nii.gz (single_alt_path)  # --opd/--fopd output
+{basename}_{coords}_alt_length.nii.gz (single_alt_path_length)  # --ompl/--fopd output
+
+# output paths
+{basename}.nii.gz (path)  # --opd output
+{basename}_length.nii.gz (path_length)  # --ompl output
+
+{basename}_alt.nii.gz (alt_path)  # --opd/--fopd output
+{basename}_alt_length.nii.gz (alt_path_length)  # --ompl/--fopd output
+
+# target mask connectivity
+seeds_to_{target}.nii.gz (seed2target)  # --os2t/--targetmasks output
+seeds_{seed_id}_to_{target}.nii.gz (multi_seed2target) # --os2t/--targetmasks with multiple seeds
+target_paths_{target}.nii.gz (target_path)  # --otargetpaths
+
+# ROIxROI connectivity (--network)
+fdt_network_matrix (network)
+tmpnetmaskfile (network_masks)
+
+# matrix output
+# matrix 1, 2, or 3
+coords_for_fdt_matrix{mat_id} (mat_seed_coord)  # matrix 1, 2, or3
+fdt_matrix{mat_id}.dot (mat)  # matrix 1, 2, or 3
+lookup_tractspace_fdt_matrix{mat_id}.nii.gz (mat_target_space)  # only matrix 2
+tract_space_coords_for_fdt_matrix{mat_id} (mat_target_coord) # matrix 2 or 3
+
+# matrix4
+fdt_matrix4_{part}.mtx (mat4)
+lookup_tractspace_fdt_matrix4.nii.gz (mat4_space)
+tract_space_coords_for_fdt_matrix4 (mat4_target_coord)
+
+
+# other
+{basename}_localdir.nii.gz (localdir)  # --opathdir
+
+saved_paths.txt  # --savepaths
