@@ -433,6 +433,15 @@ def test_writeConfigFile():
             readback = pickle.load(f)
             assert testdata == readback
 
+        # should fail gracefuly
+        # if write is not possible
+        s = settings.Settings(cfgid='test', cfgdir=testdir, writeOnExit=False)
+
+    # testdir has been removed,
+    # but call should not crash
+    s.writeConfigFile()
+
+
 
 
 def test_set():
