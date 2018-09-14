@@ -128,8 +128,9 @@ def delete(*args, **kwargs):
     pass
 def readFile(*args, **kwargs):
     pass
+@contextlib.contextmanager
 def writeFile(*args, **kwargs):
-    pass
+    yield
 def deleteFile(*args, **kwargs):
     pass
 def filePath(*args, **kwargs):
@@ -420,7 +421,7 @@ class Settings(object):
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f, protocol=2)
-        except (FileNotFoundError, IOError, pickle.PicklingError, EOFError):
+        except (IOError, pickle.PicklingError, EOFError):
             log.warning('Unable to save {} configuration file '
                         '{}'.format(self.__configID, configFile),
                         exc_info=True)
