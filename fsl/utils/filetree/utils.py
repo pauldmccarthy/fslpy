@@ -65,14 +65,18 @@ def fill_known(template, variables):
     Fills in the known variables filling the other variables with {<variable_name>}
 
     :param template: template
-    :param variables: mapping of variable names to values
+    :param variables: mapping of variable names to values (ignoring any None)
     :return: cleaned string
     """
     prev = ''
     while prev != template:
         prev = template
-        settings = {name: variables[name] if name in variables else '{' + name + '}'
-                    for name in set(find_variables(template))}
+        settings = {}
+        for name in set(find_variables(template)):
+            if name in variables and variables[name] is not None:
+                settings[name] = variables[name]
+            else:
+                settings[name] = '{' + name + '}'
         template = template.format(**settings)
     return template
 
@@ -135,7 +139,7 @@ def extract_variables(template, filename, known_vars=None):
     :param template: template matching the given filename
     :param filename: filename
     :param known_vars: already known variables
-    :return: dictionary from variable names to string representations
+    :return: dictionary from variable names to string representations (unused variables set to None)
     """
     if known_vars is None:
         known_vars = {}
@@ -166,6 +170,9 @@ def extract_variables(template, filename, known_vars=None):
                     raise ValueError('Multiple values found for {}'.format(var))
             else:
                 extracted_value[var] = value
+        for name in find_variables(template):
+            if name not in extracted_value:
+                extracted_value[name] = None
         extracted_value.update(known_vars)
         return extracted_value
     raise ValueError("{} did not match {}".format(filename, template))

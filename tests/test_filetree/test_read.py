@@ -76,6 +76,9 @@ def test_custom_tree():
     assert len(tree.get_all('sub_file', glob_vars=['opt'])) == 2
     assert len(tree.get_all('sub_file', glob_vars='all')) == 2
     assert len(tree.get_all('sub_file')) == 1
+    assert len(tree.update(opt=None).get_all('sub_file')) == 1
+    assert len(tree.update(opt=None).get_all('sub_file', glob_vars=['opt'])) == 1
+    assert len(tree.update(opt=None).get_all('sub_file', glob_vars='all')) == 1
 
     for fn, settings in zip(tree.get_all('sub_file', glob_vars='all'),
                             tree.get_all_vars('sub_file', glob_vars='all')):
@@ -87,9 +90,10 @@ def test_custom_tree():
         tree.get_all('opt_file')
     assert len(tree.get_all('opt_file', glob_vars=['opt'])) == 1
 
-    for vars in ({}, {'opt': 'test'}):
+    for vars in ({'opt': None}, {'opt': 'test'}):
         filename = tree.update(**vars).get('sub_file')
         assert vars == tree.extract_variables('sub_file', filename)
+    assert {'opt': None} == tree.extract_variables('sub_file', tree.get('sub_file'))
 
     assert tree.exists(('sub_file', 'opt_file'), error=True, on_disk=True, glob_vars=['opt'])
     assert tree.exists(('sub_file', 'opt_file'), on_disk=True, glob_vars=['opt'])

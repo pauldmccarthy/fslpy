@@ -20,7 +20,7 @@ class FileTree(object):
 
     Properties
     - ``templates``: dictionary mapping short names to filename templates
-    - ``variables``: dictionary mapping variables in the templates to specific values
+    - ``variables``: dictionary mapping variables in the templates to specific values (variables set to None are explicitly unset)
     - ``sub_trees``: filename trees describing specific sub-directories
     - ``parent``: parent FileTree, of which this sub-tree is a sub-directory
     """
@@ -182,6 +182,7 @@ class FileTree(object):
         Creates a new filetree with updated variables
 
         :arg variables: new values for the variables
+        Setting variables to None will explicitly unset them
         """
         new_tree = deepcopy(self)
         new_tree.variables.update(variables)
@@ -194,6 +195,7 @@ class FileTree(object):
         :param short_name: short name of the path template
         :param filename: filename matching the template
         :return: variables needed to get to the given filename
+        Variables with None value are optional variables in the template that were not used
         """
         text, _ = self.get_template(short_name)
         return utils.extract_variables(text, filename, self.variables)
