@@ -12,6 +12,12 @@ Changed
 * Removed support for Python 2.7 and 3.4.
 
 
+Removed
+^^^^^^^
+
+* Many deprecated items
+
+
 1.12.0 (Sunday October 21st 2018)
 ---------------------------------
 
@@ -30,7 +36,6 @@ Deprecated
 
 
 * The ``extract_noise`` script.
-
 
 
 1.11.1 (Friday September 14th 2018
