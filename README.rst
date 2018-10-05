@@ -20,6 +20,9 @@ programming library written in Python. It is used by `FSLeyes
 <https://git.fmrib.ox.ac.uk/fsl/fsleyes/fsleyes/>`_.
 
 
+``fslpy`` is tested against Python versions 3.5, 3.6 and 3.7.
+
+
 Installation
 ------------
 
@@ -56,8 +59,8 @@ Some extra dependencies are listed in `requirements.txt
   on the mesh.
 
 
-If you are using Linux, need to install wxPython first, as binaries are not
-available on PyPI. Change the URL for your specific platform::
+If you are using Linux, you need to install wxPython first, as binaries are
+not available on PyPI. Change the URL for your specific platform::
 
     pip install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-16.04/ wxpython
 
@@ -74,6 +77,14 @@ the rest of the extra dependencies::
 
 Dependencies for testing and documentation are listed in the
 `requirements-dev.txt <requirements-dev.txt>`_ file.
+
+
+Non-Python dependencies
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+The ``fsl.data.dicom`` module requires the presence of Chris Rorden's
+`dcm2niix <https://github.com/rordenlab/dcm2niix>`_ program.
 
 
 Documentation
