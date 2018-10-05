@@ -44,6 +44,10 @@ import fsl.data.image    as fslimage
 log = logging.getLogger(__name__)
 
 
+MIN_DCM2NIIX_VERSION = (1, 0, 2017, 12, 15)
+"""Minimum version of dcm2niix that is required for this module to work. """
+
+
 class DicomImage(fslimage.Image):
     """The ``DicomImage`` is a volumetric :class:`.Image` with some associated
     DICOM metadata.
@@ -115,7 +119,6 @@ def enabled():
     """
 
     cmd            = 'dcm2niix -h'
-    minimumVersion = (1, 0, 2016, 9, 30)
     versionPattern = re.compile('v'
                                 '(?P<major>[0-9]+)\.'
                                 '(?P<minor>[0-9]+)\.'
@@ -145,7 +148,7 @@ def enabled():
             # make sure installed version
             # is equal to or newer than
             # minimum required version
-            for iv, mv in zip(installedVersion, minimumVersion):
+            for iv, mv in zip(installedVersion, MIN_DCM2NIIX_VERSION):
                 if   iv > mv: return True
                 elif iv < mv: return False
 
@@ -225,7 +228,7 @@ def loadSeries(series):
     dcmdir = series['DicomDir']
     snum   = series['SeriesNumber']
     desc   = series['SeriesDescription']
-    cmd    = 'dcm2niix -b n -f %s -z n -o . {}'.format(dcmdir)
+    cmd    = 'dcm2niix -b n -f %s -z n -o . -n {} {}'.format(snum, dcmdir)
 
     with tempdir.tempdir() as td:
 
