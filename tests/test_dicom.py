@@ -47,9 +47,13 @@ def test_enabled():
                         side_effect=Exception()):
             assert not fsldcm.enabled()
 
+
         # test presence of different versions
         tests = [(b'version v2.1.20191212', True),
-                 (b'version v1.0.20160930', True),
+                 (b'version v1.0.20171216', True),
+                 (b'version v1.0.20171215', True),
+                 (b'version v1.0.20171214', False),
+                 (b'version v1.0.20160930', False),
                  (b'version v1.0.20160929', False),
                  (b'version v0.0.00000000', False),
                  (b'version blurgh',        False)]
@@ -76,7 +80,7 @@ def test_scanDir():
             f.extractall()
 
         series = fsldcm.scanDir(td)
-        assert len(series) == 2
+        assert len(series) == 3
 
         for s in series:
             assert (s['PatientName'] == 'MCCARTHY_PAUL' or
@@ -104,13 +108,13 @@ def test_loadSeries():
 
             for img in imgs:
 
-                assert img.dicomDir           == td
-                assert img.shape              == expShape
-                assert img[:].shape           == expShape
-                assert img.get('PatientName') == 'MCCARTHY_PAUL' or \
-                       img.get('PatientName') == 'MCCARTHY_PAUL_2'
-                assert 'PatientName'                      in img.keys()
-                assert 'MCCARTHY_PAUL'                    in img.values() or \
-                       'MCCARTHY_PAUL_2'                  in img.values()
-                assert ('PatientName', 'MCCARTHY_PAUL')   in img.items() or \
-                       ('PatientName', 'MCCARTHY_PAUL_2') in img.items()
+                assert img.dicomDir               == td
+                assert img.shape                  == expShape
+                assert img[:].shape               == expShape
+                assert img.getMeta('PatientName') == 'MCCARTHY_PAUL' or \
+                       img.getMeta('PatientName') == 'MCCARTHY_PAUL_2'
+                assert 'PatientName'                      in img.metaKeys()
+                assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
+                       'MCCARTHY_PAUL_2'                  in img.metaValues()
+                assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
+                       ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems()
