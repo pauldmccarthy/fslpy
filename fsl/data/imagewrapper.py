@@ -41,8 +41,6 @@ import logging
 import collections
 import itertools as it
 
-import deprecation
-
 import numpy     as np
 import nibabel   as nib
 
@@ -717,16 +715,6 @@ class ImageWrapper(notifier.Notifier):
         self.__updateDataRangeOnWrite(slices, values)
 
 
-@deprecation.deprecated(deprecated_in='1.7.0',
-                        removed_in='2.0.0',
-                        details='Moved to fsl.utils.naninfrange')
-def naninfrange(data):
-    """Deprecated - moved to :mod:`fsl.utils.naninfrange`. """
-
-    from fsl.utils.naninfrange import naninfrange
-    return naninfrange(data)
-
-
 def isValidFancySliceObj(sliceobj, shape):
     """Returns ``True`` if the given ``sliceobj`` is a valid and fancy slice
     object.
@@ -766,15 +754,6 @@ def canonicalSliceObj(sliceobj, shape):
             sliceobj = sliceobj[:len(shape)]
 
         return nib.fileslice.canonical_slicers(sliceobj, shape)
-
-
-@deprecation.deprecated(deprecated_in='1.7.0',
-                        removed_in='2.0.0',
-                        details='moved to the fsl.data.image module')
-def canonicalShape(shape):
-    """Deprecated - moved to the :mod:`fsl.data.image` module. """
-    from fsl.data.image import canonicalShape
-    return canonicalShape(shape)
 
 
 def expectedShape(sliceobj, shape):

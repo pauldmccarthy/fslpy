@@ -25,7 +25,6 @@ are available:
 
 import            glob
 import os.path as op
-import            deprecation
 
 import numpy   as np
 import nibabel as nib
@@ -306,48 +305,3 @@ def relatedFiles(fname, ftypes=None):
             glob.glob(op.join(dirname, '{}*{}'.format(prefix, ftype))))
 
     return [r for r in related if r != path]
-
-
-class GiftiSurface(fslmesh.TriangleMesh):
-    """Deprecated - use GiftiMesh instead. """
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use GiftiMesh instead')
-    def __init__(self, infile, fixWinding=False):
-        """Deprecated - use GiftiMesh instead. """
-        surfimg, vertices, indices = loadGiftiSurface(infile)
-
-        fslmesh.TriangleMesh.__init__(self, vertices, indices, fixWinding)
-
-        name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
-        infile = op.abspath(infile)
-
-        self._Mesh__name       = name
-        self._Mesh__dataSource = infile
-        self.surfImg           = surfimg
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use GiftiMesh instead')
-    def loadVertexData(self, dataSource, vertexData=None):
-        """Deprecated - use GiftiMesh instead. """
-
-        if vertexData is None:
-            if dataSource.endswith('.gii'):
-                vertexData = loadGiftiVertexData(dataSource)[1]
-            else:
-                vertexData = None
-
-        return fslmesh.TriangleMesh.loadVertexData(
-            self, dataSource, vertexData)
-
-
-@deprecation.deprecated(deprecated_in='1.6.0',
-                        removed_in='2.0.0',
-                        details='Use loadGiftiMesh instead')
-def loadGiftiSurface(filename):
-    """Deprecated - use loadGiftiMesh instead."""
-    return loadGiftiMesh(filename)

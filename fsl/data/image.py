@@ -41,7 +41,6 @@ import                      logging
 import                      tempfile
 
 import                      six
-import                      deprecation
 import numpy             as np
 import scipy.ndimage     as ndimage
 
@@ -502,23 +501,6 @@ class Nifti(notifier.Notifier, meta.Meta):
         return len(self.__shape)
 
 
-    @property
-    @deprecation.deprecated(deprecated_in='1.9.0',
-                            removed_in='2.0.0',
-                            details='Use ndim instead')
-    def ndims(self):
-        """Deprecated - use :mod::meth:``ndim`` instead. """
-        return self.ndim
-
-
-    @deprecation.deprecated(deprecated_in='1.1.0',
-                            removed_in='2.0.0',
-                            details='Use ndims instead')
-    def is4DImage(self):
-        """Returns ``True`` if this image is 4D, ``False`` otherwise. """
-        return len(self.__shape) > 3 and self.__shape[3] > 1
-
-
     def getXFormCode(self, code=None):
         """This method returns the code contained in the NIFTI header,
         indicating the space to which the (transformed) image is oriented.
@@ -603,15 +585,6 @@ class Nifti(notifier.Notifier, meta.Meta):
         """
         import numpy.linalg as npla
         return npla.det(self.__voxToWorldMat) > 0
-
-
-    @memoize.Instanceify(memoize.memoize)
-    @deprecation.deprecated(deprecated_in='1.2.0',
-                            removed_in='2.0.0',
-                            details='Use voxToScaledVoxMat instead')
-    def voxelsToScaledVoxels(self):
-        """See :meth:`voxToScaledVoxMat`."""
-        return self.voxToScaledVoxMat
 
 
     @property
@@ -1519,78 +1492,3 @@ def loadIndexedImageFile(filename):
     image = ftype.from_file_map(fmap)
 
     return image, fobj
-
-
-@deprecation.deprecated(deprecated_in='1.3.0',
-                        removed_in='2.0.0',
-                        details='Upgrade to nibabel 2.2.0')
-def read_segments(fileobj, segments, n_bytes):
-    """This function is used in place of the
-    ``nibabel.fileslice.read_segments`` function to ensure thread-safe read
-    access to image data via the ``nibabel.arrayproxy.ArrayProxy`` (the
-    ``dataobj`` attribute of a ``nibabel`` image).
-
-    The ``nibabel`` implementation uses multiple calls to ``seek`` and
-    ``read`` to read segments of data from the file. When accessed by multiple
-    threads, these seeks and reads can become intertwined, which causes a read
-    from one thread to read data from the seek location requested by the other
-    thread.
-
-    This implementation protects the seek/read pairs with a
-    ``threading.Lock``, which is added to ``IndexedGzipFile`` instances that
-    are created in the :func:`loadIndexedImageFile` function.
-
-    .. note:: This patch is not required in nibabel 2.2.0 and newer. It will
-              be removed from ``fslpy`` in version 2.0.0.
-    """
-
-    from mmap import mmap
-
-    try:
-        # fileobj is a nibabel.openers.ImageOpener - the
-        # actual file is available via the fobj attribute
-        lock = getattr(fileobj.fobj, '_arrayproxy_lock')
-
-    except AttributeError:
-        return fileslice.orig_read_segments(fileobj, segments, n_bytes)
-
-    if len(segments) == 0:
-        if n_bytes != 0:
-            raise ValueError("No segments, but non-zero n_bytes")
-        return b''
-    if len(segments) == 1:
-        offset, length = segments[0]
-
-        lock.acquire()
-        try:
-            fileobj.seek(offset)
-            bytes = fileobj.read(length)
-        finally:
-            lock.release()
-
-        if len(bytes) != n_bytes:
-            raise ValueError("Whoops, not enough data in file")
-        return bytes
-
-    # More than one segment
-    bytes = mmap(-1, n_bytes)
-    for offset, length in segments:
-
-        lock.acquire()
-        try:
-            fileobj.seek(offset)
-            bytes.write(fileobj.read(length))
-        finally:
-            lock.release()
-
-    if bytes.tell() != n_bytes:
-        raise ValueError("Oh dear, n_bytes does not look right")
-    return bytes
-
-
-# Monkey-patch the above implementation into
-# nibabel. FSLeyes requires at least 2.1.0 -
-# newer versions do not need to be patched.
-if nib.__version__ == '2.1.0':
-    fileslice.orig_read_segments = fileslice.read_segments
-    fileslice.read_segments      = read_segments

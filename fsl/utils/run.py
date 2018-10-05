@@ -144,10 +144,6 @@ def run(*args, **kwargs):
                    exception is not raised.  Ignored if ``submit`` is
                    specified.
 
-    :arg err:      Deprecated - use ``stderr`` instead.
-
-    :arg ret:      Deprecated - use ``exitcode`` instead.
-
     :arg submit:   Must be passed as a keyword argument. Defaults to ``None``.
                    If ``True``, the command is submitted as a cluster job via
                    the :func:`.fslsub.submit` function.  May also be a
@@ -174,17 +170,6 @@ def run(*args, **kwargs):
                    value or a tuple, based on the based on the ``stdout``,
                    ``stderr``, and ``exitcode`` arguments.
     """
-
-    if 'err' in kwargs:
-        warnings.warn('err is deprecated and will be removed '
-                      'in fslpy 2.0.0 - use stderr instead',
-                      DeprecationWarning)
-        kwargs['stderr'] = kwargs.get('stderr', kwargs['err'])
-    if 'ret' in kwargs:
-        warnings.warn('ret is deprecated and will be removed '
-                      'in fslpy 2.0.0 - use exitcode instead',
-                      DeprecationWarning)
-        kwargs['exitcode'] = kwargs.get('exitcode', kwargs['ret'])
 
     returnStdout   = kwargs.get('stdout',   True)
     returnStderr   = kwargs.get('stderr',   False)
