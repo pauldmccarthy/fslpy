@@ -293,7 +293,7 @@ class FileTree(object):
 
         file_variables = {}
 
-        with open(filename, 'r') as f:
+        with open(str(filename), 'r') as f:
             for full_line in f:
                 # ignore anything behind the first #-character
                 line = full_line.split('#')[0]
