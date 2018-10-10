@@ -54,17 +54,20 @@ class FileTree(object):
         res.update(self.variables)
         return res
 
-    def get_variable(self, name: str) -> str:
+    def get_variable(self, name: str, default=None) -> str:
         """
         Gets a variable used to fill out the template
 
         :param name: variable name
+        :param default: default variables (if not set an error is raised for a missing variable)
         :return: value of the variable
         """
         variables = self.all_variables
-        if name in variables:
+        if name in variables and variables[name] is not None:
             return variables[name]
-        raise MissingVariable('Variable {} not found in sub-tree or parents'.format(name))
+        if default is None:
+            raise MissingVariable('Variable {} not found in sub-tree or parents'.format(name))
+        return default
 
     def _get_template_tree(self, short_name: str) -> Tuple["FileTree", str]:
         """
