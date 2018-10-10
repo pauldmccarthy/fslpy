@@ -29,7 +29,6 @@ and file names:
    getExt
    removeExt
    defaultExt
-   loadIndexedImageFile
 """
 
 
@@ -39,6 +38,7 @@ import                      shutil
 import                      string
 import                      logging
 import                      tempfile
+import                      warnings
 
 import                      six
 import numpy             as np
@@ -52,6 +52,7 @@ import fsl.utils.transform   as transform
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
+import fsl.utils.deprecated  as deprecated
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
 
@@ -794,10 +795,8 @@ class Image(Nifti):
                          incrementally updated as more data is read from memory
                          or disk.
 
-        :arg indexed:    If ``True``, and the file is gzipped, it is opened
-                         using the :mod:`indexed_gzip` package. Otherwise the
-                         file is opened by ``nibabel``. Ignored if ``loadData``
-                         is ``True``.
+        :arg indexed:    Deprecated. Has no effect, and will be removed in
+                         ``fslpy`` 3.0.
 
         :arg threaded:   If ``True``, the :class:`.ImageWrapper` will use a
                          separate thread for data range calculation. Defaults
@@ -812,10 +811,13 @@ class Image(Nifti):
         """
 
         nibImage = None
-        fileobj  = None
+
+        if indexed is not False:
+            warnings.warn('The indexed argument is deprecated '
+                          'and has no effect',
+                          category=DeprecationWarning)
 
         if loadData:
-            indexed  = False
             threaded = False
 
         # Take a copy of the header if one has
@@ -841,24 +843,8 @@ class Image(Nifti):
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
 
-            image = op.abspath(addExt(image))
-
-            # Use indexed_gzip to open gzip files
-            # if requested - this provides fast
-            # on-disk access to the compressed
-            # data.
-            #
-            # If using indexed_gzip, we store a
-            # ref to the file object - we'll close
-            # it when we are destroyed.
-            if indexed and image.endswith('.gz'):
-                nibImage, fileobj = loadIndexedImageFile(image)
-
-            # Otherwise we let nibabel
-            # manage the file reference(s)
-            else:
-                nibImage = nib.load(image, **kwargs)
-
+            image      = op.abspath(addExt(image))
+            nibImage   = nib.load(image, **kwargs)
             dataSource = image
 
         # Or a numpy array - we wrap it in a nibabel image,
@@ -916,17 +902,16 @@ class Image(Nifti):
 
         Nifti.__init__(self, nibImage.header)
 
-        self.name                = name
-        self.__lName             = '{}_{}'.format(id(self), self.name)
-        self.__dataSource        = dataSource
-        self.__fileobj           = fileobj
-        self.__threaded          = threaded
-        self.__nibImage          = nibImage
-        self.__saveState         = dataSource is not None
-        self.__imageWrapper      = imagewrapper.ImageWrapper(self.nibImage,
-                                                             self.name,
-                                                             loadData=loadData,
-                                                             threaded=threaded)
+        self.name           = name
+        self.__lName        = '{}_{}'.format(id(self), self.name)
+        self.__dataSource   = dataSource
+        self.__threaded     = threaded
+        self.__nibImage     = nibImage
+        self.__saveState    = dataSource is not None
+        self.__imageWrapper = imagewrapper.ImageWrapper(self.nibImage,
+                                                        self.name,
+                                                        loadData=loadData,
+                                                        threaded=threaded)
 
         # Listen to ourself for changes
         # to the voxToWorldMat, so we
@@ -964,10 +949,6 @@ class Image(Nifti):
         self.header         = None
         self.__nibImage     = None
         self.__imageWrapper = None
-
-        if getattr(self, '__fileobj', None) is not None:
-            self.__fileobj.close()
-            self.__fileobj = None
 
 
     def getImageWrapper(self):
@@ -1139,85 +1120,44 @@ class Image(Nifti):
 
         log.debug('Saving {} to {}'.format(self.name, filename))
 
-        # If this Image is not managing its
-        # own file object, and the image is not
-        # memory-mapped, nibabel does all of
-        # the hard work.
-        newnibimage = False
-        sample      = self[(slice(0, 5),) + (0,) * (len(self.shape) - 1)]
-        ismmap      = isinstance(sample, np.memmap)
+        # We save the image out to a temp file,
+        # then close the old image, move the
+        # temp file to the real destination,
+        # then re-open the file.
+        tmphd, tmpfname = tempfile.mkstemp(suffix=op.splitext(filename)[1])
+        os.close(tmphd)
 
-        if self.__fileobj is None and (not ismmap):
-            nib.save(self.__nibImage, filename)
+        try:
+            nib.save(self.__nibImage, tmpfname)
 
-        # If the image is memory-mapped, we need
-        # to close and re-open the image
-        elif self.__fileobj is None:
+            # nibabel should close any old
+            # file handles when the image/
+            # header refs are deleted
+            self.__nibImage = None
+            self.header     = None
 
-            # We save the image out to a temp file,
-            # then close the old image, move the
-            # temp file to the real destination,
-            # then re-open the file.
-            newnibimage     = True
-            tmphd, tmpfname = tempfile.mkstemp(suffix=op.splitext(filename)[1])
-            os.close(tmphd)
+            shutil.copy(tmpfname, filename)
 
-            try:
-                nib.save(self.__nibImage, tmpfname)
+            self.__nibImage = nib.load(filename)
+            self.header     = self.__nibImage.header
 
-                self.__nibImage = None
-                self.header     = None
+        finally:
+            os.remove(tmpfname)
+            raise
 
-                shutil.copy(tmpfname, filename)
-
-                self.__nibImage = nib.load(filename)
-                self.header     = self.__nibImage.header
-
-            except Exception:
-                os.remove(tmpfname)
-                raise
-
-        # Otherwise we've got our own file
-        # handle to an IndexedGzipFile
-        else:
-            # Currently indexed_gzip does not support
-            # writing. So we're going to use nibabel
-            # to save the image, then close and re-open
-            # the file.
-            #
-            # Unfortunately this means that we'll
-            # lose the file index (and fast random
-            # access) - I'll fix this when I get a
-            # chance to work on indexed_gzip a bit
-            # more.
-            #
-            # Hopefully I should be able to add write
-            # support to indexed_gzip, such that it
-            # re-builds the index while writing the
-            # compressed data. And then be able to
-            # transfer the index generated from the
-            # write to a new read-only file handle.
-            newnibimage = True
-            nib.save(self.__nibImage, filename)
-            self.__fileobj.close()
-            self.__nibImage, self.__fileobj = loadIndexedImageFile(filename)
-            self.header = self.__nibImage.header
-
-        # If we've created a new nibabel image,
+        # Because we've created a new nibabel image,
         # we have to create a new ImageWrapper
         # instance too, as we have just destroyed
         # the nibabel image we gave to the last
         # one.
-        if newnibimage:
-
-            self.__imageWrapper.deregister(self.__lName)
-            self.__imageWrapper = imagewrapper.ImageWrapper(
-                self.nibImage,
-                self.name,
-                loadData=False,
-                dataRange=self.dataRange,
-                threaded=self.__threaded)
-            self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
+        self.__imageWrapper.deregister(self.__lName)
+        self.__imageWrapper = imagewrapper.ImageWrapper(
+            self.nibImage,
+            self.name,
+            loadData=False,
+            dataRange=self.dataRange,
+            threaded=self.__threaded)
+        self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
 
         self.__dataSource = filename
         self.__saveState  = True
@@ -1455,40 +1395,7 @@ def defaultExt():
     return options.get(outputType, '.nii.gz')
 
 
+@deprecated.deprecated('2.0.0', '3.0.0', 'Use nibabel.load instead.')
 def loadIndexedImageFile(filename):
-    """Loads the given image file using ``nibabel`` and ``indexed_gzip``.
-
-    Returns a tuple containing the ``nibabel`` NIFTI image, and the open
-    ``IndexedGzipFile`` handle.
-
-    If ``indexed_gzip`` is not present, the image is loaded normally via
-    ``nibabel.load``.
-    """
-
-    import threading
-
-    try:
-        import indexed_gzip as igzip
-    except ImportError:
-        return nib.load(filename), None
-
-    log.debug('Loading {} using indexed gzip'.format(filename))
-
-    # guessed_image_type returns a
-    # ref to one of the Nifti1Image
-    # or Nifti2Image classes.
-    ftype = nib.loadsave.guessed_image_type(filename)
-    fobj  = igzip.SafeIndexedGzipFile(
-        filename=filename,
-        spacing=4194304,
-        readbuf_size=1048576)
-
-    # See the read_segments
-    # function below
-    fobj._arrayproxy_lock = threading.Lock()
-
-    fmap = ftype.make_file_map()
-    fmap['image'].fileobj = fobj
-    image = ftype.from_file_map(fmap)
-
-    return image, fobj
+    """Deprecated - this call is equivalent to calling ``nibabel.load``. """
+    return nib.load(filename)
