@@ -89,7 +89,7 @@ def _wait_for_idle_loop_to_clear():
         idle.idle(busywait)
 
         while not idleDone[0]:
-            wx.Yield()
+            wx.GetApp().Yield()
 
 
 @pytest.mark.wxtest
