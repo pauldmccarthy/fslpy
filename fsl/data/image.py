@@ -469,10 +469,10 @@ class Nifti(notifier.Notifier, meta.Meta):
         self.__worldToVoxMat = transform.invert(self.__voxToWorldMat)
 
         log.debug('Affine changed:\npixdims: '
-                  '{}\nsform: {}\nqform: {}'.format(
-                      header.get_zooms(),
-                      header.get_sform(),
-                      header.get_qform()))
+                  '%s\nsform: %s\nqform: %s',
+                  header.get_zooms(),
+                  header.get_sform(),
+                  header.get_qform())
 
         self.notify(topic='transform')
 
@@ -1080,13 +1080,13 @@ class Image(Nifti):
         # If an image size threshold has not been specified,
         # then we'll calculate the full data range right now.
         if sizethres is None or nbytes < sizethres:
-            log.debug('{}: Forcing calculation of full '
-                      'data range'.format(self.name))
+            log.debug('%s: Forcing calculation of full '
+                      'data range', self.name)
             self.__imageWrapper[:]
 
         else:
-            log.debug('{}: Calculating data range '
-                      'from sample'.format(self.name))
+            log.debug('%s: Calculating data range '
+                      'from sample', self.name)
 
             # Otherwise if the number of values in the
             # image is bigger than the size threshold,
@@ -1118,7 +1118,7 @@ class Image(Nifti):
         if not looksLikeImage(filename):
             filename = addExt(filename, mustExist=False)
 
-        log.debug('Saving {} to {}'.format(self.name, filename))
+        log.debug('Saving %s to %s', self.name, filename)
 
         # We save the image out to a temp file,
         # then close the old image, move the
@@ -1262,7 +1262,7 @@ class Image(Nifti):
         :arg sliceobj: Something which can slice the image data.
         """
 
-        log.debug('{}: __getitem__ [{}]'.format(self.name, sliceobj))
+        log.debug('%s: __getitem__ [%s]', self.name, sliceobj)
 
         return self.__imageWrapper.__getitem__(sliceobj)
 
@@ -1278,9 +1278,8 @@ class Image(Nifti):
         """
         values = np.array(values)
 
-        log.debug('{}: __setitem__ [{} = {}]'.format(self.name,
-                                                     sliceobj,
-                                                     values.shape))
+        log.debug('%s: __setitem__ [%s = %s]',
+                  self.name, sliceobj, values.shape)
 
         with self.__imageWrapper.skip(self.__lName):
 
