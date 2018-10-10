@@ -48,10 +48,11 @@ class FileTree(object):
         """
         All tree variables including those from the parent tree
         """
+        without_none = {key: value for key, value in self.variables.items() if value is not None}
         if self.parent is None:
-            return dict(self.variables)
+            return without_none
         res = self.parent.all_variables
-        res.update(self.variables)
+        res.update(without_none)
         return res
 
     def get_variable(self, name: str) -> str:
