@@ -34,7 +34,6 @@ and file names:
 
 import                      os
 import os.path           as op
-import                      shutil
 import                      string
 import                      logging
 import                      tempfile
@@ -1106,6 +1105,8 @@ class Image(Nifti):
         if ``filename`` is ``None``.
         """
 
+        import fsl.utils.imcp as imcp
+
         if self.__dataSource is None and filename is None:
             raise ValueError('A file name must be specified')
 
@@ -1124,7 +1125,7 @@ class Image(Nifti):
         # then close the old image, move the
         # temp file to the real destination,
         # then re-open the file.
-        tmphd, tmpfname = tempfile.mkstemp(suffix=op.splitext(filename)[1])
+        tmphd, tmpfname = tempfile.mkstemp(suffix=getExt(filename))
         os.close(tmphd)
 
         try:
@@ -1136,14 +1137,13 @@ class Image(Nifti):
             self.__nibImage = None
             self.header     = None
 
-            shutil.copy(tmpfname, filename)
+            imcp.imcp(tmpfname, filename, overwrite=True)
 
             self.__nibImage = nib.load(filename)
             self.header     = self.__nibImage.header
 
         finally:
             os.remove(tmpfname)
-            raise
 
         # Because we've created a new nibabel image,
         # we have to create a new ImageWrapper
