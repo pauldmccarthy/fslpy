@@ -21,19 +21,28 @@ has already been emitted for the use of a deprecated item.
 """
 
 
-def deprecated(vin=None, msg=None):
+def deprecated(vin=None, rin=None, msg=None):
     """Decorator to mark a function or method as deprecated. A
     ``DeprecationWarning`` is raised via the standard ``warnings`` module.
 
     :arg vin: Optional version - the warning message will mention that the
               function is deprecated from this version.
 
+    :arg rin: Optional version - the warning message will mention that the
+              function will be removed in this version.
+
     :arg msg: Optional message to use in the warning.
     """
 
 
-    if vin is not None:
+    if vin is not None and rin is not None:
+        msgfmt = '{{name}} is deprecated from version {vin} and will be ' \
+                 'removed in {rin}.'.format(vin=vin, rin=rin)
+    elif vin is not None:
         msgfmt = '{{name}} is deprecated from version {vin}.'.format(vin=vin)
+    elif rin is not None:
+        msgfmt = '{{name}} is deprecated and will be removed in ' \
+                 '{rin}.'.format(rin=rin)
     else:
         msgfmt = '{{name}} is deprecated.'
 
