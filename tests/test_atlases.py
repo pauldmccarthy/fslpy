@@ -225,7 +225,7 @@ def test_load_atlas():
     reg.rescanAtlases()
 
     probatlas    = reg.loadAtlas('harvardoxford-cortical',
-                                 indexed=True, calcRange=False, loadData=False)
+                                 calcRange=False, loadData=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 
@@ -240,7 +240,7 @@ def test_find():
     reg.rescanAtlases()
 
     probatlas    = reg.loadAtlas('harvardoxford-cortical',
-                                 indexed=True, calcRange=False, loadData=False)
+                                 calcRange=False, loadData=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 
@@ -273,7 +273,7 @@ def test_prepareMask():
     reg.rescanAtlases()
 
     probatlas    = reg.loadAtlas('harvardoxford-cortical',
-                                 indexed=True, loadData=False, calcRange=False)
+                                 loadData=False, calcRange=False)
     probsumatlas = reg.loadAtlas('harvardoxford-cortical', loadSummary=True)
     lblatlas     = reg.loadAtlas('talairach')
 

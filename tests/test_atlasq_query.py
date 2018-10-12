@@ -442,7 +442,6 @@ def test_bad_mask(seed):
             atlas  = fslatlases.loadAtlas(
                 atlasID,
                 loadSummary=use_label,
-                indexed=True,
                 loadData=False,
                 calcRange=False)
             ashape = list(atlas.shape[:3])

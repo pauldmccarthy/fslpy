@@ -45,8 +45,7 @@ def _get_atlas(atlasID, res, summary=False):
             kwargs = {}
         else:
             kwargs = {'loadData'  : False,
-                      'calcRange' : False,
-                      'indexed'   : True}
+                      'calcRange' : False}
 
         atlas = fslatlases.loadAtlas(atlasID,
                                      loadSummary=summary,

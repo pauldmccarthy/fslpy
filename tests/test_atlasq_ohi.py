@@ -98,7 +98,6 @@ def test_coords(seed):
         atlas = fslatlases.loadAtlas(
             ad.atlasID,
             resolution=2,
-            indexed=True,
             calcRange=False,
             loadData=False)
 

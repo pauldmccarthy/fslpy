@@ -9,6 +9,7 @@
 import os.path as op
 import            shutil
 import            tempfile
+import            warnings
 
 import numpy   as np
 import            pytest
@@ -166,9 +167,12 @@ def test_loadVestLutFile():
         for i in range(4):
             f       = testfiles[i]
             d       = testdata[ i]
-            dnorm   = (d - d.min()) / (d.max() - d.min())
-            lutnorm = vest.loadVestLutFile(f)
-            lut     = vest.loadVestLutFile(f, normalise=False)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                dnorm   = (d - d.min()) / (d.max() - d.min())
+                lutnorm = vest.loadVestLutFile(f)
+                lut     = vest.loadVestLutFile(f, normalise=False)
 
             assert lut.shape     == d.shape
             assert lutnorm.shape == dnorm.shape
