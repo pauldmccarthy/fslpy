@@ -241,7 +241,7 @@ def _eval_coord_voxel_query(
         else:
             exp = [q_type, squery, 'No label']
 
-        _stdout = re.sub('\s+', ' ', stdout).strip()
+        _stdout = re.sub(r'\s+', ' ', stdout).strip()
         assert _stdout.strip() == ' '.join(exp).strip()
 
     def evalProbNormalOutput(expprops):
