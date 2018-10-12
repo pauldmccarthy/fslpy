@@ -120,11 +120,11 @@ def enabled():
 
     cmd            = 'dcm2niix -h'
     versionPattern = re.compile(r'v'
-                                 '(?P<major>[0-9]+)\.'
-                                 '(?P<minor>[0-9]+)\.'
-                                 '(?P<year>[0-9]{4})'
-                                 '(?P<month>[0-9]{2})'
-                                 '(?P<day>[0-9]{2})')
+                                r'(?P<major>[0-9]+)\.'
+                                r'(?P<minor>[0-9]+)\.'
+                                r'(?P<year>[0-9]{4})'
+                                r'(?P<month>[0-9]{2})'
+                                r'(?P<day>[0-9]{2})')
 
     try:
         output = sp.check_output(cmd.split()).decode()

@@ -50,7 +50,7 @@ def getDTIFitDataPrefix(path):
     # Gather all of the existing file
     # prefixes into a dictionary of
     # prefix : [file list] mappings.
-    pattern  = '^(.*)_(?:V1|V2|V3|L1|L2|L3).*$'
+    pattern  = r'^(.*)_(?:V1|V2|V3|L1|L2|L3).*$'
     prefixes = {}
 
     for f in [f for flist in files for f in flist]:
