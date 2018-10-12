@@ -6,16 +6,27 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+* Simple built-in `.deprecated` decorator.
+
+
 Changed
 ^^^^^^^
 
 * Removed support for Python 2.7 and 3.4.
+* Minimum required version of ``nibabel`` is now 2.3.
+* The :class:`.Image` class now fully delegates to ``nibabel`` for managing
+  file handles.
+* Increased the minimum required version of ``dcm2niix``.
 
 
 Removed
 ^^^^^^^
 
-* Many deprecated items
+
+* Many deprecated items removed.
 
 
 1.12.0 (Sunday October 21st 2018)

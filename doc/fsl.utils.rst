@@ -6,6 +6,7 @@
 
    fsl.utils.assertions
    fsl.utils.cache
+   fsl.utils.deprecated
    fsl.utils.ensure
    fsl.utils.fslsub
    fsl.utils.idle
