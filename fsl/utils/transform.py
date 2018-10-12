@@ -34,9 +34,9 @@ And a few more functions are provided for working with vectors:
    normalise
 """
 
-import numpy        as np
-import numpy.linalg as linalg
-import collections
+import numpy           as np
+import numpy.linalg    as linalg
+import collections.abc as abc
 
 
 def invert(x):
@@ -94,7 +94,7 @@ def scaleOffsetXform(scales, offsets):
     :returns:     A ``numpy.float32`` array of size :math:`4 \\times 4`.
     """
 
-    oktypes = (collections.Sequence, np.ndarray)
+    oktypes = (abc.Sequence, np.ndarray)
 
     if not isinstance(scales,  oktypes): scales  = [scales]
     if not isinstance(offsets, oktypes): offsets = [offsets]
@@ -398,7 +398,7 @@ def axisBounds(shape,
     if axes is None:
         axes = [0, 1, 2]
 
-    elif not isinstance(axes, collections.Iterable):
+    elif not isinstance(axes, abc.Iterable):
         scalar = True
         axes   = [axes]
 
@@ -507,13 +507,13 @@ def _fillPoints(p, axes):
     or an ``N*2`` or ``N*3`` array.
     """
 
-    if not isinstance(p, collections.Iterable): p = [p]
+    if not isinstance(p, abc.Iterable): p = [p]
 
     p = np.array(p)
 
     if axes is None: return p
 
-    if not isinstance(axes, collections.Iterable): axes = [axes]
+    if not isinstance(axes, abc.Iterable): axes = [axes]
 
     if p.ndim == 1:
         p = p.reshape((len(p), 1))

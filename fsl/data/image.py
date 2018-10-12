@@ -814,7 +814,8 @@ class Image(Nifti):
         if indexed is not False:
             warnings.warn('The indexed argument is deprecated '
                           'and has no effect',
-                          category=DeprecationWarning)
+                          category=DeprecationWarning,
+                          stacklevel=2)
 
         if loadData:
             threaded = False

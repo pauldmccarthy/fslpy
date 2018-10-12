@@ -37,9 +37,10 @@ get their definitions straight:
 """
 
 
-import logging
-import collections
-import itertools as it
+import                    logging
+import                    collections
+import collections.abc as abc
+import itertools       as it
 
 import numpy     as np
 import nibabel   as nib
@@ -689,7 +690,7 @@ class ImageWrapper(notifier.Notifier):
 
             # If we are slicing a scalar, the
             # assigned value has to be scalar.
-            if expNdims == 0 and isinstance(values, collections.Sequence):
+            if expNdims == 0 and isinstance(values, abc.Sequence):
 
                 if len(values) > 1:
                     raise IndexError('Invalid assignment: [{}] = {}'.format(
@@ -828,7 +829,7 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
     # The sliceobj could be a single sliceobj
     # or integer, instead of a tuple
-    if not isinstance(sliceobj, collections.Sequence):
+    if not isinstance(sliceobj, abc.Sequence):
         sliceobj = [sliceobj]
 
     # Turn e.g. array[6] into array[6, :, :]
