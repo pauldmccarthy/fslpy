@@ -5,7 +5,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module defines the ``extract_noise`` script, for extracting component
+"""This module defines the ``fsl_ents`` script, for extracting component
 time series from a MELODIC ``.ica`` directory.
 """
 
@@ -28,7 +28,7 @@ with warnings.catch_warnings():
 
 
 DTYPE = np.float64
-name  = "extract_noise"
+name  = "fsl_ents"
 desc  = 'Extract component time series from a MELODIC .ica directory'
 usage = """
 {name}: {desc}
@@ -204,7 +204,7 @@ def loadConfoundFiles(conffiles, npts):
 
 
 def main(argv=None):
-    """Entry point for the ``extract_noise`` script.
+    """Entry point for the ``fsl_ents`` script.
 
     Identifies component time series to extract, extracts them, loads extra
     confound files, and saves them out to a file.

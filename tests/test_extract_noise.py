@@ -95,7 +95,7 @@ def test_extract_noise():
         melmix = np.random.randint(1, 100, (100, 20))
         np.savetxt('melodic_mix', melmix)
 
-        sys.argv = ['extract_noise', td] + '-o out.txt 1 2 3'.split()
+        sys.argv = ['fsl_ents', td] + '-o out.txt 1 2 3'.split()
         extn.main()
         assert np.all(np.loadtxt('out.txt') == melmix[:, :3])
 

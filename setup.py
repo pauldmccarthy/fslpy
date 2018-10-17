@@ -124,7 +124,7 @@ setup(
             'imglob        = fsl.scripts.imglob:main',
             'atlasq        = fsl.scripts.atlasq:main',
             'atlasquery    = fsl.scripts.atlasq:atlasquery_emulation',
-            'extract_noise = fsl.scripts.extract_noise:main',
+            'fsl_ents = fsl.scripts.extract_noise:main',
         ]
     }
 )
