@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# test_extract_noise.py -
+# test_fsl_ents.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 import fsl.utils.tempdir         as tempdir
-import fsl.scripts.extract_noise as extn
+import fsl.scripts.fsl_ents as extn
 
 
 def test_genComponentIndexList():
@@ -87,7 +87,7 @@ def test_loadConfoundFiles():
             extn.loadConfoundFiles(conffiles, npts)
 
 
-def test_extract_noise():
+def test_fsl_ents():
 
     with tempdir.tempdir() as td:
 
@@ -95,7 +95,7 @@ def test_extract_noise():
         melmix = np.random.randint(1, 100, (100, 20))
         np.savetxt('melodic_mix', melmix)
 
-        sys.argv = ['extract_noise', td] + '-o out.txt 1 2 3'.split()
+        sys.argv = ['fsl_ents', td] + '-o out.txt 1 2 3'.split()
         extn.main()
         assert np.all(np.loadtxt('out.txt') == melmix[:, :3])
 
@@ -115,13 +115,13 @@ def test_extract_noise():
         assert np.all(np.loadtxt('out.txt') == exp)
 
 
-def test_extract_noise_usage():
+def test_fsl_ents_usage():
 
     with pytest.raises(SystemExit) as e:
         extn.main([])
     assert e.value.code == 0
 
-def test_extract_noise_badargs():
+def test_fsl_ents_badargs():
 
     with pytest.raises(SystemExit) as e:
         extn.main(['non-existent.ica', '1', '2', '3'])
