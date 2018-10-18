@@ -62,8 +62,10 @@ def loadLabelFile(filename,
     separated by commas:
 
       - The component index (starting from 1).
+
       - One or more labels for the component (multiple labels must be
         comma-separated).
+
       - ``'True'`` if the component has been classified as *bad*,
         ``'False'`` otherwise. This field is optional - if the last
         comma-separated token on a line is not equal (case-insensitive)
@@ -91,12 +93,15 @@ def loadLabelFile(filename,
                         file is returned.
 
     :returns: A tuple containing:
-                - The path to the melodic directory as specified in the label
-                  file
-                - A list of lists, one list per component, with each list
-                  containing the labels for the corresponding component.
-                - If ``returnIndices is True``, a list of the noisy component
-                  indices (starting from 1) that were specified in the file.
+
+               - The path to the melodic directory as specified in the label
+                 file
+
+               - A list of lists, one list per component, with each list
+                 containing the labels for the corresponding component.
+
+               - If ``returnIndices is True``, a list of the noisy component
+                 indices (starting from 1) that were specified in the file.
     """
 
     signalLabels = None
