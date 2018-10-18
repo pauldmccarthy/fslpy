@@ -61,8 +61,8 @@ def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('imain', 'fout', 'iout')
-@wutils.fileOrArray('datain')
+@wutils.fileOrImage('imain', 'fout', 'iout', outprefix='out')
+@wutils.fileOrArray('datain', outprefix='out')
 @wutils.fslwrapper
 def topup(imain, datain, **kwargs):
     """Wrapper for the ``topup`` command."""
@@ -75,6 +75,28 @@ def topup(imain, datain, **kwargs):
     asrt.assertIsNifti(imain)
 
     cmd  = ['topup', '--imain={}'.format(imain), '--datain={}'.format(datain)]
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+
+    return cmd
+
+@wutils.fileOrImage('imain', 'out')
+@wutils.fileOrArray('datain')
+@wutils.fslwrapper
+def applytopup(imain, datain, index, **kwargs):
+    """Wrapper for the ``applytopup`` command."""
+
+    valmap = {
+        'verbose' : wutils.SHOW_IF_TRUE
+    }
+
+    asrt.assertFileExists(datain)
+    asrt.assertIsNifti(imain)
+
+    cmd  = [
+        'applytopup', '--imain={}'.format(imain), 
+        '--inindex={}'.format(index), 
+        '--datain={}'.format(datain),
+    ]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
