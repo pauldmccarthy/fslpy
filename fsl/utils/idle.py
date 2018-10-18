@@ -85,7 +85,7 @@ import atexit
 import logging
 import functools
 import threading
-import collections.abc as abc
+import collections
 
 try:                import queue
 except ImportError: import Queue as queue
@@ -586,7 +586,7 @@ def wait(threads, task, *args, **kwargs):
 
     direct = kwargs.pop('wait_direct', False)
 
-    if not isinstance(threads, abc.Sequence):
+    if not isinstance(threads, collections.Sequence):
         threads = [threads]
 
     haveWX = fslplatform.haveGui
