@@ -353,20 +353,22 @@ def test_run_logcmd():
     exit 0
     """).strip()
 
-    expstdout = './script.sh 1 2 3\noutput 1 2 3\n'
+    expcmd = './script.sh 1 2 3\n'
+    expstdout = 'output 1 2 3\n'
 
     with tempdir.tempdir():
         mkexec('script.sh', test_script)
-        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
-        assert stdout == expstdout
-
-        mkexec('script.sh', test_script)
-        stdout = run.run('./script.sh 1 2 3', log={'cmd' : True})
-        assert stdout == expstdout
 
         with open('my_stdout', 'wt') as stdoutf:
             stdout = run.run('./script.sh 1 2 3',
-                             log={'cmd' : True, 'stdout' : stdoutf})
+                             log={'cmd' : stdoutf})
 
         assert stdout                         == expstdout
-        assert open('my_stdout', 'rt').read() == expstdout
+        assert open('my_stdout', 'rt').read() == expcmd
+
+        with open('my_stdout', 'wt') as stdoutf:
+            stdout = run.run('./script.sh 1 2 3',
+                             log={'cmd' : stdoutf, "stdout" : stdoutf})
+
+        assert stdout                         == expstdout
+        assert open('my_stdout', 'rt').read() == expcmd + expstdout
