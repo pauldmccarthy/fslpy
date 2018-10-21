@@ -130,7 +130,7 @@ def patchVersion(filename, newversion):
     with open(filename, 'rt') as f:
         lines = f.readlines()
 
-    pattern = re.compile('^__version__ *= *\'.*\' *$')
+    pattern = re.compile(r'^__version__ *= *\'.*\' *$')
 
     for i, line in enumerate(lines):
         if pattern.match(line):

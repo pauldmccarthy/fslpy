@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.12.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The ``extract_noise`` script has been renamed to :mod:`.fsl_ents`.
+* Increased the minimum required version of ``dcm2niix`` in the
+  :mod:`fsl.data.dicom` module.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The ``extract_noise`` script.
+
+
 1.11.1 (Friday September 14th 2018
 ----------------------------------
 
