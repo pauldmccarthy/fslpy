@@ -1,4 +1,4 @@
 six==1.*
 numpy==1.*
 scipy>=0.18
-nibabel>=2.3
+nibabel>=2.3.1
