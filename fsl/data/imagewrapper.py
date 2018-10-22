@@ -37,11 +37,10 @@ get their definitions straight:
 """
 
 
-import logging
-import collections
-import itertools as it
-
-import deprecation
+import                    logging
+import                    collections
+import collections.abc as abc
+import itertools       as it
 
 import numpy     as np
 import nibabel   as nib
@@ -691,7 +690,7 @@ class ImageWrapper(notifier.Notifier):
 
             # If we are slicing a scalar, the
             # assigned value has to be scalar.
-            if expNdims == 0 and isinstance(values, collections.Sequence):
+            if expNdims == 0 and isinstance(values, abc.Sequence):
 
                 if len(values) > 1:
                     raise IndexError('Invalid assignment: [{}] = {}'.format(
@@ -715,16 +714,6 @@ class ImageWrapper(notifier.Notifier):
 
         self.__image.get_data()[sliceobj] = values
         self.__updateDataRangeOnWrite(slices, values)
-
-
-@deprecation.deprecated(deprecated_in='1.7.0',
-                        removed_in='2.0.0',
-                        details='Moved to fsl.utils.naninfrange')
-def naninfrange(data):
-    """Deprecated - moved to :mod:`fsl.utils.naninfrange`. """
-
-    from fsl.utils.naninfrange import naninfrange
-    return naninfrange(data)
 
 
 def isValidFancySliceObj(sliceobj, shape):
@@ -766,15 +755,6 @@ def canonicalSliceObj(sliceobj, shape):
             sliceobj = sliceobj[:len(shape)]
 
         return nib.fileslice.canonical_slicers(sliceobj, shape)
-
-
-@deprecation.deprecated(deprecated_in='1.7.0',
-                        removed_in='2.0.0',
-                        details='moved to the fsl.data.image module')
-def canonicalShape(shape):
-    """Deprecated - moved to the :mod:`fsl.data.image` module. """
-    from fsl.data.image import canonicalShape
-    return canonicalShape(shape)
 
 
 def expectedShape(sliceobj, shape):
@@ -849,7 +829,7 @@ def sliceObjToSliceTuple(sliceobj, shape):
 
     # The sliceobj could be a single sliceobj
     # or integer, instead of a tuple
-    if not isinstance(sliceobj, collections.Sequence):
+    if not isinstance(sliceobj, abc.Sequence):
         sliceobj = [sliceobj]
 
     # Turn e.g. array[6] into array[6, :, :]

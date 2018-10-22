@@ -17,7 +17,6 @@ import os
 import os.path as op
 import sys
 import importlib
-import deprecation
 
 import fsl.utils.notifier as notifier
 
@@ -73,34 +72,6 @@ are running the Linux/GTK wx build.
 """
 
 
-@deprecation.deprecated(deprecated_in='1.2.2',
-                        removed_in='2.0.0',
-                        details='Use fsleyes_widgets.isalive instead')
-def isWidgetAlive(widget):
-    """Returns ``True`` if the given ``wx.Window`` object is "alive" (i.e.
-    has not been destroyed), ``False`` otherwise. Works in both wxPython
-    and wxPython/Phoenix.
-
-    .. warning:: Don't try to test whether a ``wx.MenuItem`` has been
-                 destroyed, as it will probably result in segmentation
-                 faults. Check the parent ``wx.Menu`` instead.
-    """
-
-    import wx
-
-    if platform.wxFlavour == platform.WX_PHOENIX:
-        excType = RuntimeError
-    elif platform.wxFlavour == platform.WX_PYTHON:
-        excType = wx.PyDeadObjectError
-
-    try:
-        widget.GetParent()
-        return True
-
-    except excType:
-        return False
-
-
 class Platform(notifier.Notifier):
     """The ``Platform`` class contains a handful of properties which contain
     information about the platform we are running on.
@@ -138,7 +109,6 @@ class Platform(notifier.Notifier):
         self.WX_MAC_COCOA  = WX_MAC_COCOA
         self.WX_MAC_CARBON = WX_MAC_CARBON
         self.WX_GTK        = WX_GTK
-        self.isWidgetAlive = isWidgetAlive
 
         self.__inSSHSession = False
         self.__inVNCSession = False

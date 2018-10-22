@@ -307,7 +307,6 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
             assert i.ndim       == expndims
-            assert i.ndims      == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
             assert i.dataSource == fslpath.addExt(path,
@@ -1048,9 +1047,9 @@ def test_image_resample(seed):
         fname = op.join(td, 'test.nii')
 
         # Random base image shapes
-        for i in range(50):
+        for i in range(25):
 
-            shape = np.random.randint(5, 100, 3)
+            shape = np.random.randint(5, 50, 3)
             make_random_image(fname, shape)
             img = fslimage.Image(fname, mmap=False)
 
@@ -1062,7 +1061,7 @@ def test_image_resample(seed):
             # Random resampled image shapes
             for j in range(10):
 
-                rshape        = np.random.randint(5, 100, 3)
+                rshape        = np.random.randint(5, 50, 3)
                 resampled, xf = img.resample(rshape, order=0)
 
                 img.save('base.nii.gz')

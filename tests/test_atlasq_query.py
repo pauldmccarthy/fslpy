@@ -241,7 +241,7 @@ def _eval_coord_voxel_query(
         else:
             exp = [q_type, squery, 'No label']
 
-        _stdout = re.sub('\s+', ' ', stdout).strip()
+        _stdout = re.sub(r'\s+', ' ', stdout).strip()
         assert _stdout.strip() == ' '.join(exp).strip()
 
     def evalProbNormalOutput(expprops):
@@ -442,7 +442,6 @@ def test_bad_mask(seed):
             atlas  = fslatlases.loadAtlas(
                 atlasID,
                 loadSummary=use_label,
-                indexed=True,
                 loadData=False,
                 calcRange=False)
             ashape = list(atlas.shape[:3])

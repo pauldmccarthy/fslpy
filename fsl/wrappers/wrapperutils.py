@@ -85,21 +85,22 @@ and returned::
 """
 
 
-import itertools as it
-import os.path   as op
-import              os
-import              re
-import              sys
-import              glob
-import              random
-import              string
-import              fnmatch
-import              inspect
-import              logging
-import              tempfile
-import              warnings
-import              functools
-import              collections
+import itertools       as it
+import os.path         as op
+import collections.abc as abc
+import                    os
+import                    re
+import                    sys
+import                    glob
+import                    random
+import                    string
+import                    fnmatch
+import                    inspect
+import                    logging
+import                    tempfile
+import                    warnings
+import                    functools
+
 
 import            six
 import nibabel as nib
@@ -282,7 +283,7 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
 
     # always returns a sequence
     def fmtval(val):
-        if     isinstance(val, collections.Sequence) and \
+        if     isinstance(val, abc.Sequence) and \
            not isinstance(val, six.string_types):
 
             val = [str(v) for v in val]

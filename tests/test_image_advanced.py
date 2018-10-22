@@ -57,7 +57,6 @@ def _test_image_indexed(threaded):
             filename,
             loadData=False,
             calcRange=False,
-            indexed=True,
             threaded=threaded)
 
         # First iteration through the image
@@ -71,6 +70,17 @@ def _test_image_indexed(threaded):
 
             assert img.dataRange == (0, vol)
         end1 = time.time()
+
+        # Double check that indexed_gzip is
+        # being used (the internal _opener
+        # attribute is not created until
+        # after the first data access)
+        try:
+            import indexed_gzip as igzip
+            assert isinstance(img.nibImage.dataobj._opener.fobj,
+                              igzip.IndexedGzipFile)
+        except ImportError:
+            pass
 
         # Second iteration through
         start2 = time.time()
@@ -108,7 +118,6 @@ def _test_image_indexed_read4D(threaded):
             filename,
             loadData=False,
             calcRange=False,
-            indexed=True,
             threaded=threaded)
 
         # Test reading slice through
@@ -125,6 +134,14 @@ def _test_image_indexed_read4D(threaded):
                 img.getImageWrapper().getTaskThread().waitUntilIdle()
 
             assert np.all(data == np.arange(nvols))
+
+        # double check we're indexing as expected
+        try:
+            import indexed_gzip as igzip
+            assert isinstance(img.nibImage.dataobj._opener.fobj,
+                              igzip.IndexedGzipFile)
+        except ImportError:
+            pass
 
 
 @pytest.mark.igziptest
@@ -150,12 +167,19 @@ def _test_image_indexed_save(threaded):
             filename,
             loadData=False,
             calcRange=False,
-            indexed=True,
             threaded=threaded)
 
         # access some data
         img[..., 0]
         img[..., 40]
+
+        # double check that igzip is being used
+        try:
+            import indexed_gzip as igzip
+            assert isinstance(img.nibImage.dataobj._opener.fobj,
+                              igzip.IndexedGzipFile)
+        except ImportError:
+            pass
 
         if threaded:
             img.getImageWrapper().getTaskThread().waitUntilIdle()
@@ -203,10 +227,8 @@ def _test_image_indexed_save(threaded):
 
 
 @pytest.mark.longtest
-@pytest.mark.igziptest
 def test_image_no_calcRange_threaded():   _test_image_no_calcRange(True)
 @pytest.mark.longtest
-@pytest.mark.igziptest
 def test_image_no_calcRange_unthreaded(): _test_image_no_calcRange(False)
 def _test_image_no_calcRange(threaded):
 
@@ -228,7 +250,6 @@ def _test_image_no_calcRange(threaded):
     # cal_min/max if it is unknown
     assert img.dataRange == (95, 643)
 
-
     for i in [0, 7, 40]:
         img[..., i]
         if threaded:
@@ -238,10 +259,8 @@ def _test_image_no_calcRange(threaded):
 
 
 @pytest.mark.longtest
-@pytest.mark.igziptest
 def test_image_calcRange_threaded():   _test_image_calcRange(True)
 @pytest.mark.longtest
-@pytest.mark.igziptest
 def test_image_calcRange_unthreaded(): _test_image_calcRange(False)
 def _test_image_calcRange(threaded):
 

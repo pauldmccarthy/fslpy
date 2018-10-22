@@ -32,7 +32,6 @@ import               re
 import               glob
 import               json
 import               logging
-import               deprecation
 
 import nibabel    as nib
 
@@ -78,38 +77,6 @@ class DicomImage(fslimage.Image):
     def dicomDir(self):
         """Returns the directory that the DICOM image data was loaded from. """
         return self.__dicomDir
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use metaKeys instead')
-    def keys(self):
-        """Deprecated - use :meth:`.Image.metaKeys`. """
-        return self.metaKeys()
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use metaValues instead')
-    def values(self):
-        """Deprecated - use :meth:`.Image.metaValues`. """
-        return self.metaValues()
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use metaItems instead')
-    def items(self):
-        """Deprecated - use :meth:`.Image.metaItems`. """
-        return self.metaItems()
-
-
-    @deprecation.deprecated(deprecated_in='1.6.0',
-                            removed_in='2.0.0',
-                            details='Use getMeta instead')
-    def get(self, *args, **kwargs):
-        """Deprecated - use :meth:`.Image.getMeta`. """
-        return self.getMeta(*args, **kwargs)
 
 
 @memoize.memoize

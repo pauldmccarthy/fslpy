@@ -208,33 +208,3 @@ def test_detect_ssh():
         p = fslplatform.Platform()
         assert not p.inSSHSession
         assert not p.inVNCSession
-
-
-@pytest.mark.wxtest
-def test_IsWidgetAlive():
-
-    import wx
-
-    passed = [False]
-    app    = wx.App()
-    frame  = wx.Frame(None)
-    btn    = wx.Button(frame)
-    frame.Show()
-
-    def runtest():
-
-        try:
-
-            passed[0] = fslplatform.isWidgetAlive(btn)
-
-            btn.Destroy()
-
-            passed[0] = passed[0] and (not fslplatform.isWidgetAlive(btn))
-        finally:
-            frame.Destroy()
-            app.ExitMainLoop()
-
-    wx.CallLater(500, runtest)
-    app.MainLoop()
-
-    assert passed[0]
