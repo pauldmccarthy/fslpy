@@ -34,13 +34,15 @@ import fsl.data.constants as constants
 import fsl.data.mesh      as fslmesh
 
 
-ALLOWED_EXTENSIONS = ['.surf.gii']
+# We include '.gii' here because not all surface
+# GIFTIs follow the file suffix convention.
+ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
 """List of file extensions that a file containing Gifti surface data
 is expected to have.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['GIFTI surface file']
+EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
 
 
