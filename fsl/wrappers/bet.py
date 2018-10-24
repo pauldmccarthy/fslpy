@@ -62,7 +62,7 @@ def bet(input, output, **kwargs):
     # passed as a Python sequence
     centre = kwargs.pop("c", None)
     if centre is not None:
-        cmd += ['c', ] + list(centre)
+        cmd += ['-c', ] + [str(v) for v in centre]
 
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
