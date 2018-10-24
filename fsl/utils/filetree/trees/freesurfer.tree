@@ -1,0 +1,76 @@
+{subject} (directory)
+    orig (struct_dir)
+        001.mgz (vol1)
+        002.mgz (vol2)
+        T2raw.mgz
+        FLAIRraw.mgz
+        rawavg.mgz
+        orig.mgz
+        orig_nu.mgz
+        transforms
+            talairach.auto.xfm (talairach_auto)
+            talairach.xfm (talairach_xfm)
+            talairach_avi.log
+            talairach_with_skull.lta
+            talairach.lta (talairach_lta)
+            talairach.m3z (talairach_m3z)
+            T2raw.lta (T2raw_lta)
+        nu.mgz
+        T1.mgz
+        brainmask.auto.mgz (brainmask_auto)
+        brainmask.mgz
+        norm.mgz
+        brain.mgz
+        brain.finalsurfs.mgz (final_surfs)
+        wm.seg.mgz (wm_seg)
+        wm.asegedit.mgz (wm_asegedit)
+        wm.mgz
+        filled.mgz
+        filled-pretess255.mgz
+        filled-pretess127.mgz
+        ribbon.mgz (vol_ribbon)
+        wmparc.mgz
+
+        T2.prenorm.mgz (T2_prenorm)
+        T2.norm.mgz (T2_norm)
+        T2.mgz
+
+        {hemi}h.orig.nofix (orig_nofix)
+        {hemi}h.smoothwm.nofix (smoothwm_nofix)
+        {hemi}h.inflated.nofix (inflated_nofix)
+        {hemi}h.qsphere.nofix (qsphere_nofix)
+        {hemi}h.orig (white)
+        {hemi}h.inflated (inflated)
+        {hemi}h.sphere (sphere)
+        {hemi}h.sphere.reg (sphere_reg)
+        {hemi}h.white.preaparc (white_preaparc)
+        {hemi}h.curv (curv)
+        {hemi}h.sulc (sulc)
+        {hemi}h.area (area)
+        {hemi}h.jacobian_white (jacobian_white)
+        {hemi}h.avg_curv (avg_curv)
+        {hemi}h.cortex.label (cortex_label)
+        {hemi}h.smoothwm (smoothwm)
+        {hemi}h.qsphere (qsphere)
+
+        {hemi}h.pial (pial)
+        {hemi}h.woT2.pial (woT2_pial)
+        {hemi}h.curv.pial (curv_pial)
+        {hemi}h.area.pial (area_pial)
+        {hemi}h.thickness (thickness)
+        {hemi}h.ribbon.mgz (surf_ribbon)
+
+        aseg.auto_noCCseg.mgz (aseg_auto_noCCseg)
+        aseg.auto.mgz (aseg_auto)
+        aseg.presurf.mgz (aseg_presurf)
+        aparc+aseg.mgz (aparc_aseg)
+        aparc.a2009s+aseg.mgz (aparc_a2009s_aseg)
+        aseg.mgz
+
+        label/
+            {hemi}h.aparc.annot (aparc.annot)
+
+        stats/
+            aseg.stats (aseg_stats)
+            wmparc.stats (wmparc_stats)
+

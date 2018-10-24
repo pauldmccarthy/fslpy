@@ -1,0 +1,4 @@
+parent
+    opt_layer_test
+        {p1}_{p2}.nii.gz (fn)
+

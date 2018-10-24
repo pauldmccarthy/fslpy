@@ -1,0 +1,7 @@
+dir1
+    ->eddy basename=1 (sub1)
+    dir2
+        ->eddy basename=2 (sub2)
+    ->eddy basename=1b (sub1b)
+->eddy basename=0 (sub0)
+->eddy basename=subvar_{subvar} (subvar)

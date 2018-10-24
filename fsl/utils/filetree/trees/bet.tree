@@ -1,0 +1,3 @@
+{name}.nii.gz (input)
+{name}_brain.nii.gz (output)
+{name}_brain_mask.nii.gz (mask)

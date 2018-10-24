@@ -111,6 +111,7 @@ setup(
 
     install_requires=install_requires,
     extras_require=extra_requires,
+    package_data={'fsl': ['utils/filetree/trees/*']},
 
     test_suite='tests',
 

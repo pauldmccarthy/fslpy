@@ -1,0 +1,11 @@
+{basename} (basename)
+{basename}.nii.gz (input)
+{basename}_mixeltype.nii.gz (mixeltype)
+{basename}_pve_{tissue_idx}.nii.gz (pve)
+{basename}_pveseg.nii.gz (pveseg)
+{basename}_seg.nii.gz (seg)
+
+# for T1-weighted images and 3 classes:
+{basename}_pve_0.nii.gz (csf_pve)
+{basename}_pve_1.nii.gz (gm_pve)
+{basename}_pve_2.nii.gz (wm_pve)

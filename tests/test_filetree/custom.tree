@@ -1,0 +1,4 @@
+parent
+    [opt_layer_{opt}]
+        sub_file.nii.gz
+        opt_file_{opt}.nii.gz (opt_file)

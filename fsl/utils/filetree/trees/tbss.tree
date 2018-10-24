@@ -1,0 +1,21 @@
+FA
+    {subject}_FA.nii.gz (eroded)
+    {subject}_FA_mask.nii.gz (mask)
+    {subject}_FA_to_target.mat (affine2std)
+    {subject}_FA_to_target.nii.gz (eroded_std)
+    {subject}_FA_to_target_warp.msf (warp2std_msf)
+    {subject}_FA_to_target_warp.nii.gz (warp2std)
+    {subject}_FA_to_target_warp_inv.nii.gz (warp2std_inv)
+    slicesdir
+        index.html (eroded_html)
+origdata
+    {subject}.nii.gz (input)
+stats
+    all_FA.nii.gz
+    all_FA_skeletonised.nii.gz
+    mean_FA.nii.gz
+    mean_FA_mask.nii.gz
+    mean_FA_skeleton.nii.gz
+    mean_FA_skeleton_mask.nii.gz
+    mean_FA_skeleton_mask_dst.nii.gz
+    thresh.txt

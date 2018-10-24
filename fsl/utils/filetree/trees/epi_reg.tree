@@ -1,0 +1,6 @@
+{basename} (basename)
+{basename}.mat (transform)
+{basename}.nii.gz (output)
+{basename}_fast_wmedge.nii.gz (wmedge)
+{basename}_fast_wmseg.nii.gz (wmseg)
+{basename}_init.mat (init_transform)

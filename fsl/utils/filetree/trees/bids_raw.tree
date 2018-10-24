@@ -1,0 +1,30 @@
+ext=.nii.gz
+
+dataset_description.json
+participants.tsv
+README
+CHANGES
+sub-{participant}
+    [ses-{session}]
+        sub-{participant}_sessions.tsv (sessions_tsv)
+        anat (anat_dir)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_rec-{rec}][_run-{run_index}]_{modality}{ext} (anat_image)
+        func (func_dir)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_bold{ext}  (task_image)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_sbref{ext} (task_sbref)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_events.tsv  (task_events)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}][_recording-{recording}]_physio{ext} (task_physio)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}][_recording-{recording}]_stim{ext} (task_stim)
+        dwi (dwi_dir)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_dwi{ext} (dwi_image)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_dwi.bval (bval)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_dwi.bvec (bvec)
+        fmap (fmap_dir)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_phasediff{ext} (fmap_phasediff)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_magnitude{ext} (fmap_mag)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_magnitude1{ext} (fmap_mag1)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_magnitude2{ext} (fmap_mag2)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_phase1{ext} (fmap_phase1)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_phase2{ext} (fmap_phase2)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_fieldmap{ext} (fmap)
+            sub-{participant}[_ses-{session}][_acq-{acq}]_dir-{dir}[_run-{run_index}]_epi{ext} (fmap_epi)

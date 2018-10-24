@@ -1,0 +1,40 @@
+bvals
+bvecs
+commands.txt
+dyads1.nii.gz
+dyads1_dispersion.nii.gz
+dyads2.nii.gz
+dyads2_dispersion.nii.gz
+dyads2_thr0.05.nii.gz (dyads2_thr0.05)
+dyads2_thr0.05_modf2.nii.gz (dyads2_thr0.05_modf2)
+dyads3.nii.gz
+dyads3_dispersion.nii.gz
+dyads3_thr0.05.nii.gz (dyads3_thr0.05)
+dyads3_thr0.05_modf3.nii.gz (dyads3_thr0.05_modf3)
+mean_Rsamples.nii.gz
+mean_S0samples.nii.gz
+mean_d_stdsamples.nii.gz
+mean_dsamples.nii.gz
+mean_f1samples.nii.gz
+mean_f2samples.nii.gz
+mean_f3samples.nii.gz
+mean_fsumsamples.nii.gz
+mean_ph1samples.nii.gz
+mean_ph2samples.nii.gz
+mean_ph3samples.nii.gz
+mean_tausamples.nii.gz
+mean_th1samples.nii.gz
+mean_th2samples.nii.gz
+mean_th3samples.nii.gz
+merged_f1samples.nii.gz
+merged_f2samples.nii.gz
+merged_f3samples.nii.gz
+merged_ph1samples.nii.gz
+merged_ph2samples.nii.gz
+merged_ph3samples.nii.gz
+merged_th1samples.nii.gz
+merged_th2samples.nii.gz
+merged_th3samples.nii.gz
+nodif_brain_mask.nii.gz
+xfms
+    eye.mat
