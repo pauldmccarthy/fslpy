@@ -153,7 +153,7 @@ def cmdwrapper(func):
     """
     def wrapper(*args, **kwargs):
         stdout = kwargs.pop('stdout', True)
-        stderr = kwargs.pop('stderr', False)
+        stderr = kwargs.pop('stderr', True)
         exitcode = kwargs.pop('exitcode', False)
         submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
@@ -169,7 +169,7 @@ def fslwrapper(func):
     """
     def wrapper(*args, **kwargs):
         stdout = kwargs.pop('stdout', True)
-        stderr = kwargs.pop('stderr', False)
+        stderr = kwargs.pop('stderr', True)
         exitcode = kwargs.pop('exitcode', False)
         submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
