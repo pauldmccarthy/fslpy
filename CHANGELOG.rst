@@ -9,6 +9,8 @@ order.
 Added
 ^^^^^
 
+* New :mod:`fsl.utils.filetree` package for defining and working with
+  file/directory templates.
 * Simple built-in `.deprecated` decorator.
 
 
@@ -19,7 +21,6 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
-* Increased the minimum required version of ``dcm2niix``.
 
 
 Removed
