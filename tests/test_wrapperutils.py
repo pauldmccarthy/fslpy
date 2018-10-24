@@ -598,7 +598,7 @@ def test_fslwrapper():
     def func(a, b):
         return ['func', str(a), str(b)]
 
-    with run.dryrun(), mockFSLDIR() as fsldir:
+    with run.dryrun(), mockFSLDIR(bin=('func',)) as fsldir:
         expected = '{} 1 2'.format(op.join(fsldir, 'bin', 'func'))
         assert func(1, 2)[0] == expected
 
