@@ -1005,3 +1005,43 @@ def fileOrArray(*args, **kwargs):
         return _update_wrapper(wrapper, func)
 
     return decorator
+
+def fileOrText(*args, **kwargs):
+    """Decorator which can be used to ensure that any text output (e.g. log file are saved
+    to text files, and output files can be loaded and returned as strings.
+    """
+
+    def prepIn(workdir, name, val):
+
+        infile = None
+
+        if isinstance(val, six.string_types):
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
+                f.write(val)
+                infile = f.name
+        return infile
+
+    def prepOut(workdir, name, val):
+        return op.join(workdir, '{}.txt'.format(name))
+
+    def load(path):
+        try:
+            with open(path, "r") as f:
+                return f.read()
+        except Exception: return None
+
+    def decorator(func):
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslpath.removeExt,
+                           *args,
+                           **kwargs)
+
+        def wrapper(*args, **kwargs):
+            return fot(*args, **kwargs)
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator
