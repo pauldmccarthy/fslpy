@@ -2,6 +2,7 @@ basename = eddy_output
 
 {basename} (basename)
 {basename}.eddy_movement_rms (movement_rms)
+{basename}.eddy_movement_over_time (movement_over_time)
 {basename}.eddy_outlier_map (outlier_map)
 {basename}.eddy_outlier_n_sqr_stdev_map (outlier_n_sqr_stdev_map)
 {basename}.eddy_outlier_n_stdev_map (outlier_n_stdev_map)
@@ -11,4 +12,5 @@ basename = eddy_output
 {basename}.eddy_post_eddy_shell_alignment_parameters (shell_alignment_parameters)
 {basename}.eddy_restricted_movement_rms (restricted_movement_rms)
 {basename}.eddy_rotated_bvecs (rotated_bvecs)
+{basename}.eddy_output_mask.nii.gz (output_mask)
 {basename}.nii.gz (image)
