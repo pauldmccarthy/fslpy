@@ -61,6 +61,7 @@ def main(argv=None):
         return 1
 
     try:
+        srcs = [fslimage.fixExt(s) for s in srcs]
         srcs = fslpath.removeDuplicates(
             srcs,
             allowedExts=fslimage.ALLOWED_EXTENSIONS,
