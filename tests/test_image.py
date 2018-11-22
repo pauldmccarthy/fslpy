@@ -504,6 +504,31 @@ def test_defaultExt():
         assert fslimage.defaultExt() == e
 
 
+def test_fixExt():
+    with tempdir():
+
+        # error if if file doesn't exist
+        with pytest.raises(fslpath.PathError):
+            fslimage.fixExt('file.nii.gz')
+
+        with open('file.nii', 'w') as f:
+            f.write('1')
+        assert fslimage.fixExt('file.nii.gz') == 'file.nii'
+        assert fslimage.fixExt('file.nii')    == 'file.nii'
+
+        with open('file.nii.gz', 'w') as f:
+            f.write('1')
+
+        assert fslimage.fixExt('file.nii.gz') == 'file.nii.gz'
+        assert fslimage.fixExt('file.nii')    == 'file.nii'
+
+        os.remove('file.nii')
+        os.remove('file.nii.gz')
+        with open('file.nii.gz', 'w') as f:
+            f.write('1')
+        assert fslimage.fixExt('file.nii') == 'file.nii.gz'
+
+
 def  test_Image_orientation_analyze_neuro(): _test_Image_orientation(0, 'neuro')
 def  test_Image_orientation_analyze_radio(): _test_Image_orientation(0, 'radio')
 def  test_Image_orientation_nifti1_neuro():  _test_Image_orientation(1, 'neuro')
