@@ -4,6 +4,7 @@
 #
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
+# Author: Martin Craig <martin.craig@eng.ox.a.uk>
 #
 """This module provides wrapper functions for the FSL `TOPUP
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup>`_ and `EDDY
@@ -15,6 +16,7 @@ estimation and eddy-current distortion correction.
 
    eddy_cuda
    topup
+   applytopup
 """
 
 
@@ -93,8 +95,8 @@ def applytopup(imain, datain, index, **kwargs):
     asrt.assertIsNifti(imain)
 
     cmd  = [
-        'applytopup', '--imain={}'.format(imain), 
-        '--inindex={}'.format(index), 
+        'applytopup', '--imain={}'.format(imain),
+        '--inindex={}'.format(index),
         '--datain={}'.format(datain),
     ]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)

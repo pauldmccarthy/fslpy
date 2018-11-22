@@ -45,7 +45,11 @@ def fast(imgs, out='fast', **kwargs):
     }
 
     cmd  = ['fast', '-v', '--out=%s' % out]
-    cmd += wutils.applyArgStyle('--=', valmap=valmap, argmap=argmap, singlechar_args=True, **kwargs)
+    cmd += wutils.applyArgStyle('--=',
+                                valmap=valmap,
+                                argmap=argmap,
+                                singlechar_args=True,
+                                **kwargs)
     cmd += imgs
 
     return cmd

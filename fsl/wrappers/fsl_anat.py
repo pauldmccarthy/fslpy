@@ -46,6 +46,10 @@ def fsl_anat(img, out='fsl_anat', **kwargs):
     if smoothing is not None:
         cmd += ['-s', str(smoothing)]
 
-    cmd += wutils.applyArgStyle('--=', valmap=valmap, argmap=argmap, singlechar_args=True, **kwargs)
+    cmd += wutils.applyArgStyle('--=',
+                                valmap=valmap,
+                                argmap=argmap,
+                                singlechar_args=True,
+                                **kwargs)
 
     return cmd
