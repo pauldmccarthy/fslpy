@@ -11,7 +11,7 @@ Added
 
 * New :mod:`fsl.utils.filetree` package for defining and working with
   file/directory templates.
-* Simple built-in `.deprecated` decorator.
+* Simple built-in :mod:`.deprecated` decorator.
 
 
 Changed
@@ -21,6 +21,14 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
+
+
+Fixed
+^^^^^
+
+
+* The ``immv`` and ``imcp`` scripts now accept incorrect file extensions
+  on input arguments.
 
 
 Removed
