@@ -33,12 +33,23 @@ def fast(imgs, out='fast', **kwargs):
 
     asrt.assertIsNifti(*imgs)
 
+    valmap = {
+        'nobias' : wutils.SHOW_IF_TRUE,
+        'verbose' : wutils.SHOW_IF_TRUE,
+        'Prior' : wutils.SHOW_IF_TRUE,
+        'segments' : wutils.SHOW_IF_TRUE,
+    }
+
     argmap = {
         'n_classes' : 'class',
     }
 
     cmd  = ['fast', '-v', '--out=%s' % out]
-    cmd += wutils.applyArgStyle('--=', argmap=argmap, **kwargs)
+    cmd += wutils.applyArgStyle('--=',
+                                valmap=valmap,
+                                argmap=argmap,
+                                singlechar_args=True,
+                                **kwargs)
     cmd += imgs
 
     return cmd

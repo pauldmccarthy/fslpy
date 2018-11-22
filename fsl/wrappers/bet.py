@@ -4,6 +4,7 @@
 #
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
+# Author: Martin Craig <martin.craig@eng.ox.ac.uk>
 #
 """This module provides the :func:`bet` function, a wrapper for the FSL
 `BET <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET>`_ command.
@@ -35,6 +36,7 @@ def bet(input, output, **kwargs):
         'robust'        : 'R',
         'fracintensity' : 'f',
         'seg'           : 'n',
+        'centre'        : 'c',
     }
 
     valmap = {
@@ -55,6 +57,14 @@ def bet(input, output, **kwargs):
     }
 
     cmd  = ['bet', input, output]
+
+    # The 'centre' argument requires three co-ordinates and can't be passed
+    # as a single value, so needs to be handled separately. Assume it is
+    # passed as a Python sequence
+    centre = kwargs.pop("c", None)
+    if centre is not None:
+        cmd += ['-c', ] + [str(v) for v in centre]
+
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd
