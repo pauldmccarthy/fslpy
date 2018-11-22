@@ -11,4 +11,4 @@ basename = dti
 {basename}_L2.nii.gz (L2)
 {basename}_L3.nii.gz (L3)
 
-{basename}_MK.nii.gz (MK)
+{basename}_kurt.nii.gz (kurt)
