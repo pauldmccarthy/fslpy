@@ -39,7 +39,7 @@ def checkResult(cmd, base, args, stripdir=None):
 
 
 def test_bet():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('bet',)) as fsldir:
         bet      = op.join(fsldir, 'bin', 'bet')
         result   = fw.bet('input', 'output', mask=True, c=(10, 20, 30))
         expected = (bet + ' input output', ('-m', '-c 10 20 30'))
@@ -47,7 +47,7 @@ def test_bet():
 
 
 def test_robustfov():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('robustfov',)) as fsldir:
         rfov     = op.join(fsldir, 'bin', 'robustfov')
         result   = fw.robustfov('input', 'output', b=180)
         expected = (rfov + ' -i input', ('-r output', '-b 180'))
@@ -55,7 +55,7 @@ def test_robustfov():
 
 
 def test_eddy_cuda():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('eddy_cuda',)) as fsldir:
         eddy     = op.join(fsldir, 'bin', 'eddy_cuda')
         result   = fw.eddy_cuda('imain', 'mask', 'index', 'acqp',
                                 'bvecs', 'bvals', 'out', dont_mask_output=True)
@@ -72,7 +72,7 @@ def test_eddy_cuda():
 
 
 def test_topup():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('topup',)) as fsldir:
         topup    = op.join(fsldir, 'bin', 'topup')
         result   = fw.topup('imain', 'datain', minmet=1)
         expected = topup + ' --imain=imain --datain=datain --minmet=1'
@@ -80,7 +80,7 @@ def test_topup():
 
 
 def test_flirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('flirt',)) as fsldir:
         flirt    = op.join(fsldir, 'bin', 'flirt')
         result   = fw.flirt('src', 'ref', usesqform=True, anglerep='euler')
         expected = (flirt + ' -in src -ref ref',
@@ -89,7 +89,7 @@ def test_flirt():
 
 
 def test_applyxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('flirt',)) as fsldir:
         flirt    = op.join(fsldir, 'bin', 'flirt')
         result   = fw.applyxfm('src', 'ref', 'mat', 'out', interp='trilinear')
         expected = (flirt + ' -in src -ref ref',
@@ -101,7 +101,7 @@ def test_applyxfm():
 
 
 def test_invxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convert_xfm',)) as fsldir:
         cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
         result   = fw.invxfm('mat', 'output')
         expected = cnvxfm + ' -omat output -inverse mat'
@@ -109,7 +109,7 @@ def test_invxfm():
 
 
 def test_concatxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convert_xfm',)) as fsldir:
         cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
         result   = fw.concatxfm('mat1', 'mat2', 'output')
         expected = cnvxfm + ' -omat output -concat mat2 mat1'
@@ -117,7 +117,7 @@ def test_concatxfm():
 
 
 def test_mcflirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('mcflirt',)) as fsldir:
         mcflirt  = op.join(fsldir, 'bin', 'mcflirt')
         result   = fw.mcflirt('input', out='output', cost='normcorr', dof=12)
         expected = (mcflirt + ' -in input',
@@ -128,28 +128,29 @@ def test_mcflirt():
 
 
 def test_fnirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fnirt',)) as fsldir:
         fnirt    = op.join(fsldir, 'bin', 'fnirt')
-        result   = fw.fnirt('src', 'ref', iout='iout', fout='fout',
+        result   = fw.fnirt('src', ref='ref', iout='iout', fout='fout',
                             subsamp=(8, 6, 4, 2))
-        expected = (fnirt + ' --in=src --ref=ref',
-                    ('--iout=iout',
+        expected = (fnirt + ' --in=src',
+                    ('--ref=ref',
+                     '--iout=iout',
                      '--fout=fout',
                      '--subsamp=8,6,4,2'))
         assert checkResult(result.output[0], *expected)
 
 
 def test_applywarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('applywarp',)) as fsldir:
         applywarp = op.join(fsldir, 'bin', 'applywarp')
-        result    = fw.applywarp('src', 'ref', 'out', 'warp', abs=True, super=True)
-        expected  = (applywarp + ' --in=src --ref=ref --out=out --warp=warp',
-                     ('--abs', '--super'))
+        result    = fw.applywarp('src', 'ref', 'out', warp='warp', abs=True, super=True)
+        expected  = (applywarp + ' --in=src --ref=ref --out=out',
+                     ('--warp=warp', '--abs', '--super'))
         assert checkResult(result.output[0], *expected)
 
 
 def test_invwarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('invwarp',)) as fsldir:
         invwarp  = op.join(fsldir, 'bin', 'invwarp')
         result   = fw.invwarp('warp', 'ref', 'out',
                               rel=True, noconstraint=True)
@@ -159,16 +160,16 @@ def test_invwarp():
 
 
 def test_convertwarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convertwarp',)) as fsldir:
         cnvwarp  = op.join(fsldir, 'bin', 'convertwarp')
-        result   = fw.convertwarp('out', 'ref', absout=True, jacobian=True)
+        result   = fw.convertwarp('out', 'ref', absout=True, jacobian='jacobian')
         expected = (cnvwarp + ' --ref=ref --out=out',
-                     ('--absout', '--jacobian'))
+                     ('--absout', '--jacobian=jacobian'))
         assert checkResult(result.output[0], *expected)
 
 
 def test_fugue():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fugue',)) as fsldir:
         fugue    = op.join(fsldir, 'bin', 'fugue')
         result   = fw.fugue(input='input', warp='warp',
                             median=True, dwell=10)
@@ -181,7 +182,7 @@ def test_fugue():
 
 
 def test_sigloss():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('sigloss',)) as fsldir:
         sigloss  = op.join(fsldir, 'bin', 'sigloss')
         result   = fw.sigloss('input', 'sigloss', mask='mask', te=0.5)
         expected = (sigloss + ' --in input --sigloss sigloss',
@@ -190,7 +191,7 @@ def test_sigloss():
 
 
 def test_melodic():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('melodic',)) as fsldir:
         melodic  = op.join(fsldir, 'bin', 'melodic')
         result   = fw.melodic('input', dim=50, mask='mask', Oall=True)
         expected = (melodic + ' --in=input',
@@ -199,7 +200,7 @@ def test_melodic():
 
 
 def test_fsl_regfilt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_regfilt',)) as fsldir:
         regfilt  = op.join(fsldir, 'bin', 'fsl_regfilt')
         result   = fw.fsl_regfilt('input', 'output', 'design',
                                   filter=(1, 2, 3, 4), vn=True)
@@ -210,7 +211,7 @@ def test_fsl_regfilt():
 
 
 def test_fslreorient2std():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslreorient2std',)) as fsldir:
         r2std    = op.join(fsldir, 'bin', 'fslreorient2std')
         result   = fw.fslreorient2std('input', 'output')
         expected = r2std + ' input output'
@@ -218,7 +219,7 @@ def test_fslreorient2std():
 
 
 def test_fslroi():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslroi',)) as fsldir:
         fslroi   = op.join(fsldir, 'bin', 'fslroi')
 
         result   = fw.fslroi('input', 'output', 1, 10)
@@ -235,7 +236,7 @@ def test_fslroi():
 
 
 def test_slicer():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('slicer',)) as fsldir:
         slicer   = op.join(fsldir, 'bin', 'slicer')
         result   = fw.slicer('input1', 'input2', i=(20, 100), x=(20, 'x.png'))
         expected = slicer + ' input1 input2 -i 20 100 -x 20 x.png'
@@ -243,7 +244,7 @@ def test_slicer():
 
 
 def test_cluster():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('cluster',)) as fsldir:
         cluster  = op.join(fsldir, 'bin', 'cluster')
         result   = fw.cluster('input', 'thresh',
                               fractional=True, osize='osize')
@@ -253,7 +254,7 @@ def test_cluster():
 
 
 def test_fslmaths():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslmaths',)) as fsldir:
         cmd    = op.join(fsldir, 'bin', 'fslmaths')
         result = fw.fslmaths('input') \
             .abs().bin().binv().recip().Tmean().Tstd().Tmin().Tmax() \
@@ -274,7 +275,7 @@ def test_fslmaths():
         # TODO test LOAD output
 
 def test_fast():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR() as fsldir:
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fast',)) as fsldir:
 
         cmd = op.join(fsldir, 'bin', 'fast')
 

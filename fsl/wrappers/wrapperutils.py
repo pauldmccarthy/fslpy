@@ -153,11 +153,13 @@ def cmdwrapper(func):
     :func:`fsl.utils.run.run` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
-        submit = kwargs.pop('submit', None)
+        stdout = kwargs.pop('stdout', True)
         stderr = kwargs.pop('stderr', True)
+        exitcode = kwargs.pop('exitcode', False)
+        submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.run(cmd, stderr=stderr, log=log, submit=submit)
+        return run.run(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
@@ -167,11 +169,13 @@ def fslwrapper(func):
     :func:`fsl.utils.run.runfsl` function in a standardised manner.
     """
     def wrapper(*args, **kwargs):
-        submit = kwargs.pop('submit', None)
+        stdout = kwargs.pop('stdout', True)
         stderr = kwargs.pop('stderr', True)
+        exitcode = kwargs.pop('exitcode', False)
+        submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit)
+        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
@@ -193,7 +197,7 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
+def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=False, **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
@@ -252,6 +256,9 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
                  The argument for any options not specified in the ``valmap``
                  will be converted into strings.
 
+    :arg singlechar_args: If True, single character arguments always take a single
+                          hyphen prefix (e.g. -h) regardless of the style
+
     :arg kwargs: Arguments to be converted into command-line options.
 
     :returns:    A list containing the generated command-line options.
@@ -277,7 +284,7 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
     if valmap is None: valmap = {}
 
     def fmtarg(arg):
-        if   style in ('-',  '-='):  arg =  '-{}'.format(arg)
+        if   style in ('-',  '-=') or (singlechar_args and len(arg) == 1):  arg =  '-{}'.format(arg)
         elif style in ('--', '--='): arg = '--{}'.format(arg)
         return arg
 
@@ -304,10 +311,11 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, **kwargs):
 
     for k, v in kwargs.items():
 
+        if v is None: continue
+
         k    = argmap.get(k, k)
         mapv = valmap.get(k, fmtval(v))
         k    = fmtarg(k)
-
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
@@ -850,7 +858,6 @@ class _FileOrThing(object):
         for prefixed in it.chain(*allPrefixed):
             fullpath = prefixed
             prefixed = op.relpath(prefixed, workdir)
-
             for prefPat, prefName in prefixes.items():
                 if not fnmatch.fnmatch(prefixed, '{}*'.format(prefPat)):
                     continue
@@ -863,10 +870,17 @@ class _FileOrThing(object):
                 # not of the correct type.
                 fval = self.__load(fullpath)
                 if fval is not None:
-                    prefixed = self.__removeExt(prefixed)
+                    noext = self.__removeExt(prefixed)
                     prefPat  = prefPat.replace('\\', '\\\\')
-                    prefixed = re.sub('^' + prefPat, prefName, prefixed)
-                    result[prefixed] = fval
+                    noext = re.sub('^' + prefPat, prefName, noext)
+                    # If there is already an item in result with the
+                    # name (stripped of prefix), then instead store
+                    # the result with the full prefixed name
+                    if noext not in result:
+                        result[noext] = fval
+                    else:
+                        withext = re.sub('^' + prefPat, prefName, prefixed)
+                        result[withext] = fval
                     break
 
         return result
@@ -888,8 +902,11 @@ def fileOrImage(*args, **kwargs):
 
         infile = None
 
-        if isinstance(val, (fslimage.Image, nib.nifti1.Nifti1Image)):
-            intypes.append(type(val))
+        if isinstance(val, fslimage.Image):
+            intypes.append(fslimage.Image)
+
+        elif isinstance(val, nib.nifti1.Nifti1Image):
+            intypes.append(nib.nifti1.Nifti1Image)
 
         if isinstance(val, fslimage.Image):
             val = val.nibImage
@@ -972,6 +989,46 @@ def fileOrArray(*args, **kwargs):
 
     def load(path):
         try:              return np.loadtxt(path)
+        except Exception: return None
+
+    def decorator(func):
+        fot = _FileOrThing(func,
+                           prepIn,
+                           prepOut,
+                           load,
+                           fslpath.removeExt,
+                           *args,
+                           **kwargs)
+
+        def wrapper(*args, **kwargs):
+            return fot(*args, **kwargs)
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator
+
+def fileOrText(*args, **kwargs):
+    """Decorator which can be used to ensure that any text output (e.g. log file are saved
+    to text files, and output files can be loaded and returned as strings.
+    """
+
+    def prepIn(workdir, name, val):
+
+        infile = None
+
+        if isinstance(val, six.string_types):
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
+                f.write(val)
+                infile = f.name
+        return infile
+
+    def prepOut(workdir, name, val):
+        return op.join(workdir, '{}.txt'.format(name))
+
+    def load(path):
+        try:
+            with open(path, "r") as f:
+                return f.read()
         except Exception: return None
 
     def decorator(func):

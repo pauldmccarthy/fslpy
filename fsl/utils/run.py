@@ -162,8 +162,8 @@ def run(*args, **kwargs):
                      - stderr: Optional file-like object to which the command's
                                standard error stream can be forwarded.
 
-                     - cmd:    If ``True``, the command itself is logged to the
-                               standard output stream(s).
+                     - cmd:    Optional file-like object to which the command itself 
+                               is logged.
 
     :returns:      If ``submit`` is provided, the return value of
                    :func:`.fslsub` is returned. Otherwise returns a single
@@ -179,7 +179,7 @@ def run(*args, **kwargs):
     tee            = log   .get('tee',      False)
     logStdout      = log   .get('stdout',   None)
     logStderr      = log   .get('stderr',   None)
-    logCmd         = log   .get('cmd',      False)
+    logCmd         = log   .get('cmd',      None)
     args           = _prepareArgs(args)
 
     if not bool(submit):
@@ -257,8 +257,8 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
     :arg logStderr: Optional file-like object to which the command's standard
                     error stream can be forwarded.
 
-    :arg logCmd:    If ``True``, the command itself is logged to the standard
-                    output stream(s).
+    :arg logCmd:    Optional file-like object to which the command itself is
+                    logged.
 
     :arg args:      Command to run
 
@@ -293,15 +293,13 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
             if logStdout is not None: outstreams.append(logStdout)
             if logStderr is not None: errstreams.append(logStderr)
 
-            # log the command to
-            # stdout if requested
-            if logCmd:
+            # log the command if requested
+            if logCmd is not None:
                 cmd = ' '.join(args) + '\n'
-                for o in outstreams:
-                    if 'b' in getattr(o, 'mode', 'w'):
-                        o.write(cmd.encode('utf-8'))
-                    else:
-                        o.write(cmd)
+                if 'b' in getattr(logCmd, 'mode', 'w'):
+                    logCmd.write(cmd.encode('utf-8'))
+                else:
+                    logCmd.write(cmd)
 
             stdoutt = _forwardStream(proc.stdout, *outstreams)
             stderrt = _forwardStream(proc.stderr, *errstreams)
@@ -325,23 +323,35 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
 
 
 def runfsl(*args, **kwargs):
-    """Call a FSL command and return its output. This function simply prepends
-    ``$FSLDIR/bin/`` to the command before passing it to :func:`run`.
-    """
+    """Call a FSL command and return its output. 
+    
+      This function searches for the command in the following
+      locations (ordered by priority):
+      
+      1. ``FSL_PREFIX``
+      2. ``$FSLDEVDIR/bin``
+      3. ``$FSLDIR/bin``
 
-    prefix = None
+      If found, the full path to the command is then passed to :func:`run`.
+    """
+    prefixes = []
 
     if FSL_PREFIX is not None:
-        prefix = FSL_PREFIX
-    elif fslplatform.fsldevdir is not None:
-        prefix = op.join(fslplatform.fsldevdir, 'bin')
-    elif fslplatform.fsldir is not None:
-        prefix = op.join(fslplatform.fsldir, 'bin')
-    else:
+        prefixes.append(FSL_PREFIX)
+    if fslplatform.fsldevdir is not None:
+        prefixes.append(op.join(fslplatform.fsldevdir, 'bin'))
+    if fslplatform.fsldir is not None:
+        prefixes.append(op.join(fslplatform.fsldir, 'bin'))
+    
+    if not prefixes:
         raise FSLNotPresent('$FSLDIR is not set - FSL cannot be found!')
 
-    args    = _prepareArgs(args)
-    args[0] = op.join(prefix, args[0])
+    args = _prepareArgs(args)
+    for prefix in prefixes:
+        cmdpath = op.join(prefix, args[0])
+        if op.isfile(cmdpath):
+            args[0] = cmdpath
+            break
 
     return run(*args, **kwargs)
 
