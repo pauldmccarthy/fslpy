@@ -277,7 +277,7 @@ deploy-pypi:
     - bash ./.ci/deploy_pypi.sh
 
 
-deploy-zenodo
+deploy-zenodo:
   <<: *only_releases
   <<: *setup_ssh
   stage: deploy
