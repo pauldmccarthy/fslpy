@@ -5,6 +5,9 @@ fslpy
 .. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/build.svg
    :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1470750.svg
+   :target: https://doi.org/10.5281/zenodo.1470750
+
 .. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/coverage.svg
    :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
 
