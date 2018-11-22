@@ -1376,6 +1376,20 @@ def removeExt(filename):
     return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
 
 
+def fixExt(filename):
+    """Fix the extension of ``filename``.
+
+    For example, if a file name is passed in as ``file.nii.gz``, but the
+    file is actually ``file.nii``, this function will fix the file name.
+
+    If ``filename`` already exists, it is returned unchanged.
+    """
+    if op.exists(filename):
+        return filename
+    else:
+        return addExt(removeExt(filename))
+
+
 def defaultExt():
     """Returns the default NIFTI file extension that should be used.
 
