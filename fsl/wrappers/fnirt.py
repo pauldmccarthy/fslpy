@@ -27,12 +27,12 @@ from . import wrapperutils  as wutils
                     'refout', 'refmask', 'inmask')
 @wutils.fileOrArray('aff')
 @wutils.fslwrapper
-def fnirt(src, ref, **kwargs):
+def fnirt(src, **kwargs):
     """Wrapper for the ``fnirt`` command."""
 
-    asrt.assertIsNifti(src, ref)
+    asrt.assertIsNifti(src)
 
-    cmd  = ['fnirt', '--in={}'.format(src), '--ref={}'.format(ref)]
+    cmd  = ['fnirt', '--in={}'.format(src)]
     cmd += wutils.applyArgStyle('--=', **kwargs)
 
     return cmd
@@ -41,7 +41,7 @@ def fnirt(src, ref, **kwargs):
 @wutils.fileOrImage('src', 'ref', 'out', 'warp', 'mask')
 @wutils.fileOrArray('premat', 'postmat')
 @wutils.fslwrapper
-def applywarp(src, ref, out, warp, **kwargs):
+def applywarp(src, ref, out, **kwargs):
     """Wrapper for the ``applywarp`` command. """
 
     valmap = {
@@ -55,8 +55,7 @@ def applywarp(src, ref, out, warp, **kwargs):
     cmd = ['applywarp',
            '--in={}'.format(src),
            '--ref={}'.format(ref),
-           '--out={}'.format(out),
-           '--warp={}'.format(warp)]
+           '--out={}'.format(out)]
 
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
@@ -76,7 +75,7 @@ def invwarp(warp, ref, out, **kwargs):
         'verbose'      : wutils.SHOW_IF_TRUE,
     }
 
-    asrt.assertIsNifti(warp, ref, out)
+    asrt.assertIsNifti(warp, ref)
 
     cmd  = ['invwarp',
             '--warp={}'.format(warp),
@@ -88,7 +87,7 @@ def invwarp(warp, ref, out, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('out', 'ref', 'warp1', 'warp2', 'shiftmap')
+@wutils.fileOrImage('out', 'ref', 'warp1', 'warp2', 'shiftmap', 'jacobian')
 @wutils.fileOrArray('premat', 'midmat', 'postmat')
 @wutils.fslwrapper
 def convertwarp(out, ref, **kwargs):
@@ -99,7 +98,6 @@ def convertwarp(out, ref, **kwargs):
         'rel'        : wutils.SHOW_IF_TRUE,
         'absout'     : wutils.SHOW_IF_TRUE,
         'relout'     : wutils.SHOW_IF_TRUE,
-        'jacobian'   : wutils.SHOW_IF_TRUE,
         'jstats'     : wutils.SHOW_IF_TRUE,
         'constrainj' : wutils.SHOW_IF_TRUE,
         'verbose'    : wutils.SHOW_IF_TRUE,
@@ -107,5 +105,4 @@ def convertwarp(out, ref, **kwargs):
 
     cmd  = ['convertwarp', '--ref={}'.format(ref), '--out={}'.format(out)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
-
     return cmd

@@ -35,7 +35,7 @@ logging.getLogger().setLevel(logging.WARNING)
 
 
 @contextlib.contextmanager
-def mockFSLDIR():
+def mockFSLDIR(**kwargs):
 
     oldfsldir    = fslplatform.fsldir
     oldfsldevdir = fslplatform.fsldevdir
@@ -45,6 +45,12 @@ def mockFSLDIR():
             fsldir = op.join(td, 'fsl')
             bindir = op.join(fsldir, 'bin')
             os.makedirs(bindir)
+            for subdir, files in kwargs.items():
+                subdir = op.join(fsldir, subdir)
+                if not op.isdir(subdir):
+                    os.makedirs(subdir)
+                for fname in files:
+                    touch(op.join(subdir, fname))
             fslplatform.fsldir = fsldir
             fslplatform.fsldevdir = None
 
