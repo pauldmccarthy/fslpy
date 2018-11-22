@@ -20,10 +20,11 @@ import               pytest
 
 import nibabel as nib
 
-import fsl.utils.imcp   as imcp
-import fsl.scripts.imcp as imcp_script
-import fsl.scripts.immv as immv_script
-import fsl.data.image   as fslimage
+from   fsl.utils.tempdir import tempdir
+import fsl.utils.imcp        as imcp
+import fsl.scripts.imcp      as imcp_script
+import fsl.scripts.immv      as immv_script
+import fsl.data.image        as fslimage
 
 from . import make_random_image
 from . import make_dummy_file
@@ -730,3 +731,27 @@ def test_imcp_shouldPass(move=False):
 
 def test_immv_shouldPass():
     test_imcp_shouldPass(move=True)
+
+def test_imcp_badExt():
+    with tempdir():
+
+        with open('file.nii.gz', 'wt') as f:
+            f.write('1')
+
+        result = imcp_script.main(['file.nii', 'dest'])
+
+        assert result == 0
+        assert op.exists('dest.nii.gz')
+
+
+
+def test_immv_badExt():
+    with tempdir():
+
+        with open('file.nii.gz', 'wt') as f:
+            f.write('1')
+
+        result = immv_script.main(['file.nii', 'dest'])
+
+        assert result == 0
+        assert op.exists('dest.nii.gz')
