@@ -12,10 +12,6 @@ Added
 * New :mod:`fsl.utils.filetree` package for defining and working with
   file/directory templates (Michiel Cottaar).
 * Simple built-in :mod:`.deprecated` decorator.
-* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Matrin
-  Craig).
-* New :func:`.fileOrText` decorator for use in wrapper functions (Matrin
-  Craig).
 
 
 Changed
@@ -25,16 +21,6 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
-* Various minor changes and enhancements to the FSL function :mod:`.wrappers`
-  interfaces (Martin Craig).
-
-
-Fixed
-^^^^^
-
-
-* The ``immv`` and ``imcp`` scripts now accept incorrect file extensions
-  on input arguments.
 
 
 Removed
@@ -42,6 +28,27 @@ Removed
 
 
 * Many deprecated items removed.
+
+
+1.13.0 (Thursday 22nd November 2018)
+------------------------------------
+
+
+Added
+^^^^^
+
+* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Matrin
+  Craig).
+* New :func:`.fileOrText` decorator for use in wrapper functions (Matrin
+  Craig).
+
+
+Changed
+^^^^^^^
+
+
+* Various minor changes and enhancements to the FSL function :mod:`.wrappers`
+  interfaces (Martin Craig).
 
 
 1.12.0 (Sunday October 21st 2018)
