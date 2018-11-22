@@ -21,7 +21,6 @@
 
 import               sys
 import               logging
-import               warnings
 import               threading
 import               contextlib
 import               collections
@@ -129,7 +128,7 @@ def run(*args, **kwargs):
     argument.
 
     An exception is raised if the command returns a non-zero exit code, unless
-    the ``ret`` option is set to ``True``.
+    the ``exitcode`` option is set to ``True``.
 
     :arg stdout:   Must be passed as a keyword argument. Defaults to ``True``.
                    If ``True``, standard output is captured and returned.
@@ -162,8 +161,8 @@ def run(*args, **kwargs):
                      - stderr: Optional file-like object to which the command's
                                standard error stream can be forwarded.
 
-                     - cmd:    Optional file-like object to which the command itself 
-                               is logged.
+                     - cmd:    Optional file-like object to which the command
+                               itself is logged.
 
     :returns:      If ``submit`` is provided, the return value of
                    :func:`.fslsub` is returned. Otherwise returns a single
@@ -323,11 +322,11 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
 
 
 def runfsl(*args, **kwargs):
-    """Call a FSL command and return its output. 
-    
+    """Call a FSL command and return its output.
+
       This function searches for the command in the following
       locations (ordered by priority):
-      
+
       1. ``FSL_PREFIX``
       2. ``$FSLDEVDIR/bin``
       3. ``$FSLDIR/bin``
@@ -342,7 +341,7 @@ def runfsl(*args, **kwargs):
         prefixes.append(op.join(fslplatform.fsldevdir, 'bin'))
     if fslplatform.fsldir is not None:
         prefixes.append(op.join(fslplatform.fsldir, 'bin'))
-    
+
     if not prefixes:
         raise FSLNotPresent('$FSLDIR is not set - FSL cannot be found!')
 

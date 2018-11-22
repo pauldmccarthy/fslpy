@@ -4,6 +4,7 @@
 # functions.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
+# Author: Martin Craig <martin.craig@eng.ox.ac.uk>
 #
 """This module contains functions and decorators used by the FSL wrapper
 functions.
@@ -159,7 +160,12 @@ def cmdwrapper(func):
         submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.run(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
+        return run.run(cmd,
+                       stderr=stderr,
+                       log=log,
+                       submit=submit,
+                       stdout=stdout,
+                       exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
@@ -175,7 +181,12 @@ def fslwrapper(func):
         submit = kwargs.pop('submit', None)
         log    = kwargs.pop('log',    {'tee' : True})
         cmd    = func(*args, **kwargs)
-        return run.runfsl(cmd, stderr=stderr, log=log, submit=submit, stdout=stdout, exitcode=exitcode)
+        return run.runfsl(cmd,
+                          stderr=stderr,
+                          log=log,
+                          submit=submit,
+                          stdout=stdout,
+                          exitcode=exitcode)
     return _update_wrapper(wrapper, func)
 
 
@@ -197,7 +208,12 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=False, **kwargs):
+def applyArgStyle(style,
+                  valsep=None,
+                  argmap=None,
+                  valmap=None,
+                  singlechar_args=False,
+                  **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
@@ -256,8 +272,9 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=
                  The argument for any options not specified in the ``valmap``
                  will be converted into strings.
 
-    :arg singlechar_args: If True, single character arguments always take a single
-                          hyphen prefix (e.g. -h) regardless of the style
+    :arg singlechar_args: If True, single character arguments always take a
+                          single hyphen prefix (e.g. -h) regardless of the
+                          style.
 
     :arg kwargs: Arguments to be converted into command-line options.
 
@@ -284,8 +301,10 @@ def applyArgStyle(style, valsep=None, argmap=None, valmap=None, singlechar_args=
     if valmap is None: valmap = {}
 
     def fmtarg(arg):
-        if   style in ('-',  '-=') or (singlechar_args and len(arg) == 1):  arg =  '-{}'.format(arg)
-        elif style in ('--', '--='): arg = '--{}'.format(arg)
+        if   style in ('-',  '-=') or (singlechar_args and len(arg) == 1):
+            arg =  '-{}'.format(arg)
+        elif style in ('--', '--='):
+            arg = '--{}'.format(arg)
         return arg
 
     # always returns a sequence
@@ -1007,9 +1026,11 @@ def fileOrArray(*args, **kwargs):
 
     return decorator
 
+
 def fileOrText(*args, **kwargs):
-    """Decorator which can be used to ensure that any text output (e.g. log file are saved
-    to text files, and output files can be loaded and returned as strings.
+    """Decorator which can be used to ensure that any text output (e.g. log
+    file) are saved to text files, and output files can be loaded and returned
+    as strings.
     """
 
     def prepIn(workdir, name, val):
