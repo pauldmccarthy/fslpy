@@ -11,8 +11,11 @@ Fixed
 ^^^^^
 
 
-* Addd the missing ``image`` attribute in the :class:`.VoxelwiseConfoundEV`
+* Added a missing ``image`` attribute in the :class:`.VoxelwiseConfoundEV`
   class.
+* Make sure that FEAT ``Cluster`` objects (created by the
+  :func:`.loadClusterResults` function) contain ``p`` and ``logp`` attributes,
+  even when cluster thresholding was not used.
 
 
 1.13.0 (Thursday November 22nd 2018)
