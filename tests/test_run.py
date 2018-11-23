@@ -249,7 +249,7 @@ def mock_submit(cmd, **kwargs):
         for k in sorted(kwargs.keys()):
             f.write('{}: {}\n'.format(k, kwargs[k]))
 
-    return (jid,)
+    return jid
 
 
 def test_run_submit():
@@ -271,7 +271,7 @@ def test_run_submit():
 
         mkexec(op.expandvars('$FSLDIR/bin/fsltest'), test_script)
 
-        jid = run.run('fsltest', submit=True)[0]
+        jid = run.run('fsltest', submit=True)
 
         assert jid == '12345'
 
@@ -282,7 +282,7 @@ def test_run_submit():
 
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
 
-        jid = run.run('fsltest', submit=kwargs)[0]
+        jid = run.run('fsltest', submit=kwargs)
 
         assert jid == '12345'
 
