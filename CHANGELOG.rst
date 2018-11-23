@@ -29,6 +29,17 @@ Removed
 * Many deprecated items removed.
 
 
+Fixed
+^^^^^
+
+
+* Added a missing ``image`` attribute in the :class:`.VoxelwiseConfoundEV`
+  class.
+* Make sure that FEAT ``Cluster`` objects (created by the
+  :func:`.loadClusterResults` function) contain ``p`` and ``logp`` attributes,
+  even when cluster thresholding was not used.
+
+
 1.13.0 (Thursday 22nd November 2018)
 ------------------------------------
 
@@ -36,9 +47,9 @@ Removed
 Added
 ^^^^^
 
-* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Matrin
+* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Martin
   Craig).
-* New :func:`.fileOrText` decorator for use in wrapper functions (Matrin
+* New :func:`.fileOrText` decorator for use in wrapper functions (Martin
   Craig).
 
 
