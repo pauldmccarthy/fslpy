@@ -9,7 +9,7 @@ from fsl.utils import fslsub
 
 
 def test_flatten_jobids():
-    job_ids = ('12', '27', '35', '41', '721')
+    job_ids = ('12', '27', '35', '41', 721)
     res = '12,27,35,41,721'
 
     assert fslsub._flatten_job_ids(job_ids) == res

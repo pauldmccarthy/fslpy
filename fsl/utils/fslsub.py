@@ -225,6 +225,8 @@ def _flatten_job_ids(job_ids):
         """Unpack the (nested) job-ids in a single set"""
         if isinstance(job_ids, str):
             return {job_ids}
+        elif isinstance(job_ids, int):
+            return {str(job_ids)}
         else:
             res = set()
             for job_id in job_ids:
