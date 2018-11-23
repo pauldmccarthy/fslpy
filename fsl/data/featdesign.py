@@ -219,6 +219,59 @@ class FEATFSFDesign(object):
         return design
 
 
+class VoxelwiseEVMixin(object):
+    """Mixin class for voxelwise EVs.
+
+    ``VoxelwiseEVMixin`` instances contain the following attributes:
+
+    ============ ======================================================
+    ``filename`` Path to the image file containing the data for this EV
+    ``image``    Reference to the :class:`.Image` object
+    ============ ======================================================
+    """
+
+    def __init__(self, filename):
+        """Create a ``VoxelwiseEVMixin``.
+
+        :arg filename: Path to the file containing the data for this
+                       ``VoxelwiseEV``.
+        """
+        if op.exists(filename):
+            self.__filename = filename
+        else:
+            log.warning('Voxelwise EV file does not '
+                        'exist: {}'.format(filename))
+            self.__filename = None
+
+        self.__image = None
+
+
+    def __del__(self):
+        """Clears any reference to the voxelwise EV image. """
+        self.__image = None
+
+
+    @property
+    def filename(self):
+        """Returns the path to the image file containing the data for this EV.
+        """
+        return self.__filename
+
+
+    @property
+    def image(self):
+        """Returns the :class:`.Image` containing the voxelwise EV data. """
+
+        if self.__filename is None:
+            return None
+
+        if self.__image is not None:
+            return self.__image
+
+        self.__image = fslimage.Image(self.__filename, mmap=False)
+        return self.__image
+
+
 class EV(object):
     """Class representing an explanatory variable in a FEAT design matrix.
 
@@ -276,7 +329,7 @@ class BasisFunctionEV(NormalEV):
     pass
 
 
-class VoxelwiseEV(NormalEV):
+class VoxelwiseEV(NormalEV, VoxelwiseEVMixin):
     """Class representing an EV with different values for each voxel in the
     analysis.
 
@@ -308,34 +361,7 @@ class VoxelwiseEV(NormalEV):
                        ``VoxelwiseEV``.
         """
         NormalEV.__init__(self, realIdx, origIdx, title)
-
-        if op.exists(filename):
-            self.filename = filename
-        else:
-            log.warning('Voxelwise EV file does not '
-                        'exist: {}'.format(filename))
-            self.filename = None
-
-        self.__image = None
-
-
-    def __del__(self):
-        """Clears any reference to the voxelwise EV image. """
-        self.__image = None
-
-
-    @property
-    def image(self):
-        """Returns the :class:`.Image` containing the voxelwise EV data. """
-
-        if self.filename is None:
-            return None
-
-        if self.__image is not None:
-            return self.__image
-
-        self.__image = fslimage.Image(self.filename, mmap=False)
-        return self.__image
+        VoxelwiseEVMixin.__init__(self, filename)
 
 
 class ConfoundEV(EV):
@@ -386,7 +412,7 @@ class MotionParameterEV(EV):
         self.motionIndex = motionIndex
 
 
-class VoxelwiseConfoundEV(EV):
+class VoxelwiseConfoundEV(EV, VoxelwiseEVMixin):
     """Class representing a voxelwise confound EV.
 
     ``VoxelwiseConfoundEV`` instances contain the following attributes (in
@@ -396,6 +422,7 @@ class VoxelwiseConfoundEV(EV):
     ``voxIndex`` Index of this ``VoxelwiseConfoundEV`` (starting from 0) in
                  relation to all other voxelwise confound EVs.
     ``filename`` Path to the image file containing the data for this EV
+    ``image``    Reference to the :class:`.Image` object
     ============ ==========================================================
     """
     def __init__(self, index, voxIndex, title, filename):
@@ -407,16 +434,12 @@ class VoxelwiseConfoundEV(EV):
                         ``VoxelwiseConfoundEV`` in relation to all other
                         voxelwise confound EVs.
         :arg title:     Name of this ``VoxelwiseConfoundEV``.
+        :arg filename:  Path to the file containing the data for this
+                        ``VoxelwiseConfoundEV``.
         """
         EV.__init__(self, index, title)
+        VoxelwiseEVMixin.__init__(self, filename)
         self.voxIndex = voxIndex
-
-        if op.exists(filename):
-            self.filename = filename
-        else:
-            log.warning('Voxelwise confound EV file does '
-                        'not exist: {}'.format(filename))
-            self.filename = None
 
 
 def getFirstLevelEVs(featDir, settings, designMat):
