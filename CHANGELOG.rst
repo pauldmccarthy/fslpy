@@ -12,6 +12,10 @@ Changed
 
 * The :meth:`.Image.resample` method now supports images with more than three
   dimensions.
+* The :func:`fsl.utils.fslsub.submit` now returns the job-id as a string
+  rather than a one-element tuple. It now also accepts a nested sequence
+  of job ids rather than just a flat sequence. This will also changes the
+  output from the function wrappers in :mod:`fsl.wrappers` if submitted.
 
 
 Fixed
