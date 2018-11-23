@@ -26,7 +26,6 @@ Changed
 Removed
 ^^^^^^^
 
-
 * Many deprecated items removed.
 
 
@@ -46,9 +45,15 @@ Added
 Changed
 ^^^^^^^
 
-
 * Various minor changes and enhancements to the FSL function :mod:`.wrappers`
   interfaces (Martin Craig).
+
+
+Fixed
+^^^^^
+
+* The ``immv`` and ``imcp`` scripts now accept incorrect file extensions on
+  input arguments.
 
 
 1.12.0 (Sunday October 21st 2018)
