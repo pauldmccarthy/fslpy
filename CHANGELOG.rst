@@ -29,6 +29,14 @@ Removed
 * Many deprecated items removed.
 
 
+Fixed
+^^^^^
+
+
+* Addd the missing ``image`` attribute in the :class:`.VoxelwiseConfoundEV`
+  class.
+
+
 1.13.0 (Thursday 22nd November 2018)
 ------------------------------------
 
@@ -36,9 +44,9 @@ Removed
 Added
 ^^^^^
 
-* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Matrin
+* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Martin
   Craig).
-* New :func:`.fileOrText` decorator for use in wrapper functions (Matrin
+* New :func:`.fileOrText` decorator for use in wrapper functions (Martin
   Craig).
 
 
