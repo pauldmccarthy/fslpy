@@ -109,8 +109,9 @@ import numpy   as np
 import pytest
 
 import tests
-import fsl.data.featdesign   as featdesign
-import fsl.data.featanalysis as featanalysis
+from   fsl.utils.tempdir     import tempdir
+import fsl.data.featdesign   as     featdesign
+import fsl.data.featanalysis as     featanalysis
 
 
 datadir = op.join(op.dirname(__file__), 'testdata', 'test_feat')
@@ -397,3 +398,17 @@ def test_loadDesignMat():
 
     with pytest.raises(Exception):
         featdesign.loadDesignMat(badfile)
+
+
+def test_VoxelwiseEVs():
+    with tempdir():
+        img = tests.make_random_image('image.nii.gz', (10, 10, 10, 10))
+
+        ev1 = featdesign.VoxelwiseEV(        0, 0, 'ev1', 'image.nii.gz')
+        ev2 = featdesign.VoxelwiseConfoundEV(0, 0, 'ev2', 'image.nii.gz')
+
+        for xyz in tests.random_voxels((10, 10, 10), 10):
+            x, y, z = map(int, xyz)
+            exp = img.dataobj[x, y, z, :]
+            assert np.all(ev1.image[x, y, z, :] == exp)
+            assert np.all(ev2.image[x, y, z, :] == exp)
