@@ -2,16 +2,29 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-1.13.0 (Thursday 22nd November 2018)
+
+1.13.1 (Friday November 23rd 2018)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Addd the missing ``image`` attribute in the :class:`.VoxelwiseConfoundEV`
+  class.
+
+
+1.13.0 (Thursday November 22nd 2018)
 ------------------------------------
 
 
 Added
 ^^^^^
 
-* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Matrin
+* New wrapper functions for :func:`.fsl_anat`, :func:`.applytopup` (Martin
   Craig).
-* New :func:`.fileOrText` decorator for use in wrapper functions (Matrin
+* New :func:`.fileOrText` decorator for use in wrapper functions (Martin
   Craig).
 
 
