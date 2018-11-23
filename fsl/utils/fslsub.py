@@ -20,9 +20,10 @@ Example usage, building a short pipeline::
     other_job = submit('some other pre-processing step', queue='short.q')
 
     # submits cuda job, that should only start after both preparatory jobs are
-    # finished
+    # finished. This will work if bet_job and other_job are single job-ids
+    # (i.e., strings) or a sequence of multiple job-ids
     cuda_job = submit('expensive job',
-                      wait_for=bet_job + other_job,
+                      wait_for=(bet_job, other_job),
                       queue='cuda.q')
 
     # waits for the cuda job to finish
@@ -125,9 +126,7 @@ def submit(command,
         base_cmd.append('-v')
 
     if wait_for:
-        if not isinstance(wait_for, string_types):
-            wait_for = ','.join(wait_for)
-        base_cmd.extend(['-j', wait_for])
+        base_cmd.extend(['-j', _flatten_job_ids(wait_for)])
 
     if multi_threaded:
         base_cmd.append('-s')
@@ -135,7 +134,7 @@ def submit(command,
 
     base_cmd.append(command)
 
-    return (runfsl(*base_cmd).strip(), )
+    return runfsl(*base_cmd).strip()
 
 
 def info(job_id):
@@ -213,6 +212,26 @@ def wait(job_ids):
             time.sleep(wait_time)
         log.debug('Job {} finished, continuing to next'.format(job_id))
     log.debug('All jobs have finished')
+
+
+def _flatten_job_ids(job_ids):
+    """
+    Returns a potentially nested sequence of job ids as a single comma-separated string
+
+    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
+    :return: comma-separated string of job ids
+    """
+    def unpack(job_ids):
+        """Unpack the (nested) job-ids in a single set"""
+        if isinstance(job_ids, str):
+            return {job_ids}
+        else:
+            res = set()
+            for job_id in job_ids:
+                res.update(unpack(job_id))
+            return res
+
+    return ','.join(sorted(unpack(job_ids)))
 
 
 _external_job = """#!{}

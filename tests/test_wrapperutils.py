@@ -630,7 +630,7 @@ def test_cmdwrapper_submit():
 
         jid = test_func(1, 2, submit=True)
 
-        assert jid == ('12345',)
+        assert jid == '12345'
 
         stdout, stderr = fslsub.output('12345')
 
