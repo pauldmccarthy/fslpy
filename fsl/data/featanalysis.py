@@ -385,6 +385,12 @@ def loadClusterResults(featdir, settings, contrast):
 
                 setattr(self, attrName, val)
 
+            # if cluster thresholding was not used,
+            # the cluster table will not contain
+            # P valuse.
+            if not hasattr(self, 'p'):    self.p    = 1.0
+            if not hasattr(self, 'logp'): self.logp = 0.0
+
     # This dict provides a mapping between
     # Cluster object attribute names, and
     # the corresponding column name in the
