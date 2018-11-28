@@ -14,6 +14,12 @@ Changed
   dimensions.
 
 
+Fixed
+^^^^^
+
+
+* Fix to the :class:`.ImageWrapper` regarding complex data types.
+
 
 1.13.1 (Friday November 23rd 2018)
 ----------------------------------
