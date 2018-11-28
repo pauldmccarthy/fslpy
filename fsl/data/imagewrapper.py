@@ -301,7 +301,14 @@ class ImageWrapper(notifier.Notifier):
 
         # Internally, we calculate and store the
         # data range for each volume/slice/vector
-        self.__volRanges = np.zeros((nvols, 2), dtype=np.float32)
+        #
+        # We use nan as a placeholder, so the
+        # dtype must be non-integral
+        dtype = self.__image.get_data_dtype()
+        if np.issubdtype(dtype, np.integer):
+            dtype = np.float32
+        self.__volRanges = np.zeros((nvols, 2),
+                                    dtype=dtype)
 
         self.__coverage[ :] = np.nan
         self.__volRanges[:] = np.nan
