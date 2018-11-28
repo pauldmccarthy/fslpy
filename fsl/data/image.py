@@ -1259,7 +1259,7 @@ class Image(Nifti):
                  order=1,
                  smooth=True):
         """Returns a copy of the data in this ``Image``, resampled to the
-        specified ``shape``.
+        specified ``newShape``.
 
         :arg newShape: Desired shape. May containg floating point values,
                        in which case the resampled image will have shape
@@ -1268,7 +1268,7 @@ class Image(Nifti):
 
         :arg sliceobj: Slice into this ``Image``. If ``None``, the whole
                        image is resampled, and it is assumed that it has the
-                       same number of dimensions as  ``shape``. A
+                       same number of dimensions as  ``newShape``. A
                        :exc:`ValueError` is raised if this is not the case.
 
         :arg dtype:    ``numpy`` data type of the resampled data. If ``None``,
@@ -1287,12 +1287,12 @@ class Image(Nifti):
 
         :returns: A tuple containing:
 
-                   - A ``numpy`` array of shape ``shape``, containing an
-                     interpolated copy of the data in this ``Image``.
+                   - A ``numpy`` array of shape ``newShape``, containing
+                     an interpolated copy of the data in this ``Image``.
 
                    - A ``numpy`` array of shape ``(4, 4)``, containing the
-                     adjusted voxel-to-world transformation for the resampled
-                     data.
+                     adjusted voxel-to-world transformation for the spatial
+                     dimensions of the resampled data.
         """
 
         if sliceobj is None: sliceobj = slice(None)
@@ -1311,7 +1311,7 @@ class Image(Nifti):
 
             ratio    = oldShape / newShape
             newShape = np.array(np.round(newShape), dtype=np.int)
-            scale    = transform.scaleOffsetXform(ratio, 0)
+            scale    = np.diag(ratio)
 
             # If interpolating and smoothing, we apply a
             # gaussian filter along axes with a resampling
@@ -1328,7 +1328,7 @@ class Image(Nifti):
                 data = ndimage.gaussian_filter(data, sigma)
 
             data = ndimage.affine_transform(data,
-                                            scale[:3, :3],
+                                            scale,
                                             output_shape=newShape,
                                             order=order)
 
@@ -1336,6 +1336,7 @@ class Image(Nifti):
             # puts the resampled image into the
             # same world coordinate system as this
             # image.
+            scale = transform.scaleOffsetXform(ratio[:3], 0)
             xform = transform.concat(self.voxToWorldMat, scale)
         else:
             xform = self.voxToWorldMat
