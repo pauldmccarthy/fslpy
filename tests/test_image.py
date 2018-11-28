@@ -1078,6 +1078,12 @@ def test_image_resample(seed):
             make_random_image(fname, shape)
             img = fslimage.Image(fname, mmap=False)
 
+            # bad shape
+            with pytest.raises(ValueError):
+                img.resample((10, 10))
+            with pytest.raises(ValueError):
+                img.resample((10, 10, 10, 10))
+
             # resampling to the same shape should be a no-op
             samei, samex = img.resample(shape)
             assert np.all(samei == img[:])
@@ -1134,18 +1140,50 @@ def test_image_resample(seed):
 
                 assert np.all(np.isclose(resvals, origvals))
 
-        # Test a 4D image
+        del img
+        img = None
+
+
+def test_image_resample_4d(seed):
+
+    fname = 'test.nii.gz'
+
+    with tempdir():
+
         make_random_image(fname, (10, 10, 10, 10))
+
+        # resample one volume
         img = fslimage.Image(fname)
         slc = (slice(None), slice(None), slice(None), 3)
-
         resampled = img.resample(img.shape[:3], slc)[0]
         assert np.all(resampled == img[..., 3])
 
+        # resample up
         resampled = img.resample((15, 15, 15), slc)[0]
         assert tuple(resampled.shape) == (15, 15, 15)
+
+        # resample down
+        resampled = img.resample((5, 5, 5), slc)[0]
+        assert tuple(resampled.shape) == (5, 5, 5)
+
+        # resample the entire image
+        resampled = img.resample((15, 15, 15, 10), None)[0]
+        assert tuple(resampled.shape) == (15, 15, 15, 10)
+
+        resampled = img.resample((5, 5, 5, 10), None)[0]
+        assert tuple(resampled.shape) == (5, 5, 5, 10)
+
+        # resample along the fourth dim
+        resampled = img.resample((15, 15, 15, 15), None)[0]
+        assert tuple(resampled.shape) == (15, 15, 15, 15)
+
+        resampled = img.resample((5, 5, 5, 15), None)[0]
+        assert tuple(resampled.shape) == (5, 5, 5, 15)
+
         del img
+        del resampled
         img = None
+        resampled = None
 
 
 def  test_Image_init_xform_nifti1():  _test_Image_init_xform(1)
