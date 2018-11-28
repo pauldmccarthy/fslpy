@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+1.13.2 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :meth:`.Image.resample` method now supports images with more than three
+  dimensions.
+
+
 
 1.13.1 (Friday November 23rd 2018)
 ----------------------------------
