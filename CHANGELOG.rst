@@ -21,6 +21,8 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
+* The :meth:`.Image.resample` method now supports images with more than three
+  dimensions.
 
 
 Removed
