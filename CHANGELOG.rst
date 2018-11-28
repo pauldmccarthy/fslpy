@@ -40,6 +40,7 @@ Fixed
 * Make sure that FEAT ``Cluster`` objects (created by the
   :func:`.loadClusterResults` function) contain ``p`` and ``logp`` attributes,
   even when cluster thresholding was not used.
+* Fix to the :class:`.ImageWrapper` regarding complex data types.
 
 
 1.13.0 (Thursday 22nd November 2018)
