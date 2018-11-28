@@ -21,6 +21,8 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
+* The :meth:`.Image.resample` method now supports images with more than three
+  dimensions.
 
 
 Removed
@@ -38,6 +40,7 @@ Fixed
 * Make sure that FEAT ``Cluster`` objects (created by the
   :func:`.loadClusterResults` function) contain ``p`` and ``logp`` attributes,
   even when cluster thresholding was not used.
+* Fix to the :class:`.ImageWrapper` regarding complex data types.
 
 
 1.13.0 (Thursday 22nd November 2018)
