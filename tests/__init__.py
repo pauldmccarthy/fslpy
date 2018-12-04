@@ -358,6 +358,56 @@ def make_mock_feat_analysis(featdir,
     return featdir
 
 
+def make_mock_melodic_analysis(basedir, shape4D, ntimepoints, xform=None):
+
+    if xform is None:
+        xform = np.eye(4)
+
+    ncomps = shape4D[-1]
+    halftime = int(np.floor(ntimepoints / 2))
+
+    os.makedirs(basedir)
+
+    make_random_image(op.join(basedir, 'melodic_IC.nii.gz'),
+                      dims=shape4D,
+                      xform=xform)
+
+    mix   = np.random.randint(1, 255, (ntimepoints, ncomps))
+    ftmix = np.random.randint(1, 255, (halftime,    ncomps))
+
+    np.savetxt(op.join(basedir, 'melodic_mix'),   mix)
+    np.savetxt(op.join(basedir, 'melodic_FTmix'), ftmix)
+
+
+def make_mock_dtifit_analysis(basedir, shape3D, basename='dti', xform=None, tensor=False):
+
+    if xform is None:
+        xform = np.eye(4)
+
+    os.makedirs(basedir)
+
+    shape4D = tuple(shape3D) + (3,)
+
+    def mk(ident, shp):
+        make_random_image(
+            op.join(basedir, '{}_{}.nii.gz'.format(basename, ident)),
+            shp,
+            xform)
+
+    mk('V1', shape4D)
+    mk('V2', shape4D)
+    mk('V3', shape4D)
+    mk('L1', shape3D)
+    mk('L2', shape3D)
+    mk('L3', shape3D)
+    mk('S0', shape3D)
+    mk('MD', shape3D)
+    mk('MO', shape3D)
+    mk('FA', shape3D)
+
+    if tensor:
+        mk('tensor', tuple(shape3D) + (6,))
+
 
 def make_random_mask(filename, shape, xform, premask=None, minones=1):
     """Make a random binary mask image. """
