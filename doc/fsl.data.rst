@@ -20,6 +20,7 @@
    fsl.data.melodicimage
    fsl.data.mesh
    fsl.data.mghimage
+   fsl.data.utils
    fsl.data.vest
    fsl.data.volumelabels
    fsl.data.vtk
