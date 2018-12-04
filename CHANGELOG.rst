@@ -12,6 +12,8 @@ Added
 * New :mod:`fsl.utils.filetree` package for defining and working with
   file/directory templates (Michiel Cottaar).
 * Simple built-in :mod:`.deprecated` decorator.
+* New :mod:`fsl.data.utils` module, which currently contains one function
+  :func:`.guessType`, which guess the data type of a file/directory path.
 
 
 Changed
