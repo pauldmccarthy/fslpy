@@ -49,7 +49,7 @@ class FileTree(object):
         All tree variables including those from the parent tree
         """
         if self.parent is None:
-            return self.variables
+            return dict(self.variables)
         res = self.parent.all_variables
         res.update(self.variables)
         return res
