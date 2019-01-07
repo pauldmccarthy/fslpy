@@ -1,21 +1,17 @@
 fslpy
 =====
 
+.. image:: https://img.shields.io/pypi/v/fslpy.svg
+   :target: https://pypi.python.org/pypi/fslpy/
 
-.. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/build.svg
-   :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
+.. image:: https://anaconda.org/conda-forge/fslpy/badges/version.svg
+   :target: https://anaconda.org/conda-forge/fslpy
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1470750.svg
    :target: https://doi.org/10.5281/zenodo.1470750
 
 .. image:: https://git.fmrib.ox.ac.uk/fsl/fslpy/badges/master/coverage.svg
    :target: https://git.fmrib.ox.ac.uk/fsl/fslpy/commits/master/
-
-.. image:: https://img.shields.io/pypi/v/fslpy.svg
-   :target: https://pypi.python.org/pypi/fslpy/
-
-.. image:: https://anaconda.org/conda-forge/fslpy/badges/version.svg
-   :target: https://anaconda.org/conda-forge/fslpy
 
 
 The ``fslpy`` project is a `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_
@@ -68,10 +64,6 @@ not available on PyPI. Change the URL for your specific platform::
     pip install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-16.04/ wxpython
 
 
-The ``rtree`` library also assumes that ``libspatialindex`` is installed on
-your system.
-
-
 Once wxPython has been installed, you can simply type the following to install
 the rest of the extra dependencies::
 
@@ -88,6 +80,10 @@ Non-Python dependencies
 
 The ``fsl.data.dicom`` module requires the presence of Chris Rorden's
 `dcm2niix <https://github.com/rordenlab/dcm2niix>`_ program.
+
+
+The ``rtree`` library assumes that ``libspatialindex`` is installed on
+your system.
 
 
 Documentation
