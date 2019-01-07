@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #
-# extract_noise.py - Extract ICA component time courses from a MELODIC
-#                    directory.
+# fsl_ents.py - Extract ICA component time courses from a MELODIC directory.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
