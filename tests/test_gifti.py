@@ -290,7 +290,7 @@ def test_GiftiMesh_multiple_vertices():
         surf  = gifti.GiftiMesh(fname)
 
         expvsets = [fname,
-                    '{} [{}]'.format(fname, 1)]
+                    '{}_1'.format(fname)]
 
         assert np.all(surf.vertices == TEST_VERTS)
         assert np.all(surf.indices  == TEST_IDXS)
