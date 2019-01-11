@@ -23,6 +23,8 @@ Changed
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
+* The :class:`.GiftiMesh` class can now load surface files which contain
+  vertex data.
 
 
 Removed
