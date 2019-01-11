@@ -35,13 +35,13 @@ import fsl.data.constants as constants
 import fsl.data.mesh      as fslmesh
 
 
-ALLOWED_EXTENSIONS = ['.gii']
+ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
 """List of file extensions that a file containing Gifti surface data
 is expected to have.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['GIFTI file']
+EXTENSION_DESCRIPTIONS = ['GIFTII surface file', 'GIFTI file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
 
 
@@ -83,8 +83,10 @@ class GiftiMesh(fslmesh.Mesh):
                               name=name,
                               dataSource=infile)
 
-        for v in vertices:
-            self.addVertices(v, infile, fixWinding=fixWinding)
+        for i, v in enumerate(vertices):
+            if i == 0: key = infile
+            else:      key = '{} [{}]'.format(infile, i)
+            self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
         self.setMeta(infile, surfimg)
 
         if vdata is not None:
@@ -95,18 +97,21 @@ class GiftiMesh(fslmesh.Mesh):
         # as the specfiied one.
         if loadAll:
 
-            nvertices = vertices.shape[0]
+            nvertices = vertices[0].shape[0]
             surfFiles = relatedFiles(infile, ALLOWED_EXTENSIONS)
 
             for sfile in surfFiles:
 
-                surfimg, vertices, _ = loadGiftiMesh(sfile)
-
-                if vertices.shape[0] != nvertices:
+                try:
+                    surfimg, _, vertices, _ = loadGiftiMesh(sfile)
+                except Exception:
                     continue
 
-                self.addVertices(vertices, sfile, select=False)
-                self.setMeta(    sfile, surfimg)
+                if vertices[0].shape[0] != nvertices:
+                    continue
+
+                self.addVertices(vertices[0], sfile, select=False)
+                self.setMeta(sfile, surfimg)
 
 
     def loadVertices(self, infile, key=None, *args, **kwargs):
@@ -126,7 +131,7 @@ class GiftiMesh(fslmesh.Mesh):
         if key is None:
             key = infile
 
-        surfimg, vertices, _ = loadGiftiMesh(infile)
+        surfimg, _, vertices, _ = loadGiftiMesh(infile)
 
         vertices = self.addVertices(vertices, key, *args, **kwargs)
 
@@ -228,6 +233,9 @@ def loadGiftiVertexData(filename):
 
 def prepareGiftiVertexData(darrays, filename=None):
     """Prepares vertex data from the given list of GIFTI data arrays.
+
+    All of the data arrays are concatenated into one ``(M, N)`` array,
+    containing ``N`` data points for ``M`` vertices.
 
     It is assumed that the given file does not contain any
     ``NIFTI_INTENT_POINTSET`` or ``NIFTI_INTENT_TRIANGLE`` data arrays, and
