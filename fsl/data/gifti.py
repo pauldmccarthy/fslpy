@@ -41,7 +41,7 @@ is expected to have.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['GIFTII surface file', 'GIFTI file']
+EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
 
 
@@ -59,7 +59,12 @@ class GiftiMesh(fslmesh.Mesh):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
         data using the  :func:`loadGiftiMesh` function.
 
-        :arg infile:     A GIFTI file (``*..gii``) which contains a surface
+        If the file contains more than one set of vertices, the additional
+        ones are added with keys of the form ``infile_i``, where ``infile`` is
+        the absolute path to the file, and ``i`` is an index number, starting
+        from 1. See the :meth:`.addVertices` method.
+
+        :arg infile:     A GIFTI file (``*.gii``) which contains a surface
                          definition.
 
         :arg fixWinding: Passed through to the :meth:`addVertices` method
@@ -85,7 +90,7 @@ class GiftiMesh(fslmesh.Mesh):
 
         for i, v in enumerate(vertices):
             if i == 0: key = infile
-            else:      key = '{} [{}]'.format(infile, i)
+            else:      key = '{}_{}'.format(infile, i)
             self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
         self.setMeta(infile, surfimg)
 
