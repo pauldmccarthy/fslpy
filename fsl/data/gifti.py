@@ -19,6 +19,7 @@ are available:
      GiftiMesh
      loadGiftiMesh
      loadGiftiVertexData
+     prepareGiftiVertexData
      relatedFiles
 """
 
@@ -34,15 +35,13 @@ import fsl.data.constants as constants
 import fsl.data.mesh      as fslmesh
 
 
-# We include '.gii' here because not all surface
-# GIFTIs follow the file suffix convention.
 ALLOWED_EXTENSIONS = ['.surf.gii', '.gii']
 """List of file extensions that a file containing Gifti surface data
 is expected to have.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI file']
+EXTENSION_DESCRIPTIONS = ['GIFTII surface file', 'GIFTI file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
 
 
@@ -60,7 +59,8 @@ class GiftiMesh(fslmesh.Mesh):
         """Load the given GIFTI file using ``nibabel``, and extracts surface
         data using the  :func:`loadGiftiMesh` function.
 
-        :arg infile:     A GIFTI surface file (``*.surf.gii``).
+        :arg infile:     A GIFTI file (``*..gii``) which contains a surface
+                         definition.
 
         :arg fixWinding: Passed through to the :meth:`addVertices` method
                          for the first vertex set.
@@ -76,34 +76,42 @@ class GiftiMesh(fslmesh.Mesh):
         name   = fslpath.removeExt(op.basename(infile), ALLOWED_EXTENSIONS)
         infile = op.abspath(infile)
 
-        surfimg, vertices, indices = loadGiftiMesh(infile)
-
+        surfimg, indices, vertices, vdata = loadGiftiMesh(infile)
 
         fslmesh.Mesh.__init__(self,
                               indices,
                               name=name,
                               dataSource=infile)
 
-        self.addVertices(vertices, infile, fixWinding=fixWinding)
+        for i, v in enumerate(vertices):
+            if i == 0: key = infile
+            else:      key = '{} [{}]'.format(infile, i)
+            self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
         self.setMeta(infile, surfimg)
+
+        if vdata is not None:
+            self.addVertexData(infile, vdata)
 
         # Find and load all other
         # surfaces in the same directory
         # as the specfiied one.
         if loadAll:
 
-            nvertices = vertices.shape[0]
+            nvertices = vertices[0].shape[0]
             surfFiles = relatedFiles(infile, ALLOWED_EXTENSIONS)
 
             for sfile in surfFiles:
 
-                surfimg, vertices, _ = loadGiftiMesh(sfile)
-
-                if vertices.shape[0] != nvertices:
+                try:
+                    surfimg, _, vertices, _ = loadGiftiMesh(sfile)
+                except Exception:
                     continue
 
-                self.addVertices(vertices, sfile, select=False)
-                self.setMeta(    sfile, surfimg)
+                if vertices[0].shape[0] != nvertices:
+                    continue
+
+                self.addVertices(vertices[0], sfile, select=False)
+                self.setMeta(sfile, surfimg)
 
 
     def loadVertices(self, infile, key=None, *args, **kwargs):
@@ -123,7 +131,7 @@ class GiftiMesh(fslmesh.Mesh):
         if key is None:
             key = infile
 
-        surfimg, vertices, _ = loadGiftiMesh(infile)
+        surfimg, _, vertices, _ = loadGiftiMesh(infile)
 
         vertices = self.addVertices(vertices, key, *args, **kwargs)
 
@@ -157,9 +165,10 @@ def loadGiftiMesh(filename):
 
     The image is expected to contain the following``<DataArray>`` elements:
 
-      - one comprising ``NIFTI_INTENT_POINTSET`` data (the surface vertices)
       - one comprising ``NIFTI_INTENT_TRIANGLE`` data (vertex indices
         defining the triangles).
+      - one or more comprising ``NIFTI_INTENT_POINTSET`` data (the surface
+        vertices)
 
     A ``ValueError`` will be raised if this is not the case.
 
@@ -169,41 +178,64 @@ def loadGiftiMesh(filename):
 
                    - The loaded ``nibabel.gifti.GiftiImage`` instance
 
-                   - A ``(N, 3)`` array containing ``N`` vertices.
-
-                   - A ``(M, 3))`` array containing the vertex indices for
+                   - A ``(M, 3)`` array containing the vertex indices for
                      ``M`` triangles.
+
+                   - A list of at least one ``(N, 3)`` arrays containing ``N``
+                     vertices.
+
+                   - A ``(M, N)`` numpy array containing ``N`` data points for
+                     ``M`` vertices, or ``None`` if the file does not contain
+                     any vertex data.
     """
 
     gimg = nib.load(filename)
 
-    pointsetCode = constants.NIFTI_INTENT_POINTSET
-    triangleCode = constants.NIFTI_INTENT_TRIANGLE
+    pscode  = constants.NIFTI_INTENT_POINTSET
+    tricode = constants.NIFTI_INTENT_TRIANGLE
 
-    pointsets = [d for d in gimg.darrays if d.intent == pointsetCode]
-    triangles = [d for d in gimg.darrays if d.intent == triangleCode]
-
-    if len(gimg.darrays) != 2:
-        raise ValueError('{}: GIFTI surface files must contain '
-                         'exactly one pointset array and one '
-                         'triangle array'.format(filename))
-
-    if len(pointsets) != 1:
-        raise ValueError('{}: GIFTI surface files must contain '
-                         'exactly one pointset array'.format(filename))
+    pointsets = [d for d in gimg.darrays if d.intent == pscode]
+    triangles = [d for d in gimg.darrays if d.intent == tricode]
+    vdata     = [d for d in gimg.darrays if d.intent not in (pscode, tricode)]
 
     if len(triangles) != 1:
         raise ValueError('{}: GIFTI surface files must contain '
                          'exactly one triangle array'.format(filename))
 
-    vertices = pointsets[0].data
+    if len(pointsets) == 0:
+        raise ValueError('{}: GIFTI surface files must contain '
+                         'at least one pointset array'.format(filename))
+
+    vertices = [ps.data for ps in pointsets]
     indices  = triangles[0].data
 
-    return gimg, vertices, indices
+    if len(vdata) == 0: vdata = None
+    else:               vdata = prepareGiftiVertexData(vdata, filename)
+
+    return gimg, indices, vertices, vdata
 
 
 def loadGiftiVertexData(filename):
     """Loads vertex data from the given GIFTI file.
+
+    See :func:`prepareGiftiVertexData`.
+
+    Returns a tuple containing:
+
+      - The loaded ``nibabel.gifti.GiftiImage`` object
+
+      - A ``(M, N)`` numpy array containing ``N`` data points for ``M``
+        vertices
+    """
+    gimg = nib.load(filename)
+    return gimg, prepareGiftiVertexData(gimg.darrays, filename)
+
+
+def prepareGiftiVertexData(darrays, filename=None):
+    """Prepares vertex data from the given list of GIFTI data arrays.
+
+    All of the data arrays are concatenated into one ``(M, N)`` array,
+    containing ``N`` data points for ``M`` vertices.
 
     It is assumed that the given file does not contain any
     ``NIFTI_INTENT_POINTSET`` or ``NIFTI_INTENT_TRIANGLE`` data arrays, and
@@ -215,17 +247,11 @@ def loadGiftiVertexData(filename):
       - One or more ``(M, 1)`` data arrays each containing a single data point
         for ``M`` vertices, and all with the same intent code
 
-    Returns a tuple containing:
-
-      - The loaded ``nibabel.gifti.GiftiImage`` object
-
-      - A ``(M, N)`` numpy array containing ``N`` data points for ``M``
-        vertices
+    Returns a ``(M, N)`` numpy array containing ``N`` data points for ``M``
+    vertices.
     """
 
-    gimg = nib.load(filename)
-
-    intents = set([d.intent for d in gimg.darrays])
+    intents = set([d.intent for d in darrays])
 
     if len(intents) != 1:
         raise ValueError('{} contains multiple (or no) intents'
@@ -235,20 +261,19 @@ def loadGiftiVertexData(filename):
 
     if intent in (constants.NIFTI_INTENT_POINTSET,
                   constants.NIFTI_INTENT_TRIANGLE):
-
         raise ValueError('{} contains surface data'.format(filename))
 
     # Just a single array - return it as-is.
     # n.b. Storing (M, N) data in a single
     # DataArray goes against the GIFTI spec,
     # but hey, it happens.
-    if len(gimg.darrays) == 1:
-        vdata = gimg.darrays[0].data
-        return gimg, vdata.reshape(vdata.shape[0], -1)
+    if len(darrays) == 1:
+        vdata = darrays[0].data
+        return vdata.reshape(vdata.shape[0], -1)
 
     # Otherwise extract and concatenate
     # multiple 1-dimensional arrays
-    vdata = [d.data for d in gimg.darrays]
+    vdata = [d.data for d in darrays]
 
     if any([len(d.shape) != 1 for d in vdata]):
         raise ValueError('{} contains one or more non-vector '
@@ -257,7 +282,7 @@ def loadGiftiVertexData(filename):
     vdata = np.vstack(vdata).T
     vdata = vdata.reshape(vdata.shape[0], -1)
 
-    return gimg, vdata
+    return vdata
 
 
 def relatedFiles(fname, ftypes=None):

@@ -70,11 +70,12 @@ def test_loadGiftiMesh():
     testdir  = op.join(op.dirname(__file__), 'testdata')
     testfile = op.join(testdir, 'example.surf.gii')
 
-    gimg, verts, idxs = gifti.loadGiftiMesh(testfile)
+    gimg, idxs, verts, _ = gifti.loadGiftiMesh(testfile)
 
     assert isinstance(gimg, nib.gifti.GiftiImage)
-    assert tuple(verts.shape) == (642,  3)
-    assert tuple(idxs.shape)  == (1280, 3)
+    assert len(verts)            == 1
+    assert tuple(verts[0].shape) == (642,  3)
+    assert tuple(idxs.shape)     == (1280, 3)
 
     badfiles = glob.glob(op.join(testdir, 'example_bad*surf.gii'))
 
@@ -234,3 +235,67 @@ def test_relatedFiles():
         for s in rsurfaces:
             result = gifti.relatedFiles(s)
             assert sorted(rrelated) == sorted(result)
+
+TEST_VERTS = np.array([
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]])
+TEST_IDXS = np.array([
+    [0, 1, 2],
+    [0, 3, 1],
+    [0, 2, 3],
+    [1, 3, 2]])
+
+TEST_VERT_ARRAY = nib.gifti.GiftiDataArray(
+    TEST_VERTS, intent='NIFTI_INTENT_POINTSET')
+TEST_IDX_ARRAY  = nib.gifti.GiftiDataArray(
+    TEST_IDXS, intent='NIFTI_INTENT_TRIANGLE')
+
+def test_GiftiMesh_surface_and_data():
+
+    data1   = np.random.randint(0, 10, len(TEST_VERTS))
+    data2   = np.random.randint(0, 10, len(TEST_VERTS))
+    expdata = np.vstack([data1, data2]).T
+    verts   = TEST_VERT_ARRAY
+    tris    = TEST_IDX_ARRAY
+    data1   = nib.gifti.GiftiDataArray(data1, intent='NIFTI_INTENT_SHAPE')
+    data2   = nib.gifti.GiftiDataArray(data2, intent='NIFTI_INTENT_SHAPE')
+    gimg    = nib.gifti.GiftiImage(darrays=[verts, tris, data1, data2])
+
+    with tempdir():
+        fname = op.abspath('test.gii')
+        gimg.to_filename(fname)
+        surf = gifti.GiftiMesh(fname)
+
+        assert np.all(surf.vertices  == TEST_VERTS)
+        assert np.all(surf.indices   == TEST_IDXS)
+        assert surf.vertexDataSets() == [fname]
+        assert np.all(surf.getVertexData(fname) == expdata)
+
+
+
+def test_GiftiMesh_multiple_vertices():
+
+    tris   = TEST_IDX_ARRAY
+    verts1 = TEST_VERT_ARRAY
+    verts2 = nib.gifti.GiftiDataArray(
+        TEST_VERTS * 5, intent='NIFTI_INTENT_POINTSET')
+
+    gimg  = nib.gifti.GiftiImage(darrays=[verts1, verts2, tris])
+
+    with tempdir():
+        fname = op.abspath('test.gii')
+        gimg.to_filename(fname)
+        surf  = gifti.GiftiMesh(fname)
+
+        expvsets = [fname,
+                    '{} [{}]'.format(fname, 1)]
+
+        assert np.all(surf.vertices == TEST_VERTS)
+        assert np.all(surf.indices  == TEST_IDXS)
+        assert  surf.vertexSets()   == expvsets
+
+        surf.vertices = expvsets[1]
+
+        assert np.all(surf.vertices == TEST_VERTS * 5)
