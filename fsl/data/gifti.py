@@ -211,8 +211,8 @@ def loadGiftiMesh(filename):
         raise ValueError('{}: GIFTI surface files must contain '
                          'at least one pointset array'.format(filename))
 
-    vertices = [ps.data for ps in pointsets]
-    indices  = triangles[0].data
+    vertices = [np.array(ps.data) for ps in pointsets]
+    indices  = np.array(triangles[0].data)
 
     if len(vdata) == 0: vdata = None
     else:               vdata = prepareGiftiVertexData(vdata, filename)
