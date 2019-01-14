@@ -123,16 +123,16 @@ variables:
 
 
 ###################################################
-# The patch_version anchor contains a before_script
+# The check_version anchor contains a before_script
 # section which is run on release builds, and makes
 # sure that the version in the code is up to date
 # (i.e. equal to the tag name).
 ###################################################
 
 
-.patch_version: &patch_version
+.check_version: &check_version
   before_script:
-    - bash ./.ci/patch_version.sh
+    - bash ./.ci/check_version.sh
 
 
 ############
@@ -191,7 +191,6 @@ style:
 
 build-doc:
   <<: *only_upstream
-  <<: *patch_version
 
   tags:
    - docker
@@ -215,7 +214,7 @@ build-doc:
 
 build-pypi-dist:
   <<: *only_releases
-  <<: *patch_version
+  <<: *check_version
 
   stage: build
   image: python:3.6
