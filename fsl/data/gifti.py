@@ -195,8 +195,8 @@ def loadGiftiMesh(filename):
         raise ValueError('{}: GIFTI surface files must contain '
                          'exactly one triangle array'.format(filename))
 
-    vertices = pointsets[0].data
-    indices  = triangles[0].data
+    vertices = np.array(pointsets[0].data)
+    indices  = np.array(triangles[0].data)
 
     return gimg, vertices, indices
 
