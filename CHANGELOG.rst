@@ -27,6 +27,13 @@ Changed
   vertex data.
 
 
+Fixed
+^^^^^
+
+* Fixed an issue in the :class:`.GiftiMesh` class, where
+  ``numpy``/``nibabel`` was returning read-only index arrays.
+
+
 Removed
 ^^^^^^^
 

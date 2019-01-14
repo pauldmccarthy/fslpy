@@ -299,3 +299,23 @@ def test_GiftiMesh_multiple_vertices():
         surf.vertices = expvsets[1]
 
         assert np.all(surf.vertices == TEST_VERTS * 5)
+
+
+def test_GiftiMesh_needsFixing():
+    from . import test_mesh
+
+    verts      = test_mesh.CUBE_VERTICES
+    idxs       = test_mesh.CUBE_TRIANGLES_CW
+    idxs_fixed = test_mesh.CUBE_TRIANGLES_CCW
+
+    verts = nib.gifti.GiftiDataArray(verts, intent='NIFTI_INTENT_POINTSET')
+    idxs  = nib.gifti.GiftiDataArray(idxs,  intent='NIFTI_INTENT_TRIANGLE')
+    gimg  = nib.gifti.GiftiImage(darrays=[verts, idxs])
+
+    with tempdir():
+        fname = op.abspath('test.gii')
+        gimg.to_filename(fname)
+
+        surf = gifti.GiftiMesh(fname, fixWinding=True)
+
+        assert np.all(np.isclose(surf.indices, idxs_fixed))

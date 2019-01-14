@@ -248,9 +248,11 @@ def test_needsFixing():
     fnormals = np.array(CUBE_CCW_VERTEX_NORMALS)
     blo      = verts.min(axis=0)
     bhi      = verts.max(axis=0)
+    mesh     = fslmesh.Mesh(tris_cw, vertices=verts, fixWinding=True)
 
     assert not fslmesh.needsFixing(verts, tris_ccw, fnormals, blo, bhi)
     assert     fslmesh.needsFixing(verts, tris_cw, -fnormals, blo, bhi)
+    assert     np.all(np.isclose(mesh.indices, tris_ccw))
 
 
 def test_trimesh_no_trimesh():
