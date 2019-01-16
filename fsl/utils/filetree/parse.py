@@ -1,7 +1,8 @@
+import glob
 import os.path as op
 from . import filetree
 from pathlib import PurePath
-from typing import Tuple
+from typing import Tuple, List
 import re
 
 
@@ -24,6 +25,17 @@ def search_tree(name: str) -> str:
         elif op.exists(filename + '.tree'):
             return filename + '.tree'
     raise ValueError("No file tree found for %s" % name)
+
+
+def list_all_trees() -> List[str]:
+    """Return a list containing paths to all tree files that can be found in
+    :data:`tree_directories`
+    """
+    trees = []
+    for directory in tree_directories:
+        directory = op.abspath(directory)
+        trees.extend(glob.glob(op.join(directory, '*.tree')))
+    return trees
 
 
 def read_line(line: str) -> Tuple[int, PurePath, str]:
