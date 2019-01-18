@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 #
-# query.py -
+# query.py - The FileTreeQuery class
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Michiel Cottaar <michiel.cottaar@.ndcn.ox.ac.uk>
 #
+"""
+"""
 
 
 import logging
 import collections
-from   typing import Dict, Set, List
+
+import os.path as op
+from typing import Dict, Set, List
 
 
 log = logging.getLogger(__name__)
@@ -21,8 +25,8 @@ class FileTreeQuery(object):
         """
         """
         self.__tree      = tree
-        self.__matches   = self.__tree.scan()
-        self.__variables = Match.allVariables(self.__tree, self.__matches)
+        self.__matches   = Match.scan(tree)
+        self.__variables = Match.allVariables(tree, self.__matches)
 
 
     def variables(self) -> Dict[str, Set]:
@@ -34,7 +38,8 @@ class FileTreeQuery(object):
 
 
     def query(self, **variables) -> List[str]:
-        """
+        """Return all ``Match`` objects which match the given set of
+        ``variable=value`` arguments.
         """
         hits = []
 
@@ -52,14 +57,16 @@ class Match(object):
     """
 
     @staticmethod
-    def allVariables(tree, matches) -> Dict(str, Set):
-        """
+    def allVariables(tree, matches) -> Dict[str, Set]:
+        """Returns a dict of ``{ variable : [values] }`` mappings
+        containing all variables and their possible values present
+        in the given list of ``Match`` objects.
         """
         allvars = collections.defaultdict(set)
 
         for m in matches:
             for var, val in m.variables.items():
-                allvars[var].update(val)
+                allvars[var].add(val)
         return allvars
 
 
@@ -74,11 +81,20 @@ class Match(object):
         matches = []
         for template in tree.templates:
             for filename in tree.get_all(template, glob_vars='all'):
+
+                if not op.isfile(filename):
+                    continue
+
                 variables = tree.extract_variables(template, filename)
-                match = Match(filename, template, variables)
-                matches.append(match)
+                variables = {var : val
+                             for var, val in variables.items()
+                             if val is not None}
+
+                matches.append(Match(filename, template, variables))
+
         for tree_name, sub_tree in tree.sub_trees:
             matches.extend(Match.scan(sub_tree))
+
         return matches
 
 
@@ -93,3 +109,11 @@ class Match(object):
         self.filename = filename
         self.short_name = short_name
         self.variables = dict(variables)
+
+
+    def __repr__(self):
+        return self.filename
+
+
+    def __str__(self):
+        return repr(self)

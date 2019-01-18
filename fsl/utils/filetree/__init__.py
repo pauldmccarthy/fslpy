@@ -278,3 +278,4 @@ __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'
 
 from .filetree import FileTree, register_tree, MissingVariable
 from .parse import tree_directories, list_all_trees
+from .query import FileTreeQuery
