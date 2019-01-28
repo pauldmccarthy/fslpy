@@ -485,13 +485,16 @@ def commonBase(paths):
 
     depths = [len(p.split(op.sep)) for p in paths]
     base   = max(zip(depths, paths), key=operator.itemgetter(0))[1]
+    last   = base
 
     while True:
 
         base = op.split(base)[0]
 
-        if len(base) == 0:
+        if base == last or len(base) == 0:
             break
+
+        last = base
 
         if all([p.startswith(base) for p in paths]):
             return base
