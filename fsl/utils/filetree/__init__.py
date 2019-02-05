@@ -16,7 +16,8 @@ for your pipeline based on `this file <trees/bids_raw.tree>`
 
 :py:func:`filetree.FileTree.read` will search through the `filetree.tree_directories` list of directories
 for any FileTrees matching the given name. This list by default includes the current directory. Of course,
-a full path to the requested FileTree can also be provided.
+a full path to the requested FileTree can also be provided. This includes all FileTrees defined
+`here <https://git.fmrib.ox.ac.uk/fsl/fslpy/tree/master/fsl/utils/filetree/trees>`_.
 
 FileTree format
 ---------------
@@ -128,7 +129,8 @@ be skipped. For example for the FileTree:
 
 Note that if any variable within the square brackets is missing, any text within those square brackets is omitted.
 
-Extensive use of optional variables can be found in the FileTree of the BIDS raw data formatting.
+Extensive use of optional variables can be found in the
+`FileTree of the BIDS raw data format <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/bids_raw.tree>`_.
 
 Sub-trees
 ^^^^^^^^^
@@ -148,7 +150,11 @@ FileTrees can include other FileTrees within their directory structure. For exam
             ->dti (dti)
 
 which might represent a diffusion MRI pipeline, which contains references to the predefined trees for the
-"topup", "eddy", "Diffusion", and "dti" FileTrees describing the input/output of various FSL tools.
+`topup <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/topup.tree>`_,
+`eddy <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/eddy.tree>`_,
+`Diffusion <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/Diffusion.tree>`_, and
+`dti <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/dti.tree>`_
+FileTrees describing the input/output of various FSL tools.
 
 The general format of this is:
 ``-><tree name> [<variable in sub-tree>=<value>, ...] (<sub-tree short name)``
@@ -163,8 +169,10 @@ The filenames defined in the sub-trees can be accessed using a "/" in the short 
     >>> tree.get('topup/fieldcoef')
     'A/topup/out_fielcoef.nii.gz
 
-Extensive use of sub-trees can be found in the FileTree of the HCP pre-processed directory structure,
-which amongst others refers to the HCP surface directory format FileTree.
+Extensive use of sub-trees can be found in
+`the FileTree of the HCP pre-processed directory structure <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/HCP_directory.tree>`_,
+which amongst others refers to
+`the HCP surface directory format FileTree <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/HCP_Surface.tree>`_.
 """
 
 __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'
