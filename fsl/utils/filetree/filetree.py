@@ -58,11 +58,6 @@ class FileTree(object):
         res.update(self.variables)
         return res
 
-    @property
-    def short_names(self) -> List[str]:
-        """Returns a list containing all short names in the file tree. """
-        return list(self.templates.keys())
-
     def get_variable(self, name: str, default=None) -> str:
         """
         Gets a variable used to fill out the template
