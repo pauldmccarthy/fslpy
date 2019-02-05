@@ -18,7 +18,8 @@ class FileTree(object):
     """
     Contains the input/output filename tree
 
-    Properties
+    Properties:
+
     - ``templates``: dictionary mapping short names to filename templates
     - ``variables``: dictionary mapping variables in the templates to specific values (variables set to None are explicitly unset)
     - ``sub_trees``: filename trees describing specific sub-directories
@@ -41,6 +42,9 @@ class FileTree(object):
 
     @property
     def parent(self, ):
+        """
+        Parent FileTree, of which this sub-tree is a sub-directory
+        """
         return self._parent
 
     @property
@@ -93,8 +97,9 @@ class FileTree(object):
         - '../' characters in short_name refer to parents
 
         For example:
-        - eddy/output refers to the output in the eddy sub_tree (i.e. self.sub_trees['eddy'].templates['output']
-        - ../other/name refers to the 'other' sub-tree of the parent tree (i.e., self.parent.sub_trees['other'].templates['name']
+
+        - "eddy/output" refers to the "output" in the "eddy" sub_tree (i.e. ``self.sub_trees['eddy'].templates['output']``)
+        - "../other/name" refers to the "other" sub-tree of the parent tree (i.e., ``self.parent.sub_trees['other'].templates['name']``)
 
         :param short_name: name of the template
         :return: tuple with the template and the variables corresponding to the template
@@ -160,9 +165,9 @@ class FileTree(object):
         Gets all existing directory/file names matching a specific pattern
 
         :param short_name: short name of the path template
-        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
-        Any defined variables in `glob_vars` will be ignored.
-        If glob_vars is set to 'all', all undefined variables will be used to look up matches
+        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk.
+            Any defined variables in `glob_vars` will be ignored.
+            If glob_vars is set to 'all', all undefined variables will be used to look up matches.
         :return: sorted sequence of paths
         """
         text, variables = self.get_template(short_name)
@@ -173,9 +178,9 @@ class FileTree(object):
         Gets all the parameters that generate existing filenames
 
         :param short_name: short name of the path template
-        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
-        Any defined variables in `glob_vars` will be ignored.
-        If glob_vars is set to 'all', all undefined variables will be used to look up matches
+        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk.
+            Any defined variables in `glob_vars` will be ignored.
+            If glob_vars is set to 'all', all undefined variables will be used to look up matches.
         :return: sequence of dictionaries with the variables settings used to generate each filename
         """
         return tuple(self.extract_variables(short_name, fn) for fn in self.get_all(short_name, glob_vars=glob_vars))
@@ -184,8 +189,9 @@ class FileTree(object):
         """
         Creates a new filetree with updated variables
 
-        :arg variables: new values for the variables
-        Setting variables to None will explicitly unset them
+        :param variables: new values for the variables
+            Setting variables to None will explicitly unset them
+        :return: New FileTree with same templates for directory names and filenames, but updated variables
         """
         new_tree = deepcopy(self)
         new_tree.variables.update(variables)
@@ -198,7 +204,7 @@ class FileTree(object):
         :param short_name: short name of the path template
         :param filename: filename matching the template
         :return: variables needed to get to the given filename
-        Variables with None value are optional variables in the template that were not used
+            Variables with None value are optional variables in the template that were not used
         """
         text, _ = self.get_template(short_name)
         return utils.extract_variables(text, filename, self.variables)
@@ -234,11 +240,11 @@ class FileTree(object):
         :param on_disk: if True checks whether the files exist on disk
         :param error: if True raises a helpful error when the check fails
         :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
-        If `glob_vars` contains any defined variables, it will be ignored.
+            If `glob_vars` contains any defined variables, it will be ignored.
         :return: True if short names exist and optionally exist on disk (False otherwise)
         :raise:
-        - ValueError if error is set and the tree is incomplete
-        - IOError if error is set and any files are missing from the disk
+            - ValueError if error is set and the tree is incomplete
+            - IOError if error is set and any files are missing from the disk
         """
         if isinstance(short_names, str):
             short_names = (short_names, )
@@ -273,11 +279,11 @@ class FileTree(object):
         """
         Reads a FileTree from a specific file
 
-        The return type is ``cls`` unless the tree_name has been previously registered
-        The return type of any sub-tree is FileTree unless the tree_name has been previously registered
+        The return type is ``cls`` unless the tree_name has been previously registered.
+        The return type of any sub-tree is ``FileTree`` unless the tree_name has been previously registered.
 
         :param tree_name: file containing the filename tree.
-        Can provide the filename of a tree file or the name for a tree in the ``filetree.tree_directories``.
+            Can provide the filename of a tree file or the name for a tree in the ``filetree.tree_directories``.
         :param directory: parent directory of the full tree (defaults to current directory)
         :param variables: variable settings
         :return: dictionary from specifier to filename

@@ -30,11 +30,12 @@ def read_line(line: str) -> Tuple[int, PurePath, str]:
     """
     Parses line from the tree file
 
-    :param line: input line from a *.tree file
+    :param line: input line from a \*.tree file
     :return: Tuple with:
-    - number of spaces in front of the name
-    - name of the file or the sub_tree
-    - short name of the file
+
+        - number of spaces in front of the name
+        - name of the file or the sub_tree
+        - short name of the file
     """
     if line.strip()[:1] == '->':
         return read_subtree_line(line)
@@ -54,12 +55,13 @@ def read_subtree_line(line: str, directory: str) -> Tuple[int, "filetree.FileTre
     """
     Parses the line defining a sub_tree
 
-    :param line: input line from a *.tree file
+    :param line: input line from a \*.tree file
     :param directory: containing directory
     :return: Tuple with
-    - number of spaces in front of the name
-    - sub_tree
-    - short name of the sub_tree
+
+        - number of spaces in front of the name
+        - sub_tree
+        - short name of the sub_tree
     """
     match = re.match(r'^(\s*)->\s*(\S*)(.*)\((\S*)\)', line)
     if match is None:

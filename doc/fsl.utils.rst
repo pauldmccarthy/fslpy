@@ -8,6 +8,7 @@
    fsl.utils.cache
    fsl.utils.deprecated
    fsl.utils.ensure
+   fsl.utils.filetree
    fsl.utils.fslsub
    fsl.utils.idle
    fsl.utils.imcp
