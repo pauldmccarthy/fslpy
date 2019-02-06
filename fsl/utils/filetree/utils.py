@@ -27,7 +27,7 @@ def get_all(template, variables, glob_vars=()):
     :param template: template
     :param variables: (incomplete) mapping of variable names to values
     :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
-    If `glob_vars` contains any defined variables, it will be ignored.
+        If `glob_vars` contains any defined variables, it will be ignored.
     :return: sequence of filenames
     """
     filled = fill_known(template, variables)
