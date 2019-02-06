@@ -25,6 +25,7 @@ The FileTrees are defined in a simple to type format, where indendation is used 
 
 ::
 
+    # Any text following a #-character can be used for comments
     parent
         file1.txt
         child
@@ -173,6 +174,104 @@ Extensive use of sub-trees can be found in
 `the FileTree of the HCP pre-processed directory structure <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/HCP_directory.tree>`_,
 which amongst others refers to
 `the HCP surface directory format FileTree <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/HCP_Surface.tree>`_.
+
+Example pipeline
+----------------
+A very simple pipeline to run BET on every subject can start with a simply FileTree like
+::
+
+    {subject}
+        T1w.nii.gz
+        T1w_brain.nii.gz (bet_output)
+        T1w_brain_mask.nii.gz (bet_mask)
+
+
+Assuming that the input T1w's already exist, we can then simply run BET for every subject using:
+
+.. code-block:: python
+
+    from fsl.utils.filetree import FileTree
+    from fsl.wrappers.bet import bet
+    tree = FileTree.read(<tree filename>)
+    variables = tree.get_all_vars('T1w')  # extract the set of variables for all existing T1w files
+    for single_variable_set in variables:
+        T1w_tree = tree.update(**single_variable_set)
+        # get retrieves the filenames based on the current set of variables
+        # make_dir=True ensures that the output directory containing the "bet_output" actually exists
+        bet(input=T1w_tree.get('T1w'), output=T1w_tree.get('bet_output', make_dir=True), mask=True)
+
+If later on in our input files change, because for some subjects we added a second session, we could keep our script
+and simply update the FileTree:
+::
+
+    {subject}
+        [ses-{session}]
+            T1w.nii.gz
+            T1w_brain.nii.gz (bed_output)
+            T1w_brain_mask.nii.gz (bed_mask)
+
+Note the square brackets around the session sub-directory. This indicates that this sub-directory is optional and
+will only be present if the "session" variable is defined (see `Optional variables`_).
+
+This means that with the script run with this updated tree will run bet on each T1-weighted image even for a directory
+structure like:
+::
+
+    subjectA/
+        T1w.nii.gz
+    subjectB/
+        ses-01/
+            T1w.nii.gz
+        ses-02/
+            T1w.nii.gz
+
+If we get told off that our script is writing the output to the same directory as our input data,
+altering this behaviour is again as simple as altering the FileTree to something like:
+::
+
+    raw_data
+        {subject}
+            [ses-{session}]
+                T1w.nii.gz
+    processed_data
+        {subject}
+            [ses-{session}]
+                bet
+                    {subject}[_{session}]_T1w_brain.nii.gz (bet_output)
+                    {subject}[_{session}]_T1w_brain_mask.nii.gz (bet_mask)
+
+Note that we also encoded the subject and session ID in the output filename.
+
+Some tools like FSL's FAST produce many output files. Rather than entering all
+of these files in our FileTree by hand you can include them all at once by including `Sub-trees`_:
+
+::
+
+    raw_data
+        {subject}
+            [ses-{session}]
+                T1w.nii.gz
+    processed_data
+        {subject}
+            [ses-{session}]
+                bet
+                    {subject}[_{session}]_T1w_brain.nii.gz (bet_output)
+                    {subject}[_{session}]_T1w_brain_mask.nii.gz (bet_mask)
+                fast
+                    ->fast basename={subject}[_{session}] (segment)
+
+Here we chose to set the "basename" of the FAST output to a combination of the subject and if available session ID.
+
+Within the script we can generate the fast output by running
+
+.. code-block:: python
+
+    from fsl.wrappers.fast import fast
+    fast(imgs=[T1w_tree.get('T1w')], out=T1w_tree.get('segment/basename'))
+
+The output files will be available as `T1w_tree.get('segment/<variable name>')`, where `<variable name>` is one
+of the short variable names defined in the
+`FAST FileTree <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/fast.tree>`_.
 """
 
 __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'

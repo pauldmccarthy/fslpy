@@ -50,7 +50,7 @@ class FileTree(object):
     @property
     def all_variables(self, ):
         """
-        All tree variables including those from the parent tree
+        All tree variables including those inherited from the parent tree
         """
         if self.parent is None:
             return dict(self.variables)
@@ -63,7 +63,7 @@ class FileTree(object):
         Gets a variable used to fill out the template
 
         :param name: variable name
-        :param default: default variables (if not set an error is raised for a missing variable)
+        :param default: default variables (if not set a MissingVariable error is raised if a variable is missing)
         :return: value of the variable
         """
         variables = self.all_variables
