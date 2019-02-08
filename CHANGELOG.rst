@@ -27,17 +27,24 @@ Changed
   vertex data.
 
 
-Fixed
-^^^^^
-
-* Fixed an issue in the :class:`.GiftiMesh` class, where
-  ``numpy``/``nibabel`` was returning read-only index arrays.
-
-
 Removed
 ^^^^^^^
 
 * Many deprecated items removed.
+
+
+1.13.3 (Friday February 8th 2019)
+---------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed an issue with the `.dicom.loadSeries` using memory-mapping for
+  image files that would subsequently be deleted.
+* Fixed an issue in the :class:`.GiftiMesh` class, where
+  ``numpy``/``nibabel`` was returning read-only index arrays.
 
 
 1.13.2 (Friday November 30th 2018)

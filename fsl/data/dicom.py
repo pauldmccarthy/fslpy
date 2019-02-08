@@ -203,9 +203,13 @@ def loadSeries(series):
             sp.call(cmd.split(), stdout=devnull, stderr=devnull)
 
         files  = glob.glob(op.join(td, '{}*.nii'.format(snum)))
-        images = [nib.load(f) for f in files]
+        images = [nib.load(f, mmap=False) for f in files]
 
-        # Force-load images into memory
-        [i.get_data() for i in images]
+        # copy images so nibabel no longer
+        # refs to the files (as they will
+        # be deleted), and use get_data()
+        # to force-load the image data.
+        images = [nib.Nifti1Image(i.get_data(), None, i.header)
+                  for i in images]
 
         return [DicomImage(i, series, dcmdir, name=desc) for i in images]
