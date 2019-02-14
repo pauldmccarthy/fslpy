@@ -187,10 +187,10 @@ class FileTree(object):
 
     def update(self, **variables) -> "FileTree":
         """
-        Creates a new filetree with updated variables
+        Creates a new FileTree with updated variables
 
         :param variables: new values for the variables
-            Setting variables to None will explicitly unset them
+            Setting variables to None will force that variable to be empty (useful for non-optional variables)
         :return: New FileTree with same templates for directory names and filenames, but updated variables
         """
         new_tree = deepcopy(self)
