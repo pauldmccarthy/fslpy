@@ -171,7 +171,7 @@ class FileTree(object):
         :return: sorted sequence of paths
         """
         text, variables = self.get_template(short_name)
-        return tuple(utils.get_all(text, variables, glob_vars=glob_vars))
+        return tuple(str(Path(fn)) for fn in utils.get_all(text, variables, glob_vars=glob_vars))
 
     def get_all_vars(self, short_name: str, glob_vars=()) -> Tuple[Dict[str, str]]:
         """
