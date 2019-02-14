@@ -21,3 +21,7 @@ def test_get_variables():
         utils.extract_variables('{var}[_{other_var}]_{var}', 'test_foo_bar')
     with pytest.raises(ValueError):
         utils.extract_variables('bar{var}[_{other_var}]_{var}', 'test')
+
+    assert {'subject': '01', 'session': 'A'} == utils.extract_variables('sub-{subject}/[ses-{session}]/T1w.nii.gz', 'sub-01/ses-A/T1w.nii.gz')
+    with pytest.raises(ValueError):
+        utils.extract_variables('sub-{subject}/[ses-{session}]/T1w.nii.gz', 'sub-01/other/T1w.nii.gz')

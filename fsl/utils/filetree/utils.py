@@ -170,6 +170,8 @@ def extract_variables(template, filename, known_vars=None):
                     raise ValueError('Multiple values found for {}'.format(var))
             else:
                 extracted_value[var] = value
+        if any('/' in value for value in extracted_value.values()):
+            continue
         for name in find_variables(template):
             if name not in extracted_value:
                 extracted_value[name] = None
