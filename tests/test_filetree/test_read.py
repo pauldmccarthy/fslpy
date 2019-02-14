@@ -90,6 +90,10 @@ def test_custom_tree():
         tree.get_all('opt_file')
     assert len(tree.get_all('opt_file', glob_vars=['opt'])) == 1
 
+    for short_name in ('sub_file', 'opt_file'):
+        for glob_vars in (['opt'], 'all'):
+            assert tree.get_all(short_name, glob_vars) == tuple(stree.get(short_name) for stree in tree.get_all_trees(short_name, glob_vars))
+
     for vars in ({'opt': None}, {'opt': 'test'}):
         filename = tree.update(**vars).get('sub_file')
         assert vars == tree.extract_variables('sub_file', filename)

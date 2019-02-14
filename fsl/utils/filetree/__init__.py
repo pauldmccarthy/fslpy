@@ -193,9 +193,9 @@ Assuming that the input T1w's already exist, we can then simply run BET for ever
     from fsl.utils.filetree import FileTree
     from fsl.wrappers.bet import bet
     tree = FileTree.read(<tree filename>)
-    variables = tree.get_all_vars('T1w')  # extract the set of variables for all existing T1w files
-    for single_variable_set in variables:
-        T1w_tree = tree.update(**single_variable_set)
+
+    # Iterates over set of variables that correspond to each T1-weighted image file matching the template
+    for T1w_tree in tree.get_all_trees('T1w', glob_vars='all'):
         # get retrieves the filenames based on the current set of variables
         # make_dir=True ensures that the output directory containing the "bet_output" actually exists
         bet(input=T1w_tree.get('T1w'), output=T1w_tree.get('bet_output', make_dir=True), mask=True)
