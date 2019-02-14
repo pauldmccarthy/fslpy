@@ -103,9 +103,6 @@ class FileTreeQuery(object):
             idx       = []
             for var in snvars:
 
-                # TODO handle optional variables. Need
-                # an extra element on each axis which
-                # represents a missing value
                 val = match.variables[var]
                 idx.append(snvaridxs[var][val])
 
@@ -194,10 +191,7 @@ def scan(tree):
             if not op.isfile(filename):
                 continue
 
-            variables = tree.extract_variables(template, filename)
-            variables = {var : val
-                         for var, val in variables.items()
-                         if val is not None}
+            variables = dict(tree.extract_variables(template, filename))
 
             matches.append(Match(filename, template, variables))
 
@@ -232,7 +226,12 @@ def allVariables(tree, matches) -> Tuple[Dict[str, List], Dict[str, List]]:
             allvars[      var]         .add(val)
             allshortnames[m.short_name].add(var)
 
-    allvars       = {var : list(sorted(vals))
+    # allow us to compare None with strings
+    def key(v):
+        if v is None: return ''
+        else:         return v
+
+    allvars       = {var : list(sorted(vals, key=key))
                      for var, vals in allvars.items()}
     allshortnames = {sn  : list(sorted(vars))
                      for sn, vars in allshortnames.items()}
@@ -261,7 +260,7 @@ class Match(object):
 
     def __repr__(self):
         """Returns a string representation of this ``Match``. """
-        return 'Match({})'.format(self.filename)
+        return 'Match({}) {}'.format(self.filename, self.variables)
 
 
     def __str__(self):
