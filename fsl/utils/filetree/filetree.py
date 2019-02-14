@@ -190,11 +190,14 @@ class FileTree(object):
         Creates a new FileTree with updated variables
 
         :param variables: new values for the variables
-            Setting variables to None will force that variable to be empty (useful for non-optional variables)
+            Setting a variable to None will cause the variable to be unset
         :return: New FileTree with same templates for directory names and filenames, but updated variables
         """
         new_tree = deepcopy(self)
         new_tree.variables.update(variables)
+        for key, value in variables.items():
+            if value is None:
+                del new_tree.variables[key]
         return new_tree
 
     def extract_variables(self, short_name: str, filename: str) -> Dict[str, str]:

@@ -77,8 +77,8 @@ def test_custom_tree():
     assert len(tree.get_all('sub_file', glob_vars='all')) == 2
     assert len(tree.get_all('sub_file')) == 1
     assert len(tree.update(opt=None).get_all('sub_file')) == 1
-    assert len(tree.update(opt=None).get_all('sub_file', glob_vars=['opt'])) == 1
-    assert len(tree.update(opt=None).get_all('sub_file', glob_vars='all')) == 1
+    assert len(tree.update(opt=None).get_all('sub_file', glob_vars=['opt'])) == 2
+    assert len(tree.update(opt=None).get_all('sub_file', glob_vars='all')) == 2
 
     for fn, settings in zip(tree.get_all('sub_file', glob_vars='all'),
                             tree.get_all_vars('sub_file', glob_vars='all')):
