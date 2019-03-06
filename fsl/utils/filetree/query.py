@@ -148,11 +148,19 @@ class FileTreeQuery(object):
 
     def query(self, short_name, **variables):
         """Search for files of the given ``short_name``, which match
-        the specified ``variables``.
+        the specified ``variables``. All hits are returned for variables
+        that are unspecified.
 
         :arg short_name: Short name of files to search for.
 
-        All other arguments are
+        All other arguments are assumed to be ``variable=value`` pairs,
+        used to restrict which matches are returned. All values are returned
+        for variables that are not specified, or variables which are given a
+        value of ``'*'``.
+
+        :returns: A ``numpy.array`` of ``Match`` objects, with axes
+                  corresponding to the labels returned by the :meth:`axes`
+                  method.
         """
 
         varnames    = list(variables.keys())
@@ -260,7 +268,7 @@ class Match(object):
 
     def __repr__(self):
         """Returns a string representation of this ``Match``. """
-        return 'Match({}) {}'.format(self.filename, self.variables)
+        return 'Match({})'.format(self.filename)
 
 
     def __str__(self):
