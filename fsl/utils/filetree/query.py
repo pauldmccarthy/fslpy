@@ -132,10 +132,10 @@ class FileTreeQuery(object):
         files of that ``short_name`` type are returned.
         """
         if short_name is None:
-            return dict(self.__allvars)
+            return {var : list(vals) for var, vals in self.__allvars.items()}
         else:
             varnames = self.__shortnamevars[short_name]
-            return {var : self.__allvars[var] for var in varnames}
+            return {var : list(self.__allvars[var]) for var in varnames}
 
 
     @property
