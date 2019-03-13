@@ -171,7 +171,7 @@ class FileTree(object):
         :return: sorted sequence of paths
         """
         text, variables = self.get_template(short_name)
-        return tuple(utils.get_all(text, variables, glob_vars=glob_vars))
+        return tuple(str(Path(fn)) for fn in utils.get_all(text, variables, glob_vars=glob_vars))
 
     def get_all_vars(self, short_name: str, glob_vars=()) -> Tuple[Dict[str, str]]:
         """
@@ -185,16 +185,33 @@ class FileTree(object):
         """
         return tuple(self.extract_variables(short_name, fn) for fn in self.get_all(short_name, glob_vars=glob_vars))
 
+    def get_all_trees(self, short_name: str, global_vars=()) -> Tuple["FileTree"]:
+        """
+        Gets all the trees that generate the existing files matching the pattern
+
+        tree.get_all(short_name) == tuple(tree.get(short_name) for tree in tree.get_all_trees(short_name))
+
+        :param short_name: short name of the path template
+        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk.
+            Any defined variables in `glob_vars` will be ignored.
+            If glob_vars is set to 'all', all undefined variables will be used to look up matches.
+        :return: sequence of FileTrees used to generate each file on disk matching the pattern of `short_name`
+        """
+        return tuple(self.update(**vars) for vars in self.get_all_vars(short_name, glob_vars=global_vars))
+
     def update(self, **variables) -> "FileTree":
         """
-        Creates a new filetree with updated variables
+        Creates a new FileTree with updated variables
 
         :param variables: new values for the variables
-            Setting variables to None will explicitly unset them
+            Setting a variable to None will cause the variable to be unset
         :return: New FileTree with same templates for directory names and filenames, but updated variables
         """
         new_tree = deepcopy(self)
         new_tree.variables.update(variables)
+        for key, value in variables.items():
+            if value is None:
+                del new_tree.variables[key]
         return new_tree
 
     def extract_variables(self, short_name: str, filename: str) -> Dict[str, str]:
