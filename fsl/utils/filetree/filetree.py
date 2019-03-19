@@ -185,7 +185,7 @@ class FileTree(object):
         """
         return tuple(self.extract_variables(short_name, fn) for fn in self.get_all(short_name, glob_vars=glob_vars))
 
-    def get_all_trees(self, short_name: str, global_vars=()) -> Tuple["FileTree"]:
+    def get_all_trees(self, short_name: str, glob_vars=()) -> Tuple["FileTree"]:
         """
         Gets all the trees that generate the existing files matching the pattern
 
@@ -197,7 +197,7 @@ class FileTree(object):
             If glob_vars is set to 'all', all undefined variables will be used to look up matches.
         :return: sequence of FileTrees used to generate each file on disk matching the pattern of `short_name`
         """
-        return tuple(self.update(**vars) for vars in self.get_all_vars(short_name, glob_vars=global_vars))
+        return tuple(self.update(**vars) for vars in self.get_all_vars(short_name, glob_vars=glob_vars))
 
     def update(self, **variables) -> "FileTree":
         """

@@ -24,6 +24,11 @@
             NonlinearRegJacobians.nii.gz
             acpc_dc2standard.nii.gz
             standard2acpc_dc.nii.gz
+        Results
+            rfMRI_REST{run_id}_{phase_encoding}
+                Movement_RelativeRMS_mean.txt
+                rfMRI_REST{run_id}_{phase_encoding}_Atlas_MSMAll_hp2000_clean.dtseries.nii (resting_cifti)
+                rfMRI_REST{run_id}_{phase_encoding}_hp2000_clean.nii.gz (resting_nifti)
     T1w (acpc_dc)
         Diffusion
             ->Diffusion (Diffusion)
