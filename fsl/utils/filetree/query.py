@@ -30,6 +30,8 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
+from . import FileTree
+
 
 log = logging.getLogger(__name__)
 
@@ -38,14 +40,55 @@ class FileTreeQuery(object):
     """The ``FileTreeQuery`` class uses a :class:`.FileTree` to search
     a directory for files which match a specific query.
 
+    A ``FileTreeQuery`` scans the contents of a directory which is described
+    by a :class:`.FileTree`, and identifies all file types (a.k.a. _templates_
+    or _short names_) that are present, and the values of variables within each
+    short name that are present. The :meth:`query` method can be used to
+    retrieve files which match a specific short name, and variable values.
 
+    The :meth:`query` method returns a multi-dimensional ``numpy.array``
+    which contains :class:`Match` objects, where each dimension one
+    represents variable for the short name in question.
+
+    Example usage::
+
+        >>> from fsl.utils.filetree import FileTree, FileTreeQuery
+
+        >>> tree  = FileTree.read('bids_raw', './my_bids_data')
+        >>> query = FileTreeQuery(tree)
+
+        >>> query.axes('anat_image')
+        ['acq', 'ext', 'modality', 'participant', 'rec', 'run_index',
+         'session']
+
+        >>> query.variables('anat_image')
+        {'acq': [None],
+         'ext': ['.nii.gz'],
+         'modality': ['T1w', 'T2w'],
+         'participant': ['01', '02', '03'],
+         'rec': [None],
+         'run_index': [None, '01', '02', '03'],
+         'session': [None]}
+
+        >>> query.query('anat_image', participant='01')
+        array([[[[[[[Match(./my_bids_data/sub-01/anat/sub-01_T1w.nii.gz)],
+                    [nan],
+                    [nan],
+                    [nan]]]],
+
+                 [[[[Match(./my_bids_data/sub-01/anat/sub-01_T2w.nii.gz)],
+                    [nan],
+                    [nan],
+                    [nan]]]]]]], dtype=object)
     """
 
 
     def __init__(self, tree):
-        """Create a ``FileTreeQuery``.
+        """Create a ``FileTreeQuery``. The contents of the tree directory are
+        scanned via the :func:`scan` function, which may take some time for
+        large data sets.
 
-        :arg tree: The ``FileTree`` object
+        :arg tree: The :class:`.FileTree` object
         """
 
         # Find all files present in the directory
@@ -185,7 +228,67 @@ class FileTreeQuery(object):
         return matcharray[tuple(slc)]
 
 
-def scan(tree):
+class Match(object):
+    """A ``Match`` object represents a file with a name matching a template in
+    a ``FileTree``.  The :func:`scan` function and :meth:`FileTree.query`
+    method both return ``Match`` objects.
+    """
+
+
+    def __init__(self, filename, short_name, variables):
+        """Create a ``Match`` object. All arguments are added as attributes.
+
+        :arg filename:   name of existing file
+        :arg short_name: template identifier
+        :arg variables:  Dictionary of ``{variable : value}`` mappings
+                         containing all variables present in the file name.
+        """
+        self.__filename   = filename
+        self.__short_name = short_name
+        self.__variables  = dict(variables)
+
+
+    @property
+    def filename(self):
+        return self.__filename
+
+
+    @property
+    def short_name(self):
+        return self.__short_name
+
+
+    @property
+    def variables(self):
+        return dict(self.__variables)
+
+
+    def __eq__(self, other):
+        return (isinstance(other, Match)            and
+                self.filename   == other.filename   and
+                self.short_name == other.short_name and
+                self.variables  == other.variables)
+
+
+    def __lt__(self, other):
+        return isinstance(other, Match) and self.filename < other.filename
+
+
+    def __le__(self, other):
+        return isinstance(other, Match) and self.filename <= other.filename
+
+
+    def __repr__(self):
+        """Returns a string representation of this ``Match``. """
+        return 'Match({})'.format(self.filename)
+
+
+    def __str__(self):
+        """Returns a string representation of this ``Match``. """
+        return repr(self)
+
+
+def scan(tree : FileTree) -> List[Match]:
     """Scans the directory of the given ``FileTree`` to find all files which
     match a tree template.
 
@@ -209,7 +312,9 @@ def scan(tree):
     return matches
 
 
-def allVariables(tree, matches) -> Tuple[Dict[str, List], Dict[str, List]]:
+def allVariables(
+        tree    : FileTree,
+        matches : List[Match]) -> Tuple[Dict[str, List], Dict[str, List]]:
     """Identifies the ``FileTree`` variables which are actually represented
     in files in the directory.
 
@@ -245,32 +350,3 @@ def allVariables(tree, matches) -> Tuple[Dict[str, List], Dict[str, List]]:
                      for sn, vars in allshortnames.items()}
 
     return allvars, allshortnames
-
-
-class Match(object):
-    """A ``Match`` object represents a file with a name matching a template in
-    a ``FileTree``.
-    """
-
-
-    def __init__(self, filename, short_name, variables):
-        """Create a ``Match`` object. All arguments are added as attributes.
-
-        :arg filename:   name of existing file
-        :arg short_name: template identifier
-        :arg variables:  Dictionary of ``{variable : value}`` mappings
-                         containing all variables present in the file name.
-        """
-        self.filename   = filename
-        self.short_name = short_name
-        self.variables  = dict(variables)
-
-
-    def __repr__(self):
-        """Returns a string representation of this ``Match``. """
-        return 'Match({})'.format(self.filename)
-
-
-    def __str__(self):
-        """Returns a string representation of this ``Match``. """
-        return repr(self)
