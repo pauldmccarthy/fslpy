@@ -72,6 +72,9 @@ stages:
 #   - FSL_HOST:                      - Username@host to download FSL data from
 #                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
 #
+#   - FSL_ATLAS_DIR:                 - Location of the FSL atlas data on
+#                                      FSL_HOST.
+#
 #   - TWINE_USERNAME:                - Username to use when uploading to pypi
 #
 #   - TWINE_PASSWORD:                - Password to use when uploading to pypi

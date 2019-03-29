@@ -158,6 +158,7 @@ def extract_variables(template, filename, known_vars=None):
         ))
         while '//' in sub_re:
             sub_re = sub_re.replace('//', '/')
+        sub_re = sub_re.replace('.', '\.')
         if re.match(sub_re, filename) is None:
             continue
 

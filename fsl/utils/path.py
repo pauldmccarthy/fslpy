@@ -22,12 +22,14 @@ paths.
    getFileGroup
    removeDuplicates
    uniquePrefix
+   commonBase
 """
 
 
 import os.path as op
 import            os
 import            glob
+import            operator
 
 
 class PathError(Exception):
@@ -471,3 +473,30 @@ def uniquePrefix(path):
             hits    = [h for h in hits if h.startswith(prefix)]
 
     return prefix
+
+
+def commonBase(paths):
+    """Identifies the deepest common base directory shared by all files
+    in ``paths``.
+
+    Raises a :exc:`PathError` if the paths have no common base. This will
+    never happen for absolute paths (as the base will be e.g. ``'/'``).
+    """
+
+    depths = [len(p.split(op.sep)) for p in paths]
+    base   = max(zip(depths, paths), key=operator.itemgetter(0))[1]
+    last   = base
+
+    while True:
+
+        base = op.split(base)[0]
+
+        if base == last or len(base) == 0:
+            break
+
+        last = base
+
+        if all([p.startswith(base) for p in paths]):
+            return base
+
+    raise PathError('No common base')

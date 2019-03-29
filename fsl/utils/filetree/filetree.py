@@ -1,5 +1,5 @@
 from pathlib import Path, PurePath
-from typing import Tuple, Optional, Dict, Any, Set
+from typing import Tuple, Optional, List, Dict, Any, Set
 from copy import deepcopy
 from . import parse
 import pickle

@@ -241,6 +241,12 @@ class Mesh(notifier.Notifier, meta.Meta):
         return self.__name
 
 
+    @name.setter
+    def name(self, name):
+        """Set the name of this ``Mesh``. """
+        self.__name = name
+
+
     @property
     def dataSource(self):
         """Returns the data source of this ``Mesh``. """

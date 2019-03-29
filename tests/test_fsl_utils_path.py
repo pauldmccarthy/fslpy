@@ -1356,3 +1356,32 @@ def test_uniquePrefix():
 
     finally:
         shutil.rmtree(workdir)
+
+
+def test_commonBase():
+
+    tests = [
+        ('/',
+         ['/a/b/c',
+          '/d/e',
+          '/f/g/h/i']),
+        ('/a',
+         ['/a/b/c',
+          '/a/d/e/f/g',
+          '/a/d/h/g/h/i']),
+        ('a',
+         ['a/b/c/d',
+          'a/e/f/g/h',
+          'a/i/j/k/'])
+    ]
+    for exp, paths in tests:
+        assert fslpath.commonBase(paths) == exp
+
+    failtests = [
+        ['a/b/c', 'd/e/f'],
+        ['/a/b/c', 'd/e/f'],
+        ['a', 'b/c/d']]
+
+    for ft in failtests:
+        with pytest.raises(fslpath.PathError):
+            fslpath.commonBase(ft)
