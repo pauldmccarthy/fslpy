@@ -202,10 +202,8 @@ def wait(job_ids):
     :arg job_ids: string or tuple of strings with jobs that should finish
                   before continuing
     """
-    if isinstance(job_ids, string_types):
-        job_ids = (job_ids, )
     start_time = time.time()
-    for job_id in job_ids:
+    for job_id in _flatten_job_ids(job_ids):
         log.debug('Waiting for job {}'.format(job_id))
         while len(info(job_id)) > 0:
             wait_time = min(max(1, (time.time() - start_time) / 3.), 20)
