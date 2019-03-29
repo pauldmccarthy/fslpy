@@ -58,6 +58,17 @@ def test_parent_tree():
     with pytest.raises(KeyError):
         tree.get('sub_var/basename')
 
+    # test updating in parent tree
+    sub0_tree = tree.sub_trees['sub0']
+    same_path(sub0_tree.update(subvar='test').get('../subvar/basename'), 'subvar_test')
+    with pytest.raises(KeyError):
+        sub0_tree.update(subvar='test', set_parent=False).get('../subvar/basename')
+
+    sub0_tree = tree.update(subvar='grot').sub_trees['sub0']
+    same_path(sub0_tree.update(subvar='test').get('../subvar/basename'), 'subvar_test')
+    same_path(sub0_tree.update(subvar='test', set_parent=False).get('../subvar/basename'), 'subvar_grot')
+    same_path(sub0_tree.get('../subvar/basename'), 'subvar_grot')
+
 
 def test_custom_tree():
     directory = op.split(__file__)[0]
