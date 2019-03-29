@@ -13,7 +13,7 @@ Added
   file/directory templates (Michiel Cottaar).
 * Simple built-in :mod:`.deprecated` decorator.
 * New :mod:`fsl.data.utils` module, which currently contains one function
-  :func:`.guessType`, which guess the data type of a file/directory path.
+  :func:`.guessType`, which guesses the data type of a file/directory path.
 * New `.commonBase` function for finding the common prefix of a set of
   file/directory paths.
 
