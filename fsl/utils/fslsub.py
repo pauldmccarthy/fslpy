@@ -252,7 +252,7 @@ if name_type == 'module':
     func = getattr(import_module(name), func_name)
 elif name_type == 'script':
     # retrieves a function defined in the __main__ script
-    local_execute = {{'__name__': '__not_main__'}}
+    local_execute = {{'__name__': '__not_main__', '__file__': name}}
     exec(open(name, 'r').read(), local_execute)
     func = local_execute[func_name]
 else:
