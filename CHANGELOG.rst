@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.0.0 (Under development)
--------------------------
+2.0.0 (Friday March 20th 2019)
+------------------------------
 
 
 Added
@@ -21,18 +21,29 @@ Added
 Changed
 ^^^^^^^
 
+
 * Removed support for Python 2.7 and 3.4.
 * Minimum required version of ``nibabel`` is now 2.3.
 * The :class:`.Image` class now fully delegates to ``nibabel`` for managing
   file handles.
 * The :class:`.GiftiMesh` class can now load surface files which contain
-  vertex data.
+  vertex data, and will accept surface files which end in ``.gii``, rather
+  than requiring files which end in ``.surf.gii``.
+* The ``name`` property of :class:`.Mesh` instances can now be updated.
 
 
 Removed
 ^^^^^^^
 
 * Many deprecated items removed.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* Deprecated the :func:`.loadIndexedImageFile`  function, and the ``indexed``
+  flag to the :class:`.Image` constructor.
 
 
 1.13.3 (Friday February 8th 2019)
