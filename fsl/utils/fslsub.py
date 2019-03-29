@@ -98,7 +98,7 @@ def submit(command,
 
     :arg verbose:        If True, use verbose mode
 
-    :return:             tuple of submitted job ids
+    :return:             string of submitted job id
     """
 
     from fsl.utils.run import runfsl
