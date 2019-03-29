@@ -98,7 +98,7 @@ def submit(command,
 
     :arg verbose:        If True, use verbose mode
 
-    :return:             tuple of submitted job ids
+    :return:             string of submitted job id
     """
 
     from fsl.utils.run import runfsl
@@ -202,10 +202,8 @@ def wait(job_ids):
     :arg job_ids: string or tuple of strings with jobs that should finish
                   before continuing
     """
-    if isinstance(job_ids, string_types):
-        job_ids = (job_ids, )
     start_time = time.time()
-    for job_id in job_ids:
+    for job_id in _flatten_job_ids(job_ids):
         log.debug('Waiting for job {}'.format(job_id))
         while len(info(job_id)) > 0:
             wait_time = min(max(1, (time.time() - start_time) / 3.), 20)
@@ -252,7 +250,7 @@ if name_type == 'module':
     func = getattr(import_module(name), func_name)
 elif name_type == 'script':
     # retrieves a function defined in the __main__ script
-    local_execute = {{'__name__': '__not_main__'}}
+    local_execute = {{'__name__': '__not_main__', '__file__': name}}
     exec(open(name, 'r').read(), local_execute)
     func = local_execute[func_name]
 else:
