@@ -288,3 +288,18 @@ def test_fast():
         expected = [cmd, '-v', '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
 
         assert result.output[0] == ' '.join(expected)
+
+
+
+def test_fsl_anat():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('fsl_anat',)) as fsldir:
+
+        cmd = op.join(fsldir, 'bin', 'fsl_anat')
+
+        result   = fw.fsl_anat('t1', out='fsl_anat', bias_smoothing=25)
+        expected = [cmd, '-i', 't1', '-o', 'fsl_anat', '-t', 'T1',
+                    '-s', '25']
+
+        assert result.output[0] == ' '.join(expected)

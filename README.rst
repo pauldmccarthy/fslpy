@@ -59,13 +59,14 @@ Some extra dependencies are listed in `requirements.txt
 
 
 If you are using Linux, you need to install wxPython first, as binaries are
-not available on PyPI. Change the URL for your specific platform::
+not available on PyPI. Install wxPython like so, changing the URL for your
+specific platform::
 
     pip install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-16.04/ wxpython
 
 
-Once wxPython has been installed, you can simply type the following to install
-the rest of the extra dependencies::
+Once wxPython has been installed, you can type the following to install the
+rest of the extra dependencies::
 
     pip install fslpy[extras]
 
