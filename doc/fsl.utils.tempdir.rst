@@ -1,5 +1,5 @@
-``fsl.utils.temdir``
-====================
+``fsl.utils.tempdir``
+=====================
 
 .. automodule:: fsl.utils.tempdir
     :members:
