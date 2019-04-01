@@ -224,6 +224,7 @@ def test_relatedFiles():
         assert len(gifti.relatedFiles(badname))       == 0
         assert len(gifti.relatedFiles('nonexistent')) == 0
 
+        llisting  = [op.join(td, f) for f in listing]
         lsurfaces = [op.join(td, f) for f in lsurfaces]
         rsurfaces = [op.join(td, f) for f in rsurfaces]
         lrelated  = [op.join(td, f) for f in lrelated]
@@ -235,6 +236,12 @@ def test_relatedFiles():
         for s in rsurfaces:
             result = gifti.relatedFiles(s)
             assert sorted(rrelated) == sorted(result)
+
+        exp = lsurfaces + lrelated
+        exp = [f for f in exp if f != lsurfaces[0]]
+        result = gifti.relatedFiles(lsurfaces[0],
+                                    ftypes=gifti.ALLOWED_EXTENSIONS)
+        assert sorted(exp) == sorted(result)
 
 TEST_VERTS = np.array([
     [0, 0, 0],
