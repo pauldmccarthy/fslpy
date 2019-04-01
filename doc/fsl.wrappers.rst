@@ -10,6 +10,7 @@
    fsl.wrappers.flirt
    fsl.wrappers.fnirt
    fsl.wrappers.fslmaths
+   fsl.wrappers.fsl_anat
    fsl.wrappers.fugue
    fsl.wrappers.melodic
    fsl.wrappers.misc
