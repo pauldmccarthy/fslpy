@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.0.1 (Monday April 1st 2019)
+-----------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug with the :func:`.gifti.relatedFiles` function returning
+  duplicate files.
+
+
 2.0.0 (Friday March 20th 2019)
 ------------------------------
 

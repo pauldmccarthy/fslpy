@@ -10,7 +10,7 @@
 functions.
 
 
-The :func:`cmdwrapper` and :func:`fslwrapper` functions are conenience
+The :func:`cmdwrapper` and :func:`fslwrapper` functions are convenience
 decorators which allow you to write your wrapper function such that it simply
 generates the command-line needed to respectively run a standard shell
 command or a FSL command. For example::
@@ -39,7 +39,7 @@ patterns. For example::
 The :func:`fileOrImage` and :func:`fileOrArray` functions can be used to
 decorate a wrapper function such that in-memory ``nibabel`` images or Numpy
 arrays can be passed in as arguments - they will be automatically saved out to
-files, and then the file names passed into the wrapper function. For exmaple::
+files, and then the file names passed into the wrapper function. For example::
 
 
     @fileOrImage('src', 'ref')
@@ -225,18 +225,18 @@ def applyArgStyle(style,
     =========  ==========  ===========================
     ``style``  ``valsep``  Result
     =========  ==========  ===========================
-    ``'-'``    ' '         ``-name val1 val2 val3``
-    ``'-'``    '"'         ``-name "val1 val2 val3"``
-    ``'-'``    ','         ``-name val1,val2,val3``
-    ``'--'``   ' '         ``--name val1 val2 val3``
-    ``'--'``   '"'         ``--name "val1 val2 val3"``
-    ``'--'``   ','         ``--name val1,val2,val3``
-    ``'-='``   ' '         Not supported
-    ``'-='``   '"'         ``-name="val1 val2 val3"``
-    ``'-='``   ','         ``-name=val1,val2,val3``
-    ``'--='``  ' '         Not supported
-    ``'--='``  '"'         ``--name="val1 val2 val3"``
-    ``'--='``  ','         ``--name=val1,val2,val3``
+    ``'-'``    ``' '``     ``-name val1 val2 val3``
+    ``'-'``    ``'"'``     ``-name "val1 val2 val3"``
+    ``'-'``    ``','``     ``-name val1,val2,val3``
+    ``'--'``   ``' '``     ``--name val1 val2 val3``
+    ``'--'``   ``'"'``     ``--name "val1 val2 val3"``
+    ``'--'``   ``','``     ``--name val1,val2,val3``
+    ``'-='``   ``' '``     Not supported
+    ``'-='``   ``'"'``     ``-name="val1 val2 val3"``
+    ``'-='``   ``','``     ``-name=val1,val2,val3``
+    ``'--='``  ``' '``     Not supported
+    ``'--='``  ``'"'``     ``--name="val1 val2 val3"``
+    ``'--='``  ``','``     ``--name=val1,val2,val3``
     =========  ==========  ===========================
 
 
