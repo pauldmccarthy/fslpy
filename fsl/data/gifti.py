@@ -333,7 +333,7 @@ def relatedFiles(fname, ftypes=None):
     related = []
 
     for ftype in ftypes:
-        related.extend(
-            glob.glob(op.join(dirname, '{}*{}'.format(prefix, ftype))))
+        hits = glob.glob(op.join(dirname, '{}*{}'.format(prefix, ftype)))
+        related.extend([h for h in hits if h not in related])
 
     return [r for r in related if r != path]
