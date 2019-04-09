@@ -25,8 +25,16 @@ from .affine import (  # noqa
     transform,
     transformNormal,
     rmsdev)
+
 from .flirt  import (  # noqa
+    readFlirt,
+    writeFlirt,
     fromFlirt,
     toFlirt,
     flirtMatrixToSform,
     sformToFlirtMatrix)
+
+from .x5 import (  # noqa
+    readFlirtX5,
+    writeFlirtX5
+)
