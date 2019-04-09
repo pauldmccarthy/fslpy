@@ -17,7 +17,19 @@ matrices. The following functions are available:
 """
 
 
+import numpy as np
+
 from .affine import concat
+
+
+def readFlirt(fname):
+    """Reads a FLIRT matrix from a file. """
+    return np.loadtxt(fname)
+
+
+def writeFlirt(xform, fname):
+    """Writes the given FLIRT matrix to a file. """
+    np.savetxt(fname, xform, fmt='%1.15g')
 
 
 def fromFlirt(xform, src, ref, from_='voxel', to='world'):

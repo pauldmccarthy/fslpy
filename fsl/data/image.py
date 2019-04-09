@@ -376,6 +376,9 @@ class Nifti(notifier.Notifier, meta.Meta):
                                                            [ x, 0, 0])
             voxToScaledVoxMat = transform.concat(flip, voxToScaledVoxMat)
 
+        affines['fsl',   'fsl']   = np.eye(4)
+        affines['voxel', 'voxel'] = np.eye(4)
+        affines['world', 'world'] = np.eye(4)
         affines['voxel', 'world'] = voxToWorldMat
         affines['world', 'voxel'] = transform.invert(voxToWorldMat)
         affines['voxel', 'fsl']   = voxToScaledVoxMat
