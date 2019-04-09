@@ -1173,3 +1173,131 @@ def test_rgb_image():
 
         assert img.nvals     == 3
         assert img.dataRange == (0, 255)
+
+
+def test_determineShape():
+    class MockHeader(object):
+        def __init__(self, shape, zooms):
+            self.shape = shape
+            self.zooms = zooms
+        def __getitem__(self, key):
+            return [len(self.zooms)] + self.zooms
+        def get_data_shape(self):
+            return self.shape
+        def get_zooms(self):
+            return self.zooms
+
+    # inshape, inzooms, outshape, outzooms)
+    tests = [
+        ([10],         [2, 2, 2], [10,  1,  1], [2, 2, 2]),
+        ([10],         [2],       [10,  1,  1], [2, 1, 1]),
+        ([10],         [2, 2, 2], [10,  1,  1], [2, 2, 2]),
+        ([10, 10],     [2, 2],    [10, 10,  1], [2, 2, 1]),
+        ([10, 10],     [2, 2, 2], [10, 10,  1], [2, 2, 2]),
+        ([10, 10, 10], [2, 2, 2], [10, 10, 10], [2, 2, 2]),
+
+        ([10, 10, 10, 10], [2, 2, 2, 2],
+         [10, 10, 10, 10], [2, 2, 2, 2]),
+        ([10, 10, 10, 10, 10], [2, 2, 2, 2, 2],
+         [10, 10, 10, 10, 10], [2, 2, 2, 2, 2]),
+    ]
+
+    for inshape, inzooms, outshape, outzooms in tests:
+
+        hdr = MockHeader(inshape, inzooms)
+        origshape, gotshape, gotzooms = fslimage.Nifti.determineShape(hdr)
+
+        assert origshape == inshape
+        assert gotshape  == outshape
+        assert gotzooms  == outzooms
+
+
+def test_determineAffine():
+
+    # sformcode, qformcode, intent, expaff
+    tests = [
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_INTENT_NONE,
+         'sform'),
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_INTENT_NONE,
+         'sform'),
+        (constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_INTENT_NONE,
+         'qform'),
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.FSL_FNIRT_DISPLACEMENT_FIELD,
+         'qform'),
+        (constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_INTENT_NONE,
+         'scaling'),
+    ]
+
+    for sformcode, qformcode, intent, exp in tests:
+
+        sform   = transform.compose(np.random.random(3),
+                                    np.random.random(3),
+                                    np.random.random(3))
+        qform   = transform.compose(np.random.random(3),
+                                    np.random.random(3),
+                                    np.random.random(3))
+        pixdims = np.random.randint(1, 10, 3)
+
+        hdr = nib.Nifti1Header()
+        hdr.set_data_shape((10, 10, 10))
+        hdr.set_sform(sform, sformcode)
+        hdr.set_qform(qform, qformcode)
+        hdr.set_intent(intent)
+        hdr.set_zooms(pixdims)
+
+        # the randomly generated qform might
+        # not be fully representable, so let
+        # nibabel fix it for us
+        sform = hdr.get_sform()
+        qform = hdr.get_qform()
+
+        got = fslimage.Nifti.determineAffine(hdr)
+
+        if   exp == 'sform':   exp = sform
+        elif exp == 'qform':   exp = qform
+        elif exp == 'scaling': exp = transform.scaleOffsetXform(pixdims, 0)
+
+        assert np.all(np.isclose(got, exp))
+
+
+def test_generateAffines():
+
+    v2w = transform.compose(np.random.random(3),
+                            np.random.random(3),
+                            np.random.random(3))
+    shape = (10, 10, 10)
+    pixdim = (1, 1, 1)
+
+    got, isneuro = fslimage.Nifti.generateAffines(v2w, shape, pixdim)
+
+    w2v = npla.inv(v2w)
+
+    assert isneuro == (npla.det(v2w) > 0)
+
+    if not isneuro:
+        v2f = np.eye(4)
+        f2v = np.eye(4)
+        f2w = v2w
+        w2f = w2v
+    else:
+        v2f = transform.scaleOffsetXform([-1, 1, 1], [9, 0, 0])
+        f2v = npla.inv(v2f)
+        f2w = transform.concat(v2w, f2v)
+        w2f = transform.concat(v2f, w2v)
+
+    assert np.all(np.isclose(v2w, got['voxel', 'world']))
+    assert np.all(np.isclose(w2v, got['world', 'voxel']))
+    assert np.all(np.isclose(v2f, got['voxel', 'fsl']))
+    assert np.all(np.isclose(f2v, got['fsl',   'voxel']))
+    assert np.all(np.isclose(f2w, got['fsl'  , 'world']))
+    assert np.all(np.isclose(w2f, got['world', 'fsl']))
