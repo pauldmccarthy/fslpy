@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 #
-# transform.py - Functions for working with affine transformation matrices.
+# affine.py - Utility functions for working with affine transformations.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides functions related to 3D image transformations and
-spaces. The following functions are provided:
+"""This module contains utility functions for working with affine
+transformations. The following funcyions are available:
 
 .. autosummary::
    :nosignatures:
 
    transform
-   transformNormal
    scaleOffsetXform
    invert
    concat
@@ -21,8 +20,6 @@ spaces. The following functions are provided:
    rotMatToAxisAngles
    axisAnglesToRotMat
    axisBounds
-   flirtMatrixToSform
-   sformToFlirtMatrix
    rmsdev
 
 And a few more functions are provided for working with vectors:
@@ -32,7 +29,9 @@ And a few more functions are provided for working with vectors:
 
    veclength
    normalise
+   transformNormal
 """
+
 
 import numpy           as np
 import numpy.linalg    as linalg
@@ -537,68 +536,6 @@ def _fillPoints(p, axes):
         newp[:, ax] = p[:, i]
 
     return newp
-
-
-def flirtMatrixToSform(flirtMat, srcImage, refImage):
-    """Converts the given ``FLIRT`` transformation matrix into a
-    transformation from the source image voxel coordinate system to
-    the reference image world coordinate system.
-
-    FLIRT transformation matrices transform from the source image scaled voxel
-    coordinate system into the reference image scaled voxel coordinate system
-    (voxels scaled by pixdims, with a left-right flip if the image sform has a
-    positive determinant).
-
-    So to construct a transformation from source image voxel coordinates
-    into reference image world coordinates, we need to combine the following:
-
-      1. Source voxels -> Source scaled voxels
-      2. Source scaled voxels -> Reference scaled voxels (the FLIRT matrix)
-      3. Reference scaled voxels -> Reference voxels
-      4. Reference voxels -> Reference world (the reference image sform)
-
-    :arg flirtMat: A ``(4, 4)`` transformation matrix
-    :arg srcImage: Source :class:`.Image`
-    :arg refImage: Reference :class:`.Image`
-    """
-
-    srcScaledVoxelMat    = srcImage.voxToScaledVoxMat
-    refInvScaledVoxelMat = refImage.scaledVoxToVoxMat
-    refVoxToWorldMat     = refImage.voxToWorldMat
-
-    return concat(refVoxToWorldMat,
-                  refInvScaledVoxelMat,
-                  flirtMat,
-                  srcScaledVoxelMat)
-
-
-def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
-    """Under the assumption that the given ``srcImage`` and ``refImage`` share a
-    common world coordinate system (defined by their
-    :attr:`.Nifti.voxToWorldMat` attributes), this function will calculate and
-    return a transformation matrix from the ``srcImage`` scaled voxel
-    coordinate system to the ``refImage`` scaled voxel coordinate system, that
-    can be saved to disk and used with FLIRT, to resample the source image to
-    the reference image.
-
-    :arg srcImage: Source :class:`.Image`
-    :arg refImage: Reference :class:`.Image`
-    :arg srcXform: Optionally used in place of the ``srcImage``
-                   :attr:`.Nifti.voxToWorldMat`
-    """
-
-    srcScaledVoxToVoxMat = srcImage.scaledVoxToVoxMat
-    srcVoxToWorldMat     = srcImage.voxToWorldMat
-    refWorldToVoxMat     = refImage.worldToVoxMat
-    refVoxToScaledVoxMat = refImage.voxToScaledVoxMat
-
-    if srcXform is not None:
-        srcVoxToWorldMat = srcXform
-
-    return concat(refVoxToScaledVoxMat,
-                  refWorldToVoxMat,
-                  srcVoxToWorldMat,
-                  srcScaledVoxToVoxMat)
 
 
 def rmsdev(T1, T2, R=None, xc=None):
