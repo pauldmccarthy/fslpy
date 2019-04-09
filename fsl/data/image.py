@@ -244,7 +244,7 @@ class Nifti(notifier.Notifier, meta.Meta):
             raise ValueError('Unrecognised header: {}'.format(header))
 
         header                   = header
-        origShape, shape, pixdim = self.__determineShape(header)
+        origShape, shape, pixdim = Nifti.determineShape(header)
 
         self.header      = header
         self.__shape     = shape
@@ -253,14 +253,15 @@ class Nifti(notifier.Notifier, meta.Meta):
         self.__intent    = header.get('intent_code',
                                       constants.NIFTI_INTENT_NONE)
 
-        voxToWorldMat    = self.__determineAffine(header)
-        affines, isneuro = self.__generateAffines(voxToWorldMat)
+        voxToWorldMat    = Nifti.determineAffine(header)
+        affines, isneuro = Nifti.generateAffines(voxToWorldMat, shape, pixdim)
 
         self.__affines        = affines
         self.__isNeurological = isneuro
 
 
-    def __determineShape(self, header):
+    @staticmethod
+    def determineShape(header):
         """This method is called by :meth:`__init__`. It figures out the actual
         shape of the image data, and the zooms/pixdims for each data axis. Any
         empty trailing dimensions are squeezed, but the returned shape is
@@ -287,10 +288,17 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         pixdims = pixdims[:len(shape)]
 
+        # should never happen, but if we only
+        # have zoom values for the original
+        # (< 3D) shape, pad them with 1s.
+        if len(pixdims) < len(shape):
+            pixdims = pixdims + [1] * (len(shape) - len(pixdims))
+
         return origShape, shape, pixdims
 
 
-    def __determineAffine(self, header):
+    @staticmethod
+    def determineAffine(header):
         """Called by :meth:`__init__`. Figures out the voxel-to-world
         coordinate transformation matrix that is associated with this
         ``Nifti`` instance.
@@ -333,7 +341,8 @@ class Nifti(notifier.Notifier, meta.Meta):
         return voxToWorldMat
 
 
-    def __generateAffines(self, voxToWorldMat):
+    @staticmethod
+    def generateAffines(voxToWorldMat, shape, pixdim):
         """Called by :meth:`__init__`, and the :meth:`voxToWorldMat` setter.
         Generates and returns a dictionary containing affine transformations
         between the ``voxel``, ``fsl``, and ``world`` coordinate
@@ -341,6 +350,9 @@ class Nifti(notifier.Notifier, meta.Meta):
         method.
 
         :arg voxToWorldMat: The voxel-to-world affine transformation
+        :arg shape:         Image shape (number of voxels along each dimension
+        :arg pixdim:        Image pixdims (size of one voxel along each
+                            dimension)
         :returns:           A tuple containing:
 
                              - a dictionary of affine transformations between
@@ -353,8 +365,8 @@ class Nifti(notifier.Notifier, meta.Meta):
         import numpy.linalg as npla
 
         affines = {}
-        shape             = list(self.shape[ :3])
-        pixdim            = list(self.pixdim[:3])
+        shape             = list(shape[ :3])
+        pixdim            = list(pixdim[:3])
         voxToScaledVoxMat = np.diag(pixdim + [1.0])
         isneuro           = npla.det(voxToWorldMat) > 0
 
@@ -370,8 +382,8 @@ class Nifti(notifier.Notifier, meta.Meta):
         affines['fsl',   'voxel'] = transform.invert(voxToScaledVoxMat)
         affines['fsl',   'world'] = transform.concat(affines['voxel', 'world'],
                                                      affines['fsl',   'voxel'])
-        affines['world', 'fsl']   = transform.concat(affines['fsl',   'voxel'],
-                                                     affines['voxel', 'world'])
+        affines['world', 'fsl']   = transform.concat(affines['voxel',   'fsl'],
+                                                     affines['world', 'voxel'])
 
         return affines, isneuro
 
@@ -546,7 +558,9 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         header.set_sform(xform, code=sformCode)
 
-        affines, isneuro = self.__generateAffines(xform)
+        affines, isneuro = Nifti.generateAffines(xform,
+                                                 self.shape,
+                                                 self.pixdim)
 
         self.__affines        = affines
         self.__isNeurological = isneuro
