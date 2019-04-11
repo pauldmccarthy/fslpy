@@ -245,16 +245,18 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         header                   = header
         origShape, shape, pixdim = Nifti.determineShape(header)
+        voxToWorldMat            = Nifti.determineAffine(header)
+        affines, isneuro         = Nifti.generateAffines(voxToWorldMat,
+                                                         shape,
+                                                         pixdim)
 
-        self.header      = header
-        self.__shape     = shape
-        self.__origShape = origShape
-        self.__pixdim    = pixdim
-        self.__intent    = header.get('intent_code',
-                                      constants.NIFTI_INTENT_NONE)
 
-        voxToWorldMat    = Nifti.determineAffine(header)
-        affines, isneuro = Nifti.generateAffines(voxToWorldMat, shape, pixdim)
+        self.header           = header
+        self.__shape          = shape
+        self.__origShape      = origShape
+        self.__pixdim         = pixdim
+        self.__intent         = header.get('intent_code',
+                                           constants.NIFTI_INTENT_NONE)
 
         self.__affines        = affines
         self.__isNeurological = isneuro
@@ -1206,7 +1208,9 @@ class Image(Nifti):
         # We save the image out to a temp file,
         # then close the old image, move the
         # temp file to the real destination,
-        # then re-open the file.
+        # then re-open the file. This is done
+        # to ensure that all references to the
+        # old file are destroyed.
         tmphd, tmpfname = tempfile.mkstemp(suffix=getExt(filename))
         os.close(tmphd)
 
