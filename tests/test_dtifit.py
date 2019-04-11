@@ -137,6 +137,23 @@ def test_decomposeTensorMatrix():
             assert np.all(np.isclose(resvec,  expvec)) or \
                    np.all(np.isclose(resvec, -expvec))
 
+    assert np.allclose(
+            dtifit.eigendecompositionToComponents(expV1, expV2, expV3, expL1, expL2, expL3),
+            tensorMatrices
+    )
+
+    random_tensor = np.random.randn(6)
+    assert np.allclose(
+            random_tensor,
+            dtifit.eigendecompositionToComponents(*dtifit.componentsToEigendecomposition(random_tensor))
+    )
+
+    random_tensor = np.random.randn(2, 2, 3, 6)
+    assert np.allclose(
+            random_tensor,
+            dtifit.eigendecompositionToComponents(*dtifit.componentsToEigendecomposition(random_tensor))
+    )
+
 
 def test_DTIFitTensor():
 
