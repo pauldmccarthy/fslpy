@@ -34,7 +34,7 @@ the following labels (this convention has been inherited from `nibabel
 
   * *BF*  : bug fix
   * *RF*  : refactoring
-  * *NF*  : new feature
+  * *ENH*:  enhancement/new feature
   * *BW*  : addresses backward-compatibility
   * *OPT* : optimization
   * *BK*  : breaks something and/or tests fail
@@ -102,7 +102,7 @@ Unit and integration tests are currently run with ``py.test`` and
 ``coverage``.
 
 - Aim for 100% code coverage.
-- Tests must pass on python 2.7, 3.4, 3.5, and 3.6
+- Tests must pass on python 3.5, 3.6, and 3.7.
 
 
 Coding conventions

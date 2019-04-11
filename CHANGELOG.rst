@@ -169,7 +169,7 @@ Added
 * Simple built-in :mod:`.deprecated` decorator.
 * New :mod:`fsl.data.utils` module, which currently contains one function
   :func:`.guessType`, which guesses the data type of a file/directory path.
-* New `.commonBase` function for finding the common prefix of a set of
+* New :func:`.commonBase` function for finding the common prefix of a set of
   file/directory paths.
 
 
@@ -209,7 +209,7 @@ Fixed
 ^^^^^
 
 
-* Fixed an issue with the `.dicom.loadSeries` using memory-mapping for
+* Fixed an issue with the :func:`.dicom.loadSeries` using memory-mapping for
   image files that would subsequently be deleted.
 * Fixed an issue in the :class:`.GiftiMesh` class, where
   ``numpy``/``nibabel`` was returning read-only index arrays.
