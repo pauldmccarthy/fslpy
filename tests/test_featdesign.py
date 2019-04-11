@@ -412,3 +412,19 @@ def test_VoxelwiseEVs():
             exp = img.dataobj[x, y, z, :]
             assert np.all(ev1.image[x, y, z, :] == exp)
             assert np.all(ev2.image[x, y, z, :] == exp)
+
+
+def test_compressed_voxelwise_ev():
+
+    testcases = [((1, 1, 10, 10), (0, 0, 5)),
+                 ((1, 10, 1, 10), (0, 5, 0)),
+                 ((10, 1, 1, 10), (5, 0, 0))]
+
+    with tempdir():
+
+        for shape, vox in testcases:
+            img = tests.make_random_image('vev.nii.gz',  shape)
+            vev = featdesign.VoxelwiseEV(0, 0, 'ev1', 'vev.nii.gz')
+            x, y, z = vox
+
+            assert np.all(vev.getData(5, 5, 5) == img.dataobj[x, y, z, :])
