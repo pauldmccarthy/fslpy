@@ -417,3 +417,29 @@ def test_planeIntersection():
     assert lines.shape  == (0, 2, 3)
     assert faces.shape  == (0, )
     assert dists.shape  == (0, 2, 3)
+
+
+def test_mesh_different_winding_orders():
+
+    verts1    =  CUBE_VERTICES
+    verts2    = -CUBE_VERTICES
+    tris      =  CUBE_TRIANGLES_CCW
+    trisfixed =  CUBE_TRIANGLES_CW
+
+    mnofix = fslmesh.Mesh(tris)
+    mfix   = fslmesh.Mesh(tris)
+
+    mnofix.addVertices(verts1, key='v1', fixWinding=False)
+    mnofix.addVertices(verts2, key='v2', fixWinding=False)
+    mfix  .addVertices(verts1, key='v1', fixWinding=True)
+    mfix  .addVertices(verts2, key='v2', fixWinding=True)
+
+    mnofix.vertices = 'v1'
+    assert np.all(mnofix.indices == tris)
+    mnofix.vertices = 'v2'
+    assert np.all(mnofix.indices == tris)
+
+    mfix.vertices = 'v1'
+    assert np.all(mfix.indices == tris)
+    mfix.vertices = 'v2'
+    assert np.all(mfix.indices == trisfixed)
