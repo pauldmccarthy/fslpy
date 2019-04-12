@@ -9,6 +9,8 @@ import            shutil
 import            os
 import os.path as op
 
+import numpy   as np
+
 import fsl.utils.tempdir        as tempdir
 import fsl.data.utils           as dutils
 
@@ -105,3 +107,22 @@ def test_guessType():
         asrt('norecognise.txt', None)
         os.remove('norecognise')
         os.remove('norecognise.txt')
+
+
+def test_makeWriteable():
+    robuf = bytes(    b'\01\02\03\04')
+    wbuf  = bytearray(b'\01\02\03\04')
+
+    roarr = np.ndarray((4,), dtype=np.uint8, buffer=robuf)
+    warr  = np.ndarray((4,), dtype=np.uint8, buffer=wbuf)
+
+    warr.flags['WRITEABLE'] = False
+
+    rocopy = dutils.makeWriteable(roarr)
+    wcopy  = dutils.makeWriteable(warr)
+
+    assert rocopy.base is not roarr.base
+    assert wcopy .base is     warr .base
+
+    rocopy[1] = 100
+    wcopy[ 1] = 100
