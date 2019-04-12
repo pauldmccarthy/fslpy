@@ -12,6 +12,8 @@ Added
 
 * New tensor conversion routines in the :mod:`.dtifit` module (Michiel
   Cottaar).
+* New :func:`.makeWriteable` function which ensures that a ``numpy.array`` is
+  writeable, and creates a copy if necessary
 
 
 Changed
@@ -21,6 +23,9 @@ Changed
 * The :class:`.GiftiMesh` class no longer creates copies of the mesh
   vertex/index arrays. This means that, with ``numpy>=1.16`` these arrays
   will be flagged as read-only.
+* The :class:`.Mesh` class handles vertex data sets requiring different
+  triangle unwinding orders, at the cost of potentially having to store
+  two copies of the mesh indices.
 
 
 Fixed
