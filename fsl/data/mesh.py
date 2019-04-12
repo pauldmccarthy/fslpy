@@ -98,6 +98,12 @@ class Mesh(notifier.Notifier, meta.Meta):
        selectedVertices
        vertexSets
 
+    .. note:: Internally the ``Mesh`` class may store two versions of the
+              triangles, with opposite unwinding orders. It keeps track of the
+              required triangle unwinding order for each vertex set, so that
+              the :meth:`indices` method will return the appropriate copy for
+              the currently selected vertex set.
+
 
     **Vertex data**
 
@@ -183,19 +189,17 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         self.__name       = name
         self.__dataSource = dataSource
-        self.__indices    = np.asarray(indices).reshape((-1, 3))
-        self.__nvertices  = self.__indices.max() + 1
+        self.__nvertices  = indices.max() + 1
+        self.__selected   = None
 
-        # This attribute is used to store
-        # the currently selected vertex set,
-        # used as a kety into all of the
-        # dictionaries below.
-        self.__selected = None
-
-        # Flag used to keep track of whether
-        # the triangle winding order has been
-        # "fixed" - see the addVertices method.
-        self.__fixed = False
+        # We potentially store two copies of
+        # the indices, with opposite unwinding
+        # orders. The vindices dict stores refs
+        # to one or the other for each vertex
+        # set.
+        self.__indices      = np.asarray(indices).reshape((-1, 3))
+        self.__fixedIndices = None
+        self.__vindices     = collections.OrderedDict()
 
         # All of these are populated
         # in the addVertices method
@@ -287,7 +291,7 @@ class Mesh(notifier.Notifier, meta.Meta):
     @property
     def indices(self):
         """The ``(M, 3)`` triangles of this mesh. """
-        return self.__indices
+        return self.__vindices[self.__selected]
 
 
     @property
@@ -297,7 +301,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         """
 
         selected = self.__selected
-        indices  = self.__indices
+        indices  = self.__vindices[selected]
         vertices = self.__vertices[selected]
         fnormals = self.__faceNormals.get(selected, None)
 
@@ -315,7 +319,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         """
 
         selected = self.__selected
-        indices  = self.__indices
+        indices  = self.__vindices[selected]
         vertices = self.__vertices[selected]
         vnormals = self.__vertNormals.get(selected, None)
 
@@ -334,10 +338,8 @@ class Mesh(notifier.Notifier, meta.Meta):
 
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
         """
-
         lo = self.__loBounds[self.__selected]
         hi = self.__hiBounds[self.__selected]
-
         return lo, hi
 
 
@@ -411,26 +413,26 @@ class Mesh(notifier.Notifier, meta.Meta):
                                                     self.nvertices))
 
         self.__vertices[key] = vertices
+        self.__vindices[key] = self.__indices
         self.__loBounds[key] = lo
         self.__hiBounds[key] = hi
 
         if select:
             self.vertices = key
 
-        # indices already fixed?
-        if fixWinding and (not self.__fixed):
-            indices      = self.indices
-            normals      = self.normals
-            needsFix     = needsFixing(vertices, indices, normals, lo, hi)
-            self.__fixed = True
+        if fixWinding:
+            indices  = self.__indices
+            normals  = self.normals
+            needsFix = needsFixing(vertices, indices, normals, lo, hi)
 
             # See needsFixing documentation
             if needsFix:
 
-                indices[:, [1, 2]] = indices[:, [2, 1]]
+                if self.__fixedIndices is None:
+                    self.__fixedIndices = indices[:, [0, 2, 1]]
 
-                for k, fn in self.__faceNormals.items():
-                    self.__faceNormals[k] = fn * -1
+                self.__vindices[   key] = self.__fixedIndices
+                self.__faceNormals[key] = normals * -1
 
         return vertices
 
