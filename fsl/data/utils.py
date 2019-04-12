@@ -10,7 +10,7 @@ with the data types defined in the :mod:`fsl.data` package.
 
 
 import os.path as op
-
+import numpy   as np
 
 def guessType(path):
     """A convenience function which, given the name of a file or directory,
@@ -77,3 +77,14 @@ def guessType(path):
     # Otherwise, I don't
     # know what to do
     return None, path
+
+
+def makeWriteable(array):
+    """Updates the given ``numpy.array`` so that it is writeable. If this
+    is not possible, a copy is created and returned.
+    """
+    try:
+        array.flags['WRITEABLE'] = True
+    except ValueError:
+        array = np.array(array)
+    return array

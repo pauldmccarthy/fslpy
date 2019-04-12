@@ -9,4 +9,5 @@ models, constants, and other data-like things used throughout ``fslpy``.
 """
 
 
-from .utils import guessType  # noqa
+from .utils import (guessType,  # noqa
+                    makeWriteable)
