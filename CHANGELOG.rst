@@ -14,6 +14,15 @@ Added
   Cottaar).
 
 
+Changed
+^^^^^^^
+
+
+* The :class:`.GiftiMesh` class no longer creates copies of the mesh
+  vertex/index arrays. This means that, with ``numpy>=1.16`` these arrays
+  will be flagged as read-only.
+
+
 Fixed
 ^^^^^
 
