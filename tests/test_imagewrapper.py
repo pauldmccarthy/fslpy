@@ -906,8 +906,8 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
                 # on this copy
                 expCovSlice = [slice(int(lo), int(hi)) for lo, hi in expCov.T]
 
-                expLo = expData[expCovSlice].min()
-                expHi = expData[expCovSlice].max()
+                expLo = expData[tuple(expCovSlice)].min()
+                expHi = expData[tuple(expCovSlice)].max()
 
                 wrapper[tuple(sliceobjs)] = newData
                 _ImageWraper_busy_wait(wrapper)
