@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.1.0 (Friday April 12th 2019)
-------------------------------
+2.1.0 (Saturday April 13th 2019)
+--------------------------------
 
 
 Added
@@ -21,8 +21,8 @@ Changed
 
 
 * The :class:`.GiftiMesh` class no longer creates copies of the mesh
-  vertex/index arrays. This means that, with ``numpy>=1.16`` these arrays
-  will be flagged as read-only.
+  vertex/index arrays. This means that, these arrays will be flagged as
+  read-only.
 * The :class:`.Mesh` class handles vertex data sets requiring different
   triangle unwinding orders, at the cost of potentially having to store
   two copies of the mesh indices.
