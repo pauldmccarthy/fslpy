@@ -223,7 +223,9 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     =============== ========================================================
     ``'transform'`` The affine transformation matrix has changed. This topic
-                    will occur when the ``voxToWorldMat`` is changed.
+                    will occur when the :meth:`voxToWorldMat` is changed.
+    ``'header       A header field has changed. This will occur when the
+                    :meth:`intent` is changed.
     =============== ========================================================
     """
 
@@ -250,14 +252,10 @@ class Nifti(notifier.Notifier, meta.Meta):
                                                          shape,
                                                          pixdim)
 
-
         self.header           = header
         self.__shape          = shape
         self.__origShape      = origShape
         self.__pixdim         = pixdim
-        self.__intent         = header.get('intent_code',
-                                           constants.NIFTI_INTENT_NONE)
-
         self.__affines        = affines
         self.__isNeurological = isneuro
 
@@ -463,9 +461,17 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     @property
     def intent(self):
-        """Returns the NIFTI intent code of this image.
-        """
-        return self.__intent
+        """Returns the NIFTI intent code of this image. """
+        return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
+
+
+    @intent.setter
+    def intent(self, val):
+        """Sets the NIFTI intent code of this image. """
+        # analyze has no intent
+        if self.niftiVersion > 0:
+            self.header.set_intent(val, allow_unknown=True)
+            self.notify(topic='header')
 
 
     @property
@@ -950,7 +956,13 @@ class Image(Nifti):
 
             nibImage = ctr(image, xform, header=header)
 
-        # otherwise, we assume that it is a nibabel image
+        # If it's an Image object, we
+        # just take the nibabel image
+        elif isinstance(image, Image):
+            nibImage = image.nibImage
+
+        # otherwise, we assume that
+        # it is a nibabel image
         else:
             nibImage = image
 
@@ -985,9 +997,10 @@ class Image(Nifti):
                                                         threaded=threaded)
 
         # Listen to ourself for changes
-        # to the voxToWorldMat, so we
+        # to header attributse so we
         # can update the saveState.
-        self.register(self.name, self.__transformChanged, topic='transform')
+        self.register(self.name, self.__headerChanged, topic='transform')
+        self.register(self.name, self.__headerChanged, topic='header')
 
         if calcRange:
             self.calcRange()
@@ -1126,8 +1139,8 @@ class Image(Nifti):
         self.__nibImage.set_sform(xform, code)
 
 
-    def __transformChanged(self, *args, **kwargs):
-        """Called when the ``voxToWorldMat`` of this :class:`Nifti` instance
+    def __headerChanged(self, *args, **kwargs):
+        """Called when header properties of this :class:`Nifti` instance
         changes. Updates the :attr:`saveState` accordinbgly.
         """
         if self.__saveState:
