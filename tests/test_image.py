@@ -21,7 +21,6 @@ from nibabel.spatialimages import ImageFileError
 
 import fsl.data.constants    as constants
 import fsl.data.image        as fslimage
-import fsl.data.imagewrapper as imagewrapper
 import fsl.utils.path        as fslpath
 import fsl.utils.transform   as transform
 
@@ -741,6 +740,48 @@ def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
         del img
         del image
         image = None
+
+
+def  test_Image_changeIntent_analyze(): _test_Image_changeIntent(0)
+def  test_Image_changeIntent_nifti1():  _test_Image_changeIntent(1)
+def  test_Image_changeIntent_nifti2():  _test_Image_changeIntent(2)
+def _test_Image_changeIntent(imgtype):
+    """Test changing the Nifti.intent attribute. """
+
+    with tempdir() as testdir:
+        imagefile = op.join(testdir, 'image')
+
+        image = make_image(imagefile, imgtype)
+        if imgtype > 0:
+            image.header.set_intent(constants.NIFTI_INTENT_NONE)
+        nib.save(image, imagefile)
+
+        notified = {}
+        def onHdr( *a): notified['header'] = True
+        def onSave(*a): notified['save']   = True
+
+        img = fslimage.Image(imagefile)
+
+        img.register('name1', onHdr,  'header')
+        img.register('name2', onSave, 'saveState')
+
+        assert img.intent == constants.NIFTI_INTENT_NONE
+        img.intent = constants.NIFTI_INTENT_BETA
+
+        if imgtype == 0: exp = constants.NIFTI_INTENT_NONE
+        else:            exp = constants.NIFTI_INTENT_BETA
+
+        assert img.intent == exp
+
+        if imgtype > 0:
+            assert img         .header.get_intent('code')[0] == exp
+            assert img.nibImage.header.get_intent('code')[0] == exp
+
+            assert notified.get('header', False)
+            assert notified.get('save',   False)
+
+
+
 
 
 def  test_Image_changeData_analyze(seed): _test_Image_changeData(0)
