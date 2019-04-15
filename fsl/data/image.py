@@ -469,7 +469,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     def intent(self, val):
         """Sets the NIFTI intent code of this image. """
         # analyze has no intent
-        if self.niftiVersion > 0:
+        if (self.niftiVersion > 0) and (val != self.intent):
             self.header.set_intent(val, allow_unknown=True)
             self.notify(topic='header')
 
