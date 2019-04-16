@@ -1,75 +1,83 @@
 #!/usr/bin/env python
 #
-# dispfield.py - FNIRT displacement fields
+# nonlinear.py -
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""
-
-
-FNIRT displacement field files may contain coordinates in one of two
-formats:
-
-"""
 
 
 import numpy as np
 
-import fsl.data.image as     fslimage
-from   .              import affine
+import fsl.data.image as fslimage
+
+from . import affine
 
 
-class DisplacementField(fslimage.Image):
-    """
+class NonLinearTransform(fslimage.Image):
+    """Class which represents a FNIRT non-linear transformation
     """
 
     def __init__(self, *args, **kwargs):
         """
         """
-        source         = kwargs.pop('source',         None)
-        reference      = kwargs.pop('reference',      None)
-        dispType       = kwargs.pop('dispType',       None)
-        sourceSpace    = kwargs.pop('sourceSpace',    'fsl')
-        referenceSpace = kwargs.pop('referenceSpace', 'fsl')
+        src      = kwargs.pop('src',       None)
+        ref      = kwargs.pop('ref',       None)
+        srcSpace = kwargs.pop('srceSpace', 'fsl')
+        refSpace = kwargs.pop('refSpace',  'fsl')
 
         fslimage.Image.__init__(self, *args, **kwargs)
 
-        if source    is not None: source    = source   .header.copy()
-        if reference is not None: reference = reference.header.copy()
-        else:                     reference = self     .header.copy()
+        if src is not None: src = src .header.copy()
+        if ref is not None: ref = ref .header.copy()
+        else:               ref = self.header.copy()
 
-        self.__dispType       = dispType
-        self.__source         = source
-        self.__reference      = reference
-        self.__sourceSpace    = sourceSpace
-        self.__referenceSpace = referenceSpace
-
-
-    @property
-    def source(self):
-        return self.__source
+        self.__src      = src
+        self.__ref      = ref
+        self.__srcSpace = srcSpace
+        self.__refSpace = refSpace
 
 
     @property
-    def reference(self):
-        return self.__reference
+    def src(self):
+        return self.__src
 
 
     @property
-    def sourceSpace(self):
-        return self.__sourceSpace
+    def ref(self):
+        return self.__ref
 
 
     @property
-    def referenceSpace(self):
-        """irrelevant if absolute displacement"""
-        return self.__referenceSpace
+    def srcSpace(self):
+        return self.__srcSpace
+
+
+    @property
+    def refSpace(self):
+        return self.__refSpace
+
+
+class DisplacementField(NonLinearTransform):
+    """Class which represents a FNIRT displacement field which, at each voxel,
+    contains an absolute or relative displacement from a source space to a
+    reference space.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        """
+
+        dispType = kwargs.pop('dispType',  None)
+
+        NonLinearTransform.__init__(self, *args, **kwargs)
+
+        self.__dispType = dispType
 
 
     @property
     def displacementType(self):
         if self.__dispType is None:
-            self.__dispType = detectType(self)
+            self.__dispType = detectDisplacementType(self)
         return self.__dispType
 
 
@@ -83,7 +91,8 @@ class DisplacementField(fslimage.Image):
         return self.displacementType == 'relative'
 
 
-def detectType(field):
+
+def detectDisplacementType(field):
     """Attempt to automatically determine whether a displacement field is
     specified in absolute or relative coordinates.
 
@@ -99,7 +108,7 @@ def detectType(field):
     # standard deviation than one which
     # contains relative coordinates.
     absdata = field[:]
-    reldata = convertType(field, 'relative')
+    reldata = convertDisplacementType(field, 'relative')
     stdabs  = absdata.std(axis=(0, 1, 2)).sum()
     stdrel  = reldata.std(axis=(0, 1, 2)).sum()
 
@@ -107,7 +116,7 @@ def detectType(field):
     else:               return 'relative'
 
 
-def convertType(field, dispType=None):
+def convertDisplacementType(field, dispType=None):
     """Convert a displacement field between storing absolute and relative
     displacements.
     """
@@ -120,7 +129,7 @@ def convertType(field, dispType=None):
     # we need the coordinates of every voxel
     # in the reference FSL coordinate system.
     dx, dy, dz = field.shape[:3]
-    v2fsl      = field.getAffine('voxel', field.sourceSpace)
+    v2fsl      = field.getAffine('voxel', field.srcSpace)
     coords     = np.meshgrid(np.arange(dx),
                              np.arange(dy),
                              np.arange(dz), indexing='ij')
@@ -137,7 +146,7 @@ def convertType(field, dispType=None):
     elif dispType == 'relative': return field.data - coords
 
 
-def convertSpace(field, src, from_, to, ref=None, dispType=None):
+def convertDisplacementSpace(field, src, from_, to, ref=None, dispType=None):
     """Adjust the source and/or reference spaces of the given displacement
     field.
     """
@@ -148,14 +157,14 @@ def convertSpace(field, src, from_, to, ref=None, dispType=None):
     # Get the field in absolute
     # coordinates if necessary
     fieldcoords = field.data
-    if field.relative: srccoords = convertType(field)
+    if field.relative: srccoords = convertDisplacementType(field)
     else:              srccoords = fieldcoords
 
     # Now transform those source
     # coordinates  from the original
     # source space to the source
     # space specified by "from_"
-    srcmat    = src.getAffine(field.sourceSpace, from_)
+    srcmat    = src.getAffine(field.srcSpace, from_)
     srccoords = srccoords.reshape((-1, 3))
     srccoords = affine.transform(srccoords, srcmat)
 
@@ -175,7 +184,7 @@ def convertSpace(field, src, from_, to, ref=None, dispType=None):
     # displacements from source "from_"
     # space into reference "to" space.
     else:
-        refmat      = ref.getAffine(field.referenceSpace, to)
+        refmat      = ref.getAffine(field.refSpace, to)
         refcoords   = fieldcoords.reshape((-1, 3))
         refcoords   = affine.transform(refcoords, refmat)
         fieldcoords = srccoords - refcoords
@@ -183,8 +192,8 @@ def convertSpace(field, src, from_, to, ref=None, dispType=None):
     return DisplacementField(
         fieldcoords.reshape(field.shape),
         header=field.header,
-        source=src,
-        reference=ref,
-        sourceSpace=from_,
-        referenceSpace=to,
+        src=src,
+        ref=ref,
+        srcSpace=from_,
+        refSpace=to,
         dispType=dispType)
