@@ -6,7 +6,7 @@ import nibabel as nib
 
 import fsl.data.image                as fslimage
 import fsl.utils.transform           as transform
-import fsl.utils.transform.dispfield as dispfield
+import fsl.utils.transform.nonlinear as nonlinear
 
 
 def _random_field():
@@ -19,7 +19,7 @@ def _random_field():
         np.random.randint(1, 100, 3),
         np.random.random(3) * np.pi / 2)
 
-    return dispfield.DisplacementField(field, xform=aff)
+    return nonlinear.DisplacementField(field, xform=aff)
 
 
 def _field_coords(field):
@@ -33,29 +33,29 @@ def _field_coords(field):
         field.getAffine('voxel', 'fsl')).reshape(field.shape)
 
 
-def test_detectType():
+def test_detectDisplacementType():
     relfield = _random_field()
     coords   = _field_coords(relfield)
-    absfield = dispfield.DisplacementField(
+    absfield = nonlinear.DisplacementField(
         relfield.data + coords, xform=relfield.voxToWorldMat)
 
-    assert dispfield.detectType(relfield) == 'relative'
-    assert dispfield.detectType(absfield) == 'absolute'
+    assert nonlinear.detectDisplacementType(relfield) == 'relative'
+    assert nonlinear.detectDisplacementType(absfield) == 'absolute'
 
 
-def test_convertType():
-    relfield = dispfield.DisplacementField(_random_field())
+def test_convertDisplacemenyType():
+    relfield = nonlinear.DisplacementField(_random_field())
     coords   = _field_coords(relfield)
     absfield = fslimage.Image(
         relfield.data + coords, xform=relfield.voxToWorldMat)
 
-    relfield = dispfield.DisplacementField(relfield)
-    absfield = dispfield.DisplacementField(absfield)
+    relfield = nonlinear.DisplacementField(relfield)
+    absfield = nonlinear.DisplacementField(absfield)
 
-    gotconvrel1 = dispfield.convertType(relfield)
-    gotconvabs1 = dispfield.convertType(absfield)
-    gotconvrel2 = dispfield.convertType(relfield, 'absolute')
-    gotconvabs2 = dispfield.convertType(absfield, 'relative')
+    gotconvrel1 = nonlinear.convertDisplacementType(relfield)
+    gotconvabs1 = nonlinear.convertDisplacementType(absfield)
+    gotconvrel2 = nonlinear.convertDisplacementType(relfield, 'absolute')
+    gotconvabs2 = nonlinear.convertDisplacementType(absfield, 'relative')
 
     assert np.all(np.isclose(gotconvrel1, absfield.data))
     assert np.all(np.isclose(gotconvabs1, relfield.data))
