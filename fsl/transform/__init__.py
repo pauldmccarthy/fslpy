@@ -34,7 +34,14 @@ from .flirt  import (  # noqa
     flirtMatrixToSform,
     sformToFlirtMatrix)
 
+from .fnirt import (  # noqa
+    readFnirt,
+    writeFnirt,
+    toFnirt,
+    fromFnirt)
+
 from .x5 import (  # noqa
-    readFlirtX5,
-    writeFlirtX5
-)
+    readLinearX5,
+    writeLinearX5,
+    readNonLinearX5,
+    writeNonLinearX5)

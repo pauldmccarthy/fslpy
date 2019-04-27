@@ -10,6 +10,8 @@ matrices. The following functions are available:
 .. autosummary::
    :nosignatures:
 
+   readFlirt
+   writeFlirt
    fromFlirt
    toFlirt
    flirtMatrixToSform
