@@ -19,10 +19,10 @@ import nibabel      as nib
 
 from nibabel.spatialimages import ImageFileError
 
-import fsl.data.constants    as constants
-import fsl.data.image        as fslimage
-import fsl.utils.path        as fslpath
-import fsl.utils.transform   as transform
+import fsl.data.constants as constants
+import fsl.data.image     as fslimage
+import fsl.utils.path     as fslpath
+import fsl.transform      as transform
 
 from fsl.utils.tempdir import tempdir
 

@@ -6,13 +6,13 @@
 #
 
 
-import os.path as op
-import numpy   as np
-import            mock
-import            pytest
+import os.path  as     op
+import numpy    as     np
+from   unittest import mock
+import                 pytest
 
-import fsl.utils.transform as transform
-import fsl.data.mesh       as fslmesh
+import fsl.transform as transform
+import fsl.data.mesh as fslmesh
 
 from . import tempdir
 
@@ -256,6 +256,13 @@ def test_needsFixing():
 
 
 def test_trimesh_no_trimesh():
+
+    # Make sure trimesh and rtree
+    # are imported before messing
+    # with sys.modules, otherwise
+    # weird things can happen.
+    import trimesh
+    import rtree
 
     mods = ['trimesh', 'rtree']
 

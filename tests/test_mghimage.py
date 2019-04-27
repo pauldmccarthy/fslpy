@@ -12,10 +12,10 @@ import            shutil
 import numpy   as np
 import nibabel as nib
 
-import fsl.utils.tempdir   as tempdir
-import fsl.utils.transform as transform
-import fsl.data.mghimage   as fslmgh
-import fsl.data.image      as fslimage
+import fsl.utils.tempdir as tempdir
+import fsl.transform     as transform
+import fsl.data.mghimage as fslmgh
+import fsl.data.image    as fslimage
 
 
 datadir = op.join(op.abspath(op.dirname(__file__)), 'testdata')

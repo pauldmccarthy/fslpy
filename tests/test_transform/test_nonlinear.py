@@ -4,9 +4,9 @@
 import numpy   as np
 import nibabel as nib
 
-import fsl.data.image                as fslimage
-import fsl.utils.transform           as transform
-import fsl.utils.transform.nonlinear as nonlinear
+import fsl.data.image          as fslimage
+import fsl.transform           as transform
+import fsl.transform.nonlinear as nonlinear
 
 
 def _random_field():

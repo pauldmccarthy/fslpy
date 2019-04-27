@@ -15,11 +15,11 @@ import scipy.ndimage as ndi
 
 import                  pytest
 
-import fsl.utils.transform as transform
+import fsl.transform            as transform
+import fsl.data.atlases         as fslatlases
 import fsl.utils.image.resample as resample
-import fsl.data.atlases    as fslatlases
-import fsl.data.image      as fslimage
-import fsl.scripts.atlasq  as fslatlasq
+import fsl.data.image           as fslimage
+import fsl.scripts.atlasq       as fslatlasq
 
 from .. import (tempdir,
                 make_random_mask,

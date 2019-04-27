@@ -11,11 +11,11 @@ import numpy           as np
 import                    pytest
 
 
-import fsl.data.atlases    as fslatlases
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
+import fsl.data.atlases         as fslatlases
+import fsl.data.image           as fslimage
+import fsl.transform            as transform
 import fsl.utils.image.resample as resample
-import fsl.utils.cache     as cache
+import fsl.utils.cache          as cache
 
 from . import (testdir, make_random_mask)
 

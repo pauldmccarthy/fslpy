@@ -3,9 +3,9 @@
 
 import numpy as np
 
-import fsl.utils.tempdir   as tempdir
-import fsl.utils.transform as transform
-import fsl.data.image      as fslimage
+import fsl.utils.tempdir as tempdir
+import fsl.transform     as transform
+import fsl.data.image    as fslimage
 
 import fsl.scripts.fsl_convert_x5 as fsl_convert_x5
 

@@ -9,14 +9,14 @@ import os.path as op
 
 import numpy as np
 
-import fsl.data.image as fslimage
-import fsl.utils.transform as transform
-import fsl.utils.tempdir   as tempdir
+import fsl.data.image    as fslimage
+import fsl.transform     as transform
+import fsl.utils.tempdir as tempdir
 
-from .test_transform import readlines
+from .test_affine import readlines
 
 
-datadir = op.join(op.dirname(__file__), 'testdata')
+datadir = op.join(op.dirname(__file__), '..', 'testdata')
 
 
 def test_read_write():
