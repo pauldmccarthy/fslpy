@@ -12,8 +12,8 @@ import            shutil
 import            logging
 import            argparse
 
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
+import fsl.data.image as fslimage
+import fsl.transform  as transform
 
 
 log = logging.getLogger(__name__)

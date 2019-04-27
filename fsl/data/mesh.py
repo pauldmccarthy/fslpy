@@ -33,9 +33,9 @@ import collections
 import os.path as op
 import numpy   as np
 
-import fsl.utils.meta      as meta
-import fsl.utils.notifier  as notifier
-import fsl.utils.transform as transform
+import fsl.utils.meta     as meta
+import fsl.utils.notifier as notifier
+import fsl.transform      as transform
 
 
 log = logging.getLogger(__name__)

@@ -14,9 +14,9 @@ import os.path as op
 import            six
 import nibabel as nib
 
-import fsl.utils.path      as fslpath
-import fsl.utils.transform as transform
-import fsl.data.image      as fslimage
+import fsl.utils.path as fslpath
+import fsl.transform  as transform
+import fsl.data.image as fslimage
 
 
 ALLOWED_EXTENSIONS = ['.mgz', '.mgh']

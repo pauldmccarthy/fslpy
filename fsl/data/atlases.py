@@ -54,7 +54,7 @@ import fsl.data.image                     as fslimage
 import fsl.data.constants                 as constants
 from   fsl.utils.platform import platform as platform
 import fsl.utils.image.resample           as resample
-import fsl.utils.transform                as transform
+import fsl.transform                      as transform
 import fsl.utils.notifier                 as notifier
 import fsl.utils.settings                 as fslsettings
 

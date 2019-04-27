@@ -42,16 +42,16 @@ The following functions return the names of various files of interest:
 """
 
 
-import                        collections
-import                        logging
-import os.path             as op
-import numpy               as np
+import                   collections
+import                   logging
+import os.path        as op
+import numpy          as np
 
-import fsl.utils.path      as fslpath
-import fsl.utils.transform as transform
+import fsl.utils.path as fslpath
+import fsl.transform  as transform
 
-from . import image as fslimage
-from . import          featdesign
+from . import image   as fslimage
+from . import            featdesign
 
 
 log = logging.getLogger(__name__)

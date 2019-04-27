@@ -46,7 +46,7 @@ import nibabel           as nib
 import nibabel.fileslice as fileslice
 
 import fsl.utils.meta        as meta
-import fsl.utils.transform   as transform
+import fsl.transform         as transform
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
