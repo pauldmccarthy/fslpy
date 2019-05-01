@@ -34,6 +34,7 @@ and file names:
 
 import                      os
 import os.path           as op
+import collections.abc   as abc
 import                      string
 import                      logging
 import                      tempfile
@@ -1171,9 +1172,14 @@ class Image(Nifti):
                  sliceobj=None,
                  dtype=None,
                  order=1,
-                 smooth=True):
+                 smooth=True,
+                 offset=None,
+                 origin='centre'):
         """Returns a copy of the data in this ``Image``, resampled to the
         specified ``newShape``.
+
+        See the ``scipy.ndimage.affine_transform`` function for more details,
+        particularly on the ``order`` and ``offset`` arguments.
 
         :arg newShape: Desired shape. May containg floating point values,
                        in which case the resampled image will have shape
@@ -1199,6 +1205,19 @@ class Image(Nifti):
                        down-sampled (i.e. where
                        ``newShape[i] < self.shape[i]``).
 
+        :arg offset:   Offset (in voxel coordinates) into this image to
+                       apply when retrieving values during the resampling. May
+                       be a scalar value, or a sequence of three values.
+                       Default value is determined by the ``origin`` argument.
+
+        :arg origin:   ``'centre'`` (the default) or ``'corner'``. ``'centre'``
+                       resamples the image such that the centre of the corner
+                       voxels of this image and the resampled data are
+                       aligned. ``'corner'`` resamples the image such that
+                       the corner of the corner voxels are aligned (and
+                       therefore the voxel grids are aligned).
+                       Ignored if ``offset`` is specified.
+
         :returns: A tuple containing:
 
                    - A ``numpy`` array of shape ``newShape``, containing
@@ -1209,8 +1228,12 @@ class Image(Nifti):
                      dimensions of the resampled data.
         """
 
-        if sliceobj is None: sliceobj = slice(None)
-        if dtype    is None: dtype    = self.dtype
+        if sliceobj is None:     sliceobj = slice(None)
+        if dtype    is None:     dtype    = self.dtype
+        if origin   == 'center': origin   = 'centre'
+
+        if origin not in ('centre', 'corner'):
+            raise ValueError('Invalid value for origin: {}'.format(origin))
 
         data = self[sliceobj]
         data = np.array(data, dtype=dtype, copy=False)
@@ -1226,6 +1249,26 @@ class Image(Nifti):
             ratio    = oldShape / newShape
             newShape = np.array(np.round(newShape), dtype=np.int)
             scale    = np.diag(ratio)
+
+            # If an offest hasn't been provided,
+            # calculate it from the origin -
+            # the default behaviour (centre)
+            # causes the corner voxel of the
+            # output to have the same centre
+            # as the corner voxel of the input.
+            # If the origin is 'corner', we
+            # apply an offset which effectively
+            # causes the voxel grids of the
+            # input and output to be aligned.
+            if offset is None:
+                if   origin == 'centre': offset = 0
+                elif origin == 'corner': offset = list((ratio - 1) / 2)
+
+            if not isinstance(offset, abc.Sequence):
+                offset = [offset] * 3
+
+            if len(offset) < len(newShape):
+                offset = list(offset) + [0] * (len(newShape) - len(offset))
 
             # If interpolating and smoothing, we apply a
             # gaussian filter along axes with a resampling
@@ -1244,13 +1287,15 @@ class Image(Nifti):
             data = ndimage.affine_transform(data,
                                             scale,
                                             output_shape=newShape,
-                                            order=order)
+                                            offset=offset,
+                                            order=order,
+                                            mode='nearest')
 
             # Construct an affine transform which
             # puts the resampled image into the
             # same world coordinate system as this
             # image.
-            scale = transform.scaleOffsetXform(ratio[:3], 0)
+            scale = transform.scaleOffsetXform(ratio[:3], offset)
             xform = transform.concat(self.voxToWorldMat, scale)
         else:
             xform = self.voxToWorldMat
