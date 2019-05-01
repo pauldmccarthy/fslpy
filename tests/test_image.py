@@ -1186,6 +1186,52 @@ def test_image_resample_4d(seed):
         resampled = None
 
 
+def test_Image_resample_offset(seed):
+    with tempdir() as td:
+        fname = op.join(td, 'test.nii')
+
+        make_random_image(fname, (10, 10, 10))
+        img = fslimage.Image(fname)
+
+        # with origin='corner', image
+        # bounding boxes should match
+        for i in range(25):
+            shape = np.random.randint(5, 50, 3)
+            res = img.resample(shape, origin='corner')
+            res = fslimage.Image(res[0], xform=res[1])
+            imgb = transform.axisBounds(img.shape, img.voxToWorldMat)
+            resb = transform.axisBounds(res.shape, res.voxToWorldMat)
+            assert np.all(np.isclose(imgb, resb, rtol=1e-5, atol=1e-5))
+
+        # with origin='centre' image
+        # bounding boxes should be offset
+        # by (size_resampled - size_orig) / 2
+        for i in range(25):
+            shape = np.random.randint(5, 50, 3)
+            res = img.resample(shape, origin='centre')
+            res = fslimage.Image(res[0], xform=res[1])
+            off = (np.array(img.shape) / np.array(res.shape) - 1) / 2
+            imgb = np.array(transform.axisBounds(img.shape, img.voxToWorldMat))
+            resb = np.array(transform.axisBounds(res.shape, res.voxToWorldMat))
+            assert np.all(np.isclose(imgb, resb + off, rtol=1e-5, atol=1e-5))
+
+
+        # with origin='corner', using
+        # linear interp, when we down-
+        # sample an image to a shape
+        # that divides evenly into the
+        # original shape, a downsampled
+        # voxel should equal the average
+        # of the original voxels inside
+        # it.
+        res = img.resample((5, 5, 5), smooth=False, origin='corner')[0]
+        for x, y, z in it.product(range(5), range(5), range(5)):
+            block = img[x * 2: x * 2 + 2,
+                        y * 2: y * 2 + 2,
+                        z * 2: z * 2 + 2]
+            assert np.isclose(res[x, y, z], block.mean())
+
+
 def  test_Image_init_xform_nifti1():  _test_Image_init_xform(1)
 def  test_Image_init_xform_nifti2():  _test_Image_init_xform(2)
 def _test_Image_init_xform(imgtype):
