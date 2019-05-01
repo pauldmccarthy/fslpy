@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.2.0 (Under development)
+-------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :meth:`.Image.resample` method now accepts ``origin`` and ``offset``
+  parameters, which can be used to adjust the alignment of the voxel grids of
+  the input and output images.
+
+
 2.1.0 (Saturday April 13th 2019)
 --------------------------------
 
