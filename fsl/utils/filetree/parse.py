@@ -50,7 +50,7 @@ def check_forbidden_characters(text, characters, text_type):
     """
     bad = [character for character in characters if character in text]
     if len(bad) > 0:
-        raise ValueError(f'Invalid character(s) "{"".join(bad)}" in {text_type}: {text}')
+        raise ValueError('Invalid character(s) "{}" in {}: {}'.format("".join(bad), text_type, text))
 
 
 def read_line(line: str) -> Tuple[int, PurePath, str]:
