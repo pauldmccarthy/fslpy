@@ -1165,12 +1165,10 @@ class Image(Nifti):
         self.notify(topic='saveState')
 
 
+    @deprecated.deprecated('2.2.0', '3.0.0',
+                           'Use fsl.utils.image.resample instead.')
     def resample(self, *args, **kwargs):
-        """Returns a copy of the data in this ``Image``, resampled to the
-        specified ``newShape``.
-
-        See the :mod:`.image.resample` module for more details.
-        """
+        """Deprecated - use :func:`.image.resample` instead. """
         from fsl.utils.image.resample import resample
         return resample(self, *args, **kwargs)
 

@@ -7,6 +7,9 @@
 """This module defines the :func:`resample` function, which can be used
 to resample an :class:`.Image` object to a different resolution.
 
+The :func:`resampleToPixdims` and :func:`resampleToReference` functions
+are convenience wrappers around :func:`resample`.
+
 The :func:`applySmoothing` and :func:`calculateMatrix` functions are
 sub-functions of :func:`resample`.
 """
@@ -18,6 +21,40 @@ import numpy               as np
 import scipy.ndimage       as ndimage
 
 import fsl.utils.transform as transform
+
+
+def resampleToPixdims(image, newPixdims, **kwargs):
+    """Resample ``image`` so that it has the specified voxel dimensions.
+
+    This is a wrapper around :func:`resample` - refer to its documenttion
+    for details on the other arguments and the return values.
+
+    :arg image:   :class:`.Image` to resample
+    :arg pixdims: New voxel dimensions to resample ``image`` to.
+    """
+    oldShape   = image.shape
+    oldPixdims = image.pixdim
+    fac        = [o / float(n) for o, n in zip(oldPixdims, newPixdims)]
+    newShape   = [p * f        for p, f in zip(oldShape,   fac)]
+    return resample(image, newShape, **kwargs)
+
+
+def resampleToReference(image, reference, **kwargs):
+    """Resample ``image`` into the space of the ``reference``.
+
+    This is a wrapper around :func:`resample` - refer to its documenttion
+    for details on the other arguments and the return values.
+
+    :arg image:     :class:`.Image` to resample
+    :arg reference: :class:`.Nifti` defining the space to resample ``image``
+                    into
+    """
+
+    kwargs['mode']     = kwargs.get('mode', 'constant')
+    kwargs['newShape'] = reference.shape
+    kwargs['matrix']   = transform.concat(image.worldToVoxMat,
+                                          reference.voxToWorldMat)
+    return resample(image, **kwargs)
 
 
 def resample(image,
