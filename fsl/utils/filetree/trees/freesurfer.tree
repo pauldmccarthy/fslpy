@@ -67,10 +67,10 @@
         aparc.a2009s+aseg.mgz (aparc_a2009s_aseg)
         aseg.mgz
 
-        label/
+        label
             {hemi}h.aparc.annot (aparc.annot)
 
-        stats/
+        stats
             aseg.stats (aseg_stats)
             wmparc.stats (wmparc_stats)
 

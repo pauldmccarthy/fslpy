@@ -38,6 +38,21 @@ def list_all_trees() -> List[str]:
     return trees
 
 
+def check_forbidden_characters(text, characters, text_type):
+    """
+    Checks the text for forbidden characters
+
+    raises ValueError if one is found
+
+    :param text: string with the text
+    :param characters: sequence of forbidden characters
+    :param text_type: type of the text to raise in error message
+    """
+    bad = [character for character in characters if character in text]
+    if len(bad) > 0:
+        raise ValueError(f'Invalid character(s) "{"".join(bad)}" in {text_type}: {text}')
+
+
 def read_line(line: str) -> Tuple[int, PurePath, str]:
     """
     Parses line from the tree file
@@ -54,11 +69,14 @@ def read_line(line: str) -> Tuple[int, PurePath, str]:
     match = re.match(r'^(\s*)(\S*)\s*\((\S*)\)\s*$', line)
     if match is not None:
         gr = match.groups()
+        check_forbidden_characters(gr[1], r'<>"/\|?*', 'file or directory name')
+        check_forbidden_characters(gr[2], r'(){}/', 'short name')
         return len(gr[0]), PurePath(gr[1]), gr[2]
     match = re.match(r'^(\s*)(\S*)\s*$', line)
     if match is not None:
         gr = match.groups()
         short_name = gr[1].split('.')[0]
+        check_forbidden_characters(gr[1], r'<>"/\|?*', 'file or directory name')
         return len(gr[0]), PurePath(gr[1]), short_name
     raise ValueError('Unrecognized line %s' % line)
 
@@ -79,6 +97,8 @@ def read_subtree_line(line: str, directory: str) -> Tuple[int, "filetree.FileTre
     if match is None:
         raise ValueError("Sub-tree line could not be parsed: {}".format(line.strip()))
     spaces, type_name, variables_str, short_name = match.groups()
+    check_forbidden_characters(type_name, r'<>:"/\|?*', 'sub-tree name')
+    check_forbidden_characters(short_name, r'(){}/', 'sub-tree name')
 
     variables = {}
     if len(variables_str.strip()) != 0:
