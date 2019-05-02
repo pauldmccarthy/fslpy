@@ -268,6 +268,17 @@ def test_compose_and_decompose():
     assert np.all(np.isclose(rotat, rots))
     assert np.all(np.isclose(rotaf, rmat))
 
+    # decompose should accept a 3x3
+    # affine, and return translations of 0
+    transform.decompose(xform[:3, :3])
+    sc,   of,   rot   = transform.decompose(xform[:3, :3])
+    sc,   of,   rot   = np.array(sc), np.array(of), np.array(rot)
+    assert np.all(np.isclose(sc,    [1, 1, 1]))
+    assert np.all(np.isclose(of,    [0, 0, 0]))
+    assert np.all(np.isclose(rot,   rots))
+
+
+
 
 def test_rotMatToAxisAngles(seed):
 
