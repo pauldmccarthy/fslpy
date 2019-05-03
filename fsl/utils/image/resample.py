@@ -32,10 +32,10 @@ def resampleToPixdims(image, newPixdims, **kwargs):
     :arg image:   :class:`.Image` to resample
     :arg pixdims: New voxel dimensions to resample ``image`` to.
     """
-    oldShape   = image.shape
-    oldPixdims = image.pixdim
-    fac        = [o / float(n) for o, n in zip(oldPixdims, newPixdims)]
-    newShape   = [p * f        for p, f in zip(oldShape,   fac)]
+    newPixdims = np.array(newPixdims)
+    oldShape   = np.array(image.shape)
+    oldPixdims = np.array(image.pixdim)
+    newShape   = oldShape * (oldPixdims / newPixdims)
     return resample(image, newShape, **kwargs)
 
 
