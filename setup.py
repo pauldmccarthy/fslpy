@@ -119,12 +119,13 @@ setup(
 
     entry_points={
         'console_scripts' : [
-            'immv          = fsl.scripts.immv:main',
-            'imcp          = fsl.scripts.imcp:main',
-            'imglob        = fsl.scripts.imglob:main',
-            'atlasq        = fsl.scripts.atlasq:main',
-            'atlasquery    = fsl.scripts.atlasq:atlasquery_emulation',
-            'fsl_ents = fsl.scripts.fsl_ents:main',
+            'immv           = fsl.scripts.immv:main',
+            'imcp           = fsl.scripts.imcp:main',
+            'imglob         = fsl.scripts.imglob:main',
+            'atlasq         = fsl.scripts.atlasq:main',
+            'atlasquery     = fsl.scripts.atlasq:atlasquery_emulation',
+            'fsl_ents       = fsl.scripts.fsl_ents:main',
+            'resample_image = fsl.scripts.resample_image:main',
         ]
     }
 )
