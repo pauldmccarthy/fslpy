@@ -9,6 +9,7 @@
    fsl.scripts.imcp
    fsl.scripts.imglob
    fsl.scripts.immv
+   fsl.scripts.resample_image
 
 .. automodule:: fsl.scripts
     :members:

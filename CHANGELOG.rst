@@ -34,7 +34,7 @@ Fixed
 ^^^^^
 
 
-* Minor fixes to some :mod:`.filetree` tree definitions.
+* Minor fixes to some :mod:`.filetree.filetree` tree definitions.
 
 
 Deprecated
@@ -477,7 +477,7 @@ Changed
 * :meth:`.MGHImage` objects now have a :meth:`.MGHImage.save` method.
 * Adjustments to the ``conda`` package build and deployment process.
 * The :func:`.ImageWrapper.canonicalShape` function has been moved
-  to the :mod:`.image` class.
+  to the :mod:`.data.image` class.
 * The :func:`.ImageWrapper.naninfrange` function has been moved
   into its own :mod:`.naninfrange` module.
 
@@ -493,7 +493,7 @@ Deprecated
 ^^^^^^^^^^
 
 
-* :func:`.ImageWrapper.canonicalShape` (moved to the :mod:`.image` module)
+* :func:`.ImageWrapper.canonicalShape` (moved to the :mod:`.data.image` module)
 * :func:`.ImageWrapper.naninfrange` function (moved to the :mod:`.naninfrange`
   module)
 

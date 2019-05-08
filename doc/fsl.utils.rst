@@ -12,11 +12,13 @@
    fsl.utils.fslsub
    fsl.utils.idle
    fsl.utils.imcp
+   fsl.utils.image
    fsl.utils.memoize
    fsl.utils.meta
    fsl.utils.naninfrange
    fsl.utils.notifier
    fsl.utils.path
+   fsl.utils.parse_data
    fsl.utils.platform
    fsl.utils.run
    fsl.utils.settings
