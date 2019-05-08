@@ -20,9 +20,9 @@ import fsl.data.atlases    as fslatlases
 import fsl.data.image      as fslimage
 import fsl.scripts.atlasq  as fslatlasq
 
-from . import (tempdir,
-               make_random_mask,
-               CaptureStdout)
+from .. import (tempdir,
+                make_random_mask,
+                CaptureStdout)
 
 
 pytestmark = pytest.mark.fsltest
