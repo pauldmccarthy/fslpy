@@ -2,13 +2,12 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.2.0 (Under development)
--------------------------
+2.2.0 (Wednesday May 8th 2019)
+------------------------------
 
 
 Added
 ^^^^^
-
 
 
 * New :mod:`.resample_image` script.
@@ -29,6 +28,13 @@ Changed
   the alignment of the voxel grids of the input and output images.
 * The :func:`.transform.decompose` function now accepts both ``(3, 3)``
   and ``(4, 4)`` matrices.
+
+
+Fixed
+^^^^^
+
+
+* Minor fixes to some :mod:`.filetree` tree definitions.
 
 
 Deprecated
