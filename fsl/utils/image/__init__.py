@@ -9,7 +9,7 @@ manipulating and working with :class:`.Image` objects.
 
 The following modules are available:
 
-.. autosumary::
+.. autosummary::
    :nosignature
 
    .image.resample

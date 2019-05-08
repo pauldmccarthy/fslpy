@@ -41,8 +41,8 @@ class FileTreeQuery(object):
     a directory for files which match a specific query.
 
     A ``FileTreeQuery`` scans the contents of a directory which is described
-    by a :class:`.FileTree`, and identifies all file types (a.k.a. _templates_
-    or _short names_) that are present, and the values of variables within each
+    by a :class:`.FileTree`, and identifies all file types (a.k.a. *templates*
+    or *short names*) that are present, and the values of variables within each
     short name that are present. The :meth:`query` method can be used to
     retrieve files which match a specific short name, and variable values.
 
@@ -327,7 +327,7 @@ def allVariables(
     """Identifies the ``FileTree`` variables which are actually represented
     in files in the directory.
 
-    :arg filetree: The ``FileTree``object
+    :arg filetree: The ``FileTree`` object
     :arg matches:  list of ``Match`` objects (e.g. as returned by :func:`scan`)
 
     :returns: a tuple containing two dicts:
