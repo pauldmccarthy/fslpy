@@ -27,6 +27,6 @@
 {subject}.sulc_MSMAll.{space}.dscalar.nii (sulc_msm_cifti)
 {subject}.thickness_MSMAll.{space}.dscalar.nii (thick_msm_cifti)
 {subject}.curvature_MSMAll.{space}.dscalar.nii (curv_msm_cifti)
-{subject}.BA.32k_fs_LR.dlabel.nii (BA_cifti))
+{subject}.BA.32k_fs_LR.dlabel.nii (BA_cifti)
 {subject}.aparc.32k_fs_LR.dlabel.nii (aparc_cifti)
 {subject}.aparc.a2009s.32k_fs_LR.dlabel.nii (aparc2009_cifti)
