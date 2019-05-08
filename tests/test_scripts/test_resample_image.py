@@ -3,6 +3,8 @@
 
 import numpy as np
 
+import pytest
+
 import fsl.scripts.resample_image as resample_image
 
 
@@ -67,3 +69,13 @@ def test_resample_image_ref():
         assert np.all(np.isclose(res.shape, (20, 20, 20)))
         assert np.all(np.isclose(res.pixdim, (0.5, 0.5, 0.5)))
         assert np.all(np.isclose(res.voxToWorldMat, expv2w))
+
+
+def test_resample_image_bad_options():
+    with tempdir():
+        img = Image(make_random_image('image.nii.gz', dims=(10, 10, 10)))
+
+        with pytest.raises(SystemExit) as e:
+            resample_image.main('image resampled -d 0.5 0.5 0.5 '
+                                '-s 20 20 20'.split())
+        assert e.value.code != 0
