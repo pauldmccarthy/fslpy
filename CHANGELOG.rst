@@ -6,13 +6,37 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+
+* New :mod:`.resample_image` script.
+* New :mod:`.resample` module (replacing the :func:`.Image.resample` method),
+  containing functions to resample an :class:`.Image`.
+* New :func:`.resample.resampleToPixdim` and
+  :func:`.resample.resampleToReference` functions, convenience wrappers around
+  :func:`.resample.resample`.
+* New :func:`.idle.block` function.
+
+
 Changed
 ^^^^^^^
 
 
-* The :meth:`.Image.resample` method now accepts ``origin`` and ``offset``
-  parameters, which can be used to adjust the alignment of the voxel grids of
-  the input and output images.
+* The :func:`.resample` function (formerly :meth:`.Image.resample`) now
+  accepts ``origin`` and ``matrix`` parameters, which can be used to adjust
+  the alignment of the voxel grids of the input and output images.
+* The :func:`.transform.decompose` function now accepts both ``(3, 3)``
+  and ``(4, 4)`` matrices.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The :meth:`.Image.resample` method has been deprecated in favour of the
+  :func:`.resample.resample` function.
 
 
 2.1.0 (Saturday April 13th 2019)
