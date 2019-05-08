@@ -53,6 +53,7 @@ import numpy                              as np
 import fsl.data.image                     as fslimage
 import fsl.data.constants                 as constants
 from   fsl.utils.platform import platform as platform
+import fsl.utils.image.resample           as resample
 import fsl.utils.transform                as transform
 import fsl.utils.notifier                 as notifier
 import fsl.utils.settings                 as fslsettings
@@ -695,9 +696,8 @@ class Atlas(fslimage.Image):
         # for resampling, as it is most likely
         # that the mask is binary.
         try:
-            mask, xform = mask.resample(self.shape[:3],
-                                        dtype=np.float32,
-                                        order=0)
+            mask, xform = resample.resample(
+                mask, self.shape[:3], dtype=np.float32, order=0)
 
         except ValueError:
             raise MaskError('Mask has wrong number of dimensions')

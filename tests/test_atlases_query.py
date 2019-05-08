@@ -14,6 +14,7 @@ import                    pytest
 import fsl.data.atlases    as fslatlases
 import fsl.data.image      as fslimage
 import fsl.utils.transform as transform
+import fsl.utils.image.resample as resample
 import fsl.utils.cache     as cache
 
 from . import (testdir, make_random_mask)
@@ -256,7 +257,8 @@ def _gen_mask_query(atlas, qtype, qin, maskres):
         # aggresively to make sure there
         # is no overlap between the different
         # resolutions
-        mask, xform = mask.resample(a.shape[:3], dtype=np.float32, order=1)
+        mask, xform = resample.resample(
+            mask, a.shape[:3], dtype=np.float32, order=1)
 
         mask[mask   < 1.0] = 0
         mask[a_zmask == 0] = 0
@@ -279,7 +281,8 @@ def _eval_mask_query(atlas, query, qtype, qin):
     if maskres == res:
         rmask = mask[:]
     else:
-        rmask = mask.resample(atlas.shape[:3], dtype=np.float32, order=0)[0]
+        rmask = resample.resample(
+            mask, atlas.shape[:3], dtype=np.float32, order=0)[0]
 
     rmask = np.array(rmask, dtype=np.bool)
 

@@ -19,6 +19,7 @@ Idle tasks
 .. autosummary::
    :nosignatures:
 
+   block
    idle
    idleWhen
    inIdle
@@ -377,6 +378,29 @@ def cancelIdle(taskName):
     _idleQueueDict[taskName].timeout = -1
 
 
+def block(secs, delta=0.01):
+    """Blocks for the specified number of seconds, yielding to the main ``wx``
+    loop.
+
+    If ``wx`` is not available, or a ``wx`` application is not running, this
+    function is equivalent to ``time.sleep(secs)``.
+
+    :arg secs:  Time in seconds to block
+    :arg delta: Time in seconds to sleep between successive yields to ``wx``.
+    """
+
+    from fsl.utils.platform import platform as fslplatform
+
+    if not fslplatform.haveGui:
+        time.sleep(secs)
+    else:
+        import wx
+        start = time.time()
+        while (time.time() - start) < secs:
+            wx.YieldIfNeeded()
+            time.sleep(delta)
+
+
 def idle(task, *args, **kwargs):
     """Run the given task on a ``wx.EVT_IDLE`` event.
 
@@ -556,7 +580,7 @@ def idleWhen(func, condition, *args, **kwargs):
 
 def wait(threads, task, *args, **kwargs):
     """Creates and starts a new ``Thread`` which waits for all of the ``Thread``
-    instances to finsih (by ``join``ing them), and then runs the given
+    instances to finish (by ``join``ing them), and then runs the given
     ``task`` via :func:`idle`.
 
     If the ``direct`` parameter is ``True``, or a ``wx.App`` is not running,

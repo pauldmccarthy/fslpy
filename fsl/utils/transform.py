@@ -178,7 +178,7 @@ def decompose(xform, angles=True):
     It is assumed that the given transform has no perspective components. Any
     shears in the affine are discarded.
 
-    :arg xform:  A ``(4, 4)`` affine transformation matrix.
+    :arg xform:  A ``(3, 3)`` or ``(4, 4)`` affine transformation matrix.
 
     :arg angles: If ``True`` (the default), the rotations are returned
                  as axis-angles, in radians. Otherwise, the rotation matrix
@@ -187,7 +187,8 @@ def decompose(xform, angles=True):
     :returns: The following:
 
                - A sequence of three scales
-               - A sequence of three translations
+               - A sequence of three translations (all ``0`` if ``xform``
+                 was a ``(3, 3)`` matrix)
                - A sequence of three rotations, in radians. Or, if
                  ``angles is False``, a rotation matrix.
     """
@@ -198,9 +199,13 @@ def decompose(xform, angles=True):
     # The next step is to extract the translations. This is trivial;
     # we find t_x = M_{4,1}, t_y = M_{4,2}, and t_z = M_{4,3}. At this
     # point we are left with a 3*3 matrix M' = M_{1..3,1..3}.
-    xform        = xform.T
-    translations = xform[ 3, :3]
-    xform        = xform[:3, :3]
+    xform = xform.T
+
+    if xform.shape == (4, 4):
+        translations = xform[ 3, :3]
+        xform        = xform[:3, :3]
+    else:
+        translations = np.array([0, 0, 0])
 
     M1 = xform[0]
     M2 = xform[1]
@@ -261,7 +266,7 @@ def decompose(xform, angles=True):
     if angles: rotations = rotMatToAxisAngles(R.T)
     else:      rotations = R.T
 
-    return [sx, sy, sz], translations, rotations
+    return np.array([sx, sy, sz]), translations, rotations
 
 
 def rotMatToAffine(rotmat, origin=None):

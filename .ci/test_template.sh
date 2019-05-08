@@ -48,11 +48,11 @@ xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
 # unintuitively, includes nobody)
 chmod -R a+w `pwd`
 cmd="source /test.venv/bin/activate && python setup.py test"
-cmd="$cmd --addopts='$TEST_OPTS tests/test_immv_imcp.py'"
+cmd="$cmd --addopts='$TEST_OPTS tests/test_scripts/test_immv_imcp.py tests/test_immv_imcp.py'"
 su -s /bin/bash -c "$cmd" nobody
 
 # All other tests can be run as normal.
-python setup.py test --addopts="$TEST_OPTS -m 'not longtest' --ignore=tests/test_idle.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py"
+python setup.py test --addopts="$TEST_OPTS -m 'not longtest' --ignore=tests/test_idle.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py --ignore=tests/test_scripts/test_immv_imcp.py"
 
 # Long tests are only run on release branches
 if [[ $CI_COMMIT_REF_NAME == v* ]]; then
