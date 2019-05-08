@@ -158,6 +158,29 @@ def _test_idleTimeout():
 
 
 @pytest.mark.wxtest
+def test_block_with_gui():    _run_with_wx(   _test_block)
+def test_block_without_gui(): _run_without_wx(_test_block)
+def _test_block():
+
+    called = [False]
+
+    if fslplatform.haveGui:
+        import wx
+        def idlefunc():
+            called[0] = True
+        wx.CallLater(1000, idlefunc)
+
+    start = time.time()
+
+    idle.block(2)
+    end = time.time()
+    assert (end - start) >= 2
+
+    if fslplatform.haveGui:
+        assert called[0]
+
+
+@pytest.mark.wxtest
 def test_idle():
 
     called = [False]
