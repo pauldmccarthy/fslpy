@@ -103,6 +103,10 @@ def parseArgs(argv):
     for a in ('shape', 'dim', 'reference'):
         dest.add_argument(*ARGS[a], help=HELPS[a], **OPTS[a])
 
+    if len(argv) == 0:
+        parser.print_help()
+        sys.exit(0)
+
     args        = parser.parse_args(argv)
     args.interp = INTERPS[   args.interp]
     args.dtype  = DTYPES.get(args.dtype, args.input.dtype)
