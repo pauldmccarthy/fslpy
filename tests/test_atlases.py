@@ -17,9 +17,10 @@ import mock
 import pytest
 
 import tests
-import fsl.utils.transform as transform
-import fsl.data.atlases    as atlases
-import fsl.data.image      as fslimage
+import fsl.utils.transform      as transform
+import fsl.utils.image.resample as resample
+import fsl.data.atlases         as atlases
+import fsl.data.image           as fslimage
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -286,7 +287,7 @@ def test_prepareMask():
             np.array(np.random.random(ashape), dtype=np.float32),
             xform=atlas.voxToWorldMat)
 
-        goodmask2, xf = goodmask1.resample(m2shape)
+        goodmask2, xf = resample.resample(goodmask1, m2shape)
         goodmask2     = fslimage.Image(goodmask2, xform=xf)
 
         wrongdims     = fslimage.Image(

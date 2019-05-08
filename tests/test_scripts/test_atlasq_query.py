@@ -16,6 +16,7 @@ import scipy.ndimage as ndi
 import                  pytest
 
 import fsl.utils.transform as transform
+import fsl.utils.image.resample as resample
 import fsl.data.atlases    as fslatlases
 import fsl.data.image      as fslimage
 import fsl.scripts.atlasq  as fslatlasq
@@ -329,7 +330,8 @@ def _gen_mask_query(atlas, use_label, q_type, q_in, res):
             # resampled into the atlas resolution,
             # it is still either in or out of the
             # atlas space
-            mask, xform = mask.resample(a.shape[:3], dtype=np.float32, order=1)
+            mask, xform = resample.resample(
+                mask, a.shape[:3], dtype=np.float32, order=1)
 
             thres = np.percentile(mask[mask > 0], 75)
 
