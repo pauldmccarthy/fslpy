@@ -254,16 +254,31 @@ def test_find():
 
             assert atlas     .find(value=label.value) == label
             assert atlas     .find(index=label.index) == label
+            assert atlas     .find(name=label.name) == label
             assert atlas.desc.find(value=label.value) == label
             assert atlas.desc.find(index=label.index) == label
+            assert atlas.desc.find(name=label.name) == label
+
+            if atlas is not lblatlas:
+                # lblatlas has a lot of very similar label names
+                assert atlas     .find(name=label.name[:-2]) == label
+                assert atlas.desc.find(name=label.name[:-2]) == label
 
         with pytest.raises(ValueError):
             atlas.find()
         with pytest.raises(ValueError):
             atlas.find(index=1, value=1)
+        with pytest.raises(ValueError):
+            atlas.find(index=1, name=1)
+        with pytest.raises(ValueError):
+            atlas.find(value=1, name=1)
 
         with pytest.raises(IndexError):
             atlas.find(index=len(labels))
+        with pytest.raises(IndexError):
+            atlas.find(name='InvalidROI')
+        with pytest.raises(IndexError):
+            atlas.find(name='')
 
         maxval = max([l.value for l in labels])
         with pytest.raises(KeyError):

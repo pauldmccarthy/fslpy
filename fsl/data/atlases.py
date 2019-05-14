@@ -595,12 +595,25 @@ class AtlasDescription(object):
                   labels, and a 3D ``LabelAtlas`` may have more values
                   than labels.
         """
-        if (index is     None and value is     None) or \
-           (index is not None and value is not None):
-            raise ValueError('Only one of index or value may be specified')
+        if ((index is not None) + (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of index, value, or name may be specified')
+        if index is not None:   return self.labels[         index]
+        elif value is not None: return self.__labelsByValue[int(value)]
+        else:
+            matches = [l for l in self.labels if l.name == name]
+            if len(matches) == 0:
+                # look for partial matches only if there are no full matches
+                matches = [l for l in self.labels if l.name[:len(name)] == name]
+            if len(matches) == 0:
+                raise IndexError('No match for {} found in labels {}'.format(
+                    name, tuple(l.name for l in self.labels)
+                ))
+            elif len(matches) > 1:
+                raise IndexError('Multiple matches for {} found in labels {}'.format(
+                    name, tuple(l.name for l in self.labels)
+                ))
+            return matches[0]
 
-        if index is not None: return self.labels[         index]
-        else:                 return self.__labelsByValue[int(value)]
 
 
     def __eq__(self, other):

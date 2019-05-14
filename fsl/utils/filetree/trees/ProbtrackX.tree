@@ -1,4 +1,4 @@
-basename=fdt
+basename=fdt_paths
 
 probtrackx.log (log_cmd)
 {basename}.log (log_settings)
