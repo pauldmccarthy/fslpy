@@ -586,8 +586,8 @@ class AtlasDescription(object):
     def find(self, index=None, value=None, name=None):
         """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
 
-        Exactly one of ``index`` or ``value`` may be specified - a
-        ``ValueError`` is raised otherwise. If an invalid ``index`` or
+        Exactly one of ``index``, ``value``, or ``name`` may be specified - a
+        ``ValueError`` is raised otherwise. If an invalid ``index``, ``name``, or
         ``value`` is specified, an ``IndexError`` or ``KeyError`` will be
         raised.
 
@@ -877,6 +877,28 @@ class LabelAtlas(Atlas):
 
         return values, props
 
+    def get(self, label=None, index=None, value=None, name=None):
+        """
+        Returns the binary image for given label
+
+        Only one of the arguments should be used to define the label
+
+        :arg label: AtlasLabel contained within this atlas
+        :arg index: index of the label
+        :arg value: value of the label
+        :arg name: string of the label
+        :return: image.Image with the mask
+        """
+        if ((label is not None) + (index is not None) +
+            (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of label, index, value, or name may be specified')
+        if label is None:
+            label = self.find(index=index, name=name, value=value)
+        elif label not in self.desc.labels:
+            raise ValueError("Unknown label provided")
+        arr = (self.data == label.value).astype(int)
+        return fslimage.Image(arr, name=label.name, header=self.header)
+
 
 class ProbabilisticAtlas(Atlas):
     """A 4D atlas which contains one volume for each region.
@@ -895,6 +917,27 @@ class ProbabilisticAtlas(Atlas):
         """
         Atlas.__init__(self, atlasDesc, resolution, False, **kwargs)
 
+    def get(self, label=None, index=None, value=None, name=None):
+        """
+        Returns the probabilistic image for given label
+
+        Only one of the arguments should be used to define the label
+
+        :arg label: AtlasLabel contained within this atlas
+        :arg index: index of the label
+        :arg value: value of the label
+        :arg name: string of the label
+        :return: image.Image with the probabilistic mask
+        """
+        if ((label is not None) + (index is not None) +
+            (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of label, index, value, or name may be specified')
+        if label is None:
+            label = self.find(index=index, value=value, name=name)
+        elif label not in self.desc.labels:
+            raise ValueError("Unknown label provided")
+        arr = self[..., label.index]
+        return fslimage.Image(arr, name=label.name, header=self.header)
 
     def proportions(self, location, *args, **kwargs):
         """Looks up and returns the proportions of of all regions at the given

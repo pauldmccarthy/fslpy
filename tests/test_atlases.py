@@ -142,8 +142,6 @@ def test_AtlasDescription():
         registry.getAtlasDescription('non-existent-atlas')
 
 
-
-
 def test_add_remove_atlas():
 
     with tests.testdir() as testdir:
@@ -235,6 +233,23 @@ def test_load_atlas():
     assert isinstance(probatlas,    atlases.ProbabilisticAtlas)
     assert isinstance(probsumatlas, atlases.LabelAtlas)
     assert isinstance(lblatlas,     atlases.LabelAtlas)
+
+
+def test_get():
+
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    probatlas = reg.loadAtlas('harvardoxford-cortical')
+    lblatlas = reg.loadAtlas('talairach')
+    for atlas in (probatlas, lblatlas):
+        for idx, label in enumerate(atlas.desc.labels[:10]):
+            target = probatlas[..., idx] if atlas is probatlas else lblatlas.data == label.value
+            assert (target == atlas.get(label).data).all()
+            assert label.name == atlas.get(label).name
+            assert (target == atlas.get(index=label.index).data).all()
+            assert (target == atlas.get(value=label.value).data).all()
+            assert (target == atlas.get(name=label.name).data).all()
 
 
 def test_find():
