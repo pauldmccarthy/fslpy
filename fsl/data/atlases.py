@@ -366,6 +366,15 @@ class AtlasLabel(object):
         """
         return self.index < other.index
 
+    def __repr__(self):
+        """
+        Represents AtlasLabel as string
+        """
+        return '{}({}, index={}, value={})'.format(
+                self.__class__.__name__, self.name,
+                self.index, self.value,
+        )
+
 
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
@@ -574,7 +583,7 @@ class AtlasDescription(object):
         self.labels = list(sorted(self.labels))
 
 
-    def find(self, index=None, value=None):
+    def find(self, index=None, value=None, name=None):
         """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
 
         Exactly one of ``index`` or ``value`` may be specified - a
@@ -611,6 +620,12 @@ class AtlasDescription(object):
         attribute.
         """
         return self.name.lower() < other.name.lower()
+
+    def __repr__(self, ):
+        """
+        String representation of AtlasDescription
+        """
+        return '{}({})'.format(self.__class__.__name__, self.atlasID)
 
 
 class Atlas(fslimage.Image):

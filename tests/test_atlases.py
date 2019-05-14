@@ -99,6 +99,8 @@ def test_AtlasDescription():
     tal  = registry.getAtlasDescription('talairach')
     cort = registry.getAtlasDescription('harvardoxford-cortical')
 
+    assert str(tal) == 'AtlasDescription(talairach)'
+    assert str(cort) == 'AtlasDescription(harvardoxford-cortical)'
 
     assert tal.atlasID == 'talairach'
     assert tal.name    == 'Talairach Daemon Labels'
