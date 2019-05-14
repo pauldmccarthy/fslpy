@@ -366,6 +366,15 @@ class AtlasLabel(object):
         """
         return self.index < other.index
 
+    def __repr__(self):
+        """
+        Represents AtlasLabel as string
+        """
+        return '{}({}, index={}, value={})'.format(
+                self.__class__.__name__, self.name,
+                self.index, self.value,
+        )
+
 
 class AtlasDescription(object):
     """An ``AtlasDescription`` instance parses and stores the information
@@ -574,11 +583,11 @@ class AtlasDescription(object):
         self.labels = list(sorted(self.labels))
 
 
-    def find(self, index=None, value=None):
+    def find(self, index=None, value=None, name=None):
         """Find an :class:`.AtlasLabel` either by ``index``, or by ``value``.
 
-        Exactly one of ``index`` or ``value`` may be specified - a
-        ``ValueError`` is raised otherwise. If an invalid ``index`` or
+        Exactly one of ``index``, ``value``, or ``name`` may be specified - a
+        ``ValueError`` is raised otherwise. If an invalid ``index``, ``name``, or
         ``value`` is specified, an ``IndexError`` or ``KeyError`` will be
         raised.
 
@@ -586,12 +595,25 @@ class AtlasDescription(object):
                   labels, and a 3D ``LabelAtlas`` may have more values
                   than labels.
         """
-        if (index is     None and value is     None) or \
-           (index is not None and value is not None):
-            raise ValueError('Only one of index or value may be specified')
+        if ((index is not None) + (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of index, value, or name may be specified')
+        if index is not None:   return self.labels[         index]
+        elif value is not None: return self.__labelsByValue[int(value)]
+        else:
+            matches = [l for l in self.labels if l.name == name]
+            if len(matches) == 0:
+                # look for partial matches only if there are no full matches
+                matches = [l for l in self.labels if l.name[:len(name)] == name]
+            if len(matches) == 0:
+                raise IndexError('No match for {} found in labels {}'.format(
+                    name, tuple(l.name for l in self.labels)
+                ))
+            elif len(matches) > 1:
+                raise IndexError('Multiple matches for {} found in labels {}'.format(
+                    name, tuple(l.name for l in self.labels)
+                ))
+            return matches[0]
 
-        if index is not None: return self.labels[         index]
-        else:                 return self.__labelsByValue[int(value)]
 
 
     def __eq__(self, other):
@@ -611,6 +633,12 @@ class AtlasDescription(object):
         attribute.
         """
         return self.name.lower() < other.name.lower()
+
+    def __repr__(self, ):
+        """
+        String representation of AtlasDescription
+        """
+        return '{}({})'.format(self.__class__.__name__, self.atlasID)
 
 
 class Atlas(fslimage.Image):
@@ -849,6 +877,28 @@ class LabelAtlas(Atlas):
 
         return values, props
 
+    def get(self, label=None, index=None, value=None, name=None):
+        """
+        Returns the binary image for given label
+
+        Only one of the arguments should be used to define the label
+
+        :arg label: AtlasLabel contained within this atlas
+        :arg index: index of the label
+        :arg value: value of the label
+        :arg name: string of the label
+        :return: image.Image with the mask
+        """
+        if ((label is not None) + (index is not None) +
+            (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of label, index, value, or name may be specified')
+        if label is None:
+            label = self.find(index=index, name=name, value=value)
+        elif label not in self.desc.labels:
+            raise ValueError("Unknown label provided")
+        arr = (self.data == label.value).astype(int)
+        return fslimage.Image(arr, name=label.name, header=self.header)
+
 
 class ProbabilisticAtlas(Atlas):
     """A 4D atlas which contains one volume for each region.
@@ -867,6 +917,27 @@ class ProbabilisticAtlas(Atlas):
         """
         Atlas.__init__(self, atlasDesc, resolution, False, **kwargs)
 
+    def get(self, label=None, index=None, value=None, name=None):
+        """
+        Returns the probabilistic image for given label
+
+        Only one of the arguments should be used to define the label
+
+        :arg label: AtlasLabel contained within this atlas
+        :arg index: index of the label
+        :arg value: value of the label
+        :arg name: string of the label
+        :return: image.Image with the probabilistic mask
+        """
+        if ((label is not None) + (index is not None) +
+            (value is not None) + (name is not None)) != 1:
+            raise ValueError('Only one of label, index, value, or name may be specified')
+        if label is None:
+            label = self.find(index=index, value=value, name=name)
+        elif label not in self.desc.labels:
+            raise ValueError("Unknown label provided")
+        arr = self[..., label.index]
+        return fslimage.Image(arr, name=label.name, header=self.header)
 
     def proportions(self, location, *args, **kwargs):
         """Looks up and returns the proportions of of all regions at the given

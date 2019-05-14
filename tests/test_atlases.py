@@ -99,6 +99,8 @@ def test_AtlasDescription():
     tal  = registry.getAtlasDescription('talairach')
     cort = registry.getAtlasDescription('harvardoxford-cortical')
 
+    assert str(tal) == 'AtlasDescription(talairach)'
+    assert str(cort) == 'AtlasDescription(harvardoxford-cortical)'
 
     assert tal.atlasID == 'talairach'
     assert tal.name    == 'Talairach Daemon Labels'
@@ -138,8 +140,6 @@ def test_AtlasDescription():
 
     with pytest.raises(Exception):
         registry.getAtlasDescription('non-existent-atlas')
-
-
 
 
 def test_add_remove_atlas():
@@ -235,6 +235,23 @@ def test_load_atlas():
     assert isinstance(lblatlas,     atlases.LabelAtlas)
 
 
+def test_get():
+
+    reg = atlases.registry
+    reg.rescanAtlases()
+
+    probatlas = reg.loadAtlas('harvardoxford-cortical')
+    lblatlas = reg.loadAtlas('talairach')
+    for atlas in (probatlas, lblatlas):
+        for idx, label in enumerate(atlas.desc.labels[:10]):
+            target = probatlas[..., idx] if atlas is probatlas else lblatlas.data == label.value
+            assert (target == atlas.get(label).data).all()
+            assert label.name == atlas.get(label).name
+            assert (target == atlas.get(index=label.index).data).all()
+            assert (target == atlas.get(value=label.value).data).all()
+            assert (target == atlas.get(name=label.name).data).all()
+
+
 def test_find():
 
     reg = atlases.registry
@@ -252,16 +269,31 @@ def test_find():
 
             assert atlas     .find(value=label.value) == label
             assert atlas     .find(index=label.index) == label
+            assert atlas     .find(name=label.name) == label
             assert atlas.desc.find(value=label.value) == label
             assert atlas.desc.find(index=label.index) == label
+            assert atlas.desc.find(name=label.name) == label
+
+            if atlas is not lblatlas:
+                # lblatlas has a lot of very similar label names
+                assert atlas     .find(name=label.name[:-2]) == label
+                assert atlas.desc.find(name=label.name[:-2]) == label
 
         with pytest.raises(ValueError):
             atlas.find()
         with pytest.raises(ValueError):
             atlas.find(index=1, value=1)
+        with pytest.raises(ValueError):
+            atlas.find(index=1, name=1)
+        with pytest.raises(ValueError):
+            atlas.find(value=1, name=1)
 
         with pytest.raises(IndexError):
             atlas.find(index=len(labels))
+        with pytest.raises(IndexError):
+            atlas.find(name='InvalidROI')
+        with pytest.raises(IndexError):
+            atlas.find(name='')
 
         maxval = max([l.value for l in labels])
         with pytest.raises(KeyError):
