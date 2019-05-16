@@ -91,9 +91,9 @@ def resample(image,
              dtype=None,
              order=1,
              smooth=True,
-             origin='centre',
+             origin=None,
              matrix=None,
-             mode='nearest',
+             mode=None,
              cval=0):
     """Returns a copy of the data in the ``image``, resampled to the specified
     ``newShape``.
@@ -164,6 +164,8 @@ def resample(image,
 
     if sliceobj is None:     sliceobj = slice(None)
     if dtype    is None:     dtype    = image.dtype
+    if origin   is None:     dtype    = 'centre'
+    if mode     is None:     mode     = 'nearest'
     if origin   == 'center': origin   = 'centre'
 
     if origin not in ('centre', 'corner'):
