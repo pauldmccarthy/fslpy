@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import itertools as it
 
 import numpy   as np
 import nibabel as nib
@@ -9,7 +10,21 @@ import fsl.transform           as transform
 import fsl.transform.nonlinear as nonlinear
 
 
+def _random_image():
+    vx, vy, vz = np.random.randint(10, 50, 3)
+    dx, dy, dz = np.random.randint( 1, 10, 3)
+    data       = (np.random.random((vx, vy, vz)) - 0.5) * 10
+    aff        = transform.compose(
+        (dx, dy, dz),
+        np.random.randint(1, 100, 3),
+        np.random.random(3) * np.pi / 2)
+
+    return fslimage.Image(data, xform=aff)
+
+
 def _random_field():
+
+    src        = _random_image()
     vx, vy, vz = np.random.randint(10, 50, 3)
     dx, dy, dz = np.random.randint( 1, 10, 3)
 
@@ -19,7 +34,7 @@ def _random_field():
         np.random.randint(1, 100, 3),
         np.random.random(3) * np.pi / 2)
 
-    return nonlinear.DisplacementField(field, xform=aff)
+    return nonlinear.DisplacementField(field, src=src, xform=aff)
 
 
 def _field_coords(field):
@@ -61,3 +76,56 @@ def test_convertDisplacemenyType():
     assert np.all(np.isclose(gotconvabs1, relfield.data))
     assert np.all(np.isclose(gotconvrel2, absfield.data))
     assert np.all(np.isclose(gotconvabs2, relfield.data))
+
+def test_DisplacementField_transform():
+
+    src = _random_image()
+    ref = _random_image()
+
+    # our test field just encodes an affine
+    xform = transform.compose(
+        np.random.randint(2, 5, 3),
+        np.random.randint(1, 10, 3),
+        np.random.random(3))
+
+    rx, ry, rz = np.meshgrid(np.arange(ref.shape[0]),
+                             np.arange(ref.shape[1]),
+                             np.arange(ref.shape[2]), indexing='ij')
+
+    rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
+    rcoords  = transform.transform(rvoxels, ref.voxToScaledVoxMat)
+    scoords  = transform.transform(rcoords, xform)
+    svoxels  = transform.transform(scoords, src.scaledVoxToVoxMat)
+
+    relfield    = np.zeros(list(ref.shape[:3]) + [3])
+    relfield[:] = (scoords - rcoords).reshape(*it.chain(ref.shape, [3]))
+    relfield    = nonlinear.DisplacementField(relfield, src, ref,
+                                              dispType='relative')
+    absfield    = np.zeros(list(ref.shape[:3]) + [3])
+    absfield[:] = scoords.reshape(*it.chain(ref.shape, [3]))
+    absfield    = nonlinear.DisplacementField(absfield, src, ref,
+                                              dispType='absolute')
+
+    got = relfield.transform(rcoords)
+    assert np.all(np.isclose(got, scoords))
+    got = absfield.transform(rcoords)
+    assert np.all(np.isclose(got, scoords))
+
+    got = relfield.transform(rvoxels, from_='voxel', to='voxel')
+    assert np.all(np.isclose(got, svoxels))
+    got = absfield.transform(rvoxels, from_='voxel', to='voxel')
+    assert np.all(np.isclose(got, svoxels))
+
+    # test out of bounds are returned as nan
+    rvoxels = np.array([[-1, -1, -1],
+                        [ 0,  0,  0]])
+    rcoords  = transform.transform(rvoxels, ref.voxToScaledVoxMat)
+    scoords  = transform.transform(rcoords, xform)
+    svoxels  = transform.transform(scoords, src.scaledVoxToVoxMat)
+
+    got = relfield.transform(rcoords)
+    assert np.all(np.isnan(got[0, :]))
+    assert np.all(np.isclose(got[1, :], scoords[1, :]))
+    got = absfield.transform(rcoords)
+    assert np.all(np.isnan(got[0, :]))
+    assert np.all(np.isclose(got[1, :], scoords[1, :]))
