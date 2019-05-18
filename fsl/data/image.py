@@ -227,7 +227,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     ``'header       A header field has changed. This will occur when the
                     :meth:`intent` is changed.
     =============== ========================================================
-    """
+    """  # noqa
 
 
     def __init__(self, header):
