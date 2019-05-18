@@ -215,7 +215,7 @@ class DisplacementField(NonLinearTransform):
         xs, ys, zs = voxels.T
 
         if self.absolute: disps = self.data[xs, ys, zs, :]
-        else:             disps = self.data[xs, ys, zs, :] + coords
+        else:             disps = self.data[xs, ys, zs, :] + coords[voxmask]
 
         # Make sure the coordinates
         # are in the requested
@@ -302,8 +302,8 @@ def convertDisplacementSpace(field, from_, to):
     :arg from_: New source image coordinate system
     :arg to:    New reference image coordinate system
 
-    :returns:   A new :class:`DisplacementField` which transforms from
-                the source ``from_`` coordinate system to the reference ``to``
+    :returns:   A new :class:`DisplacementField` which transforms between
+                the source ``from_`` coordinate system and the reference ``to``
                 coordinate system.
     """
 
@@ -330,12 +330,12 @@ def convertDisplacementSpace(field, from_, to):
 
     # Otherwise our displacement field
     # will contain relative displacements
-    # betwee the reference image "to"
+    # between the reference image "to"
     # coordinate system and the source
     # image "from_" coordinate system.
     # We need to re-calculate the relative
-    # displacements from source "from_"
-    # space into reference "to" space.
+    # displacements between source "from_"
+    # space and reference "to" space.
     else:
         refmat      = field.ref.getAffine(field.refSpace, to)
         refcoords   = fieldcoords.reshape((-1, 3))
