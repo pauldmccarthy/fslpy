@@ -287,7 +287,10 @@ class Platform(notifier.Notifier):
 
             if op.exists(versionFile):
                 with open(versionFile, 'rt') as f:
-                    self.__fslVersion = f.read().strip()
+                    # split string at colon for new hash style versions
+                    # first object in list is the non-hashed version string (e.g. 6.0.2)
+                    # if no ":hash:" then standard FSL version string is still returned
+                    self.__fslVersion = f.read().strip().split(":")[0]
 
         self.notify(value=value)
 
