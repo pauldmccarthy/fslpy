@@ -161,7 +161,7 @@ def test_fsldir():
     def makeFSL():
         os.makedirs(op.join(fsldir, 'etc'))
         with open(op.join(fsldir, 'etc', 'fslversion'), 'wt') as f:
-            f.write('Dummy FSL\n')
+            f.write('6.0.2:7606e0d8\n')
 
     try:
 
@@ -182,7 +182,7 @@ def test_fsldir():
         assert os.environ['FSLDIR'] == fsldir
         assert newFSLDir[0]         == fsldir
         assert p.fsldir             == fsldir
-        assert p.fslVersion         == 'Dummy FSL'
+        assert p.fslVersion         == '6.0.2'
 
     finally:
         shutil.rmtree(testdir)
