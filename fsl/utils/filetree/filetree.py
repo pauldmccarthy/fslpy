@@ -1,10 +1,11 @@
 from pathlib import Path, PurePath
-from typing import Tuple, Optional, List, Dict, Any, Set
+from typing import Tuple, Optional, Dict, Any, Set
 from copy import deepcopy
 from . import parse
 import pickle
 import os.path as op
 from . import utils
+from fsl.utils.deprecated import deprecated
 
 
 class MissingVariable(KeyError):
@@ -257,19 +258,14 @@ class FileTree(object):
             raise IOError("Pickle file did not contain %s object" % cls)
         return res
 
-    def exists(self, short_names, on_disk=False, error=False, glob_vars=()):
+    def defines(self, short_names, error=False):
         """
-        Checks whether the short_names are defined in the tree (and optional exist on the disk)
+        Checks whether templates are defined for all the `short_names`
 
-        :param short_names: list of expected short names to exist in the tree
-        :param on_disk: if True checks whether the files exist on disk
-        :param error: if True raises a helpful error when the check fails
-        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
-            If `glob_vars` contains any defined variables, it will be ignored.
-        :return: True if short names exist and optionally exist on disk (False otherwise)
-        :raise:
-            - ValueError if error is set and the tree is incomplete
-            - IOError if error is set and any files are missing from the disk
+        :param short_names: sequence of expected short names to exist in the tree
+        :param error: if True raises ValueError if any `short_names` are undefined
+        :return: True if all are defined, False otherwise
+        :raise: ValueError if `error` is set to True and any template is missing
         """
         if isinstance(short_names, str):
             short_names = (short_names, )
@@ -282,22 +278,53 @@ class FileTree(object):
             return False
 
         missing = tuple(name for name in short_names if single_test(name))
+
         if len(missing) > 0:
             if error:
-                raise ValueError("Provided Filetree is missing file definitions for {}".format(missing))
+                raise ValueError("Provided Filetree is missing template definitions for {}".format(missing))
             return False
-        if on_disk:
-            try:
-                missing = tuple(name for name in short_names if len(self.get_all(name, glob_vars=glob_vars)) == 0)
-            except KeyError:
-                if error:
-                    raise
-                return False
-            if len(missing) > 0:
-                if error:
-                    raise IOError("Failed to find any files existing for {}".format(missing))
-                return False
         return True
+
+    def on_disk(self, short_names, error=False, glob_vars=()):
+        """
+        Checks whether at least one file exists for every file in `short_names`
+
+        :param short_names: list of expected short names to exist in the tree
+        :param error: if True raises a helpful error when the check fails
+        :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk
+            If `glob_vars` contains any defined variables, it will be ignored.
+        :return: True if short names exist and optionally exist on disk (False otherwise)
+        :raise:
+            - ValueError if error is set and the tree is incomplete
+            - IOError if error is set and any files are missing from the disk
+        """
+        self.defines(short_names, error=error)
+
+        if isinstance(short_names, str):
+            short_names = (short_names, )
+
+        try:
+            missing = tuple(name for name in short_names if len(self.get_all(name, glob_vars=glob_vars)) == 0)
+        except KeyError:
+            if error:
+                raise
+            return False
+        if len(missing) > 0:
+            if error:
+                raise IOError("Failed to find any files on disk for {}".format(missing))
+            return False
+        return True
+
+    @deprecated(rin='2.4', msg='Use FileTree.defines or FileTree.on_disk instead')
+    def exists(self, short_names, on_disk=False, error=False, glob_vars=()):
+        """
+        Deprecated in favor of :meth:`on_disk` and :meth:`defines`.
+        """
+        if on_disk:
+            return self.on_disk(short_names, error=error, glob_vars=glob_vars)
+        else:
+            return self.defines(short_names, error=error, glob_vars=glob_vars)
+
 
     @classmethod
     def read(cls, tree_name: str, directory='.', **variables) -> "FileTree":

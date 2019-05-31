@@ -34,17 +34,17 @@ def test_complicated_tree():
     same_path(tree.update(hemi='L').get('T1w_32k/white'), L_white)
     same_path(tree.sub_trees['T1w_32k'].update(hemi='L').get('white'), L_white)
 
-    assert tree.exists(('T1w_32k/white', ))
-    assert tree.exists('T1w_32k/white')
-    assert not tree.exists(('T1w_32k/white_misspelled', ))
-    assert not tree.exists(('T1w_32k/white', 'T1w_32k/white_misspelled', ))
-    assert not tree.exists(('T1w_32k_err/white', ))
-    assert not tree.exists(('../test'))
+    assert tree.defines(('T1w_32k/white', ))
+    assert tree.defines('T1w_32k/white')
+    assert not tree.defines(('T1w_32k/white_misspelled', ))
+    assert not tree.defines(('T1w_32k/white', 'T1w_32k/white_misspelled', ))
+    assert not tree.defines(('T1w_32k_err/white', ))
+    assert not tree.defines(('../test'))
     with pytest.raises(ValueError):
-        assert not tree.exists(('../test'), error=True)
+        assert not tree.defines(('../test'), error=True)
     with pytest.raises(ValueError):
-        tree.exists(('T1w_32k_err/white', ), error=True)
-    assert tree.exists(('T1w_32k/white', ), error=True)
+        tree.defines(('T1w_32k_err/white', ), error=True)
+    assert tree.defines(('T1w_32k/white', ), error=True)
 
 
 def test_parent_tree():
@@ -110,14 +110,14 @@ def test_custom_tree():
         assert vars == tree.extract_variables('sub_file', filename)
     assert {'opt': None} == tree.extract_variables('sub_file', tree.get('sub_file'))
 
-    assert tree.exists(('sub_file', 'opt_file'), error=True, on_disk=True, glob_vars=['opt'])
-    assert tree.exists(('sub_file', 'opt_file'), on_disk=True, glob_vars=['opt'])
-    assert not tree.exists(('sub_file', 'opt_file'), error=False, on_disk=True)
+    assert tree.on_disk(('sub_file', 'opt_file'), error=True, glob_vars=['opt'])
+    assert tree.on_disk(('sub_file', 'opt_file'), glob_vars=['opt'])
+    assert not tree.on_disk(('sub_file', 'opt_file'), error=False)
     with pytest.raises(KeyError):
-        assert tree.exists(('sub_file', 'opt_file'), error=True, on_disk=True)
-    assert not tree.update(opt='test2').exists(('sub_file', 'opt_file'), on_disk=True)
+        assert tree.on_disk(('sub_file', 'opt_file'), error=True)
+    assert not tree.update(opt='test2').on_disk(('sub_file', 'opt_file'))
     with pytest.raises(IOError):
-        tree.update(opt='test2').exists(('sub_file', 'opt_file'), on_disk=True, error=True)
+        tree.update(opt='test2').on_disk(('sub_file', 'opt_file'), error=True)
 
     assert tree.template_variables() == {'opt'}
     assert tree.template_variables(optional=False) == {'opt'}
