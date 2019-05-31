@@ -164,7 +164,7 @@ def resample(image,
 
     if sliceobj is None:     sliceobj = slice(None)
     if dtype    is None:     dtype    = image.dtype
-    if origin   is None:     dtype    = 'centre'
+    if origin   is None:     origin   = 'centre'
     if mode     is None:     mode     = 'nearest'
     if origin   == 'center': origin   = 'centre'
 
