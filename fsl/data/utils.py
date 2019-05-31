@@ -84,7 +84,19 @@ def makeWriteable(array):
     is not possible, a copy is created and returned.
     """
     try:
+        # Versions of numpy prior to 1.16 will
+        # happily mutate a bytes array, whcih
+        # is supposed to be immutable. So if
+        # is the case, let's force a copy.
+        if isinstance(array.base, bytes):
+            raise ValueError()
+
+        # In versions of numpy 1.16 and newer,
+        # setting the WRITEABLE flag on an
+        # immutable array will cause a
+        # ValueError to be raised
         array.flags['WRITEABLE'] = True
+
     except ValueError:
         array = np.array(array)
     return array

@@ -2,6 +2,30 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.3.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :meth:`.LabelAtlas.get` and :meth:`ProbabilisticAtlas.get` methods,
+  which return an :class:`.Image` for a specific region.
+* The :meth:`.AtlasDescription.find` method also now a ``name`` parameter,
+  allowing labels to be looked up by name.
+* New :meth:`.FileTree.defines` and :meth:`.FileTree.on_disk` methods, to
+  replace the :func:`.FileTree.exists` method.
+
+
+Fixed
+^^^^^
+
+
+* The :func:`.makeWriteable` function will always create a copy of an
+  ``array`` if its base is a ``bytes`` object.
+
+
 2.2.0 (Wednesday May 8th 2019)
 ------------------------------
 
