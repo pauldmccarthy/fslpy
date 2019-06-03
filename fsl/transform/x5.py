@@ -111,7 +111,7 @@ def writeLinearX5(fname, xform, src, ref):
                                       # "Scales" entries might be replaced with something else
         /From/Size                    # voxel dimensions
         /From/Scales                  # voxel pixdims
-        /From/Mapping/Type            # "linear" - could be also be "nonlinear"
+        /From/Mapping/Type            # "linear"
         /From/Mapping/Transform       # source voxel-to-world sform
         /From/Mapping/Inverse         # optional inverse
 
@@ -121,7 +121,7 @@ def writeLinearX5(fname, xform, src, ref):
         /To/Mapping/Type              # "linear"
         /To/Mapping/Transform         # reference voxel-to-world sform
         /To/Mapping/Inverse           # optional inverse
-    """
+    """  # noqa
 
     with h5py.File(fname, 'w') as f:
         _writeMetadata(f)
@@ -160,24 +160,37 @@ def writeNonLinearX5(fname, field):
         /Version                      # "0.0.1"
         /Metadata                     # json string containing unstructured metadata
 
-        /Type                         # "nonlinear"
         /Transform                    # the displacement/coefficient field itself
+        /Type                         # "nonlinear"
+        /SubType                      # "displacement" / "deformation"
+        /Representation               # "cubic bspline" / "quadratic bspline"
         /Inverse                      # optional pre-calculated inverse
+
+        /Pre/Type                     # "linear"
+        /Pre/Transform                # ref world-to-[somewhere], to prepare ref
+                                      # world coordinates as inputs to the nonlinear
+                                      # transform
+        /Pre/Inverse                  # optional pre-calculated inverse
+        /Post/Type                    #  "linear"
+        /Post/Transform               # source [somewhere]-to-world, to transform
+                                      # source coordinates produced by the nonlinear
+                                      # transform into world coordinates
+        /Post/Inverse                 # optional pre-calculated inverse
 
         /From/Type                    # "image"
         /From/Size                    # voxel dimensions
         /From/Scales                  # voxel pixdims
-        /From/Mapping/Type            # "linear"
         /From/Mapping/Transform       # source voxel-to-world sform
+        /From/Mapping/Type            # "linear"
         /From/Mapping/Inverse         # optional inverse
 
         /To/Type                      # "image"
         /To/Size                      # voxel dimensions
         /To/Scales                    # voxel pixdims
-        /To/Mapping/Type              # "linear"
         /To/Mapping/Transform         # reference voxel-to-world sform
+        /To/Mapping/Type              # "linear"
         /To/Mapping/Inverse           # optional inverse
-    """
+    """  # noqa
 
     # TODO coefficient fields
 

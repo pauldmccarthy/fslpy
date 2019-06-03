@@ -36,7 +36,6 @@ from .flirt  import (  # noqa
 
 from .fnirt import (  # noqa
     readFnirt,
-    writeFnirt,
     toFnirt,
     fromFnirt)
 
