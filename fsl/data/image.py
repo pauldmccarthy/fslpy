@@ -312,12 +312,27 @@ class Nifti(notifier.Notifier, meta.Meta):
         qform  = header.get('qform_code',  -1)
         sform  = header.get('sform_code',  -1)
 
-        if intent in (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
-                      constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+        # FNIRT non-linear coefficient files
+        # clobber the sform/qform/intent
+        # and pixdims of the nifti header,
+        # so we can't correctly place it in
+        # the world coordinate system. See
+        # $FSLDIR/src/fnirt/fnirt_file_writer.cpp
+        # and fsl.transform.nonlinear for more
+        # details.
+        if intent in (constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
                       constants.FSL_DCT_COEFFICIENTS,
                       constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS):
-            log.debug('FNIRT output image detected - using qform matrix')
-            voxToWorldMat = np.array(header.get_qform())
+
+            log.debug('FNIRT coefficient field detected - generating affine')
+
+            knotpix       =  header.get_zooms()[:3]
+            refpix        = (header.get('intent_p1', 1),
+                             header.get('intent_p2', 1),
+                             header.get('intent_p3', 1))
+            voxToWorldMat = transform.concat(
+                transform.scaleOffsetXform(refpix,  0),
+                transform.scaleOffsetXform(knotpix, 0))
 
         # If the qform or sform codes are unknown,
         # then we can't assume that the transform

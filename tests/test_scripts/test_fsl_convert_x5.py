@@ -43,7 +43,7 @@ def test_convert_flirt():
             ref.getAffine('fsl', 'world'),
             xform,
             src.getAffine('world', 'fsl'))
-        gotxform, gotsrc, gotref = transform.readFlirtX5('src2ref.x5')
+        gotxform, gotsrc, gotref = transform.readLinearX5('src2ref.x5')
         assert np.all(np.isclose(gotxform, expxform))
         assert src.sameSpace(gotsrc)
         assert ref.sameSpace(gotref)
