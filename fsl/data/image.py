@@ -320,9 +320,11 @@ class Nifti(notifier.Notifier, meta.Meta):
         # $FSLDIR/src/fnirt/fnirt_file_writer.cpp
         # and fsl.transform.nonlinear for more
         # details.
-        if intent in (constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
-                      constants.FSL_DCT_COEFFICIENTS,
-                      constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS):
+        if intent in (constants.FSL_DCT_COEFFICIENTS,
+                      constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_TOPUP_CUBIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS):
 
             log.debug('FNIRT coefficient field detected - generating affine')
 
