@@ -303,9 +303,11 @@ class ImageWrapper(notifier.Notifier):
         # data range for each volume/slice/vector
         #
         # We use nan as a placeholder, so the
-        # dtype must be non-integral
+        # dtype must be non-integral. The
+        # len(dtype) check takes into account
+        # structured data (e.g. RGB)
         dtype = self.__image.get_data_dtype()
-        if np.issubdtype(dtype, np.integer):
+        if np.issubdtype(dtype, np.integer) or len(dtype) > 0:
             dtype = np.float32
         self.__volRanges = np.zeros((nvols, 2),
                                     dtype=dtype)

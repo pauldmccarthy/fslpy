@@ -23,6 +23,12 @@ def naninfrange(data):
     use an alternate approach to calculating the minimum/maximum.
     """
 
+    # For structured arrays, we assume that
+    # all fields are numeric, and we simply
+    # take the range across all fields
+    if len(data.dtype) > 0:
+        data = np.concatenate([data[n] for n in data.dtype.names])
+
     if not np.issubdtype(data.dtype, np.floating):
         return data.min(), data.max()
 
