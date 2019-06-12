@@ -190,10 +190,10 @@ class ImageWrapper(notifier.Notifier):
             if d == 1: self.__numRealDims -= 1
             else:      break
 
-        # Degenerate case - if every
-        # dimension has length 1
-        if self.__numRealDims == 0:
-            self.__numRealDims = len(image.shape)
+        # Degenerate case - less
+        # than three real dimensions
+        if self.__numRealDims < 3:
+            self.__numRealDims = min(3, len(image.shape))
 
         # And save the number of
         # 'padding' dimensions too.
@@ -705,7 +705,7 @@ class ImageWrapper(notifier.Notifier):
                     raise IndexError('Invalid assignment: [{}] = {}'.format(
                         sliceobj, len(values)))
 
-                values = values[0]
+                values = np.array(values).flatten()[0]
 
             # Make sure that the values
             # have a compatible shape.
