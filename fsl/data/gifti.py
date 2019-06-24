@@ -138,7 +138,10 @@ class GiftiMesh(fslmesh.Mesh):
 
         surfimg, _, vertices, _ = loadGiftiMesh(infile)
 
-        vertices = self.addVertices(vertices, key, *args, **kwargs)
+        for i, v in enumerate(vertices):
+            if i == 0: key = infile
+            else:      key = '{}_{}'.format(infile, i)
+            vertices[i] = self.addVertices(v, key, *args, **kwargs)
 
         self.setMeta(infile, surfimg)
 
