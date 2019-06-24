@@ -27,6 +27,7 @@ def guessType(path):
     import fsl.data.gifti           as fslgifti
     import fsl.data.freesurfer      as fslfs
     import fsl.data.mghimage        as fslmgh
+    import fsl.data.bitmap          as fslbmp
     import fsl.data.featimage       as featimage
     import fsl.data.melodicimage    as melimage
     import fsl.data.dtifit          as dtifit
@@ -56,6 +57,8 @@ def guessType(path):
             return fslfs.FreesurferMesh, path
         elif fslpath.hasExt(path, fslmgh.ALLOWED_EXTENSIONS):
             return fslmgh.MGHImage, path
+        elif fslpath.hasExt(path, fslbmp.BITMAP_EXTENSIONS):
+            return fslbmp.Bitmap, path
 
         # Other specialised image types
         elif melanalysis .isMelodicImage(path):
