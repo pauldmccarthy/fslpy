@@ -49,15 +49,15 @@ def guessType(path):
     if op.isfile(path):
 
         # Some types are easy - just check the extensions
-        if fslpath.hasExt(path, fslvtk.ALLOWED_EXTENSIONS):
+        if fslpath.hasExt(path.lower(), fslvtk.ALLOWED_EXTENSIONS):
             return fslvtk.VTKMesh, path
-        elif fslpath.hasExt(path, fslgifti.ALLOWED_EXTENSIONS):
+        elif fslpath.hasExt(path.lower(), fslgifti.ALLOWED_EXTENSIONS):
             return fslgifti.GiftiMesh, path
         elif fslfs.isGeometryFile(path):
             return fslfs.FreesurferMesh, path
-        elif fslpath.hasExt(path, fslmgh.ALLOWED_EXTENSIONS):
+        elif fslpath.hasExt(path.lower(), fslmgh.ALLOWED_EXTENSIONS):
             return fslmgh.MGHImage, path
-        elif fslpath.hasExt(path, fslbmp.BITMAP_EXTENSIONS):
+        elif fslpath.hasExt(path.lower(), fslbmp.BITMAP_EXTENSIONS):
             return fslbmp.Bitmap, path
 
         # Other specialised image types
