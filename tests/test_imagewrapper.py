@@ -1173,8 +1173,10 @@ def test_3D_indexing(shape=None, img=None):
 
     # Test that a 3D image looks like a 3D image
 
-    if   shape is None:   shape = (21, 22, 23)
-    elif len(shape) == 2: shape = tuple(list(shape) + [1])
+    if   shape is None:
+        shape = (21, 22, 23)
+    elif len(shape) < 3:
+        shape = tuple(list(shape) + [1] * (3 - len(shape)))
 
     if img is None:
         data   = np.random.random(shape)
@@ -1264,8 +1266,10 @@ def test_3D_len_one_indexing(shape=None, img=None):
     # look like a 3D image, but should still
     # accept (valid) 2D slicing.
 
-    if   shape is None:  shape = (20, 20, 1)
-    elif len(shape) < 3: shape = tuple(list(shape) + [1])
+    if shape is None:
+        shape = (20, 20, 1)
+    elif len(shape) < 3:
+        shape = tuple(list(shape) + [1] * (3 - len(shape)))
 
     if img is None:
         data   = np.random.random(shape)
@@ -1299,6 +1303,20 @@ def test_2D_indexing():
 
     shape  = (20, 20)
     data   = np.random.random(shape[:2])
+    nibImg = nib.Nifti1Image(data, np.eye(4))
+    img    = imagewrap.ImageWrapper(nibImg, loadData=True)
+
+    test_3D_len_one_indexing(shape, img)
+
+
+def test_1D_indexing():
+
+    # Testing ImageWrapper for a 1D image -
+    # it should look just like a 3D image
+    # (the same as is tested above).
+
+    shape  = (20,)
+    data   = np.random.random(shape)
     nibImg = nib.Nifti1Image(data, np.eye(4))
     img    = imagewrap.ImageWrapper(nibImg, loadData=True)
 

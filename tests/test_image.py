@@ -306,6 +306,7 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
+            assert i.nvals      == 1
             assert i.ndim       == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
@@ -1147,3 +1148,28 @@ def _test_Image_init_xform(imgtype):
         del fimg
         del img
         img = None
+
+
+def test_rgb_image():
+    with tempdir():
+
+        dtype = np.dtype([('R', 'uint8'),
+                          ('G', 'uint8'),
+                          ('B', 'uint8')])
+        data  = np.zeros((20, 20, 20), dtype=dtype)
+
+        for i in np.ndindex(data.shape):
+            data['R'][i] = np.random.randint(0,   100)
+            data['G'][i] = np.random.randint(100, 200)
+            data['B'][i] = np.random.randint(200, 256)
+
+        # fix the data limits
+        data['R'][0, 0, 0] = 0
+        data['B'][0, 0, 0] = 255
+
+        nib.Nifti1Image(data, np.eye(4)).to_filename('rgb.nii')
+
+        img = fslimage.Image('rgb.nii')
+
+        assert img.nvals     == 3
+        assert img.dataRange == (0, 255)

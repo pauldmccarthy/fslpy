@@ -5,6 +5,7 @@
    :hidden:
 
    fsl.data.atlases
+   fsl.data.bitmap
    fsl.data.constants
    fsl.data.dicom
    fsl.data.dtifit

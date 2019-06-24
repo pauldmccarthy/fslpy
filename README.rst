@@ -57,6 +57,9 @@ Some extra dependencies are listed in `requirements.txt
   class has some methods which use ``trimesh`` to perform geometric queries
   on the mesh.
 
+- ``Pillow``: The `fsl.data.bitmap.Bitmap <fsl/data/bitmap.py`_ class uses
+  ``Pillow`` to load image files.
+
 
 If you are using Linux, you need to install wxPython first, as binaries are
 not available on PyPI. Install wxPython like so, changing the URL for your

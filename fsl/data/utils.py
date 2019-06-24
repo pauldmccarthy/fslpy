@@ -27,6 +27,7 @@ def guessType(path):
     import fsl.data.gifti           as fslgifti
     import fsl.data.freesurfer      as fslfs
     import fsl.data.mghimage        as fslmgh
+    import fsl.data.bitmap          as fslbmp
     import fsl.data.featimage       as featimage
     import fsl.data.melodicimage    as melimage
     import fsl.data.dtifit          as dtifit
@@ -48,14 +49,16 @@ def guessType(path):
     if op.isfile(path):
 
         # Some types are easy - just check the extensions
-        if fslpath.hasExt(path, fslvtk.ALLOWED_EXTENSIONS):
+        if fslpath.hasExt(path.lower(), fslvtk.ALLOWED_EXTENSIONS):
             return fslvtk.VTKMesh, path
-        elif fslpath.hasExt(path, fslgifti.ALLOWED_EXTENSIONS):
+        elif fslpath.hasExt(path.lower(), fslgifti.ALLOWED_EXTENSIONS):
             return fslgifti.GiftiMesh, path
         elif fslfs.isGeometryFile(path):
             return fslfs.FreesurferMesh, path
-        elif fslpath.hasExt(path, fslmgh.ALLOWED_EXTENSIONS):
+        elif fslpath.hasExt(path.lower(), fslmgh.ALLOWED_EXTENSIONS):
             return fslmgh.MGHImage, path
+        elif fslpath.hasExt(path.lower(), fslbmp.BITMAP_EXTENSIONS):
+            return fslbmp.Bitmap, path
 
         # Other specialised image types
         elif melanalysis .isMelodicImage(path):

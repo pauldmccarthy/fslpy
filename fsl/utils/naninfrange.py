@@ -23,6 +23,30 @@ def naninfrange(data):
     use an alternate approach to calculating the minimum/maximum.
     """
 
+    # For structured arrays, we assume that
+    # all fields have the same dtype, and we
+    # simply take the range across all fields
+    if len(data.dtype) > 0:
+
+        # Avoid inducing a data copy if
+        # at all possible. np.ndarray
+        # doesn't preserve the underlying
+        # order, so let's set that. Also,
+        # we're forced to make a copy if
+        # the array is not contiguous,
+        # otherwise ndarray will complain
+        if   data.flags['C_CONTIGUOUS']: order = 'C'
+        elif data.flags['F_CONTIGUOUS']: order = 'F'
+        else:
+            data  = np.ascontiguousarray(data)
+            order = 'C'
+
+        shape = [len(data.dtype)] + list(data.shape)
+        data  = np.ndarray(buffer=data.data,
+                           shape=shape,
+                           order=order,
+                           dtype=data.dtype[0])
+
     if not np.issubdtype(data.dtype, np.floating):
         return data.min(), data.max()
 

@@ -1025,6 +1025,18 @@ class Image(Nifti):
         return self[tuple(coords)].dtype
 
 
+    @property
+    def nvals(self):
+        """Returns the number of values per voxel in this image. This will
+        usually be 1, but may be 3 or 4, for images of type
+        ``NIFTI_TYPE_RGB24`` or ``NIFTI_TYPE_RGBA32``.
+        """
+
+        nvals = len(self.dtype)
+        if nvals == 0: return 1
+        else:          return nvals
+
+
     @Nifti.voxToWorldMat.setter
     def voxToWorldMat(self, xform):
         """Overrides the :meth:`Nifti.voxToWorldMat` property setter.
