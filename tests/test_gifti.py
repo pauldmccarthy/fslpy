@@ -288,12 +288,18 @@ def test_GiftiMesh_multiple_vertices():
     verts1 = TEST_VERT_ARRAY
     verts2 = nib.gifti.GiftiDataArray(
         TEST_VERTS * 5, intent='NIFTI_INTENT_POINTSET')
+    verts3 = nib.gifti.GiftiDataArray(
+        TEST_VERTS * 10, intent='NIFTI_INTENT_POINTSET')
 
     gimg  = nib.gifti.GiftiImage(darrays=[verts1, verts2, tris])
+    gimg2 = nib.gifti.GiftiImage(darrays=[verts3])
 
     with tempdir():
-        fname = op.abspath('test.gii')
-        gimg.to_filename(fname)
+        fname  = op.abspath('test.gii')
+        fname2 = op.abspath('test2.gii')
+        gimg .to_filename(fname)
+        gimg2.to_filename(fname2)
+
         surf  = gifti.GiftiMesh(fname)
 
         expvsets = [fname,
@@ -304,8 +310,10 @@ def test_GiftiMesh_multiple_vertices():
         assert  surf.vertexSets()   == expvsets
 
         surf.vertices = expvsets[1]
-
         assert np.all(surf.vertices == TEST_VERTS * 5)
+
+        surf.loadVertices(fname2, select=True)
+        assert np.all(surf.vertices == TEST_VERTS * 10)
 
 
 def test_GiftiMesh_needsFixing():

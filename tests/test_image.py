@@ -306,7 +306,7 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
-            asert  i.nvals      == 1
+            assert i.nvals      == 1
             assert i.ndim       == expndims
             assert i.dtype      == dtype
             assert i.name       == op.basename(path)
