@@ -64,9 +64,9 @@ class Bitmap(object):
             raise ValueError('unknown bitmap: {}'.format(bmp))
 
         # Make the array (w, h, c)
-        data  = data.transpose((1, 0, 2))
-        w, h  = data.shape[:2]
-        data  = np.array(data, dtype=np.uint8, order='C')
+        data = np.fliplr(data.transpose((1, 0, 2)))
+        data = np.array(data, dtype=np.uint8, order='C')
+        w, h = data.shape[:2]
 
         self.__data       = data
         self.__dataSource = source
@@ -149,7 +149,9 @@ class Bitmap(object):
 
         else:
             data = np.zeros((width, height), dtype=dtype)
-            for ch, ci in enumerate(dtype.names):
+            for ci, ch in enumerate(dtype.names):
                 data[ch] = self.data[..., ci]
 
-        return fslimage.Image(data, np.eye(4))
+        data = np.array(data, order='F', copy=False)
+
+        return fslimage.Image(data, name=self.name)
