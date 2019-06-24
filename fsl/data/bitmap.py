@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module contains the :class:`Bitmap` class, for loading bitmap image
-files.
+files. Pillow is required to use the ``Bitmap`` class.
 """
 
 
@@ -14,7 +14,6 @@ import                 logging
 import                 six
 
 import numpy        as np
-import PIL.Image    as Image
 
 from . import image as fslimage
 
@@ -51,6 +50,11 @@ class Bitmap(object):
         :arg bmp: File name of an image, or a ``numpy`` array containing image
                   data.
         """
+
+        try:
+            import PIL.Image as Image
+        except ImportError:
+            raise RuntimeError('Install Pillow to use the Bitmap class')
 
         if isinstance(bmp, six.string_types):
             source = bmp
