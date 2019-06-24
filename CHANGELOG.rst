@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.3.0 (Under development)
--------------------------
+2.3.0 (Tuesday June 25th 2019)
+------------------------------
 
 
 Added
@@ -15,6 +15,8 @@ Added
   an :class:`.Image`.
 * The :class:`.Image` class now has support for the ``RGB24`` and ``RGBA32``
   NIfTI data types.
+* New :attr:`.Image.nvals` property, for use with ``RGB24``/``RGBA32``
+  images.
 * New :meth:`.LabelAtlas.get` and :meth:`ProbabilisticAtlas.get` methods,
   which return an :class:`.Image` for a specific region.
 * The :meth:`.AtlasDescription.find` method also now a ``name`` parameter,
