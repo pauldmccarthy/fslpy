@@ -10,6 +10,11 @@ Added
 ^^^^^
 
 
+* New :class:`.Bitmap` class, for loading bitmap images. The
+  :meth:`.Bitmap.asImage` method can be used to convert a ``Bitmap`` into
+  an :class:`.Image`.
+* The :class:`.Image` class now has support for the ``RGB24`` and ``RGBA32``
+  NIfTI data types.
 * New :meth:`.LabelAtlas.get` and :meth:`ProbabilisticAtlas.get` methods,
   which return an :class:`.Image` for a specific region.
 * The :meth:`.AtlasDescription.find` method also now a ``name`` parameter,
@@ -24,6 +29,7 @@ Fixed
 
 * The :func:`.makeWriteable` function will always create a copy of an
   ``array`` if its base is a ``bytes`` object.
+* Fixed a bug in the :meth:`.GitfitMesh.loadVertices` method.
 
 
 2.2.0 (Wednesday May 8th 2019)
