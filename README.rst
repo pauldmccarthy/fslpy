@@ -40,11 +40,12 @@ Dependencies
 ------------
 
 
-All of the core dependencies of ``fslpy`` are listed in the `requirements.txt
-<requirements.txt>`_ file.
+All of the core dependencies of ``fslpy`` are listed in the
+`requirements.txt <requirements.txt>`_ file.
 
-Some extra dependencies are listed in `requirements.txt
-<requirements-extra.txt>`_ which provide addditional functionality:
+Some extra dependencies are listed in
+`requirements-extra.txt <requirements-extra.txt>`_
+which provide addditional functionality:
 
 - ``wxPython``: The `fsl.utils.idle <fsl/utils/idle.py>`_ module has
   functionality  to schedule functions on the ``wx`` idle loop.
