@@ -32,6 +32,8 @@ Fixed
 * The :func:`.makeWriteable` function will always create a copy of an
   ``array`` if its base is a ``bytes`` object.
 * Fixed a bug in the :meth:`.GitfitMesh.loadVertices` method.
+* Fixed a bug in the :meth:`.Mesh.addVertices` method where the wrong face
+  normals could be used for newly added vertex sets.
 
 
 2.2.0 (Wednesday May 8th 2019)
