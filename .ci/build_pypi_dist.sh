@@ -2,9 +2,10 @@
 
 set -e
 
-pip install wheel
+pip install wheel setuptools twine
 python setup.py sdist
 python setup.py bdist_wheel
+twine check dist/*
 
 # do a test install from both source and wheel
 sdist=`find dist -maxdepth 1 -name *.tar.gz`
