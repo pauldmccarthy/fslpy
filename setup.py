@@ -93,6 +93,7 @@ setup(
     version=version,
     description='FSL Python library',
     long_description=readme,
+    long_description_content_type='text/x-rst',
     url='https://git.fmrib.ox.ac.uk/fsl/fslpy',
     author='Paul McCarthy',
     author_email='pauldmccarthy@gmail.com',
