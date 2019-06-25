@@ -422,7 +422,7 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         if fixWinding:
             indices  = self.__indices
-            normals  = self.normals
+            normals  = calcFaceNormals(vertices, indices)
             needsFix = needsFixing(vertices, indices, normals, lo, hi)
 
             # See needsFixing documentation
@@ -433,6 +433,8 @@ class Mesh(notifier.Notifier, meta.Meta):
 
                 self.__vindices[   key] = self.__fixedIndices
                 self.__faceNormals[key] = normals * -1
+            else:
+                self.__faceNormals[key] = normals
 
         return vertices
 
