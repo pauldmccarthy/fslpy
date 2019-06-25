@@ -433,6 +433,7 @@ def test_mesh_different_winding_orders():
     mnofix.addVertices(verts2, key='v2', fixWinding=False)
     mfix  .addVertices(verts1, key='v1', fixWinding=True)
     mfix  .addVertices(verts2, key='v2', fixWinding=True)
+    mfix  .addVertices(verts1, key='v3', fixWinding=True, select=False)
 
     mnofix.vertices = 'v1'
     assert np.all(mnofix.indices == tris)
@@ -443,3 +444,5 @@ def test_mesh_different_winding_orders():
     assert np.all(mfix.indices == tris)
     mfix.vertices = 'v2'
     assert np.all(mfix.indices == trisfixed)
+    mfix.vertices = 'v3'
+    assert np.all(mfix.indices == tris)
