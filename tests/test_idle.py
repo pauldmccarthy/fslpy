@@ -174,7 +174,11 @@ def _test_block():
 
     idle.block(2)
     end = time.time()
-    assert (end - start) >= 2
+
+    # Be relaxed about precision - timing
+    # can sometimes be pretty sloppy when
+    # running in a docker container.
+    assert abs((end - start) < 2) < 0.05
 
     if fslplatform.haveGui:
         assert called[0]
