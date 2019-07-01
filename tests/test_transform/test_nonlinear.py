@@ -4,10 +4,9 @@ import itertools as it
 import os.path   as op
 
 import numpy   as np
-import nibabel as nib
 
 import fsl.data.image          as fslimage
-import fsl.transform           as transform
+import fsl.transform.affine    as affine
 import fsl.transform.nonlinear as nonlinear
 import fsl.transform.fnirt     as fnirt
 
@@ -19,7 +18,7 @@ def _random_image():
     vx, vy, vz = np.random.randint(10, 50, 3)
     dx, dy, dz = np.random.randint( 1, 10, 3)
     data       = (np.random.random((vx, vy, vz)) - 0.5) * 10
-    aff        = transform.compose(
+    aff        = affine.compose(
         (dx, dy, dz),
         np.random.randint(1, 100, 3),
         np.random.random(3) * np.pi / 2)
@@ -34,7 +33,7 @@ def _random_field():
     dx, dy, dz = np.random.randint( 1, 10, 3)
 
     field = (np.random.random((vx, vy, vz, 3)) - 0.5) * 10
-    aff   = transform.compose(
+    aff   = affine.compose(
         (dx, dy, dz),
         np.random.randint(1, 100, 3),
         np.random.random(3) * np.pi / 2)
@@ -47,7 +46,7 @@ def _random_affine_field():
     ref = _random_image()
 
     # our test field just encodes an affine
-    xform = transform.compose(
+    xform = affine.compose(
         np.random.randint(2, 5, 3),
         np.random.randint(1, 10, 3),
         np.random.random(3))
@@ -57,8 +56,8 @@ def _random_affine_field():
                              np.arange(ref.shape[2]), indexing='ij')
 
     rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
-    rcoords  = transform.transform(rvoxels, ref.voxToScaledVoxMat)
-    scoords  = transform.transform(rcoords, xform)
+    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    scoords  = affine.transform(rcoords, xform)
 
     field    = np.zeros(list(ref.shape[:3]) + [3])
     field[:] = (scoords - rcoords).reshape(*it.chain(ref.shape, [3]))
@@ -74,7 +73,7 @@ def _field_coords(field):
                              np.arange(vy),
                              np.arange(vz), indexing='ij')
     coords = np.array(coords).transpose((1, 2, 3, 0))
-    return transform.transform(
+    return affine.transform(
         coords.reshape(-1, 3),
         field.getAffine('voxel', 'fsl')).reshape(field.shape)
 
@@ -135,15 +134,15 @@ def test_convertDisplacementSpace():
                      np.random.randint(0, basefield.shape[1], 5),
                      np.random.randint(0, basefield.shape[2], 5)]
         refcoords = np.array(refcoords, dtype=np.int).T
-        refcoords = transform.transform(refcoords, ref.voxToScaledVoxMat)
+        refcoords = affine.transform(refcoords, ref.voxToScaledVoxMat)
         srccoords = basefield.transform(refcoords)
 
         field   = nonlinear.convertDisplacementSpace(basefield, from_, to)
         premat  = ref.getAffine('fsl', from_)
         postmat = src.getAffine('fsl', to)
 
-        input  = transform.transform(refcoords, premat)
-        expect = transform.transform(srccoords, postmat)
+        input  = affine.transform(refcoords, premat)
+        expect = affine.transform(srccoords, postmat)
 
         got  = field.transform(input)
         enan = np.isnan(expect)
@@ -163,9 +162,9 @@ def test_DisplacementField_transform():
                              np.arange(ref.shape[1]),
                              np.arange(ref.shape[2]), indexing='ij')
     rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
-    rcoords  = transform.transform(rvoxels, ref.voxToScaledVoxMat)
-    scoords  = transform.transform(rcoords, xform)
-    svoxels  = transform.transform(scoords, src.scaledVoxToVoxMat)
+    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    scoords  = affine.transform(rcoords, xform)
+    svoxels  = affine.transform(scoords, src.scaledVoxToVoxMat)
 
     absfield    = np.zeros(list(ref.shape[:3]) + [3])
     absfield[:] = scoords.reshape(*it.chain(ref.shape, [3]))
@@ -186,9 +185,9 @@ def test_DisplacementField_transform():
     # test out of bounds are returned as nan
     rvoxels = np.array([[-1, -1, -1],
                         [ 0,  0,  0]])
-    rcoords  = transform.transform(rvoxels, ref.voxToScaledVoxMat)
-    scoords  = transform.transform(rcoords, xform)
-    svoxels  = transform.transform(scoords, src.scaledVoxToVoxMat)
+    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    scoords  = affine.transform(rcoords, xform)
+    svoxels  = affine.transform(scoords, src.scaledVoxToVoxMat)
 
     got = relfield.transform(rcoords)
     assert np.all(np.isnan(got[0, :]))
@@ -225,6 +224,61 @@ def test_CoefficientField_displacements():
 
     tol = dict(atol=1e-5, rtol=1e-5)
     assert np.all(np.isclose(disps, df.data, **tol))
+
+
+def test_CoefficientField_transform():
+    nldir = op.join(datadir, 'nonlinear')
+    src   = op.join(nldir, 'src.nii.gz')
+    ref   = op.join(nldir, 'ref.nii.gz')
+    cf    = op.join(nldir, 'coefficientfield.nii.gz')
+    df    = op.join(nldir, 'displacementfield.nii.gz')
+    dfnp  = op.join(nldir, 'displacementfield_no_premat.nii.gz')
+
+    src  = fslimage.Image(src)
+    ref  = fslimage.Image(ref)
+    cf   = fnirt.readFnirt(cf,   src, ref)
+    df   = fnirt.readFnirt(df,   src, ref)
+    dfnp = fnirt.readFnirt(dfnp, src, ref)
+
+    spaces = ['fsl', 'voxel', 'world']
+    spaces = list(it.combinations_with_replacement(spaces, 2))
+    spaces = spaces + [(r, s) for s, r in spaces]
+    spaces = list(set(spaces))
+
+    rx, ry, rz = np.meshgrid(np.arange(ref.shape[0]),
+                             np.arange(ref.shape[1]),
+                             np.arange(ref.shape[2]), indexing='ij')
+    rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
+
+    refcoords = {
+        'voxel' : rvoxels,
+        'fsl'   : affine.transform(rvoxels, ref.getAffine('voxel', 'fsl')),
+        'world' : affine.transform(rvoxels, ref.getAffine('voxel', 'world'))
+    }
+
+    srccoords = refcoords['fsl'] + df.data.reshape(-1, 3)
+    srccoords = {
+        'voxel' : affine.transform(srccoords, src.getAffine('fsl', 'voxel')),
+        'fsl'   : srccoords,
+        'world' : affine.transform(srccoords, src.getAffine('fsl', 'world'))
+    }
+
+    srccoordsnp = refcoords['fsl'] + dfnp.data.reshape(-1, 3)
+    srccoordsnp = {
+        'voxel' : affine.transform(srccoordsnp, src.getAffine('fsl', 'voxel')),
+        'fsl'   : srccoordsnp,
+        'world' : affine.transform(srccoordsnp, src.getAffine('fsl', 'world'))
+    }
+
+    tol = dict(atol=1e-5, rtol=1e-5)
+    for srcspace, refspace in spaces:
+        got   = cf.transform(refcoords[refspace], refspace, srcspace)
+        gotnp = cf.transform(refcoords[refspace], refspace, srcspace,
+                             premat=False)
+        assert np.all(np.isclose(got,   srccoords[  srcspace], **tol))
+        assert np.all(np.isclose(gotnp, srccoordsnp[srcspace], **tol))
+
+
 def test_coefficientFieldToDisplacementField():
 
     nldir = op.join(datadir, 'nonlinear')
