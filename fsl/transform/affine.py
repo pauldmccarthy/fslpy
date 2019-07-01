@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module contains utility functions for working with affine
-transformations. The following funcyions are available:
+transformations. The following functions are available:
 
 .. autosummary::
    :nosignatures:

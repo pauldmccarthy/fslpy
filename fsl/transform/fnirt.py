@@ -88,13 +88,19 @@ def _readFnirtCoefficientField(fname, img, src, ref):
     # The sform contains an initial
     # global src-to-ref affine
     # (the starting point for the
-    # non-linear registration)
+    # non-linear registration). This
+    # is encoded as a flirt matrix,
+    # i.e. it transforms from
+    # source-scaled-voxels to
+    # ref-scaled-voxels
     srcToRefMat = img.header.get_sform()
 
-    # The fieldToRefMat affine allows us
-    # to transform coefficient field voxel
-    # coordinates into displacement field/
-    # reference image voxel coordinates.
+    # The fieldToRefMat affine tells
+    # the CoefficientField class how
+    # to transform coefficient field
+    # voxel coordinates into
+    # displacement field/reference
+    # image voxel coordinates.
     fieldToRefMat = affine.scaleOffsetXform(knotSpacing, 0)
 
     return nonlinear.CoefficientField(fname,
