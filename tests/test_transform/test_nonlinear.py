@@ -197,6 +197,34 @@ def test_DisplacementField_transform():
     assert np.all(np.isnan(got[0, :]))
     assert np.all(np.isclose(got[1, :], scoords[1, :]))
 
+
+def test_CoefficientField_displacements():
+
+    nldir = op.join(datadir, 'nonlinear')
+    src   = op.join(nldir, 'src.nii.gz')
+    ref   = op.join(nldir, 'ref.nii.gz')
+    cf    = op.join(nldir, 'coefficientfield.nii.gz')
+    df    = op.join(nldir, 'displacementfield_no_premat.nii.gz')
+
+    src = fslimage.Image(src)
+    ref = fslimage.Image(ref)
+    cf  = fnirt.readFnirt(cf, src, ref)
+    df  = fnirt.readFnirt(df, src, ref)
+
+    ix, iy, iz = ref.shape[:3]
+    x,  y,  z  = np.meshgrid(np.arange(ix),
+                             np.arange(iy),
+                             np.arange(iz), indexing='ij')
+    x          = x.flatten()
+    y          = y.flatten()
+    z          = z.flatten()
+    xyz        = np.vstack((x, y, z)).T
+
+    disps = cf.displacements(xyz)
+    disps = disps.reshape(df.shape)
+
+    tol = dict(atol=1e-5, rtol=1e-5)
+    assert np.all(np.isclose(disps, df.data, **tol))
 def test_coefficientFieldToDisplacementField():
 
     nldir = op.join(datadir, 'nonlinear')
@@ -204,17 +232,27 @@ def test_coefficientFieldToDisplacementField():
     ref   = op.join(nldir, 'ref.nii.gz')
     cf    = op.join(nldir, 'coefficientfield.nii.gz')
     df    = op.join(nldir, 'displacementfield.nii.gz')
+    dfnp  = op.join(nldir, 'displacementfield_no_premat.nii.gz')
 
     src   = fslimage.Image(src)
     ref   = fslimage.Image(ref)
-    cf    = fnirt.readFnirt(cf, src, ref)
-    rdf   = fnirt.readFnirt(df, src, ref)
+    cf    = fnirt.readFnirt(cf,   src, ref)
+    rdf   = fnirt.readFnirt(df,   src, ref)
+    rdfnp = fnirt.readFnirt(dfnp, src, ref)
     adf   = nonlinear.convertDisplacementType(rdf)
+    adfnp = nonlinear.convertDisplacementType(rdfnp)
+
+    rcnv   = nonlinear.coefficientFieldToDisplacementField(cf)
+    acnv   = nonlinear.coefficientFieldToDisplacementField(cf,
+                                                           dispType='absolute')
+    acnvnp = nonlinear.coefficientFieldToDisplacementField(cf,
+                                                           dispType='absolute',
+                                                           premat=False)
+    rcnvnp = nonlinear.coefficientFieldToDisplacementField(cf,
+                                                           premat=False)
 
     tol = dict(atol=1e-5, rtol=1e-5)
-
-    rcnv = nonlinear.coefficientFieldToDisplacementField(cf)
-    acnv = nonlinear.coefficientFieldToDisplacementField(cf, dispType='absolute')
-
-    assert np.all(np.isclose(rcnv.data, rdf.data, **tol))
-    assert np.all(np.isclose(acnv.data, adf.data, **tol))
+    assert np.all(np.isclose(rcnv.data,   rdf  .data, **tol))
+    assert np.all(np.isclose(acnv.data,   adf  .data, **tol))
+    assert np.all(np.isclose(rcnvnp.data, rdfnp.data, **tol))
+    assert np.all(np.isclose(acnvnp.data, adfnp.data, **tol))
