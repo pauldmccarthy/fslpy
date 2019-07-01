@@ -16,7 +16,7 @@ import fsl.utils.tempdir as tempdir
 from .test_affine import readlines
 
 
-datadir = op.join(op.dirname(__file__), '..', 'testdata')
+datadir = op.join(op.dirname(__file__), 'testdata')
 
 
 def test_read_write():

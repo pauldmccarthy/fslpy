@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import itertools as it
+import os.path   as op
 
 import numpy   as np
 import nibabel as nib
@@ -8,6 +9,10 @@ import nibabel as nib
 import fsl.data.image          as fslimage
 import fsl.transform           as transform
 import fsl.transform.nonlinear as nonlinear
+import fsl.transform.fnirt     as fnirt
+
+
+datadir = op.join(op.dirname(__file__), 'testdata')
 
 
 def _random_image():
@@ -191,3 +196,25 @@ def test_DisplacementField_transform():
     got = absfield.transform(rcoords)
     assert np.all(np.isnan(got[0, :]))
     assert np.all(np.isclose(got[1, :], scoords[1, :]))
+
+def test_coefficientFieldToDisplacementField():
+
+    nldir = op.join(datadir, 'nonlinear')
+    src   = op.join(nldir, 'src.nii.gz')
+    ref   = op.join(nldir, 'ref.nii.gz')
+    cf    = op.join(nldir, 'coefficientfield.nii.gz')
+    df    = op.join(nldir, 'displacementfield.nii.gz')
+
+    src   = fslimage.Image(src)
+    ref   = fslimage.Image(ref)
+    cf    = fnirt.readFnirt(cf, src, ref)
+    rdf   = fnirt.readFnirt(df, src, ref)
+    adf   = nonlinear.convertDisplacementType(rdf)
+
+    tol = dict(atol=1e-5, rtol=1e-5)
+
+    rcnv = nonlinear.coefficientFieldToDisplacementField(cf)
+    acnv = nonlinear.coefficientFieldToDisplacementField(cf, dispType='absolute')
+
+    assert np.all(np.isclose(rcnv.data, rdf.data, **tol))
+    assert np.all(np.isclose(acnv.data, adf.data, **tol))
