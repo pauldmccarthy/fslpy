@@ -27,9 +27,10 @@ import itertools as it
 
 import numpy as np
 
-import fsl.data.image as fslimage
+import fsl.utils.memoize as memoize
+import fsl.data.image    as fslimage
 
-from . import affine
+from . import               affine
 
 
 log = logging.getLogger(__name__)
@@ -379,6 +380,13 @@ class CoefficientField(NonLinearTransform):
         return np.copy(self.__refToFieldMat)
 
 
+    @memoize.Instanceify(memoize.memoize)
+    def asDisplacementField(self, dispType='relative', premat=True):
+        """Convert this ``CoefficientField`` to a :class:`DisplacementField`.
+        """
+        return coefficientFieldToDisplacementField(self, dispType, premat)
+
+
     def transform(self, coords, from_=None, to=None, premat=True):
         """Overrides :meth:`NonLinearTransform.transform`. Transforms the
         given ``coords`` from the reference image space into the source image
@@ -387,13 +395,19 @@ class CoefficientField(NonLinearTransform):
         :arg coords: A sequence of XYZ coordinates, or ``numpy`` array of shape
                      ``(n, 3)`` containing ``n`` sets of coordinates in the
                      reference space.
+
         :arg from_:  Reference image space that ``coords`` are defined in
+
         :arg to:     Source image space to transform ``coords`` into
+
         :returns    ``coords``, transformed into the source image space
+
         :arg premat: If ``True``, the inverse :meth:`srcToRefMat` is applied
-                     to
+                     to the coordinates after the displacements have been
+                     addd.
         """
-        raise NotImplementedError()
+        df = self.asDisplacementField(premat=premat)
+        return df.transform(coords, from_, to)
 
 
     def displacements(self, coords):
