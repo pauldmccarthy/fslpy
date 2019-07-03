@@ -19,22 +19,27 @@ def test_bitmap():
 
     from PIL import Image
 
+    nchannels = (1, 3, 4)
+
     with tempdir.tempdir():
-        data = np.random.randint(0, 255, (100, 200, 4), dtype=np.uint8)
-        img  = Image.fromarray(data, mode='RGBA')
 
-        img.save('image.png')
+        for nch in nchannels:
+            data = np.random.randint(0, 255, (100, 200, nch), dtype=np.uint8)
+            img  = Image.fromarray(data.squeeze())
 
-        bmp = fslbmp.Bitmap('image.png')
+            fname = 'image.png'
+            img.save(fname)
 
-        assert bmp.name       == 'image.png'
-        assert bmp.dataSource == 'image.png'
-        assert bmp.shape      == (200, 100, 4)
+            bmp = fslbmp.Bitmap(fname)
 
-        repr(bmp)
-        hash(bmp)
+            assert bmp.name       == fname
+            assert bmp.dataSource == fname
+            assert bmp.shape      == (200, 100, nch)
 
-        assert np.all(bmp.data == np.fliplr(data.transpose(1, 0, 2)))
+            repr(bmp)
+            hash(bmp)
+
+            assert np.all(bmp.data == np.fliplr(data.transpose(1, 0, 2)))
 
 
 @pytest.mark.piltest
