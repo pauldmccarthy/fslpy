@@ -51,12 +51,16 @@ class Bitmap(object):
                   data.
         """
 
-        try:
-            import PIL.Image as Image
-        except ImportError:
-            raise RuntimeError('Install Pillow to use the Bitmap class')
-
         if isinstance(bmp, six.string_types):
+
+            try:
+                # Allow big images
+                import PIL.Image as Image
+                Image.MAX_IMAGE_PIXELS = 1e9
+
+            except ImportError:
+                raise RuntimeError('Install Pillow to use the Bitmap class')
+
             source = bmp
             data   = np.array(Image.open(source))
 
@@ -67,7 +71,13 @@ class Bitmap(object):
         else:
             raise ValueError('unknown bitmap: {}'.format(bmp))
 
-        # Make the array (w, h, c)
+        # Make the array (w, h, c). Single channel
+        # (e.g. greyscale) images are returned as
+        # 2D arrays, whereas multi-channel images
+        # are returned as 3D. In either case, the
+        # first two dimensions are (height, width),
+        # but we watn them the other way aruond.
+        data = np.atleast_3d(data)
         data = np.fliplr(data.transpose((1, 0, 2)))
         data = np.array(data, dtype=np.uint8, order='C')
         w, h = data.shape[:2]
@@ -131,7 +141,6 @@ class Bitmap(object):
 
         if nchannels == 1:
             dtype = np.uint8
-
 
         elif nchannels == 3:
             dtype = np.dtype([('R', 'uint8'),
