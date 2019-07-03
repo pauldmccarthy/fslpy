@@ -167,4 +167,6 @@ class Bitmap(object):
 
         data = np.array(data, order='F', copy=False)
 
-        return fslimage.Image(data, name=self.name)
+        return fslimage.Image(data,
+                              name=self.name,
+                              dataSource=self.dataSource)
