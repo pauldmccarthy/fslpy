@@ -30,16 +30,19 @@ def test_bitmap():
             fname = 'image.png'
             img.save(fname)
 
-            bmp = fslbmp.Bitmap(fname)
+            bmp1 = fslbmp.Bitmap(fname)
+            bmp2 = fslbmp.Bitmap(data)
 
-            assert bmp.name       == fname
-            assert bmp.dataSource == fname
-            assert bmp.shape      == (200, 100, nch)
+            assert bmp1.name       == fname
+            assert bmp1.dataSource == fname
+            assert bmp1.shape      == (200, 100, nch)
+            assert bmp2.shape      == (200, 100, nch)
 
-            repr(bmp)
-            hash(bmp)
+            repr(bmp1)
+            hash(bmp1)
 
-            assert np.all(bmp.data == np.fliplr(data.transpose(1, 0, 2)))
+            assert np.all(bmp1.data == np.fliplr(data.transpose(1, 0, 2)))
+            assert np.all(bmp2.data == np.fliplr(data.transpose(1, 0, 2)))
 
 
 @pytest.mark.piltest
@@ -52,17 +55,23 @@ def test_bitmap_asImage():
 
         img3 = Image.fromarray(d3, mode='RGB')
         img4 = Image.fromarray(d4, mode='RGBA')
+        img1 = img3.convert(mode='P')
 
         img3.save('rgb.png')
         img4.save('rgba.png')
+        img1.save('p.png')
 
-        bmp3  = fslbmp.Bitmap('rgb.png')
-        bmp4  = fslbmp.Bitmap('rgba.png')
+        bmp3 = fslbmp.Bitmap('rgb.png')
+        bmp4 = fslbmp.Bitmap('rgba.png')
+        bmp1 = fslbmp.Bitmap('p.png')
 
-        i3 = bmp3.asImage()
-        i4 = bmp4.asImage()
+        i3   = bmp3.asImage()
+        i4   = bmp4.asImage()
+        i1   = bmp1.asImage()
 
         assert i3.shape == (200, 100, 1)
         assert i4.shape == (200, 100, 1)
+        assert i1.shape == (200, 100, 1)
         assert i3.nvals == 3
         assert i4.nvals == 4
+        assert i1.nvals == 3
