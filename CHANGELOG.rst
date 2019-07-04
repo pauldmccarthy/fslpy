@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.3.1 (Friday July 5th 2019)
+----------------------------
+
+
+Fixed
+^^^^^
+
+
+* The :class:`.Bitmap` class now supports greyscale images and palette images.
+
+
 2.3.0 (Tuesday June 25th 2019)
 ------------------------------
 
