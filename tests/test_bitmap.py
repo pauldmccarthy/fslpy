@@ -19,22 +19,30 @@ def test_bitmap():
 
     from PIL import Image
 
+    nchannels = (1, 3, 4)
+
     with tempdir.tempdir():
-        data = np.random.randint(0, 255, (100, 200, 4), dtype=np.uint8)
-        img  = Image.fromarray(data, mode='RGBA')
 
-        img.save('image.png')
+        for nch in nchannels:
+            data = np.random.randint(0, 255, (100, 200, nch), dtype=np.uint8)
+            img  = Image.fromarray(data.squeeze())
 
-        bmp = fslbmp.Bitmap('image.png')
+            fname = 'image.png'
+            img.save(fname)
 
-        assert bmp.name       == 'image.png'
-        assert bmp.dataSource == 'image.png'
-        assert bmp.shape      == (200, 100, 4)
+            bmp1 = fslbmp.Bitmap(fname)
+            bmp2 = fslbmp.Bitmap(data)
 
-        repr(bmp)
-        hash(bmp)
+            assert bmp1.name       == fname
+            assert bmp1.dataSource == fname
+            assert bmp1.shape      == (200, 100, nch)
+            assert bmp2.shape      == (200, 100, nch)
 
-        assert np.all(bmp.data == np.fliplr(data.transpose(1, 0, 2)))
+            repr(bmp1)
+            hash(bmp1)
+
+            assert np.all(bmp1.data == np.fliplr(data.transpose(1, 0, 2)))
+            assert np.all(bmp2.data == np.fliplr(data.transpose(1, 0, 2)))
 
 
 @pytest.mark.piltest
@@ -47,17 +55,23 @@ def test_bitmap_asImage():
 
         img3 = Image.fromarray(d3, mode='RGB')
         img4 = Image.fromarray(d4, mode='RGBA')
+        img1 = img3.convert(mode='P')
 
         img3.save('rgb.png')
         img4.save('rgba.png')
+        img1.save('p.png')
 
-        bmp3  = fslbmp.Bitmap('rgb.png')
-        bmp4  = fslbmp.Bitmap('rgba.png')
+        bmp3 = fslbmp.Bitmap('rgb.png')
+        bmp4 = fslbmp.Bitmap('rgba.png')
+        bmp1 = fslbmp.Bitmap('p.png')
 
-        i3 = bmp3.asImage()
-        i4 = bmp4.asImage()
+        i3   = bmp3.asImage()
+        i4   = bmp4.asImage()
+        i1   = bmp1.asImage()
 
         assert i3.shape == (200, 100, 1)
         assert i4.shape == (200, 100, 1)
+        assert i1.shape == (200, 100, 1)
         assert i3.nvals == 3
         assert i4.nvals == 4
+        assert i1.nvals == 3
