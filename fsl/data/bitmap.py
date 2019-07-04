@@ -61,12 +61,20 @@ class Bitmap(object):
             except ImportError:
                 raise RuntimeError('Install Pillow to use the Bitmap class')
 
-            source = bmp
-            data   = np.array(Image.open(source))
+            src = bmp
+            img = Image.open(src)
+
+            # If this is a palette/LUT
+            # image, convert it into a
+            # regular rgb(a) image.
+            if img.mode == 'P':
+                img = img.convert()
+
+            data = np.array(img)
 
         elif isinstance(bmp, np.ndarray):
-            source = 'array'
-            data   = np.copy(bmp)
+            src  = 'array'
+            data = np.copy(bmp)
 
         else:
             raise ValueError('unknown bitmap: {}'.format(bmp))
@@ -83,8 +91,8 @@ class Bitmap(object):
         w, h = data.shape[:2]
 
         self.__data       = data
-        self.__dataSource = source
-        self.__name       = op.basename(source)
+        self.__dataSource = src
+        self.__name       = op.basename(src)
 
 
     def __hash__(self):
