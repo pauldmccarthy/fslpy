@@ -51,30 +51,48 @@ class Bitmap(object):
                   data.
         """
 
-        try:
-            import PIL.Image as Image
-        except ImportError:
-            raise RuntimeError('Install Pillow to use the Bitmap class')
-
         if isinstance(bmp, six.string_types):
-            source = bmp
-            data   = np.array(Image.open(source))
+
+            try:
+                # Allow big images
+                import PIL.Image as Image
+                Image.MAX_IMAGE_PIXELS = 1e9
+
+            except ImportError:
+                raise RuntimeError('Install Pillow to use the Bitmap class')
+
+            src = bmp
+            img = Image.open(src)
+
+            # If this is a palette/LUT
+            # image, convert it into a
+            # regular rgb(a) image.
+            if img.mode == 'P':
+                img = img.convert()
+
+            data = np.array(img)
 
         elif isinstance(bmp, np.ndarray):
-            source = 'array'
-            data   = np.copy(bmp)
+            src  = 'array'
+            data = np.copy(bmp)
 
         else:
             raise ValueError('unknown bitmap: {}'.format(bmp))
 
-        # Make the array (w, h, c)
+        # Make the array (w, h, c). Single channel
+        # (e.g. greyscale) images are returned as
+        # 2D arrays, whereas multi-channel images
+        # are returned as 3D. In either case, the
+        # first two dimensions are (height, width),
+        # but we watn them the other way aruond.
+        data = np.atleast_3d(data)
         data = np.fliplr(data.transpose((1, 0, 2)))
         data = np.array(data, dtype=np.uint8, order='C')
         w, h = data.shape[:2]
 
         self.__data       = data
-        self.__dataSource = source
-        self.__name       = op.basename(source)
+        self.__dataSource = src
+        self.__name       = op.basename(src)
 
 
     def __hash__(self):
@@ -132,7 +150,6 @@ class Bitmap(object):
         if nchannels == 1:
             dtype = np.uint8
 
-
         elif nchannels == 3:
             dtype = np.dtype([('R', 'uint8'),
                               ('G', 'uint8'),
@@ -158,4 +175,6 @@ class Bitmap(object):
 
         data = np.array(data, order='F', copy=False)
 
-        return fslimage.Image(data, name=self.name)
+        return fslimage.Image(data,
+                              name=self.name,
+                              dataSource=self.dataSource)

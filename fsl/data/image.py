@@ -809,6 +809,7 @@ class Image(Nifti):
         """
 
         nibImage = None
+        saved    = False
 
         if indexed is not False:
             warnings.warn('The indexed argument is deprecated '
@@ -841,10 +842,10 @@ class Image(Nifti):
 
         # The image parameter may be the name of an image file
         if isinstance(image, six.string_types):
-
             image      = op.abspath(addExt(image))
             nibImage   = nib.load(image, **kwargs)
             dataSource = image
+            saved      = True
 
         # Or a numpy array - we wrap it in a nibabel image,
         # with an identity transformation (each voxel maps
@@ -906,7 +907,7 @@ class Image(Nifti):
         self.__dataSource   = dataSource
         self.__threaded     = threaded
         self.__nibImage     = nibImage
-        self.__saveState    = dataSource is not None
+        self.__saveState    = saved
         self.__imageWrapper = imagewrapper.ImageWrapper(self.nibImage,
                                                         self.name,
                                                         loadData=loadData,
