@@ -178,7 +178,7 @@ def _test_block():
     # Be relaxed about precision - timing
     # can sometimes be pretty sloppy when
     # running in a docker container.
-    assert abs((end - start) < 2) < 0.05
+    assert abs((end - start) - 2) < 0.05
 
     if fslplatform.haveGui:
         assert called[0]
