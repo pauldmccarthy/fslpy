@@ -75,7 +75,7 @@ def fromFlirt(xform, src, ref, from_='voxel', to='world'):
 
 
 def toFlirt(xform, src, ref, from_='voxel', to='world'):
-    """Convert an affine affine matrix into a FLIRT matrix.
+    """Convert an affine matrix into a FLIRT matrix.
 
     :returns:   ``numpy`` array of shape ``(4, 4)`` containing a matrix
                 encoding a transformation from the source ``from_`` to
