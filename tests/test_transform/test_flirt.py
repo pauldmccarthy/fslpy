@@ -5,15 +5,19 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import itertools as it
 import os.path as op
 
 import numpy as np
 
-import fsl.data.image    as fslimage
-import fsl.transform     as transform
-import fsl.utils.tempdir as tempdir
+import fsl.data.image       as fslimage
+import fsl.transform.flirt  as flirt
+import fsl.transform.affine as affine
+import fsl.utils.tempdir    as tempdir
 
 from .test_affine import readlines
+
+from .. import make_random_image
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -22,17 +26,60 @@ datadir = op.join(op.dirname(__file__), 'testdata')
 def test_read_write():
     with tempdir.tempdir():
         aff = np.random.random((4, 4))
-        transform.writeFlirt(aff, 'aff.mat')
-        got = transform.readFlirt('aff.mat')
+        flirt.writeFlirt(aff, 'aff.mat')
+        got = flirt.readFlirt('aff.mat')
         assert np.all(np.isclose(aff, got))
 
 
 def test_fromFlirt():
-    pass
+
+    src = affine.compose(np.random.randint( 1,  5,  3),
+                         np.random.randint(-20, 20, 3),
+                         np.random.random(3) - 0.5)
+    ref = affine.compose(np.random.randint( 1,  5,  3),
+                         np.random.randint(-20, 20, 3),
+                         np.random.random(3) - 0.5)
+
+    src      = fslimage.Image(make_random_image(xform=src))
+    ref      = fslimage.Image(make_random_image(xform=ref))
+    flirtmat = affine.concat(ref.getAffine('world', 'fsl'),
+                             src.getAffine('fsl',   'world'))
+
+
+    spaces = it.permutations(('voxel', 'fsl', 'world'), 2)
+
+    for from_, to in spaces:
+        got = flirt.fromFlirt(flirtmat, src, ref, from_, to)
+        exp = affine.concat(ref.getAffine('fsl', to),
+                            flirtmat,
+                            src.getAffine(from_, 'fsl'))
+
+        assert np.all(np.isclose(got, exp))
 
 
 def test_toFlirt():
-    pass
+
+    src = affine.compose(np.random.randint( 1,  5,  3),
+                         np.random.randint(-20, 20, 3),
+                         np.random.random(3) - 0.5)
+    ref = affine.compose(np.random.randint( 1,  5,  3),
+                         np.random.randint(-20, 20, 3),
+                         np.random.random(3) - 0.5)
+
+    src      = fslimage.Image(make_random_image(xform=src))
+    ref      = fslimage.Image(make_random_image(xform=ref))
+    flirtmat = affine.concat(ref.getAffine('world', 'fsl'),
+                             src.getAffine('fsl',   'world'))
+
+
+    spaces = it.permutations(('voxel', 'fsl', 'world'), 2)
+
+    for from_, to in spaces:
+        xform = affine.concat(ref.getAffine('world', to),
+                              src.getAffine(from_, 'world'))
+        got = flirt.toFlirt(xform, src, ref, from_, to)
+
+        assert np.all(np.isclose(got, flirtmat))
 
 
 def test_flirtMatrixToSform():
@@ -53,7 +100,7 @@ def test_flirtMatrixToSform():
         srcImg = fslimage.Image(np.zeros(srcShape), xform=srcXform)
         refImg = fslimage.Image(np.zeros(refShape), xform=refXform)
 
-        result = transform.flirtMatrixToSform(flirtMat, srcImg, refImg)
+        result = flirt.flirtMatrixToSform(flirtMat, srcImg, refImg)
 
         assert np.all(np.isclose(result, expected))
 
@@ -78,8 +125,8 @@ def test_sformToFlirtMatrix():
 
         srcImg2.voxToWorldMat = srcXformOvr
 
-        result1 = transform.sformToFlirtMatrix(srcImg1, refImg, srcXformOvr)
-        result2 = transform.sformToFlirtMatrix(srcImg2, refImg)
+        result1 = flirt.sformToFlirtMatrix(srcImg1, refImg, srcXformOvr)
+        result2 = flirt.sformToFlirtMatrix(srcImg2, refImg)
 
         assert np.all(np.isclose(result1, expected))
         assert np.all(np.isclose(result2, expected))
