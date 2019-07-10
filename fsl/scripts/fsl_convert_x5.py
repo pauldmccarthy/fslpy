@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 #
-# fsl_convert_x5.py -
+# fsl_convert_x5.py - Convert between FSL and X5 transformation files.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
+"""This script can be used to convert between FSL and X5 linear and non-linear
+transformation file formats.
+"""
 
 
 import os.path as op
@@ -78,12 +81,16 @@ def flirtToX5(args):
 
 
 def X5ToFlirt(args):
+    """Convert a linear X5 transformation file to a FLIRT matrix. """
     xform, src, ref = transform.readLinearX5(args.input)
     xform           = transform.toFlirt(xform, src, ref, 'world', 'world')
     transform.writeFlirt(xform, args.output)
 
 
 def fnirtToX5(args):
+    """Convert a non-linear FNIRT transformation into an X5 transformation
+    file.
+    """
     src   = fslimage.Image(args.source,    loadData=False)
     ref   = fslimage.Image(args.reference, loadData=False)
     field = transform.readFnirt(args.input,
@@ -95,12 +102,16 @@ def fnirtToX5(args):
 
 
 def X5ToFnirt(args):
+    """Convert a non-linear X5 transformation file to a FNIRT-style
+    transformation file.
+    """
     field = transform.readNonLinearX5(args.input)
     field = transform.toFnirt(field, 'world', 'world')
     transform.writeFnirt(field, args.output)
 
 
 def doFlirt(args):
+    """Converts a linear FIRT transformation file to or from the X5 format. """
     infmt  = args.input_format
     outfmt = args.output_format
 
@@ -110,6 +121,9 @@ def doFlirt(args):
 
 
 def doFnirt(args):
+    """Converts a non-linear FNIRT transformation file to or from the X5
+    format.
+    """
     infmt  = args.input_format
     outfmt = args.output_format
 
@@ -119,15 +133,22 @@ def doFnirt(args):
 
 
 def main(args=None):
+    """Entry point. Calls :func:`doFlirt` or :func:`doFnirt` depending on
+    the sub-command specified in the arguments.
+
+    :arg args: Sequence of command-line arguments. If not provided,
+               ``sys.argv`` is used.
+    """
 
     if args is None:
         args = sys.argv[1:]
 
-    args   = parseArgs(args)
-    ctype  = args.ctype
+    args = parseArgs(args)
 
-    if   ctype == 'flirt': doFlirt(args)
-    elif ctype == 'fnirt': doFnirt(args)
+    if   args.ctype == 'flirt': doFlirt(args)
+    elif args.ctype == 'fnirt': doFnirt(args)
+
+    return 0
 
 
 if __name__ == '__main__':
