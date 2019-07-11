@@ -1,7 +1,7 @@
-``fsl.utils.transform``
+``fsl.transform.fnirt``
 =======================
 
-.. automodule:: fsl.utils.transform
+.. automodule:: fsl.transform.fnirt
     :members:
     :undoc-members:
     :show-inheritance:

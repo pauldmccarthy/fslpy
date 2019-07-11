@@ -1,4 +1,5 @@
 deprecation
+h5py
 nibabel
 nibabel.fileslice
 nibabel.freesurfer
