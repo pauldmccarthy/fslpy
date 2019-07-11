@@ -13,6 +13,7 @@ following sub-packages:
    fsl.data
    fsl.utils
    fsl.scripts
+   fsl.transform
    fsl.version
    fsl.wrappers
 
@@ -22,4 +23,4 @@ following sub-packages:
           for details.
 """
 
-__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)  # noqa

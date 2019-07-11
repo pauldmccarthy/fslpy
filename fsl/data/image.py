@@ -224,7 +224,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     =============== ========================================================
     ``'transform'`` The affine transformation matrix has changed. This topic
                     will occur when the :meth:`voxToWorldMat` is changed.
-    ``'header       A header field has changed. This will occur when the
+    ``'header'``    A header field has changed. This will occur when the
                     :meth:`intent` is changed.
     =============== ========================================================
     """  # noqa

@@ -139,7 +139,7 @@ class NonLinearTransform(fslimage.Image):
                      reference space.
         :arg from_:  Reference image space that ``coords`` are defined in
         :arg to:     Source image space to transform ``coords`` into
-        :returns    ``coords``, transformed into the source image space
+        :returns:    ``coords``, transformed into the source image space
         """
         raise NotImplementedError()
 
@@ -217,7 +217,7 @@ class DisplacementField(NonLinearTransform):
                      reference space.
         :arg from_:  Reference image space that ``coords`` are defined in
         :arg to:     Source image space to transform ``coords`` into
-        :returns     ``coords``, transformed into the source image space
+        :returns:    ``coords``, transformed into the source image space
         """
 
         if from_ is None: from_ = self.refSpace
@@ -400,11 +400,11 @@ class CoefficientField(NonLinearTransform):
 
         :arg to:     Source image space to transform ``coords`` into
 
-        :returns    ``coords``, transformed into the source image space
-
         :arg premat: If ``True``, the inverse :meth:`srcToRefMat` is applied
                      to the coordinates after the displacements have been
                      addd.
+
+        :returns:    ``coords``, transformed into the source image space
         """
         df = self.asDisplacementField(premat=premat)
         return df.transform(coords, from_, to)
@@ -629,7 +629,7 @@ def coefficientFieldToDisplacementField(field,
 
     :arg field:    :class:`CoefficientField` to convert
 
-    :arg dispType: The type of displcaement field - either ``'relative'`` (the
+    :arg dispType: The type of displacement field - either ``'relative'`` (the
                    default) or ``'absolute'``.
 
     :arg premat:   If ``True`` (the default), the :meth:`srcToRefMat` is
