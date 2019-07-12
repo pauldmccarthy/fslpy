@@ -24,21 +24,24 @@ import fsl.data.constants as constants
 log = logging.getLogger(__name__)
 
 
-def _readFnirtDisplacementField(fname, img, src, ref):
+def _readFnirtDisplacementField(fname, img, src, ref, dispType=None):
     """Loads ``fname``, assumed to be a FNIRT displacement field.
 
-    :arg fname: File name of FNIRT displacement field
-    :arg img:   ``fname`` loaded as an :class:`.Image`
-    :arg src:   Source image
-    :arg ref:   Reference image
-    :return:    A :class:`.DisplacementField`
+    :arg fname:    File name of FNIRT displacement field
+    :arg img:      ``fname`` loaded as an :class:`.Image`
+    :arg src:      Source image
+    :arg ref:      Reference image
+    :arg dispType: Displacement type - either ``'absolute'`` or ``'relative'``.
+                   If not provided, is automatically inferred from the data.
+    :return:       A :class:`.DisplacementField`
     """
     from . import nonlinear
     return nonlinear.DisplacementField(fname,
                                        src,
                                        ref,
                                        srcSpace='fsl',
-                                       refSpace='fsl')
+                                       refSpace='fsl',
+                                       dispType=dispType)
 
 
 def _readFnirtCoefficientField(fname, img, src, ref):
@@ -114,14 +117,16 @@ def _readFnirtCoefficientField(fname, img, src, ref):
                                       fieldToRefMat=fieldToRefMat)
 
 
-def readFnirt(fname, src, ref):
+def readFnirt(fname, src, ref, dispType=None):
     """Reads a non-linear FNIRT transformation image, returning
     a :class:`.DisplacementField` or :class:`.CoefficientField` depending
     on the file type.
 
-    :arg fname: File name of FNIRT transformation
-    :arg src:   Source image
-    :arg ref:   Reference image
+    :arg fname:    File name of FNIRT transformation
+    :arg src:      Source image
+    :arg ref:      Reference image
+    :arg dispType: Displacement type - either ``'absolute'`` or ``'relative'``.
+                   If not provided, is automatically inferred from the data.
     """
 
     # Figure out whether the file
@@ -139,7 +144,7 @@ def readFnirt(fname, src, ref):
              constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
 
     if img.intent in disps:
-        return _readFnirtDisplacementField(fname, img, src, ref)
+        return _readFnirtDisplacementField(fname, img, src, ref, dispType)
     elif img.intent in coefs:
         return _readFnirtCoefficientField(fname, img, src, ref)
     else:

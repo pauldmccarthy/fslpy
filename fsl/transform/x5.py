@@ -402,10 +402,10 @@ def readNonLinearX5(fname):
         root = f['/']
         _validateNonLinearTransform(root)
 
-        if root['SubType'] == 'displacement':
-            field = _readDisplacementField(root)
-        elif root['SubType'] == 'coefficient':
-            field = _readCoefficientField(root)
+        subtype = root.attrs['SubType']
+
+        if   subtype == 'displacement': field = _readDisplacementField(root)
+        elif subtype == 'coefficient':  field = _readCoefficientField(root)
 
     return field
 
@@ -484,8 +484,8 @@ def _writeAffine(group, xform):
     :arg xform: ``numpy`` array containing a ``(4, 4)`` affine transformation.
     """
 
-    xform = np.asarray(xform,                 dtype=np.float64)
-    inv   = np.asarray(affine.inverse(xform), dtype=np.float64)
+    xform = np.asarray(xform,                dtype=np.float64)
+    inv   = np.asarray(affine.invert(xform), dtype=np.float64)
 
     group.attrs['Type'] = 'linear'
     group.create_dataset('Transform', data=xform)
@@ -624,7 +624,7 @@ def _writeNonLinearCommon(group, field):
     _writeAffine(group.create_group('Post'), post)
 
     if field.srcToRefMat is not None:
-        _writeAffine(group.create_group('InitialAlignment', field.srcToRefMat))
+        _writeAffine(group.create_group('InitialAlignment'), field.srcToRefMat)
 
 
 def _readDisplacementField(group):
@@ -674,15 +674,15 @@ def _readCoefficientField(group):
     src, ref, pre, post, init, srcSpace, refSpace = _readNonLinearCommon(group)
 
     field      = np.array(group['Transform'])
-    ftype      = group['Representation']
-    spacing    = group['Parameters/Spacing']
+    ftype      = group.attrs['Representation']
+    spacing    = group['Parameters'].attrs['Spacing']
     refToField = _readAffine(group['Parameters/ReferenceToField'])
     fieldToRef = affine.invert(refToField)
 
     if   ftype == 'quadratic bspline': ftype = 'quadratic'
     elif ftype == 'cubic bspline':     ftype = 'cubic'
 
-    if spacing.shape != 3:
+    if spacing.shape != (3,):
         raise X5Error('Invalid spacing: {}'.format(spacing))
 
     field = nonlinear.CoefficientField(field,
@@ -714,7 +714,7 @@ def _writeCoefficientField(group, field):
     elif field.fieldType == 'quadratic':
         group.attrs['Representation'] = 'quadratic bspline'
 
-    xform = np.field.data.astype(np.float64)
+    xform = field.data.astype(np.float64)
 
     group.create_dataset('Transform', data=xform)
 
