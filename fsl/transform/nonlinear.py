@@ -53,6 +53,17 @@ class NonLinearTransform(fslimage.Image):
     the corresponding location in the source image space. Therefore, these
     non-linear transformation effectively encode a transformation *from* the
     reference image *to* the source image.
+
+
+    A FNIRT nonlinear transformation often contains a *premat*, a global
+    affine transformation from the source space to the reference space, which
+    was calculated with FLIRT, and used as the starting point for the
+    non-linear optimisation performed by FNIRT.
+
+
+    This affine may be provided when creating a ``NonLinearTransform`` as the
+    ``srcToRefMat`` argument to :meth:`__init__`, and is subsequently accessed
+    via the :meth:`srcToRefMat` attribute.
     """
 
 
@@ -62,28 +73,40 @@ class NonLinearTransform(fslimage.Image):
                  ref,
                  srcSpace=None,
                  refSpace=None,
+                 srcToRefMat=None,
                  **kwargs):
         """Create a ``NonLinearTransform``.
 
-        :arg image:    A string containing the name of an image file to load,
-                       or a :mod:`numpy` array, or a :mod:`nibabel` image
-                       object.
+        :arg image:       A string containing the name of an image file to
+                          load, or a :mod:`numpy` array, or a :mod:`nibabel`
+                          image object.
 
-        :arg src:      :class:`.Nifti` representing the source image.
+        :arg src:         :class:`.Nifti` representing the source image.
 
-        :arg ref:      :class:`.Nifti` representing the reference image.
+        :arg ref:         :class:`.Nifti` representing the reference image.
 
-        :arg srcSpace: Coordinate system in the source image that this
-                       ``NonLinearTransform`` maps to. Defaults to ``'fsl'``.
+        :arg srcSpace:    Coordinate system in the source image that this
+                          ``NonLinearTransform`` maps to. Defaults to
+                          ``'fsl'``.
 
-        :arg refSpace: Coordinate system in the reference image that this
-                       ``NonLinearTransform`` maps from. Defaults to ``'fsl'``.
+        :arg refSpace:    Coordinate system in the reference image that this
+                          ``NonLinearTransform`` maps from. Defaults to
+                          ``'fsl'``.
+
+        :arg srcToRefMat: Optional initial global affine transformation from
+                          the source image to the reference image. This is
+                          assumed to be a FLIRT-style matrix, i.e. it
+                          transforms from source image ``srcSpace`` coordinates
+                          into reference image ``srcSpace`` coordinates
+                          (typically ``'fsl'`` coordinates, i.e. scaled voxels
+                          potentially with a left-right flip).
 
         All other arguments are passed through to :meth:`.Image.__init__`.
         """
 
-        if srcSpace is None: srcSpace = 'fsl'
-        if refSpace is None: refSpace = 'fsl'
+        if srcSpace    is     None: srcSpace    = 'fsl'
+        if refSpace    is     None: refSpace    = 'fsl'
+        if srcToRefMat is not None: srcToRefMat = np.copy(srcToRefMat)
 
         if srcSpace not in ('fsl', 'voxel', 'world') or \
            refSpace not in ('fsl', 'voxel', 'world'):
@@ -92,10 +115,15 @@ class NonLinearTransform(fslimage.Image):
 
         fslimage.Image.__init__(self, image, **kwargs)
 
-        self.__src      = fslimage.Nifti(src.header.copy())
-        self.__ref      = fslimage.Nifti(ref.header.copy())
-        self.__srcSpace = srcSpace
-        self.__refSpace = refSpace
+        self.__src         = fslimage.Nifti(src.header.copy())
+        self.__ref         = fslimage.Nifti(ref.header.copy())
+        self.__srcSpace    = srcSpace
+        self.__refSpace    = refSpace
+        self.__srcToRefMat = srcToRefMat
+        self.__refToSrcMat = None
+
+        if srcToRefMat is not None:
+            self.__refToSrcMat = affine.invert(srcToRefMat)
 
 
     @property
@@ -128,6 +156,22 @@ class NonLinearTransform(fslimage.Image):
         ``NonLinearTransform`` maps to - see :meth:`.Nifti.getAffine`.
         """
         return self.__refSpace
+
+
+    @property
+    def srcToRefMat(self):
+        """Return the initial source-to-reference affine, or ``None`` if
+        there isn't one.
+        """
+        return self.__srcToRefMat
+
+
+    @property
+    def refToSrcMat(self):
+        """Return the inverse of the initial source-to-reference affine, or
+        ``None`` if there isn't one.
+        """
+        return self.__refToSrcMat
 
 
     def transform(self, coords, from_=None, to=None):
@@ -254,11 +298,18 @@ class DisplacementField(NonLinearTransform):
         if self.absolute: disps = self.data[xs, ys, zs, :]
         else:             disps = self.data[xs, ys, zs, :] + coords[voxmask]
 
-        # Make sure the coordinates
-        # are in the requested
-        # source image space
+        # Make sure the coordinates are
+        # in the requested source image
+        # space, and apply the initial
+        # inv(srcToRefMat) if it there
+        # is one
+        postmat = self.refToSrcMat
         if to != self.srcSpace:
             xform = self.src.getAffine(self.srcSpace, to)
+            if postmat is not None: postmat = affine.concat(xform, postmat)
+            else:                   postmat = xform
+
+        if postmat is not None:
             disps = affine.transform(disps, xform)
 
         # Nans for input coordinates
@@ -276,16 +327,6 @@ class CoefficientField(NonLinearTransform):
 
     The :meth:`displacements` method can be used to calculate relative
     displacements for a set of reference space voxel coordinates.
-
-
-    A FNIRT coefficient field typically contains a *premat*, a global affine
-    transformation from the source space to the reference space, which was
-    used as the starting point for the non-linear optimisation performed by
-    FNIRT.
-
-    This affine must be provided when creating a ``CoefficientField``, and is
-    subsequently accessed via the :meth:`srcToRefMat` or :meth:`premat`
-    attributes.
     """
 
 
@@ -297,7 +338,6 @@ class CoefficientField(NonLinearTransform):
                  refSpace,
                  fieldType,
                  knotSpacing,
-                 srcToRefMat,
                  fieldToRefMat,
                  **kwargs):
         """Create a ``CoefficientField``.
@@ -306,13 +346,6 @@ class CoefficientField(NonLinearTransform):
 
         :arg knotSpacing:   A tuple containing the spline knot spacings along
                             each axis.
-
-        :arg srcToRefMat:   Initial global affine transformation from the
-                            source image to the reference image. This is
-                            assumed to be a FLIRT-style matrix, i.e. it
-                            transforms from source image FSL coordinates
-                            into reference image FSL coordinates (scaled
-                            voxels).
 
         :arg fieldToRefMat: Affine transformation which can transform reference
                             image voxel coordinates into coefficient field
@@ -335,7 +368,6 @@ class CoefficientField(NonLinearTransform):
 
         self.__fieldType     = fieldType
         self.__knotSpacing   = tuple(knotSpacing)
-        self.__srcToRefMat   = np.copy(srcToRefMat)
         self.__fieldToRefMat = np.copy(fieldToRefMat)
         self.__refToFieldMat = affine.invert(self.__fieldToRefMat)
 
@@ -346,14 +378,6 @@ class CoefficientField(NonLinearTransform):
         ``'cubic'``.
         """
         return self.__fieldType
-
-
-    @property
-    def srcToRefMat(self):
-        """Return an initial global affine transformation from the source
-        image to the reference image.
-        """
-        return np.copy(self.__srcToRefMat)
 
 
     @property
@@ -688,20 +712,19 @@ def coefficientFieldToDisplacementField(field,
     # Apply the premat if requested -
     # this will transform the coordinates
     # from aligned-src to orig-src space.
-    if premat:
+    if premat and field.srcToRefMat is not None:
 
         # We apply the premat in the same way
         # that fnirtfileutils does - applying
         # the inverse affine to every ref space
         # voxel coordinate, then adding it to
         # the existing displacements.
-        shape    = disps.shape
-        disps    = disps.reshape(-1, 3)
-        refToSrc = affine.invert(field.srcToRefMat)
-        premat   = affine.concat(refToSrc - np.eye(4),
-                                 field.ref.getAffine('voxel', 'fsl'))
-        disps    = disps + affine.transform(xyz, premat)
-        disps    = disps.reshape(shape)
+        shape  = disps.shape
+        disps  = disps.reshape(-1, 3)
+        premat = affine.concat(field.refToSrcMat - np.eye(4),
+                               field.ref.getAffine('voxel', 'fsl'))
+        disps  = disps + affine.transform(xyz, premat)
+        disps  = disps.reshape(shape)
 
         # note that convertwarp applies a premat
         # differently - its method is equivalent
