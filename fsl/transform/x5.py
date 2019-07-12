@@ -335,9 +335,10 @@ import numpy   as np
 import nibabel as nib
 import h5py
 
-import fsl.version as version
-from . import         affine
-from . import         nonlinear
+import fsl.version    as version
+import fsl.data.image as fslimage
+from . import            affine
+from . import            nonlinear
 
 
 X5_FORMAT  = 'X5'
@@ -593,9 +594,11 @@ def _readNonLinearCommon(group):
 
     try:
         if pre is not None:
-            refSpace = affine.identify(ref, pre,  from_='world')[1]
+            refSpace = fslimage.Nifti.identifyAffine(
+                ref, pre,  from_='world')[1]
         if post is not None:
-            srcSpace = affine.identify(src, post, to='world')[   0]
+            srcSpace = fslimage.Nifti.identifyAffine(
+                src, post, to='world')[   0]
 
     except ValueError:
         raise X5Error('Invalid pre/post affine')

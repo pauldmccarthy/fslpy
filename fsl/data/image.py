@@ -34,6 +34,7 @@ and file names:
 
 import                      os
 import os.path           as op
+import itertools         as it
 import                      string
 import                      logging
 import                      tempfile
@@ -406,6 +407,54 @@ class Nifti(notifier.Notifier, meta.Meta):
                                                   affines['world', 'voxel'])
 
         return affines, isneuro
+
+
+    @staticmethod
+    def identifyAffine(image, xform, from_=None, to=None):
+        """Attempt to identify the source or destination space for the given
+        affine.
+
+        ``xform`` is assumed to be an affine transformation which can be used
+        to transform coordinates between two coordinate systems associated with
+        ``image``.
+
+        If one of ``from_`` or ``to`` is provided, the other will be derived.
+        If neither are provided, both will be derived. See the
+        :meth:`.Nifti.getAffine` method for details on the valild values that
+        ``from_`` and ``to`` may take.
+
+        :arg image: :class:`.Nifti` instance associated with the affine.
+
+        :arg xform: ``(4, 4)`` ``numpy`` array encoding an affine
+                    transformation
+
+        :arg from_: Label specifying the coordinate system which ``xform``
+                    takes as input
+
+        :arg to:    Label specifying the coordinate system which ``xform``
+                    produces as output
+
+        :returns:   A tuple containing:
+                      - A label for the ``from_`` coordinate system
+                      - A label for the ``to`` coordinate system
+        """
+
+        if (from_ is not None) and (to is not None):
+            return from_, to
+
+        if from_ is not None: froms = [from_]
+        else:                 froms = ['voxel', 'fsl', 'world']
+        if to    is not None: tos   = [to]
+        else:                 tos   = ['voxel', 'fsl', 'world']
+
+        for from_, to in it.product(froms, tos):
+
+            candidate = image.getAffine(from_, to)
+
+            if np.all(np.isclose(candidate, xform)):
+                return from_, to
+
+        raise ValueError('Could not identify affine')
 
 
     def strval(self, key):
