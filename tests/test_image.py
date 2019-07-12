@@ -1342,3 +1342,26 @@ def test_generateAffines():
     assert np.all(np.isclose(f2v, got['fsl',   'voxel']))
     assert np.all(np.isclose(f2w, got['fsl'  , 'world']))
     assert np.all(np.isclose(w2f, got['world', 'fsl']))
+
+
+def test_identifyAffine():
+
+    identify = fslimage.Nifti.identifyAffine
+
+    assert identify(None, None, 'ho', 'hum') == ('ho', 'hum')
+
+    xform = affine.compose(0.1        + 5     * np.random.random(3),
+                           -10        + 20    * np.random.random(3),
+                           -np.pi / 2 + np.pi * np.random.random(3))
+
+    img = fslimage.Image(make_random_image(None, xform=xform))
+
+    for from_, to in it.permutations(('voxel', 'fsl', 'world'), 2):
+        assert identify(img, img.getAffine(from_, to)) == (from_, to)
+
+    assert identify(img, img.getAffine('voxel', 'world'), from_='voxel') == ('voxel', 'world')
+    assert identify(img, img.getAffine('voxel', 'world'), to='world')    == ('voxel', 'world')
+
+    rubbish = np.random.random((4, 4))
+    with pytest.raises(ValueError):
+        identify(img, rubbish)
