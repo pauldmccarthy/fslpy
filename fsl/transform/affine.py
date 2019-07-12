@@ -21,6 +21,7 @@ transformations. The following functions are available:
    axisAnglesToRotMat
    axisBounds
    rmsdev
+   identify
 
 And a few more functions are provided for working with vectors:
 
@@ -582,3 +583,57 @@ def rmsdev(T1, T2, R=None, xc=None):
     erms = np.sqrt(erms)
 
     return erms
+
+
+def identify(image, xform, from_=None, to=None):
+    """Attempt to identify the source or destination space for the given
+    affine.
+
+    ``xform`` is assumed to be an affine transformation which can be used
+    to transform coordinates between two coordinate systems associated with
+    ``image``.
+
+    One of ``from_`` or ``to`` must be provided. Whichever is not provided
+    will be derived. See the :meth:`.Nifti.getAffine` method for details on
+    the valild values that ``from_`` and ``to`` may take.
+
+    :arg image: :class:`.Nifti` instance associated with the affine.
+
+    :arg xform: ``(4, 4)`` ``numpy`` array encoding an affine transformation
+
+    :arg from_: Label specifying the coordinate system which ``xform``
+                takes as input
+
+    :arg to:    Label specifying the coordinate system which ``xform``
+                produces as output
+
+    :returns:   A tuple containing:
+                  - A label for the ``from_`` coordinate system
+                  - A label for the ``to`` coordinate system
+    """
+
+    if (from_ is None) and (to is None):
+        raise ValueError('One of from_ or to must be provided')
+
+    if (from_ is not None) and (to is not None):
+        return from_, to
+
+    if from_ is None:
+        voxel = image.getAffine('voxel', to)
+        fsl   = image.getAffine('fsl',   to)
+        world = image.getAffine('world', to)
+
+        if np.all(np.isclose(voxel, xform)): return 'voxel', to
+        if np.all(np.isclose(fsl,   xform)): return 'fsl',   to
+        if np.all(np.isclose(world, xform)): return 'world', to
+
+    if to is None:
+        voxel = image.getAffine(from_, 'voxel')
+        fsl   = image.getAffine(from_, 'fsl')
+        world = image.getAffine(from_, 'world')
+
+        if np.all(np.isclose(voxel, xform)): return 'voxel', to
+        if np.all(np.isclose(fsl,   xform)): return 'fsl',   to
+        if np.all(np.isclose(world, xform)): return 'world', to
+
+    raise ValueError('Could not identify affine')
