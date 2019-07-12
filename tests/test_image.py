@@ -19,10 +19,10 @@ import nibabel      as nib
 
 from nibabel.spatialimages import ImageFileError
 
-import fsl.data.constants as constants
-import fsl.data.image     as fslimage
-import fsl.utils.path     as fslpath
-import fsl.transform      as transform
+import fsl.data.constants   as constants
+import fsl.data.image       as fslimage
+import fsl.utils.path       as fslpath
+import fsl.transform.affine as affine
 
 from fsl.utils.tempdir import tempdir
 
@@ -1113,12 +1113,12 @@ def _test_Image_init_xform(imgtype):
 
     with tempdir() as td:
 
-        sform = transform.compose(np.random.random(3),
-                                  np.random.random(3),
-                                  np.random.random(3))
-        qform = transform.compose(np.random.random(3),
-                                  np.random.random(3),
-                                  np.random.random(3))
+        sform = affine.compose(np.random.random(3),
+                               np.random.random(3),
+                               np.random.random(3))
+        qform = affine.compose(np.random.random(3),
+                               np.random.random(3),
+                               np.random.random(3))
 
         sform_code = 3
         qform_code = 4
@@ -1169,9 +1169,9 @@ def _test_Image_init_xform(imgtype):
         # to the xform. and its
         # s/q form codes the same
         # as what is in the header
-        rxform = transform.compose(np.random.random(3),
-                                   np.random.random(3),
-                                   np.random.random(3))
+        rxform = affine.compose(np.random.random(3),
+                                np.random.random(3),
+                                np.random.random(3))
         fimg = fslimage.Image(img.get_data(),
                               header=img.header,
                               xform=rxform)
@@ -1281,12 +1281,12 @@ def test_determineAffine():
 
     for sformcode, qformcode, intent, exp in tests:
 
-        sform   = transform.compose(np.random.random(3),
-                                    np.random.random(3),
-                                    np.random.random(3))
-        qform   = transform.compose(np.random.random(3),
-                                    np.random.random(3),
-                                    np.random.random(3))
+        sform   = affine.compose(np.random.random(3),
+                                 np.random.random(3),
+                                 np.random.random(3))
+        qform   = affine.compose(np.random.random(3),
+                                 np.random.random(3),
+                                 np.random.random(3))
         pixdims = np.random.randint(1, 10, 3)
 
         hdr = nib.Nifti1Header()
@@ -1306,16 +1306,16 @@ def test_determineAffine():
 
         if   exp == 'sform':   exp = sform
         elif exp == 'qform':   exp = qform
-        elif exp == 'scaling': exp = transform.scaleOffsetXform(pixdims, 0)
+        elif exp == 'scaling': exp = affine.scaleOffsetXform(pixdims, 0)
 
         assert np.all(np.isclose(got, exp))
 
 
 def test_generateAffines():
 
-    v2w = transform.compose(np.random.random(3),
-                            np.random.random(3),
-                            np.random.random(3))
+    v2w = affine.compose(np.random.random(3),
+                         np.random.random(3),
+                         np.random.random(3))
     shape = (10, 10, 10)
     pixdim = (1, 1, 1)
 
@@ -1331,10 +1331,10 @@ def test_generateAffines():
         f2w = v2w
         w2f = w2v
     else:
-        v2f = transform.scaleOffsetXform([-1, 1, 1], [9, 0, 0])
+        v2f = affine.scaleOffsetXform([-1, 1, 1], [9, 0, 0])
         f2v = npla.inv(v2f)
-        f2w = transform.concat(v2w, f2v)
-        w2f = transform.concat(v2f, w2v)
+        f2w = affine.concat(v2w, f2v)
+        w2f = affine.concat(v2f, w2v)
 
     assert np.all(np.isclose(v2w, got['voxel', 'world']))
     assert np.all(np.isclose(w2v, got['world', 'voxel']))

@@ -19,7 +19,7 @@ import six
 
 import pytest
 
-import fsl.transform  as transform
+import fsl.transform.affine  as affine
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -56,7 +56,7 @@ def test_invert():
 
         x      = testdata[i * 4:i * 4 + 4, 0:4]
         invx   = testdata[i * 4:i * 4 + 4, 4:8]
-        result = transform.invert(x)
+        result = affine.invert(x)
 
         assert np.all(np.isclose(invx, result))
 
@@ -86,7 +86,7 @@ def test_concat():
 
     for inputs, expected in tests:
 
-        result = transform.concat(*inputs)
+        result = affine.concat(*inputs)
 
         assert np.all(np.isclose(result, expected))
 
@@ -108,10 +108,10 @@ def test_veclength(seed):
         vtype = random.choice((list, tuple, np.array))
         v     = vtype(v)
 
-        assert np.isclose(transform.veclength(v), l(v))
+        assert np.isclose(affine.veclength(v), l(v))
 
     # Multiple vectors in parallel
-    result   = transform.veclength(vectors)
+    result   = affine.veclength(vectors)
     expected = l(vectors)
     assert np.all(np.isclose(result, expected))
 
@@ -121,8 +121,8 @@ def test_normalise(seed):
     vectors = -100 + 200 * np.random.random((200, 3))
 
     def parallel(v1, v2):
-        v1 = v1 / transform.veclength(v1)
-        v2 = v2 / transform.veclength(v2)
+        v1 = v1 / affine.veclength(v1)
+        v2 = v2 / affine.veclength(v2)
 
         return np.isclose(np.dot(v1, v2), 1)
 
@@ -130,16 +130,16 @@ def test_normalise(seed):
 
         vtype = random.choice((list, tuple, np.array))
         v     = vtype(v)
-        vn    = transform.normalise(v)
-        vl    = transform.veclength(vn)
+        vn    = affine.normalise(v)
+        vl    = affine.veclength(vn)
 
         assert np.isclose(vl, 1.0)
         assert parallel(v, vn)
 
     # normalise should also be able
     # to do multiple vectors at once
-    results = transform.normalise(vectors)
-    lengths = transform.veclength(results)
+    results = affine.normalise(vectors)
+    lengths = affine.veclength(results)
     pars    = np.zeros(200)
     for i in range(200):
 
@@ -171,7 +171,7 @@ def test_scaleOffsetXform():
         expected = [[float(v) for v in l.split()] for l in expected]
         expected = np.array(expected)
 
-        result = transform.scaleOffsetXform(scales, offsets)
+        result = affine.scaleOffsetXform(scales, offsets)
 
         assert np.all(np.isclose(result, expected))
 
@@ -207,11 +207,11 @@ def test_scaleOffsetXform():
 
     for (scale, expected) in stests:
         expected = np.array(expected).reshape(4, 4)
-        result   = transform.scaleOffsetXform(scale, 0)
+        result   = affine.scaleOffsetXform(scale, 0)
         assert np.all(np.isclose(result, expected))
     for (offset, expected) in otests:
         expected = np.array(expected).reshape(4, 4)
-        result   = transform.scaleOffsetXform(1, offset)
+        result   = affine.scaleOffsetXform(1, offset)
         assert np.all(np.isclose(result, expected))
 
 
@@ -226,8 +226,8 @@ def test_compose_and_decompose():
         xform                      = lines[i * 4: i * 4 + 4]
         xform                      = np.genfromtxt(xform)
 
-        scales, offsets, rotations = transform.decompose(xform)
-        result = transform.compose(scales, offsets, rotations)
+        scales, offsets, rotations = affine.decompose(xform)
+        result = affine.compose(scales, offsets, rotations)
 
         assert np.all(np.isclose(xform, result, atol=1e-5))
 
@@ -235,22 +235,22 @@ def test_compose_and_decompose():
         # different rotation origin, but we test
         # explicitly passing the origin for
         # completeness
-        scales, offsets, rotations = transform.decompose(xform)
-        result = transform.compose(scales, offsets, rotations, [0, 0, 0])
+        scales, offsets, rotations = affine.decompose(xform)
+        result = affine.compose(scales, offsets, rotations, [0, 0, 0])
 
         assert np.all(np.isclose(xform, result, atol=1e-5))
 
     # compose should also accept a rotation matrix
     rots = [np.pi / 5, np.pi / 4, np.pi / 3]
-    rmat  = transform.axisAnglesToRotMat(*rots)
-    xform = transform.compose([1, 1, 1], [0, 0, 0], rmat)
+    rmat  = affine.axisAnglesToRotMat(*rots)
+    xform = affine.compose([1, 1, 1], [0, 0, 0], rmat)
 
     # And the angles flag should cause decompose
     # to return the rotation matrix, instead of
     # the axis angls
-    sc,   of,   rot   = transform.decompose(xform)
-    scat, ofat, rotat = transform.decompose(xform, angles=True)
-    scaf, ofaf, rotaf = transform.decompose(xform, angles=False)
+    sc,   of,   rot   = affine.decompose(xform)
+    scat, ofat, rotat = affine.decompose(xform, angles=True)
+    scaf, ofaf, rotaf = affine.decompose(xform, angles=False)
 
     sc,   of,   rot   = np.array(sc),   np.array(of),   np.array(rot)
     scat, ofat, rotat = np.array(scat), np.array(ofat), np.array(rotat)
@@ -269,8 +269,8 @@ def test_compose_and_decompose():
 
     # decompose should accept a 3x3
     # affine, and return translations of 0
-    transform.decompose(xform[:3, :3])
-    sc,   of,   rot   = transform.decompose(xform[:3, :3])
+    affine.decompose(xform[:3, :3])
+    sc,   of,   rot   = affine.decompose(xform[:3, :3])
     sc,   of,   rot   = np.array(sc), np.array(of), np.array(rot)
     assert np.all(np.isclose(sc,    [1, 1, 1]))
     assert np.all(np.isclose(of,    [0, 0, 0]))
@@ -290,8 +290,8 @@ def test_rotMatToAxisAngles(seed):
                 -pi2 + 2 * pi2 * np.random.random(),
                 -pi  + 2 * pi  * np.random.random()]
 
-        rmat    = transform.axisAnglesToRotMat(*rots)
-        gotrots = transform.rotMatToAxisAngles(rmat)
+        rmat    = affine.axisAnglesToRotMat(*rots)
+        gotrots = affine.rotMatToAxisAngles(rmat)
 
         assert np.all(np.isclose(rots, gotrots))
 
@@ -310,9 +310,9 @@ def test_rotMatToAffine(seed):
         if np.random.random() < 0.5: origin = None
         else:                        origin = np.random.random(3)
 
-        rmat   = transform.axisAnglesToRotMat(*rots)
-        mataff = transform.rotMatToAffine(rmat, origin)
-        rotaff = transform.rotMatToAffine(rots, origin)
+        rmat   = affine.axisAnglesToRotMat(*rots)
+        mataff = affine.rotMatToAffine(rmat, origin)
+        rotaff = affine.rotMatToAffine(rots, origin)
 
         exp         = np.eye(4)
         exp[:3, :3] = rmat
@@ -349,7 +349,7 @@ def test_axisBounds():
         shape, origin, boundary, xform, expected = readTest(i)
 
         for axes in allAxes:
-            result = transform.axisBounds(shape,
+            result = affine.axisBounds(shape,
                                           xform,
                                           axes=axes,
                                           origin=origin,
@@ -371,14 +371,14 @@ def test_axisBounds():
     # US-spelling
     assert np.all(np.isclose(
         expected,
-        transform.axisBounds(
+        affine.axisBounds(
             shape, xform, origin='center', boundary=boundary)))
 
     # Bad origin/boundary values
     with pytest.raises(ValueError):
-        transform.axisBounds(shape, xform, origin='Blag', boundary=boundary)
+        affine.axisBounds(shape, xform, origin='Blag', boundary=boundary)
     with pytest.raises(ValueError):
-        transform.axisBounds(shape, xform, origin=origin, boundary='Blufu')
+        affine.axisBounds(shape, xform, origin=origin, boundary='Blufu')
 
 
 def test_transform():
@@ -412,7 +412,7 @@ def test_transform():
         lines    = readlines(testfile)
         xform    = np.genfromtxt(lines[:4])
         expected = np.genfromtxt(lines[ 4:])
-        result   = transform.transform(testcoords, xform)
+        result   = affine.transform(testcoords, xform)
 
         assert np.all(np.isclose(expected, result))
 
@@ -422,7 +422,7 @@ def test_transform():
         for axes in allAxes:
             atestcoords = testcoords[:, axes]
             aexpected   = expected[  :, axes]
-            aresult     = transform.transform(atestcoords, xform, axes=axes)
+            aresult     = affine.transform(atestcoords, xform, axes=axes)
 
             assert np.all(np.isclose(aexpected, aresult))
 
@@ -433,26 +433,26 @@ def test_transform():
     coords    = badcoords[:, :3]
 
     with pytest.raises(IndexError):
-        transform.transform(coords, badxform)
+        affine.transform(coords, badxform)
 
     with pytest.raises(ValueError):
-        transform.transform(badcoords, xform)
+        affine.transform(badcoords, xform)
 
     with pytest.raises(ValueError):
-        transform.transform(badcoords.reshape(5, 2, 4), xform)
+        affine.transform(badcoords.reshape(5, 2, 4), xform)
 
     with pytest.raises(ValueError):
-        transform.transform(badcoords.reshape(5, 2, 4), xform, axes=1)
+        affine.transform(badcoords.reshape(5, 2, 4), xform, axes=1)
 
     with pytest.raises(ValueError):
-        transform.transform(badcoords[:, (1, 2, 3)], xform, axes=[1, 2])
+        affine.transform(badcoords[:, (1, 2, 3)], xform, axes=[1, 2])
 
 
 def test_transform_vector(seed):
 
     # Some transform with a
     # translation component
-    xform = transform.compose([1, 2, 3],
+    xform = affine.compose([1, 2, 3],
                               [5, 10, 15],
                               [np.pi / 2, np.pi / 2, 0])
 
@@ -463,9 +463,9 @@ def test_transform_vector(seed):
         vecExpected = np.dot(xform, list(v) + [0])[:3]
         ptExpected  = np.dot(xform, list(v) + [1])[:3]
 
-        vecResult   = transform.transform(v, xform,         vector=True)
-        vec33Result = transform.transform(v, xform[:3, :3], vector=True)
-        ptResult    = transform.transform(v, xform,         vector=False)
+        vecResult   = affine.transform(v, xform,         vector=True)
+        vec33Result = affine.transform(v, xform[:3, :3], vector=True)
+        ptResult    = affine.transform(v, xform,         vector=False)
 
         assert np.all(np.isclose(vecExpected, vecResult))
         assert np.all(np.isclose(vecExpected, vec33Result))
@@ -488,13 +488,13 @@ def test_transformNormal(seed):
         rotations = -np.pi + np.random.random(3) * 2 * np.pi
         origin    = -100   + np.random.random(3) * 200
 
-        xform = transform.compose(scales,
+        xform = affine.compose(scales,
                                   offsets,
                                   rotations,
                                   origin)
 
         expected = tn(n, xform)
-        result   = transform.transformNormal(n, xform)
+        result   = affine.transformNormal(n, xform)
 
         assert np.all(np.isclose(expected, result))
 
@@ -502,19 +502,19 @@ def test_transformNormal(seed):
 def test_rmsdev():
 
     t1 = np.eye(4)
-    t2 = transform.scaleOffsetXform([1, 1, 1], [2, 0, 0])
+    t2 = affine.scaleOffsetXform([1, 1, 1], [2, 0, 0])
 
-    assert np.isclose(transform.rmsdev(t1, t2), 2)
-    assert np.isclose(transform.rmsdev(t1, t2, R=2), 2)
-    assert np.isclose(transform.rmsdev(t1, t2, R=2, xc=(1, 1, 1)), 2)
+    assert np.isclose(affine.rmsdev(t1, t2), 2)
+    assert np.isclose(affine.rmsdev(t1, t2, R=2), 2)
+    assert np.isclose(affine.rmsdev(t1, t2, R=2, xc=(1, 1, 1)), 2)
 
     t1       = np.eye(3)
     lastdist = 0
 
     for i in range(1, 11):
         rot    = np.pi * i / 10.0
-        t2     = transform.axisAnglesToRotMat(rot, 0, 0)
-        result = transform.rmsdev(t1, t2)
+        t2     = affine.axisAnglesToRotMat(rot, 0, 0)
+        result = affine.rmsdev(t1, t2)
 
         assert result > lastdist
 
@@ -522,8 +522,8 @@ def test_rmsdev():
 
     for i in range(11, 20):
         rot    = np.pi * i / 10.0
-        t2     = transform.axisAnglesToRotMat(rot, 0, 0)
-        result = transform.rmsdev(t1, t2)
+        t2     = affine.axisAnglesToRotMat(rot, 0, 0)
+        result = affine.rmsdev(t1, t2)
 
         assert result < lastdist
 
