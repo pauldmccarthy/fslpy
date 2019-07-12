@@ -46,7 +46,7 @@ import nibabel           as nib
 import nibabel.fileslice as fileslice
 
 import fsl.utils.meta        as meta
-import fsl.transform         as transform
+import fsl.transform.affine  as affine
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
@@ -332,9 +332,9 @@ class Nifti(notifier.Notifier, meta.Meta):
             refpix        = (header.get('intent_p1', 1),
                              header.get('intent_p2', 1),
                              header.get('intent_p3', 1))
-            voxToWorldMat = transform.concat(
-                transform.scaleOffsetXform(refpix,  0),
-                transform.scaleOffsetXform(knotpix, 0))
+            voxToWorldMat = affine.concat(
+                affine.scaleOffsetXform(refpix,  0),
+                affine.scaleOffsetXform(knotpix, 0))
 
         # If the qform or sform codes are unknown,
         # then we can't assume that the transform
@@ -348,7 +348,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         # should just be a straight scaling matrix.
         elif qform == 0 and sform == 0:
             pixdims       = header.get_zooms()
-            voxToWorldMat = transform.scaleOffsetXform(pixdims, 0)
+            voxToWorldMat = affine.scaleOffsetXform(pixdims, 0)
 
         # Otherwise we let nibabel decide
         # which transform to use.
@@ -389,21 +389,21 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         if isneuro:
             x                 = (shape[0] - 1) * pixdim[0]
-            flip              = transform.scaleOffsetXform([-1, 1, 1],
-                                                           [ x, 0, 0])
-            voxToScaledVoxMat = transform.concat(flip, voxToScaledVoxMat)
+            flip              = affine.scaleOffsetXform([-1, 1, 1],
+                                                        [ x, 0, 0])
+            voxToScaledVoxMat = affine.concat(flip, voxToScaledVoxMat)
 
         affines['fsl',   'fsl']   = np.eye(4)
         affines['voxel', 'voxel'] = np.eye(4)
         affines['world', 'world'] = np.eye(4)
         affines['voxel', 'world'] = voxToWorldMat
-        affines['world', 'voxel'] = transform.invert(voxToWorldMat)
+        affines['world', 'voxel'] = affine.invert(voxToWorldMat)
         affines['voxel', 'fsl']   = voxToScaledVoxMat
-        affines['fsl',   'voxel'] = transform.invert(voxToScaledVoxMat)
-        affines['fsl',   'world'] = transform.concat(affines['voxel', 'world'],
-                                                     affines['fsl',   'voxel'])
-        affines['world', 'fsl']   = transform.concat(affines['voxel',   'fsl'],
-                                                     affines['world', 'voxel'])
+        affines['fsl',   'voxel'] = affine.invert(voxToScaledVoxMat)
+        affines['fsl',   'world'] = affine.concat(affines['voxel', 'world'],
+                                                  affines['fsl',   'voxel'])
+        affines['world', 'fsl']   = affine.concat(affines['voxel',   'fsl'],
+                                                  affines['world', 'voxel'])
 
         return affines, isneuro
 

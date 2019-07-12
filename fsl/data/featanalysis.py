@@ -47,11 +47,10 @@ import                   logging
 import os.path        as op
 import numpy          as np
 
-import fsl.utils.path as fslpath
-import fsl.transform  as transform
-
-from . import image   as fslimage
-from . import            featdesign
+import fsl.utils.path       as fslpath
+import fsl.transform.affine as affine
+from . import image         as fslimage
+from . import                  featdesign
 
 
 log = logging.getLogger(__name__)
@@ -467,9 +466,9 @@ def loadClusterResults(featdir, settings, contrast):
         zcog    = [c.zcogx,    c.zcogy,    c.zcogz]
         copemax = [c.copemaxx, c.copemaxy, c.copemaxz]
 
-        zmax    = transform.transform([zmax],    coordXform)[0].round()
-        zcog    = transform.transform([zcog],    coordXform)[0].round()
-        copemax = transform.transform([copemax], coordXform)[0].round()
+        zmax    = affine.transform([zmax],    coordXform)[0].round()
+        zcog    = affine.transform([zcog],    coordXform)[0].round()
+        copemax = affine.transform([copemax], coordXform)[0].round()
 
         c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
         c.zcogx,   c.zcogy,    c.zcogz    = zcog
