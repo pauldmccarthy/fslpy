@@ -310,3 +310,33 @@ def test_coefficientFieldToDisplacementField():
     assert np.all(np.isclose(acnv.data,   adf  .data, **tol))
     assert np.all(np.isclose(rcnvnp.data, rdfnp.data, **tol))
     assert np.all(np.isclose(acnvnp.data, adfnp.data, **tol))
+
+
+def test_DisplacementFIeld_srcToRefMat():
+
+    field1 = _random_field()
+    xform  = affine.compose(
+        np.random.randint( 1, 10, 3),
+        np.random.randint(1, 100, 3),
+        np.random.random(3) * np.pi / 2)
+
+    field2 = nonlinear.DisplacementField(
+        field1.data,
+        xform=field1.voxToWorldMat,
+        src=field1.src,
+        ref=field1.ref,
+        srcToRefMat=xform)
+
+    x = np.random.randint(0, field1.shape[0], 100)
+    y = np.random.randint(0, field1.shape[1], 100)
+    z = np.random.randint(0, field1.shape[2], 100)
+
+    coords = np.array([x, y, z]).T
+    coords = affine.transform(
+        coords, field1.ref.getAffine('voxel', 'fsl'))
+
+    coordsf1 = field1.transform(coords)
+    coordsf2 = field2.transform(coords)
+    coordsf1 = affine.transform(coordsf1, affine.invert(xform))
+
+    assert np.all(np.isclose(coordsf1, coordsf2))

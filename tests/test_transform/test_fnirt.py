@@ -75,9 +75,8 @@ def test_toFnirt():
     src  = fslimage.Image(op.join(datadir, 'src'))
     ref  = fslimage.Image(op.join(datadir, 'ref'))
     coef = fnirt.readFnirt(op.join(datadir, 'coefficientfield'),  src, ref)
-    disp = fnirt.readFnirt(op.join(datadir, 'displacementfield'), src, ref)
     got  = fnirt.toFnirt(coef)
-    check(got, disp)
+    check(got, coef)
 
 
 def test_fromFnirt():
