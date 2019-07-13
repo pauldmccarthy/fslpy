@@ -18,6 +18,9 @@ transformation matrices. The following functions are available:
 
 import logging
 
+import numpy   as np
+import nibabel as nib
+
 import fsl.data.constants as constants
 
 
@@ -154,25 +157,106 @@ def readFnirt(fname, src, ref, dispType=None):
 
 def toFnirt(field):
     """Convert a :class:`.NonLinearTransform` to a FNIRT-compatible
-    :class:`.DisplacementField`.
+    :class:`.DisplacementField` or:class:`.CoefficientField`.
 
     :arg field: :class:`.NonLinearTransform` to convert
-    :return:    A FNIRT-compatible :class:`.DisplacementField`.
+    :return:    A FNIRT-compatible :class:`.DisplacementField` or
+                :class:`.CoefficientField`.
     """
 
     from . import nonlinear
 
-    # We can't convert a CoefficientField,
-    # because the coefficients will have
-    # been calculated between some other
-    # source/reference coordinate systems,
-    # and we can't adjust the coefficients
-    # to encode an FSL->FSL deformation.
-    if isinstance(field, nonlinear.CoefficientField):
-        field = nonlinear.coefficientFieldToDisplacementField(field)
+    # If we have a coefficient field
+    # which transforms between fsl
+    # space, we can just create a copy.
+    if isinstance(field, nonlinear.CoefficientField) and \
+       (field.srcSpace == 'fsl' and field.refSpace == 'fsl'):
 
-    field = nonlinear.convertDisplacementSpace(field, from_='fsl', to='fsl')
-    field.header['intent_code'] = constants.FSL_FNIRT_DISPLACEMENT_FIELD
+        # We start with a nibabel image,
+        # as we need to mess with the header
+        # fields to store all of the FNIRT
+        # coefficient field information
+        fieldBase = nib.nifti1.Nifti1Image(field.data, None)
+
+        # Set the intent
+        if field.fieldType == 'cubic':
+            intent = constants.FSL_CUBIC_SPLINE_COEFFICIENTS
+        elif field.fieldType == 'quadratic':
+            intent = constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS
+        fieldBase.header['intent_code'] = intent
+
+        # Reference image pixdims are
+        # stored in the intent code
+        # parameters.
+        fieldBase.header['intent_p1'] = field.ref.pixdim[0]
+        fieldBase.header['intent_p2'] = field.ref.pixdim[1]
+        fieldBase.header['intent_p3'] = field.ref.pixdim[2]
+
+        # Pixdims are used to
+        # store the knot spacing,
+        pixdims      = list(field.knotSpacing) + [1]
+        qform        = np.diag(pixdims)
+
+        # The sform is used to store the
+        # initial src-to-ref affine
+        if field.srcToRefMat is not None: sform = field.srcToRefMat
+        else:                             sform = np.eye(4)
+
+        # The qform offsets are
+        # used to store the
+        # reference image shape
+        qform[:3, 3] = field.ref.shape[:3]
+
+        fieldBase.header.set_zooms(pixdims)
+        fieldBase.set_sform(sform, 1)
+        fieldBase.set_qform(qform, 1)
+        fieldBase.update_header()
+
+        field = nonlinear.CoefficientField(
+            fieldBase,
+            src=field.src,
+            ref=field.ref,
+            srcSpace='fsl',
+            refSpace='fsl',
+            fieldType=field.fieldType,
+            knotSpacing=field.knotSpacing,
+            fieldToRefMat=field.fieldToRefMat,
+            srcToRefMat=field.srcToRefMat)
+
+    # Otherwise we have a non-FSL coefficient
+    # field, or a displacement field.
+    #
+    # We can't convert a CoefficientField
+    # which doesn't transform in FSL
+    # coordinates, because the coefficients
+    # will have been calculated between some
+    # other source/reference coordinate
+    # systems, and we can't adjust the
+    # coefficients to encode an FSL->FSL
+    # deformation.
+    else:
+
+        if isinstance(field, nonlinear.CoefficientField):
+            field = nonlinear.coefficientFieldToDisplacementField(field)
+
+        # Again, if we have a displacement
+        # field which transforms between
+        # fsl spaces, we can just take a copy
+        if field.srcSpace == 'fsl' and field.refSpace == 'fsl':
+            field = nonlinear.DisplacementField(
+                field.data,
+                src=field.src,
+                ref=field.ref,
+                fieldType=field.fieldType,
+                dispType=field.displacementType)
+
+        # Otherwise we have to adjust the
+        # displacements so they transform
+        # between fsl coordinates.
+        field = nonlinear.convertDisplacementSpace(
+            field, from_='fsl', to='fsl')
+
+        field.header['intent_code'] = constants.FSL_FNIRT_DISPLACEMENT_FIELD
 
     return field
 
