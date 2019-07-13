@@ -175,17 +175,17 @@ or a *knot*.
 
 
 Evaluating the spline functions at a particular location in the grid will
-result in a relative displacement which can be applied to that location's
+result in a relative displacement which can be added to that location's
 reference image coordinates, in order to determine the corresponding source
 image coordinates.
 
 
 The shape of this coefficient grid is not necessarily the same as the shape of
 the reference image grid. For this reason, some additional parameters are
-stored in coefficient field files, in a sub-group called ``/Parameters``:
+stored in coefficient field files, in a sub-group called ``/Parameters/``:
 
  - The distance between control points, defined in terms of reference image
-   voxels
+   voxels.
  - An affine transformation which can be used to transform reference image
    voxel coordinates into coefficient field voxel coordinates.
 
@@ -203,8 +203,9 @@ some other coordinate system.
 
 
 Howewer, if the transformation does not transform between source and reference
-image **world** coordinates, the ``/Pre`` and ``/Post`` affine transformations
-must be provided.
+image **world** coordinates, the ``/Pre/`` and ``/Post/`` affine
+transformations must be provided.
+
 
 The ``/Pre/`` affine transformation will be used to transform reference image
 world coordinates into the reference image coordinate system required for use
@@ -257,7 +258,7 @@ File format specification
 
 
 Non-linear X5 transformation files are assumed to adhere to the following
-HDF5 structure:
+HDF5 structure. All fields are required unless otherwise noted:
 
 
 +---------------------+-----------+-------------------------------------------+

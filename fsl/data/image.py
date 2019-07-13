@@ -329,6 +329,13 @@ class Nifti(notifier.Notifier, meta.Meta):
 
             log.debug('FNIRT coefficient field detected - generating affine')
 
+            # Knot spacing is stored in the pixdims
+            # (specified in terms of reference image
+            # voxels), and reference image pixdims
+            # are stored as intent code parameters.
+            # If we combine the two, we can at least
+            # get the shape/size of the coefficient
+            # field about right
             knotpix       =  header.get_zooms()[:3]
             refpix        = (header.get('intent_p1', 1),
                              header.get('intent_p2', 1),
