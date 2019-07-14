@@ -9,8 +9,8 @@
 """
 
 
-import fsl.utils.deprecated as deprecated
-from   fsl.affine       import *          # noqa
+import fsl.utils.deprecated as     deprecated
+from   fsl.transform.affine import *          # noqa
 
 
 deprecated.warn('fsl.utils.transform',
