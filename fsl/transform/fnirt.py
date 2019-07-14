@@ -247,7 +247,7 @@ def toFnirt(field):
                 field.data,
                 src=field.src,
                 ref=field.ref,
-                fieldType=field.fieldType,
+                xform=field.voxToWorldMat,
                 dispType=field.displacementType)
 
         # Otherwise we have to adjust the
