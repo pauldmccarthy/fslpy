@@ -637,14 +637,15 @@ def _readDisplacementField(group):
 
     src, ref, pre, post, init, srcSpace, refSpace = _readNonLinearCommon(group)
     field = np.array(group['Transform'])
-    dtype = group['Representation']
+    dtype = group.attrs['Representation']
     field = nonlinear.DisplacementField(field,
                                         src=src,
                                         ref=ref,
                                         srcSpace=srcSpace,
                                         refSpace=refSpace,
                                         dispType=dtype,
-                                        srcToRefMat=init)
+                                        srcToRefMat=init,
+                                        xform=ref.voxToWorldMat)
     return field
 
 
@@ -660,7 +661,7 @@ def _writeDisplacementField(group, field):
     group.attrs['SubType']        = 'displacement'
     group.attrs['Representation'] = field.displacementType
 
-    xform = np.field.data.astype(np.float64)
+    xform = field.data.astype(np.float64)
 
     group.create_dataset('Transform', data=xform)
 
