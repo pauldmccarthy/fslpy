@@ -15,12 +15,12 @@ sub-functions of :func:`resample`.
 """
 
 
-import collections.abc     as abc
+import collections.abc      as abc
 
-import numpy               as np
-import scipy.ndimage       as ndimage
+import numpy                as np
+import scipy.ndimage        as ndimage
 
-import fsl.utils.transform as transform
+import fsl.transform.affine as affine
 
 
 def resampleToPixdims(image, newPixdims, **kwargs):
@@ -64,7 +64,7 @@ def resampleToReference(image, reference, **kwargs):
 
     # Align the two images together
     # via their vox-to-world affines.
-    matrix = transform.concat(image.worldToVoxMat, reference.voxToWorldMat)
+    matrix = affine.concat(image.worldToVoxMat, reference.voxToWorldMat)
 
     # If the input image is >3D, we
     # have to adjust the resampling
@@ -218,7 +218,7 @@ def resample(image,
         matrix[:3, :3] = rotmat
         matrix[:3, -1] = offsets
 
-    matrix = transform.concat(image.voxToWorldMat, matrix)
+    matrix = affine.concat(image.voxToWorldMat, matrix)
 
     return data, matrix
 
@@ -241,7 +241,7 @@ def applySmoothing(data, matrix, newShape):
     :returns:      A smoothed copy of ``data``.
     """
 
-    ratio = transform.decompose(matrix[:3, :3])[0]
+    ratio = affine.decompose(matrix[:3, :3])[0]
 
     if len(newShape) > 3:
         ratio = np.concatenate((
