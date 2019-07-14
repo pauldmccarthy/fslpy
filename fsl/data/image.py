@@ -337,9 +337,9 @@ class Nifti(notifier.Notifier, meta.Meta):
             # get the shape/size of the coefficient
             # field about right
             knotpix       =  header.get_zooms()[:3]
-            refpix        = (header.get('intent_p1', 1),
-                             header.get('intent_p2', 1),
-                             header.get('intent_p3', 1))
+            refpix        = (header.get('intent_p1', 1) or 1,
+                             header.get('intent_p2', 1) or 1,
+                             header.get('intent_p3', 1) or 1)
             voxToWorldMat = affine.concat(
                 affine.scaleOffsetXform(refpix,  0),
                 affine.scaleOffsetXform(knotpix, 0))

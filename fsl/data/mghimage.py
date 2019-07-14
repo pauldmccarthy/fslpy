@@ -69,7 +69,7 @@ class MGHImage(fslimage.Image):
 
         self.__voxToSurfMat   = vox2surf
         self.__surfToVoxMat   = affine.invert(vox2surf)
-        self.__surfToWorldMat = affine.concat(affine, self.__surfToVoxMat)
+        self.__surfToWorldMat = affine.concat(xform, self.__surfToVoxMat)
         self.__worldToSurfMat = affine.invert(self.__surfToWorldMat)
 
 
