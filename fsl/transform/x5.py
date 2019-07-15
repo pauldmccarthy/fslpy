@@ -22,6 +22,12 @@ an X5 file, the source image is referred to as the ``From`` space, and the
 reference image the ``To`` space.
 
 
+X5 files enable a transformation between **source image world coordinates**
+and **reference image world coordinates**.  The *world coordinate system* of
+an image is defined by its ``sform`` or ``qform`` (hereafter referred to as
+the ``sform``), which is contained in the NIfTI header.
+
+
 Custom HDF5 groups
 ==================
 
@@ -68,10 +74,7 @@ another. Groups of type "affine" have the following fields:
 
 A HDF5 group which is listed as being of type "space" contains all of the
 information required to define the space of a NIfTI image, including its
-shape, dimensions, and voxel-to-world affine transformation. The *world*
-coordinate system of an image is defined by its ``sform`` or ``qform``
-(hereafter referred to as the ``sform``), which is contained in the NIfTI
-header.
+shape, dimensions, and voxel-to-world affine transformation.
 
 
 Groups of type "space" have the following fields:
@@ -96,40 +99,51 @@ Linear X5 files
 
 
 Linear X5 transformation files contain an affine transformation matrix of
-shape ``(4, 4)``, which can be used to transform **source image world
-coordinates** into **reference image world coordinates**.
+shape ``(4, 4)``, which can be used to transform source image world
+coordinates into reference image world coordinates.
 
 
 Linear X5 transformation files are assumed to adhere to the HDF5 structure
 defined in the table below.  All fields are required.
 
 
-+-----------------------------+-----------+-----------------------------------+
-| **Name**                    | **Type**  | **Value/Description**             |
-+-----------------------------+-----------+-----------------------------------+
++---------------+-----------+-------------------------------------------------+
+| **Name**      | **Type**  | **Value/Description**                           |
++---------------+-----------+-------------------------------------------------+
 | *Metadata*                                                                  |
-+-----------------------------+-----------+-----------------------------------+
-| ``/Format``                 | attribute | ``'X5'``                          |
-+-----------------------------+-----------+-----------------------------------+
-| ``/Version``                | attribute | ``'0.0.1'``                       |
-+-----------------------------+-----------+-----------------------------------+
-| ``/Metadata``               | attribute | JSON string containing            |
-|                             |           | unstructured metadata.            |
-+-----------------------------+-----------+-----------------------------------+
++---------------+-----------+-------------------------------------------------+
+| ``/Format``   | attribute | ``'X5'``                                        |
++---------------+-----------+-------------------------------------------------+
+| ``/Version``  | attribute | ``'0.0.1'``                                     |
++---------------+-----------+-------------------------------------------------+
+| ``/Metadata`` | attribute | JSON string containing unstructured metadata.   |
++---------------+-----------+-------------------------------------------------+
 | *Transformation*                                                            |
-+-----------------------------+-----------+-----------------------------------+
-| ``/``                       | affine    | Affine transformation from source |
-|                             |           | image world coordinates to        |
-|                             |           | reference image world coordinates |
-+-----------------------------+-----------+-----------------------------------+
-| ``/From/``                  | space     | Source image definition           |
-+-----------------------------+-----------+-----------------------------------+
-| ``/To/``                    | space     | Reference image definition        |
-+-----------------------------+-----------+-----------------------------------+
++---------------+-----------+-------------------------------------------------+
+| ``/``         | affine    | Affine transformation from source image world   |
+|               |           | coordinates to reference image world            |
+|               |           | coordinates                                     |
++---------------+-----------+-------------------------------------------------+
+| ``/From/``    | space     | Source image definition                         |
++---------------+-----------+-------------------------------------------------+
+| ``/To/``      | space     | Reference image definition                      |
++---------------+-----------+-------------------------------------------------+
 
 
 Storage of FSL FLIRT matrices in linear X5 files
 ------------------------------------------------
+
+
+FLIRT outputs the result of a linear registration from a source image to a
+reference image as an affine matrix of shape ``(4, 4)``. This matrix encodes a
+transformation from source image **FSL coordinates** to reference image **FSL
+coordinates** [*]_.
+
+
+In contrast, X5 matrices encode a transformation in **world coordinates**,
+i.e. they can be used to transform coordinates from the source image to the
+reference image, after both images have been transformed into a common
+coordinate system via their respective ``sform`` affines.
 
 
 .. image:: images/x5_linear_transform_file.png
@@ -137,8 +151,18 @@ Storage of FSL FLIRT matrices in linear X5 files
    :align: center
 
 
-Non-linear X5 transformation files
-==================================
+The :mod:`fsl.transform.flirt` module contains functions for converting
+between FLIRT-style matrices and X5 style matrices.
+
+
+.. [*] For a given image, FSL coordinates are voxel coordinates scaled by the
+       ``pixdim`` values in the NIFTI header, and an inversion along the X
+       axis if the voxel-to-world affine (the ``sform``) has a positive
+       determinant.
+
+
+Non-linear X5 files
+===================
 
 
 Non-linear X5 transformation files contain a non-linear transformation between
@@ -159,8 +183,8 @@ Displacement fields
 
 
 A displacement field is a ``float64`` array of shape ``(X, Y, Z, 3)``, defined
-in the same space as the reference image (i.e. the reference image is assumed
-to have shape ``(X, Y, Z)``. A displacement field may contain either:
+in the same space as the reference image. A displacement field may contain
+either:
 
  - *relative* displacements, where each voxel in the displacement field
    contains an offset which can be added to the reference image coordinates
@@ -212,7 +236,7 @@ some other coordinate system.
 
 
 Howewer, if the transformation does not transform between source and reference
-image **world** coordinates, the ``/Pre/`` and ``/Post/`` affine
+image **world coordinates**, the ``/Pre/`` and ``/Post/`` affine
 transformations must be provided.
 
 
@@ -224,8 +248,8 @@ transform the resulting source image coordinates into the source image world
 coordinate system.
 
 
-Initial affine alignment
-------------------------
+Initial linear registration
+---------------------------
 
 
 Non-linear transformations are often accompanied by an initial affine
@@ -245,20 +269,20 @@ Now we have three spaces, and three sets of coordinate systems, to consider:
 
  3. Reference image space
 
-The initial affine registration encodes a transformation between spaces 1 and
-2, and the non-linear registration encodes a transformation between spaces 2
-and 3. Note that the fields-of-view for spaces 2 and 3 are typically
+The initial affine registration calculates a transformation between spaces 1
+and 2, and the non-linear registration calculates a transformation between
+spaces 2 and 3. Note that the fields-of-view for spaces 2 and 3 are typically
 equivalent.
 
 
-The initial affine transformation may be included in an X5 file, in the
+This initial affine transformation may be included in an X5 file, in the
 ``/InitialAlignment/`` group.  If provided, this initial transformation is
 assumed to provide a transformation:
 
- - *From* the **source image** world coordinate system (or the coordinate
+ - *From* the **source image world coordinate system** (or the coordinate
    system used as input to the ``/Post/`` affine, if provided).
 
- - *To* the **aligned source** image coordinate system used within the
+ - *To* the **aligned source image coordinate system** used within the
    non-linear transformation.
 
 
@@ -270,18 +294,17 @@ Non-linear X5 transformation files are assumed to adhere to the following
 HDF5 structure. All fields are required unless otherwise noted:
 
 
-+---------------------+-----------+-------------------------------------------+
-| **Name**            | **Type**  | **Value/Description**                     |
-+---------------------+-----------+-------------------------------------------+
++---------------+-----------+-------------------------------------------------+
+| **Name**      | **Type**  | **Value/Description**                           |
++---------------+-----------+-------------------------------------------------+
 | *Metadata*                                                                  |
-+---------------------+-----------+-------------------------------------------+
-| ``/Format``         | attribute | ``'X5'``                                  |
-+---------------------+-----------+-------------------------------------------+
-| ``/Version``        | attribute | ``'0.0.1'``                               |
-+---------------------+-----------+-------------------------------------------+
-| ``/Metadata``       | attribute | JSON string containing unstructured       |
-|                     |           | metadata.                                 |
-+---------------------+-----------+-------------------------------------------+
++---------------+-----------+-------------------------------------------------+
+| ``/Format``   | attribute | ``'X5'``                                        |
++---------------+-----------+-------------------------------------------------+
+| ``/Version``  | attribute | ``'0.0.1'``                                     |
++---------------+-----------+-------------------------------------------------+
+| ``/Metadata`` | attribute | JSON string containing unstructured metadata.   |
++---------------+-----------+-------------------------------------------------+
 | *Transformation*                                                            |
 +------------------------+-----------+----------------------------------------+
 | **Name**               | **Type**  | **Value/Description**                  |
@@ -338,8 +361,12 @@ HDF5 structure. All fields are required unless otherwise noted:
 +-----------------------------------+-----------+-----------------------------+
 
 
-Storage of FSL FNIRT files in nonlinear X5 files
-------------------------------------------------
+Storage of FSL FNIRT transformations in non-linear X5 files
+-----------------------------------------------------------
+
+
+Non-linear registration using FNIRT generally follows the process depicted
+here:
 
 
 .. image:: images/nonlinear_registration_process.png
@@ -347,8 +374,33 @@ Storage of FSL FNIRT files in nonlinear X5 files
    :align: center
 
 
-Displacement fields
-^^^^^^^^^^^^^^^^^^^
+First, an initial linear registration is performed from the source image to
+the reference image using FLIRT; this provides an initial global alignment
+which can be used as the starting point for the non-linear registration. Next,
+FNIRT is used to non-linearly register the aligned source image to the
+reference image.  Importantly, both of these steps are performed using FSL
+coordinates.
+
+
+The non-linear transformation file generated by FNIRT typically contains the
+initial linear registration, with it either being encoded directly into the
+displacements, or being stored in the NIfTI header.
+
+
+Storage of FNIRT displacement fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+A FNIRT displacement field contains either:
+
+ - relative displacements from reference image FSL coordinates to source
+   image FSL coordinates, or
+ - absolute source image FSL coordinates.
+
+
+If an initial linear registration was used as the starting point for FNIRT,
+this is encoded into the displacements/coordinates themselves, so they can be
+used to transform from the reference image to the *original* source image.
 
 
 .. image:: images/fnirt_displacement_field.png
@@ -356,18 +408,44 @@ Displacement fields
    :align: center
 
 
+When a FNIRT displacement field is stored in a X5 file, the ``/Pre/`` and
+``/Post/`` affine transformations are set so that the displacement field can
+be used to perform a transformation from reference image world coordinates to
+source image world coordinates.
+
+
 .. image:: images/x5_nonlinear_displacement_field_file.png
    :width: 95%
    :align: center
 
 
-Coefficient fields
-^^^^^^^^^^^^^^^^^^
+Storage of FNIRT coefficient fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+A FNIRT coefficient field contains the coefficients of a grid of B-spline
+functions; these coefficients can be used to generate a displacement field
+which encodes a transformation from reference image FSL coordinates to source
+image FSL coordinates.
+
+
+If an initial linear registration was used as the starting point for FNIRT,
+the generated displacement field will encode a transformtion to *aligned*
+source image coordinates, and the initial affine will be stored in the NIfTI
+header of the coefficient field file.
 
 
 .. image:: images/fnirt_coefficient_field.png
    :width: 80%
    :align: center
+
+
+When a FNIRT coefficient field is stored in an X5 file, the ``/Pre/`` and
+``/Post/`` affine transformations are set as for displacement
+fields. Additionally, the initial linear registration transformation is stored
+as the ``/InitialAlignment/``, so that its inverse can be used to transform
+the aligned source image FSL coordinates back into the original source image
+FSL coordinates.
 
 
 .. image:: images/x5_nonlinear_coefficient_field_file.png
@@ -418,7 +496,7 @@ def readLinearX5(fname):
 
 
 def writeLinearX5(fname, xform, src, ref):
-    """Write a linear transformation to the specified file.
+    """Write a linear transformation to ``fname``.
 
     :arg fname: File name to write to
     :arg xform: ``(4, 4)`` ``numpy`` array containing the affine transformation
@@ -458,7 +536,7 @@ def readNonLinearX5(fname):
 
 
 def writeNonLinearX5(fname, field):
-    """Write a nonlinear X5 transformation file to ``fname``.
+    """Write a nonlinear X5 transformation to ``fname``.
 
     :arg fname: File name to write to
     :arg field: A :class:`.DisplacementField` or :class:`.CoefficientField`

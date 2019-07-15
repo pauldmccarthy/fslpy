@@ -11,9 +11,9 @@ transformations. Functionality is split across the following modules:
 .. autosummary::
    :nosignatures:
 
-   .affine
-   .flirt
-   .fnirt
-   .nonlinear
-   .x5
+   ~fsl.transform.affine
+   ~fsl.transform.flirt
+   ~fsl.transform.fnirt
+   ~fsl.transform.nonlinear
+   ~fsl.transform.x5
 """

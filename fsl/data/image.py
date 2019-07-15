@@ -147,7 +147,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         transformed into a millimetre coordinate system, defined by the
         ``sform`` and/or ``qform`` elements of the NIFTI header.
 
-      - The ``fsl`` coordinate system, where voxel coordinated are scaled by
+      - The ``fsl`` coordinate system, where voxel coordinates are scaled by
         the ``pixdim`` values in the NIFTI header, and the X axis is inverted
         if the voxel-to-world affine has a positive determinant.
 

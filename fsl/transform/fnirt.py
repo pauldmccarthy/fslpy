@@ -157,7 +157,7 @@ def readFnirt(fname, src, ref, dispType=None):
 
 def toFnirt(field):
     """Convert a :class:`.NonLinearTransform` to a FNIRT-compatible
-    :class:`.DisplacementField` or:class:`.CoefficientField`.
+    :class:`.DisplacementField` or :class:`.CoefficientField`.
 
     :arg field: :class:`.NonLinearTransform` to convert
     :return:    A FNIRT-compatible :class:`.DisplacementField` or

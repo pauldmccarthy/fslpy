@@ -51,9 +51,8 @@ def fromFlirt(xform, src, ref, from_='voxel', to='world'):
     Valid values for the ``from_`` and ``to`` arguments are:
 
      - ``voxel``: The voxel coordinate system
-     - ``fsl``:   The FSL coordiante system (voxels scaled by pixdims, with
-                  the X axis inverted if the image sform/qform has a positive
-                  determinant)
+     - ``fsl``: The FSL coordiante system (voxels scaled by pixdims, with the
+       X axis inverted if the image sform/qform has a positive determinant)
      - ``world``  The world coordinate system
 
     See the :class:`.Nifti` class documentation and the
@@ -64,10 +63,11 @@ def fromFlirt(xform, src, ref, from_='voxel', to='world'):
     :arg src:   :class:`.Nifti` object, the ``xform`` source image
     :arg ref:   :class:`.Nifti` object, the ``xform`` reference image
     :arg from_: Desired source coordinate system
-    :arg to:    Desired target coordinate system
+    :arg to:    Desired reference coordinate system
     :returns:   ``numpy`` array of shape ``(4, 4)`` containing a matrix
                 encoding a transformation from the source ``from_`` to
                 the reference ``to`` coordinate systems.
+
     """
     premat  = src.getAffine(from_, 'fsl')
     postmat = ref.getAffine('fsl', to)
