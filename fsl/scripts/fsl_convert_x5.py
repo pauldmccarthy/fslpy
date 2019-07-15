@@ -84,7 +84,6 @@ def parseArgs(args):
 
         fname = fslimage.addExt(fname, mustExist=exist)
 
-        # TODO broken
         if fslimage.looksLikeImage(fname):
             return 'nii'
         parser.error('Could not infer format from '
