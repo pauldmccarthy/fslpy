@@ -23,7 +23,7 @@ reference image the ``To`` space.
 
 
 Custom HDF5 groups
-------------------
+==================
 
 
 HDF5 files are composed primarily of *groups*, *attributes*, and
@@ -42,7 +42,7 @@ attributes/datasets that are listed here.
 
 
 *affine*
-^^^^^^^^
+--------
 
 
 A HDF5 group which is listed as being of type "affine" contains an affine
@@ -63,7 +63,7 @@ another. Groups of type "affine" have the following fields:
 
 
 *space*
-^^^^^^^
+-------
 
 
 A HDF5 group which is listed as being of type "space" contains all of the
@@ -92,7 +92,7 @@ Groups of type "space" have the following fields:
 
 
 Linear X5 files
----------------
+===============
 
 
 Linear X5 transformation files contain an affine transformation matrix of
@@ -128,8 +128,17 @@ defined in the table below.  All fields are required.
 +-----------------------------+-----------+-----------------------------------+
 
 
+Storage of FSL FLIRT matrices in linear X5 files
+------------------------------------------------
+
+
+.. image:: images/x5_linear_transform_file.png
+   :width: 80%
+   :align: center
+
+
 Non-linear X5 transformation files
-----------------------------------
+==================================
 
 
 Non-linear X5 transformation files contain a non-linear transformation between
@@ -146,7 +155,7 @@ transformation is represented as either:
 
 
 Displacement fields
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 
 A displacement field is a ``float64`` array of shape ``(X, Y, Z, 3)``, defined
@@ -164,7 +173,7 @@ to have shape ``(X, Y, Z)``. A displacement field may contain either:
 
 
 Coefficient fields
-^^^^^^^^^^^^^^^^^^
+------------------
 
 
 A coefficient field is a ``float64`` array of shape ``(X, Y, Z, 3)`` which
@@ -191,7 +200,7 @@ stored in coefficient field files, in a sub-group called ``/Parameters/``:
 
 
 Non-linear coordinate systems
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
 
 The coordinate systems used in a displacement field, or in a displacement
@@ -216,7 +225,7 @@ coordinate system.
 
 
 Initial affine alignment
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 
 Non-linear transformations are often accompanied by an initial affine
@@ -254,7 +263,7 @@ assumed to provide a transformation:
 
 
 File format specification
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 
 Non-linear X5 transformation files are assumed to adhere to the following
@@ -327,6 +336,43 @@ HDF5 structure. All fields are required unless otherwise noted:
 |                                   |           | coefficient field voxel     |
 |                                   |           | affine transformation.      |
 +-----------------------------------+-----------+-----------------------------+
+
+
+Storage of FSL FNIRT files in nonlinear X5 files
+------------------------------------------------
+
+
+.. image:: images/nonlinear_registration_process.png
+   :width: 80%
+   :align: center
+
+
+Displacement fields
+^^^^^^^^^^^^^^^^^^^
+
+
+.. image:: images/fnirt_displacement_field.png
+   :width: 80%
+   :align: center
+
+
+.. image:: images/x5_nonlinear_displacement_field_file.png
+   :width: 95%
+   :align: center
+
+
+Coefficient fields
+^^^^^^^^^^^^^^^^^^
+
+
+.. image:: images/fnirt_coefficient_field.png
+   :width: 80%
+   :align: center
+
+
+.. image:: images/x5_nonlinear_coefficient_field_file.png
+   :width: 95%
+   :align: center
 """
 
 
