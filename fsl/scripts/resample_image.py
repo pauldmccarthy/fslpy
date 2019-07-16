@@ -147,6 +147,12 @@ def parseArgs(argv):
     args.shape  = sanitiseList(parser, args.shape, args.input, 'shape')
     args.dim    = sanitiseList(parser, args.dim,   args.input, 'dim')
 
+    if (args.reference is not None) and \
+       (args.input.ndim     > 3)    and \
+       (args.reference.ndim > 3):
+        print('Reference and image are both >3D - only '
+              'resampling along the spatial dimensions.')
+
     return args
 
 
