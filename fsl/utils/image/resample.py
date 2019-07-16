@@ -210,7 +210,12 @@ def resample(image,
     # might not return a 4x4 matrix, so we
     # make sure it is valid.
     if matrix.shape != (4, 4):
-        matrix = np.vstack((matrix[:3, :4], [0, 0, 0, 1]))
+        rotmat         = matrix[:3, :3]
+        offsets        = matrix[:3, -1]
+        matrix         = np.eye(4)
+        matrix[:3, :3] = rotmat
+        matrix[:3, -1] = offsets
+
     matrix = transform.concat(image.voxToWorldMat, matrix)
 
     return data, matrix

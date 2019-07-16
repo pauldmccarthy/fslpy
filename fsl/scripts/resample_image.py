@@ -196,6 +196,19 @@ def main(argv=None):
         xform = None
 
     resampled = fslimage.Image(resampled, xform=xform, header=hdr)
+
+    # Adjust the pixdims of the
+    # higher dimensions if they
+    # have been resampled
+    if len(resampled.shape) > 3:
+
+        oldPixdim = args.input.pixdim[3:]
+        oldShape  = args.input.shape[ 3:]
+        newShape  = resampled .shape[ 3:]
+
+        for i, (p, o, n) in enumerate(zip(oldPixdim, oldShape, newShape), 4):
+            resampled.header['pixdim'][i] = p * o / n
+
     resampled.save(args.output)
 
     return 0
