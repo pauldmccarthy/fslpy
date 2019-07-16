@@ -45,15 +45,43 @@ def resampleToReference(image, reference, **kwargs):
     This is a wrapper around :func:`resample` - refer to its documenttion
     for details on the other arguments and the return values.
 
+    When resampling to a reference image, resampling will only be applied
+    along the spatial (first three) dimensions.
+
     :arg image:     :class:`.Image` to resample
     :arg reference: :class:`.Nifti` defining the space to resample ``image``
                     into
     """
 
+    oldShape = list(image.shape)
+    newShape = list(reference.shape[:3])
+
+    # If the input image is >3D, pad the
+    # new shape so that we only resample
+    # along the first 3 dimensions.
+    if len(newShape) < len(oldShape):
+        newShape = newShape + oldShape[len(newShape):]
+
+    # Align the two images together
+    # via their vox-to-world affines.
+    matrix = transform.concat(image.worldToVoxMat, reference.voxToWorldMat)
+
+    # If the input image is >3D, we
+    # have to adjust the resampling
+    # matrix to take into account the
+    # additional dimensions (see scipy.
+    # ndimage.affine_transform)
+    if len(newShape) > 3:
+        rotmat  = matrix[:3, :3]
+        offsets = matrix[:3,  3]
+        matrix  = np.eye(len(newShape) + 1)
+        matrix[:3, :3] = rotmat
+        matrix[:3, -1] = offsets
+
     kwargs['mode']     = kwargs.get('mode', 'constant')
-    kwargs['newShape'] = reference.shape
-    kwargs['matrix']   = transform.concat(image.worldToVoxMat,
-                                          reference.voxToWorldMat)
+    kwargs['newShape'] = newShape
+    kwargs['matrix']   = matrix
+
     return resample(image, **kwargs)
 
 
