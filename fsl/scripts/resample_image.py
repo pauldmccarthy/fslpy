@@ -20,6 +20,40 @@ import fsl.utils.image.resample as resample
 import fsl.data.image           as fslimage
 
 
+def intlist(val):
+    """Turn a string of comma-separated ints into a list of ints. """
+    return [int(v) for v in val.split(',')]
+
+
+def floatlist(val):
+    """Turn a string of comma-separated floats into a list of floats. """
+    return [float(v) for v in val.split(',')]
+
+
+def sanitiseList(parser, vals, img, arg):
+    """Make sure that ``vals`` has the same number of elements as ``img`` has
+    dimensions. Used to sanitise the ``--shape`` and ``--dim`` options.
+    """
+
+    if vals is None:
+        return vals
+
+    nvals = len(vals)
+
+    if nvals < 3:
+        parser.error('At least three values are '
+                     'required for {}'.format(arg))
+
+    if nvals > img.ndim:
+        parser.error('Input only has {} dimensions - too many values '
+                     'specified for {}'.format(img.ndim, arg))
+
+    if nvals < img.ndim:
+        vals = list(vals) + list(img.shape[nvals:])
+
+    return vals
+
+
 ARGS = {
     'input'     : ('input',),
     'output'    : ('output',),
@@ -36,8 +70,8 @@ OPTS = {
     'input'     : dict(type=parse_data.Image),
     'output'    : dict(type=parse_data.ImageOut),
     'reference' : dict(type=parse_data.Image, metavar='IMAGE'),
-    'shape'     : dict(type=int,   nargs=3, metavar=('X', 'Y', 'Z')),
-    'dim'       : dict(type=float, nargs=3, metavar=('X', 'Y', 'Z')),
+    'shape'     : dict(type=intlist,   metavar=('X,Y,Z,...')),
+    'dim'       : dict(type=floatlist, metavar=('X,Y,Z,...')),
     'interp'    : dict(choices=('nearest', 'linear', 'cubic'),
                        default='linear'),
     'origin'    : dict(choices=('centre', 'corner'), default='centre'),
@@ -110,6 +144,8 @@ def parseArgs(argv):
     args        = parser.parse_args(argv)
     args.interp = INTERPS[   args.interp]
     args.dtype  = DTYPES.get(args.dtype, args.input.dtype)
+    args.shape  = sanitiseList(parser, args.shape, args.input, 'shape')
+    args.dim    = sanitiseList(parser, args.dim,   args.input, 'dim')
 
     return args
 
