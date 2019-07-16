@@ -6,11 +6,20 @@ import numpy     as np
 
 import pytest
 
+import scipy.ndimage       as ndimage
+
 import fsl.data.image           as     fslimage
 import fsl.utils.transform      as     transform
 import fsl.utils.image.resample as     resample
 
 from . import make_random_image
+
+def random_affine():
+    return transform.compose(
+        0.25   + 4.75      * np.random.random(3),
+        -50    + 100       * np.random.random(3),
+        -np.pi + 2 * np.pi * np.random.random(3))
+
 
 
 def test_resample(seed):
@@ -183,13 +192,7 @@ def test_resampleToPixdims():
 
 
 
-def test_resampleToReference():
-
-    def random_v2w():
-        return transform.compose(
-            0.25   + 4.75      * np.random.random(3),
-            -50    + 100       * np.random.random(3),
-            -np.pi + 2 * np.pi * np.random.random(3))
+def test_resampleToReference1():
 
     # Basic test - output has same
     # dimensions/space as reference
@@ -197,8 +200,8 @@ def test_resampleToReference():
 
         ishape = np.random.randint(5, 50, 3)
         rshape = np.random.randint(5, 50, 3)
-        iv2w   = random_v2w()
-        rv2w   = random_v2w()
+        iv2w   = random_affine()
+        rv2w   = random_affine()
         img    = fslimage.Image(make_random_image(dims=ishape, xform=iv2w))
         ref    = fslimage.Image(make_random_image(dims=rshape, xform=rv2w))
         res    = resample.resampleToReference(img, ref)
@@ -206,10 +209,12 @@ def test_resampleToReference():
 
         assert res.sameSpace(ref)
 
+
+def test_resampleToReference2():
+
     # More specific test - output
     # data gets transformed correctly
     # into reference space
-
     img          = np.zeros((5, 5, 5), dtype=np.float)
     img[1, 1, 1] = 1
     img          = fslimage.Image(img)
@@ -223,3 +228,38 @@ def test_resampleToReference():
     exp[2, 2, 2] = 1
 
     assert np.all(np.isclose(res[0], exp))
+
+
+def test_resampleToReference3():
+
+    # Test resampling image to ref
+    # with mismatched dimensions
+    imgdata = np.random.randint(0, 65536, (5, 5, 5))
+    img     = fslimage.Image(imgdata, xform=transform.scaleOffsetXform(
+        (2, 2, 2), (0.5, 0.5, 0.5)))
+
+    # reference/expected data when
+    # resampled to ref (using nn interp).
+    # Same as image, upsampled by a
+    # factor of 2
+    refdata = np.repeat(np.repeat(np.repeat(imgdata, 2, 0), 2, 1), 2, 2)
+    refdata = np.array([refdata] * 8).transpose((1, 2, 3, 0))
+    ref     = fslimage.Image(refdata)
+
+    # We should be able to use a 4D reference
+    resampled, xform = resample.resampleToReference(img, ref, order=0, mode='nearest')
+    assert np.all(resampled == ref.data[..., 0])
+
+    # If resampling a 4D image with a 3D reference,
+    # the fourth dimension should be passed through
+    resampled, xform = resample.resampleToReference(ref, img, order=0, mode='nearest')
+    exp = np.array([imgdata] * 8).transpose((1, 2, 3, 0))
+    assert np.all(resampled == exp)
+
+    # When resampling 4D to 4D, only the
+    # first 3 dimensions should be resampled
+    imgdata = np.array([imgdata] * 15).transpose((1, 2, 3, 0))
+    img     = fslimage.Image(imgdata, xform=img.voxToWorldMat)
+    exp     = np.array([refdata[..., 0]] * 15).transpose((1, 2, 3, 0))
+    resampled, xform = resample.resampleToReference(img, ref, order=0, mode='nearest')
+    assert np.all(resampled == exp)
