@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.4.0 (Under development)
+-------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :mod:`.resample_image` script has been updated to support resampling of
+  images with more than 3 dimensions.
+
+
 2.3.1 (Friday July 5th 2019)
 ----------------------------
 
