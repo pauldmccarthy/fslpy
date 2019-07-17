@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains functions for working with FLIRT affime transformation
+"""This module contains functions for working with FLIRT affine transformation
 matrices. The following functions are available:
 
 .. autosummary::
@@ -16,6 +16,18 @@ matrices. The following functions are available:
    toFlirt
    flirtMatrixToSform
    sformToFlirtMatrix
+
+
+
+FLIRT transformation matrices are affine matrices of shape ``(4, 4)`` which
+encode a linear transformation from a source image to a reference image. FLIRT
+matrices are defined in terms of *FSL coordinates*, which is a coordinate
+system where voxels are scaled by pixdims, and with a left-right flip if the
+image ``sform`` has a positive determinant.
+
+
+FLIRT matrices thus encode a transformation from source image FSL coordinates
+to reference image FSL coordinates.
 """
 
 
@@ -97,13 +109,8 @@ def flirtMatrixToSform(flirtMat, srcImage, refImage):
     transformation from the source image voxel coordinate system to
     the reference image world coordinate system.
 
-    FLIRT transformation matrices transform from the source image scaled voxel
-    coordinate system into the reference image scaled voxel coordinate system
-    (voxels scaled by pixdims, with a left-right flip if the image sform has a
-    positive determinant).
-
-    So to construct a transformation from source image voxel coordinates
-    into reference image world coordinates, we need to combine the following:
+    To construct a transformation from source image voxel coordinates into
+    reference image world coordinates, we need to combine the following:
 
       1. Source voxels -> Source scaled voxels
       2. Source scaled voxels -> Reference scaled voxels (the FLIRT matrix)
@@ -121,10 +128,10 @@ def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
     """Under the assumption that the given ``srcImage`` and ``refImage`` share a
     common world coordinate system (defined by their
     :attr:`.Nifti.voxToWorldMat` attributes), this function will calculate and
-    return a transformation matrix from the ``srcImage`` scaled voxel
-    coordinate system to the ``refImage`` scaled voxel coordinate system, that
-    can be saved to disk and used with FLIRT, to resample the source image to
-    the reference image.
+    return a transformation matrix from the ``srcImage`` FSL coordinate system
+    to the ``refImage`` FSL coordinate system, that can be saved to disk and
+    used with FLIRT, to resample the source image to the space of the
+    reference image.
 
     :arg srcImage: Source :class:`.Image`
     :arg refImage: Reference :class:`.Image`

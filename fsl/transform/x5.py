@@ -4,7 +4,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains functions for reading/writing linear/non-linear FSL
+"""This module contains functions for reading/writing linear/non-linear
 transformations from/to BIDS X5 files. The following functions are available:
 
 .. autosummary::
@@ -17,15 +17,21 @@ transformations from/to BIDS X5 files. The following functions are available:
 
 
 An X5 file is a HDF5 container file which stores a linear or non-linear
-transformation between a **source** NIfTI image and a **reference** image. In
-an X5 file, the source image is referred to as the ``From`` space, and the
-reference image the ``To`` space.
+transformation from one NIfTI image to another.
 
 
-X5 files enable a transformation between **source image world coordinates**
-and **reference image world coordinates**.  The *world coordinate system* of
-an image is defined by its ``sform`` or ``qform`` (hereafter referred to as
-the ``sform``), which is contained in the NIfTI header.
+Several terms may be used to refer to these images, such as **source** and
+**reference**, **moving** and **fixed**, **from** and **to**, etc.  In an X5
+file, the two images are simply referred to as **A** and **B**, where **A**
+refers to the starting point of the transformation, and **B** to the end
+point.
+
+
+X5 files enable a transformation from the **world coordinate system** of image
+**A** to the **world coordinate system** of image **B**.  The **world
+coordinate system** of an image is defined by its ``sform`` or ``qform``
+(hereafter referred to as the ``sform``), which is contained in its NIfTI
+header.
 
 
 Custom HDF5 groups
@@ -37,8 +43,9 @@ HDF5 files are composed primarily of *groups*, *attributes*, and
 
 
  - *Groups* are simply containers for attributes, datasets, and other groups.
- - *Attributes* are strongly-typed scalar values.
  - *Datasets* are strongly-typed, structured N-dimensional arrays.
+ - *Attributes* are strongly-typed scalar values associated with a group or
+   dataset.
 
 
 To simplify the file format definitions below, we shall first define a few
@@ -51,33 +58,33 @@ attributes/datasets that are listed here.
 --------
 
 
-A HDF5 group which is listed as being of type "affine" contains an affine
+A HDF5 group which is listed as being of type *affine* contains an affine
 transformation, which can be used to transform coordinates from one space into
-another. Groups of type "affine" have the following fields:
+another. Groups of type *affine* have the following fields:
 
 
-+---------------+-----------+-------------------------------------------------+
-| **Name**      | **Type**  | **Value/Description**                           |
-+---------------+-----------+-------------------------------------------------+
-| ``Type``      | attribute | ``'linear'``                                    |
-+---------------+-----------+-------------------------------------------------+
-| ``Transform`` | dataset   | The affine transformation - a ``float64`` array |
-|               |           | of shape ``(4, 4)``                             |
-+---------------+-----------+-------------------------------------------------+
-| ``Inverse``   | dataset   | Optional pre-calculated inverse                 |
-+---------------+-----------+-------------------------------------------------+
++-------------+-----------+---------------------------------------------------+
+| **Name**    | **Type**  | **Value/Description**                             |
++-------------+-----------+---------------------------------------------------+
+| ``Type``    | attribute | ``'affine'``                                      |
++-------------+-----------+---------------------------------------------------+
+| ``Matrix``  | dataset   | The affine transformation matrix - a ``float64``  |
+|             |           | array of shape ``(4, 4)``                         |
++-------------+-----------+---------------------------------------------------+
+| ``Inverse`` | dataset   | Optional pre-calculated inverse                   |
++-------------+-----------+---------------------------------------------------+
 
 
 *space*
 -------
 
 
-A HDF5 group which is listed as being of type "space" contains all of the
+A HDF5 group which is listed as being of type *space* contains all of the
 information required to define the space of a NIfTI image, including its
 shape, dimensions, and voxel-to-world affine transformation.
 
 
-Groups of type "space" have the following fields:
+Groups of type *space* have the following fields:
 
 
 +-------------+-----------+---------------------------------------------------+
@@ -94,40 +101,85 @@ Groups of type "space" have the following fields:
 +-------------+-----------+---------------------------------------------------+
 
 
+*deformation*
+-------------
+
+
+A HDF5 group which is listed as being of type *deformation* contains a
+non-linear transformation, which can be used to transform coordinates from
+one space (space **A**) into another (space **B**).
+
+
+The transformation is represented as a 3D **deformation field** which, at each
+voxel within the field, may contain:
+
+ - *relative displacements* from space **A** to space **B** (i.e. for a given
+   location in space **A**, you can add the displacement values to the
+   coordinates of that location to obtain the coordinates of the corresponding
+   location in space **B**).
+
+ - *absolute coordinates* in space **B**.
+
+
+The ``Mapping`` affine can be used to calculate a correspondence between the
+deformation field coordinate system and the coordinate system of space **A** -
+it is assumed that space **A** and the deformation field share a common world
+coordinate system.
+
+
+Groups of type *deformation* have the following fields:
+
+
++-------------+-----------+---------------------------------------------------+
+| **Name**    | **Type**  | **Value/Description**                             |
++-------------+-----------+---------------------------------------------------+
+| ``Type``    | attribute | ``'deformation'``                                 |
++-------------+-----------+---------------------------------------------------+
+| ``SubType`` | attribute | ``'absolute'`` or ``'relative'``.                 |
++-------------+-----------+---------------------------------------------------+
+| ``Matrix``  | dataset   | The deformation field - a ``float64`` array of    |
+|             |           | shape ``(X, Y, Z, 3)``                            |
++-------------+-----------+---------------------------------------------------+
+| ``Mapping`` | affine    | The field voxel-to-world transformation (its      |
+|             |           | ``sform``)                                        |
++-------------+-----------+---------------------------------------------------+
+
+
 Linear X5 files
 ===============
 
 
 Linear X5 transformation files contain an affine transformation matrix of
-shape ``(4, 4)``, which can be used to transform source image world
-coordinates into reference image world coordinates.
+shape ``(4, 4)``, which can be used to transform image **A** world
+coordinates into image **B** world coordinates.
 
 
 Linear X5 transformation files are assumed to adhere to the HDF5 structure
-defined in the table below.  All fields are required.
+defined in the table below.  All fields are required unless otherwise noted.
 
 
-+---------------+-----------+-------------------------------------------------+
-| **Name**      | **Type**  | **Value/Description**                           |
-+---------------+-----------+-------------------------------------------------+
++-----------------+-----------+-----------------------------------------------+
+| **Name**        | **Type**  | **Value/Description**                         |
++-----------------+-----------+-----------------------------------------------+
 | *Metadata*                                                                  |
-+---------------+-----------+-------------------------------------------------+
-| ``/Format``   | attribute | ``'X5'``                                        |
-+---------------+-----------+-------------------------------------------------+
-| ``/Version``  | attribute | ``'0.0.1'``                                     |
-+---------------+-----------+-------------------------------------------------+
-| ``/Metadata`` | attribute | JSON string containing unstructured metadata.   |
-+---------------+-----------+-------------------------------------------------+
++-----------------+-----------+-----------------------------------------------+
+| ``/Format``     | attribute | ``'X5'``                                      |
++-----------------+-----------+-----------------------------------------------+
+| ``/Version``    | attribute | ``'0.0.1'``                                   |
++-----------------+-----------+-----------------------------------------------+
+| ``/Metadata``   | attribute | JSON string containing unstructured metadata. |
++-----------------+-----------+-----------------------------------------------+
 | *Transformation*                                                            |
-+---------------+-----------+-------------------------------------------------+
-| ``/``         | affine    | Affine transformation from source image world   |
-|               |           | coordinates to reference image world            |
-|               |           | coordinates                                     |
-+---------------+-----------+-------------------------------------------------+
-| ``/From/``    | space     | Source image definition                         |
-+---------------+-----------+-------------------------------------------------+
-| ``/To/``      | space     | Reference image definition                      |
-+---------------+-----------+-------------------------------------------------+
++-----------------+-----------+-----------------------------------------------+
+| ``/Type``       | attribute | ``'linear'``                                  |
++-----------------+-----------+-----------------------------------------------+
+| ``/Transform/`` | affine    | Affine transformation from image **A** world  |
+|                 |           | coordinates to image **B** world coordinates  |
++-----------------+-----------+-----------------------------------------------+
+| ``/A/``         | space     | Image **A** space                             |
++-----------------+-----------+-----------------------------------------------+
+| ``/B/``         | space     | Image **B** space                             |
++-----------------+-----------+-----------------------------------------------+
 
 
 Storage of FSL FLIRT matrices in linear X5 files
@@ -146,11 +198,6 @@ reference image, after both images have been transformed into a common
 coordinate system via their respective ``sform`` affines.
 
 
-.. image:: images/x5_linear_transform_file.png
-   :width: 80%
-   :align: center
-
-
 The :mod:`fsl.transform.flirt` module contains functions for converting
 between FLIRT-style matrices and X5 style matrices.
 
@@ -165,125 +212,17 @@ Non-linear X5 files
 ===================
 
 
-Non-linear X5 transformation files contain a non-linear transformation between
-a source image coordinate system and a reference image coordinate system. The
-transformation is represented as either:
+Non-linear X5 transformation files contain a non-linear transformation from
+image **A** world coordinates to image **B** world coordinates. The
+transformation is represented as a 3D **deformation field** which, at each
+voxel within the field, may contain:
 
- - A *displacement field*, which is defined in the same space as the reference
-   image, and which contains displacements from reference image coordinates to
-   source image coordinates.
+ - *relative displacements* from image **A** to image **B** (i.e. for a given
+   location in the image **A** world coordinate system, add the displacement
+   values to the coordinates to obtain the corresponding location in the
+   image **B** world coordinate system).
 
- - A quadratic or cubic B-spline *coefficient field*, which contains
-   coefficients defined in a coarse grid overlaid onto the same space as the
-   reference image, and from which a displacement field can be calculated.
-
-
-Displacement fields
--------------------
-
-
-A displacement field is a ``float64`` array of shape ``(X, Y, Z, 3)``, defined
-in the same space as the reference image. A displacement field may contain
-either:
-
- - *relative* displacements, where each voxel in the displacement field
-   contains an offset which can be added to the reference image coordinates
-   for that voxel, in order to calculate the corresponding source image
-   coordinates.
-
- - *absolute* displacements, where each voxel in the displacement field simply
-   contains the source image coordinates which correspond to those reference
-   image coordinates.
-
-
-Coefficient fields
-------------------
-
-
-A coefficient field is a ``float64`` array of shape ``(X, Y, Z, 3)`` which
-contains the coefficients of a set of quadratic or cubic B-spline functions
-defined on a regular 3D grid overlaid on the reference image voxel coordinate
-system. Each coefficient in this grid may be referred to as a *control point*
-or a *knot*.
-
-
-Evaluating the spline functions at a particular location in the grid will
-result in a relative displacement which can be added to that location's
-reference image coordinates, in order to determine the corresponding source
-image coordinates.
-
-
-The shape of this coefficient grid is not necessarily the same as the shape of
-the reference image grid. For this reason, some additional parameters are
-stored in coefficient field files, in a sub-group called ``/Parameters/``:
-
- - The distance between control points, defined in terms of reference image
-   voxels.
- - An affine transformation which can be used to transform reference image
-   voxel coordinates into coefficient field voxel coordinates.
-
-
-Non-linear coordinate systems
------------------------------
-
-
-The coordinate systems used in a displacement field, or in a displacement
-field that has been generated from a coefficient field, defines relative
-displacements from a reference image coordinate system to a source image
-coordinate system. The coordinate systems used are not defined in this
-specification - they may be voxels, world coordinates, FSL coordinates, or
-some other coordinate system.
-
-
-Howewer, if the transformation does not transform between source and reference
-image **world coordinates**, the ``/Pre/`` and ``/Post/`` affine
-transformations must be provided.
-
-
-The ``/Pre/`` affine transformation will be used to transform reference image
-world coordinates into the reference image coordinate system required for use
-with the displacement values (or required for the spline coefficient
-evaluation).  Similarly, the ``/Post/`` affine transformation will be used to
-transform the resulting source image coordinates into the source image world
-coordinate system.
-
-
-Initial linear registration
----------------------------
-
-
-Non-linear transformations are often accompanied by an initial affine
-transformation, which provides a coarse global initial alignment that is used
-as the starting point for the non-linear registration process. The non-linear
-transformation will then typically encode displacements between the
-registered, or aligned source image, and the reference image.
-
-
-Now we have three spaces, and three sets of coordinate systems, to consider:
-
- 1. Source image space - the source image, before initial linear registration
-    to the reference image
-
- 2. Aligned-source image space - the source image, after it has been linearly
-    transformed to the reference image space
-
- 3. Reference image space
-
-The initial affine registration calculates a transformation between spaces 1
-and 2, and the non-linear registration calculates a transformation between
-spaces 2 and 3. Note that the fields-of-view for spaces 2 and 3 are typically
-equivalent.
-
-
-This initial affine transformation may be included in an X5 file, in the
-``/InitialAlignment/`` group.  If provided, this initial transformation is
-assumed to provide a transformation:
-
- - *From* the **source image world coordinate system** (or the coordinate
-   system used as input to the ``/Post/`` affine, if provided).
-
- - *To* the **aligned source image coordinate system** used within the
-   non-linear transformation.
+ - *absolute coordinates* in the image **B** world coordinate system.
 
 
 File format specification
@@ -291,7 +230,7 @@ File format specification
 
 
 Non-linear X5 transformation files are assumed to adhere to the following
-HDF5 structure. All fields are required unless otherwise noted:
+HDF5 structure. All fields are required unless otherwise noted.
 
 
 +---------------+-----------+-------------------------------------------------+
@@ -306,151 +245,76 @@ HDF5 structure. All fields are required unless otherwise noted:
 | ``/Metadata`` | attribute | JSON string containing unstructured metadata.   |
 +---------------+-----------+-------------------------------------------------+
 | *Transformation*                                                            |
-+------------------------+-----------+----------------------------------------+
-| **Name**               | **Type**  | **Value/Description**                  |
-+------------------------+-----------+----------------------------------------+
-| ``/Type``              | attribute | ``'nonlinear'``                        |
-+------------------------+-----------+----------------------------------------+
-| ``/SubType``           | attribute | ``'displacement'`` or                  |
-|                        |           | ``'coefficient'``                      |
-+------------------------+-----------+----------------------------------------+
-| ``/Representation``    | attribute | If ``/SubType`` is ``'displacement'``, |
-|                        |           | ``/Representation`` may be either      |
-|                        |           | ``'absolute'`` or ``'relative'``.      |
-|                        |           | If ``/SubType`` is ``'coefficient'``,  |
-|                        |           | ``/Representation`` may be either      |
-|                        |           | ``'quadratic bspline'`` or             |
-|                        |           | ``'cubic bspline'``.                   |
-+------------------------+-----------+----------------------------------------+
-| ``/Transform``         | dataset   | The displacement/coefficient field -   |
-|                        |           | see above description.                 |
-+------------------------+-----------+----------------------------------------+
-| ``/Inverse``           | dataset   | Optional pre-calculated inverse        |
-+------------------------+-----------+----------------------------------------+
-| ``/From/``             | space     | Source image definition                |
-+------------------------+-----------+----------------------------------------+
-| ``/To/``               | space     | Reference image definition             |
-+------------------------+-----------+----------------------------------------+
-| ``/Pre/``              | affine    | Optional affine transformation from    |
-|                        |           | reference image world coordinates to   |
-|                        |           | the reference image coordinate system  |
-|                        |           | required by the displacement/          |
-|                        |           | coefficient field.                     |
-+------------------------+-----------+----------------------------------------+
-| ``/Post/``             | affine    | Optional affine transformation from    |
-|                        |           | the source image coordinate system     |
-|                        |           | produced by the displacement/          |
-|                        |           | coefficient field to the source image  |
-|                        |           | world coordinate system.               |
-+------------------------+-----------+----------------------------------------+
-| ``/InitialAlignment/`` | affine    | Optional initial affine registration   |
-|                        |           | from the source image to the reference |
-|                        |           | image.                                 |
-+------------------------+-----------+----------------------------------------+
-| *Coefficient field parameters* (required for ``'coefficient'`` files)       |
-+-----------------------------------+-----------+-----------------------------+
-| **Name**                          | **Type**  | **Value/Description**       |
-+-----------------------------------+-----------+-----------------------------+
-| ``/Parameters/Spacing``           | attribute | ``uint64`` ``(X, Y, Z)``    |
-|                                   |           | knot spacing (defined in    |
-|                                   |           | reference image voxels)     |
-+-----------------------------------+-----------+-----------------------------+
-| ``/Parameters/ReferenceToField/`` | affine    | Reference image voxel to    |
-|                                   |           | coefficient field voxel     |
-|                                   |           | affine transformation.      |
-+-----------------------------------+-----------+-----------------------------+
++-----------------+-------------+---------------------------------------------+
+| **Name**        | **Type**    | **Value/Description**                       |
++-----------------+-------------+---------------------------------------------+
+| ``/Type``       | attribute   | ``'nonlinear'``                             |
++-----------------+-------------+---------------------------------------------+
+| ``/Transform/`` | deformation | The deformation field, encoding a nonlinear |
+|                 |             | transformation from image **A** to image    |
+|                 |             | **B**                                       |
++-----------------+-------------+---------------------------------------------+
+| ``/Inverse/``   | deformation | Optional pre-calculated inverse, encoding a |
+|                 |             | nonlinear transformation from image **B**   |
+|                 |             | to image **A**                              |
++-----------------+-------------+---------------------------------------------+
+| ``/A/``         | space       | Image **A** space                           |
++-----------------+-------------+---------------------------------------------+
+| ``/B/``         | space       | Image **B** space                           |
++-----------------+-------------+---------------------------------------------+
 
 
-Storage of FSL FNIRT transformations in non-linear X5 files
------------------------------------------------------------
+Storage of FSL FNIRT warp fields in non-linear X5 files
+-------------------------------------------------------
 
 
-Non-linear registration using FNIRT generally follows the process depicted
-here:
+FLIRT outputs the result of a non-linear registration from a source image to a
+reference image as either a warp field, or a coefficient field which can be
+used to generate a warp field. A warp field is defined in terms of the
+reference image - the warp field has the same shape and FOV as the reference
+image, and contains either:
+
+ - relative displacements from the corresponding reference image location to
+   the unwarped source image location
+ - absolute unwarped source image coordinates
 
 
-.. image:: images/nonlinear_registration_process.png
-   :width: 80%
-   :align: center
+The reference image for a FNIRT warp field thus corresponds to image **A** in
+a X5 non-linear transform, and the FNIRT source image to image **B**.
 
 
-First, an initial linear registration is performed from the source image to
-the reference image using FLIRT; this provides an initial global alignment
-which can be used as the starting point for the non-linear registration. Next,
-FNIRT is used to non-linearly register the aligned source image to the
-reference image.  Importantly, both of these steps are performed using FSL
-coordinates.
+FNIRT warp fields are defined in FSL coordinates - a relative warp contains
+displacements from reference image FSL coordinates to source image FSL
+coordinates, and an absolute warp contains source image FSL coordinates.
 
 
-The non-linear transformation file generated by FNIRT typically contains the
-initial linear registration, with it either being encoded directly into the
-displacements, or being stored in the NIfTI header.
+When a FNIRT warp field is stored in an X5 file, the displacements/coordinates
+must be adjusted so that they encode a transformation from reference image
+world coordinates to source image world coordinates.
 
 
-Storage of FNIRT displacement fields
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Conversion of FNIRT coefficient fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-A FNIRT displacement field contains either:
-
- - relative displacements from reference image FSL coordinates to source
-   image FSL coordinates, or
- - absolute source image FSL coordinates.
-
-
-If an initial linear registration was used as the starting point for FNIRT,
-this is encoded into the displacements/coordinates themselves, so they can be
-used to transform from the reference image to the *original* source image.
+A FNIRT coefficient field can be used to generate a deformation field which
+contains relative displacements from reference image FSL coordinates to source
+image FSL coordinates. If an initial affine registration was used as the
+starting point for FNIRT, this generated displacement field contains relative
+displacements from the reference image to the *aligned* source image,
+i.e. after it has been transformed by the initial affine alignment.
 
 
-.. image:: images/fnirt_displacement_field.png
-   :width: 80%
-   :align: center
+When a FNIRT coefficient field is stored in an X5 file, it must first be
+converted to a displacement field. The displacements must then be adjusted so
+that they take into account the initial affine alignment (if relevant), and
+so that they encode displacements from reference image world coordinates
+to source image world coordinates.
 
 
-When a FNIRT displacement field is stored in a X5 file, the ``/Pre/`` and
-``/Post/`` affine transformations are set so that the displacement field can
-be used to perform a transformation from reference image world coordinates to
-source image world coordinates.
-
-
-.. image:: images/x5_nonlinear_displacement_field_file.png
-   :width: 95%
-   :align: center
-
-
-Storage of FNIRT coefficient fields
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-A FNIRT coefficient field contains the coefficients of a grid of B-spline
-functions; these coefficients can be used to generate a displacement field
-which encodes a transformation from reference image FSL coordinates to source
-image FSL coordinates.
-
-
-If an initial linear registration was used as the starting point for FNIRT,
-the generated displacement field will encode a transformtion to *aligned*
-source image coordinates, and the initial affine will be stored in the NIfTI
-header of the coefficient field file.
-
-
-.. image:: images/fnirt_coefficient_field.png
-   :width: 80%
-   :align: center
-
-
-When a FNIRT coefficient field is stored in an X5 file, the ``/Pre/`` and
-``/Post/`` affine transformations are set as for displacement
-fields. Additionally, the initial linear registration transformation is stored
-as the ``/InitialAlignment/``, so that its inverse can be used to transform
-the aligned source image FSL coordinates back into the original source image
-FSL coordinates.
-
-
-.. image:: images/x5_nonlinear_coefficient_field_file.png
-   :width: 95%
-   :align: center
+The :mod:`fsl.transform.fnirt` module contains functions which can be used to
+perform all of the conversions and adjustments required to store FNIRT
+transformations as X5 files.
 """
 
 
