@@ -8,17 +8,18 @@
 FNIRT-style nonlinear transformations.
 
 
-The :class:`DisplacementField` and :class:`CoefficientField` can be used to
+The :class:`DeformationField` and :class:`CoefficientField` can be used to
 load and interact with FNIRT transformation images. The following utility
 functions are also available:
+
 
 .. autosummary::
    :nosignatures:
 
-   detectDisplacementType
-   convertDisplacementType
-   convertDisplacementSpace
-   coefficientFieldToDisplacementField
+   detectDeformationType
+   convertDeformationType
+   convertDeformationSpace
+   coefficientFieldToDeformationField
 """
 
 
@@ -38,7 +39,7 @@ log = logging.getLogger(__name__)
 
 class NonLinearTransform(fslimage.Image):
     """Class which represents a nonlinear transformation. This is just a base
-    class for the :class:`DisplacementField` and :class:`CoefficientField`
+    class for the :class:`DeformationField` and :class:`CoefficientField`
     classes.
 
 
@@ -53,17 +54,6 @@ class NonLinearTransform(fslimage.Image):
     the corresponding location in the source image space. Therefore, these
     non-linear transformation effectively encode a transformation *from* the
     reference image *to* the source image.
-
-
-    A FNIRT nonlinear transformation often contains a *premat*, a global
-    affine transformation from the source space to the reference space, which
-    was calculated with FLIRT, and used as the starting point for the
-    non-linear optimisation performed by FNIRT.
-
-
-    This affine may be provided when creating a ``NonLinearTransform`` as the
-    ``srcToRefMat`` argument to :meth:`__init__`, and is subsequently accessed
-    via the :meth:`srcToRefMat` attribute.
     """
 
 
@@ -73,7 +63,7 @@ class NonLinearTransform(fslimage.Image):
                  ref,
                  srcSpace=None,
                  refSpace=None,
-                 srcToRefMat=None,
+
                  **kwargs):
         """Create a ``NonLinearTransform``.
 
@@ -93,20 +83,11 @@ class NonLinearTransform(fslimage.Image):
                           ``NonLinearTransform`` maps from. Defaults to
                           ``'fsl'``.
 
-        :arg srcToRefMat: Optional initial global affine transformation from
-                          the source image to the reference image. This is
-                          assumed to be a FLIRT-style matrix, i.e. it
-                          transforms from source image ``srcSpace`` coordinates
-                          into reference image ``refSpace`` coordinates
-                          (typically ``'fsl'`` coordinates, i.e. scaled voxels
-                          potentially with a left-right flip).
-
         All other arguments are passed through to :meth:`.Image.__init__`.
         """
 
-        if srcSpace    is     None: srcSpace    = 'fsl'
-        if refSpace    is     None: refSpace    = 'fsl'
-        if srcToRefMat is not None: srcToRefMat = np.copy(srcToRefMat)
+        if srcSpace is None: srcSpace = 'fsl'
+        if refSpace is None: refSpace = 'fsl'
 
         if srcSpace not in ('fsl', 'voxel', 'world') or \
            refSpace not in ('fsl', 'voxel', 'world'):
@@ -119,11 +100,6 @@ class NonLinearTransform(fslimage.Image):
         self.__ref         = fslimage.Nifti(ref.header.copy())
         self.__srcSpace    = srcSpace
         self.__refSpace    = refSpace
-        self.__srcToRefMat = srcToRefMat
-        self.__refToSrcMat = None
-
-        if srcToRefMat is not None:
-            self.__refToSrcMat = affine.invert(srcToRefMat)
 
 
     @property
@@ -158,23 +134,7 @@ class NonLinearTransform(fslimage.Image):
         return self.__refSpace
 
 
-    @property
-    def srcToRefMat(self):
-        """Return the initial source-to-reference affine, or ``None`` if
-        there isn't one.
-        """
-        return self.__srcToRefMat
-
-
-    @property
-    def refToSrcMat(self):
-        """Return the inverse of the initial source-to-reference affine, or
-        ``None`` if there isn't one.
-        """
-        return self.__refToSrcMat
-
-
-    def transform(self, coords, from_=None, to=None, premat=True):
+    def transform(self, coords, from_=None, to=None):
         """Transform coordinates from the reference image space to the source
         image space. Implemented by sub-classes.
 
@@ -186,31 +146,31 @@ class NonLinearTransform(fslimage.Image):
 
         :arg to:     Source image space to transform ``coords`` into
 
-        :arg premat: If ``True``, the inverse :meth:`srcToRefMat` is applied
-                     to the coordinates after they have been calculated.
-
         :returns:    ``coords``, transformed into the source image space
         """
         raise NotImplementedError()
 
 
-class DisplacementField(NonLinearTransform):
-    """Class which represents a displacement field which, at each voxel,
-    contains an absolute or relative displacement between a source space and a
-    reference space.
+class DeformationField(NonLinearTransform):
+    """Class which represents a deformation (a.k.a. warp) field which, at each
+    voxel, contains either:
+
+      - a relative displacement from the reference space to the source space,
+        or
+      - absolute coordinates in the source space
     """
 
 
     def __init__(self, image, src, ref=None, **kwargs):
         """Create a ``DisplacementField``.
 
-        :arg ref:      Optional. If not provided, it is assumed that the
-                       reference is defined in the same space as ``image``.
+        :arg ref:     Optional. If not provided, it is assumed that the
+                      reference is defined in the same space as ``image``.
 
-        :arg dispType: Either ``'absolute'`` or ``'relative'``, indicating
-                       the type of this displacement field. If not provided,
-                       will be inferred via the :func:`detectDisplacementType`
-                       function.
+        :arg defType: Either ``'absolute'`` or ``'relative'``, indicating
+                      the type of this displacement field. If not provided,
+                      will be inferred via the :func:`detectDeformationType`
+                      function.
 
         All other arguments are passed through to
         :meth:`NonLinearTransform.__init__`.
@@ -219,46 +179,46 @@ class DisplacementField(NonLinearTransform):
         if ref is None:
             ref = self
 
-        dispType = kwargs.pop('dispType',  None)
+        defType = kwargs.pop('defType', None)
 
-        if dispType not in (None, 'relative', 'absolute'):
-            raise ValueError('Invalid value for dispType: {}'.format(dispType))
+        if defType not in (None, 'relative', 'absolute'):
+            raise ValueError('Invalid value for defType: {}'.format(defType))
 
         NonLinearTransform.__init__(self, image, src, ref, **kwargs)
 
         if not self.sameSpace(self.ref):
             raise ValueError('Invalid reference image: {}'.format(self.ref))
 
-        self.__dispType = dispType
+        self.__defType = defType
 
 
     @property
-    def displacementType(self):
-        """The type of this ``DisplacementField`` - ``'absolute'`` or
+    def deformationType(self):
+        """The type of this ``DeformationField`` - ``'absolute'`` or
         ``'relative'``.
         """
-        if self.__dispType is None:
-            self.__dispType = detectDisplacementType(self)
-        return self.__dispType
+        if self.__defType is None:
+            self.__defType = detectDeformationType(self)
+        return self.__defType
 
 
     @property
     def absolute(self):
-        """``True`` if this ``DisplacementField`` contains absolute
-        displacements.
+        """``True`` if this ``DeformationField`` contains absolute
+        coordinates.
         """
-        return self.displacementType == 'absolute'
+        return self.deformationType == 'absolute'
 
 
     @property
     def relative(self):
-        """``True`` if this ``DisplacementField`` contains relative
+        """``True`` if this ``DeformationField`` contains relative
         displacements.
         """
-        return self.displacementType == 'relative'
+        return self.deformationType == 'relative'
 
 
-    def transform(self, coords, from_=None, to=None, premat=True):
+    def transform(self, coords, from_=None, to=None):
         """Transform the given XYZ coordinates from the reference image space
         to the source image space.
 
@@ -269,9 +229,6 @@ class DisplacementField(NonLinearTransform):
         :arg from_:  Reference image space that ``coords`` are defined in
 
         :arg to:     Source image space to transform ``coords`` into
-
-        :arg premat: If ``True``, the inverse :meth:`srcToRefMat` is applied
-                     to the coordinates after they have been calculated.
 
         :returns:    ``coords``, transformed into the source image space
         """
@@ -310,28 +267,14 @@ class DisplacementField(NonLinearTransform):
         if self.absolute: disps = self.data[xs, ys, zs, :]
         else:             disps = self.data[xs, ys, zs, :] + coords[voxmask]
 
-        # Make sure the coordinates are
-        # in the requested source image
-        # space, and apply the initial
-        # inv(srcToRefMat) if it there
-        # is one
-
-        # And here the premat becomes
-        # a postmat; how confusing
-        if premat: postmat = self.refToSrcMat
-        else:      postmat = None
-
+        # Make sure the coordinates are in
+        # the requested source image space
         if to != self.srcSpace:
             xform = self.src.getAffine(self.srcSpace, to)
-            if postmat is not None: postmat = affine.concat(xform, postmat)
-            else:                   postmat = xform
+            disps = affine.transform(disps, xform)
 
-        if postmat is not None:
-            disps = affine.transform(disps, postmat)
-
-        # Nans for input coordinates
-        # which were outside of the
-        # field
+        # Nans for input coordinates which
+        # were outside of the field
         outcoords          = np.full(coords.shape, np.nan)
         outcoords[voxmask] = disps
 
@@ -343,6 +286,17 @@ class CoefficientField(NonLinearTransform):
 
     The :meth:`displacements` method can be used to calculate relative
     displacements for a set of reference space voxel coordinates.
+
+
+    A FNIRT nonlinear transformation often contains a *premat*, a global
+    affine transformation from the source space to the reference space, which
+    was calculated with FLIRT, and used as the starting point for the
+    non-linear optimisation performed by FNIRT.
+
+
+    This affine may be provided when creating a ``CoefficientField`` as the
+    ``srcToRefMat`` argument to :meth:`__init__`, and is subsequently accessed
+    via the :meth:`srcToRefMat` attribute.
     """
 
 
@@ -355,6 +309,7 @@ class CoefficientField(NonLinearTransform):
                  fieldType,
                  knotSpacing,
                  fieldToRefMat,
+                 srcToRefMat=None,
                  **kwargs):
         """Create a ``CoefficientField``.
 
@@ -367,12 +322,23 @@ class CoefficientField(NonLinearTransform):
                             image voxel coordinates into coefficient field
                             voxel coordinates.
 
+        :arg srcToRefMat:   Optional initial global affine transformation from
+                            the source image to the reference image. This is
+                            assumed to be a FLIRT-style matrix, i.e. it
+                            transforms from source image ``srcSpace``
+                            coordinates into reference image ``refSpace``
+                            coordinates (typically ``'fsl'`` coordinates, i.e.
+                            scaled voxels potentially with a left-right flip).
+
         See the :class:`NonLinearTransform` class for details on the other
         arguments.
         """
 
         if fieldType not in ('cubic',):
             raise ValueError('Unsupported field type: {}'.format(fieldType))
+
+        if srcToRefMat is not None:
+            srcToRefMat = np.copy(srcToRefMat)
 
         NonLinearTransform.__init__(self,
                                     image,
@@ -384,8 +350,13 @@ class CoefficientField(NonLinearTransform):
 
         self.__fieldType     = fieldType
         self.__knotSpacing   = tuple(knotSpacing)
+        self.__refToSrcMat   = None
+        self.__srcToRefMat   = srcToRefMat
         self.__fieldToRefMat = np.copy(fieldToRefMat)
         self.__refToFieldMat = affine.invert(self.__fieldToRefMat)
+
+        if srcToRefMat is not None:
+            self.__refToSrcMat = affine.invert(srcToRefMat)
 
 
     @property
@@ -420,11 +391,27 @@ class CoefficientField(NonLinearTransform):
         return np.copy(self.__refToFieldMat)
 
 
-    @memoize.Instanceify(memoize.memoize)
-    def asDisplacementField(self, dispType='relative', premat=True):
-        """Convert this ``CoefficientField`` to a :class:`DisplacementField`.
+    @property
+    def srcToRefMat(self):
+        """Return the initial source-to-reference affine, or ``None`` if
+        there isn't one.
         """
-        return coefficientFieldToDisplacementField(self, dispType, premat)
+        return self.__srcToRefMat
+
+
+    @property
+    def refToSrcMat(self):
+        """Return the inverse of the initial source-to-reference affine, or
+        ``None`` if there isn't one.
+        """
+        return self.__refToSrcMat
+
+
+    @memoize.Instanceify(memoize.memoize)
+    def asDeformationField(self, defType='relative', premat=True):
+        """Convert this ``CoefficientField`` to a :class:`DeformationField`.
+        """
+        return coefficientFieldToDeformationField(self, defType, premat)
 
 
     def transform(self, coords, from_=None, to=None, premat=True):
@@ -446,7 +433,7 @@ class CoefficientField(NonLinearTransform):
 
         :returns:    ``coords``, transformed into the source image space
         """
-        df = self.asDisplacementField(premat=premat)
+        df = self.asDeformationField(premat=premat)
         return df.transform(coords, from_, to)
 
 
@@ -531,23 +518,23 @@ class CoefficientField(NonLinearTransform):
         return disps
 
 
-def detectDisplacementType(field):
-    """Attempt to automatically determine whether a displacement field is
+def detectDeformationType(field):
+    """Attempt to automatically determine whether a deformation field is
     specified in absolute or relative coordinates.
 
-    :arg field: A :class:`DisplacementField`
+    :arg field: A :class:`DeformationField`
 
     :returns:   ``'absolute'`` if it looks like ``field`` contains absolute
-                displacements, ``'relative'`` otherwise.
+                coordinates, ``'relative'`` otherwise.
     """
 
     # This test is based on the assumption
-    # that a displacement field containing
+    # that a deformation field containing
     # absolute coordinates will have a
     # greater standard deviation than one
     # which contains relative coordinates.
     absdata = field[:]
-    reldata = convertDisplacementType(field, 'relative')
+    reldata = convertDeformationType(field, 'relative')
     stdabs  = absdata.std(axis=(0, 1, 2)).sum()
     stdrel  = reldata.std(axis=(0, 1, 2)).sum()
 
@@ -555,20 +542,19 @@ def detectDisplacementType(field):
     else:               return 'relative'
 
 
-def convertDisplacementType(field, dispType=None):
-    """Convert a displacement field between storing absolute and relative
-    displacements.
+def convertDeformationType(field, defType=None):
+    """Convert a deformation field between storing absolute coordinates or
+    relative displacements.
 
-    :arg field:    A :class:`DisplacementField` instance
-    :arg dispType: Either ``'absolute'`` or ``'relative'``. If not provided,
-                   the opposite type to ``field.displacementType`` is used.
-    :returns:      A ``numpy.array`` containing the adjusted displacement
-                   field.
+    :arg field:   A :class:`DeformationField` instance
+    :arg defType: Either ``'absolute'`` or ``'relative'``. If not provided,
+                  the opposite type to ``field.deformationType`` is used.
+    :returns:     A ``numpy.array`` containing the adjusted deformation field.
     """
 
-    if dispType is None:
-        if field.displacementType == 'absolute': dispType = 'relative'
-        else:                                    dispType = 'absolute'
+    if defType is None:
+        if field.deformationType == 'absolute': defType = 'relative'
+        else:                                   defType = 'absolute'
 
     # Regardless of the conversion direction,
     # we need the coordinates of every voxel
@@ -588,36 +574,29 @@ def convertDisplacementType(field, dispType=None):
     # (what is assumed to be) the relative shift.
     # Or, to convert from absolute to relative,
     # we subtract the reference image voxels.
-    if   dispType == 'absolute': return field.data + coords
-    elif dispType == 'relative': return field.data - coords
+    if   defType == 'absolute': return field.data + coords
+    elif defType == 'relative': return field.data - coords
 
 
-def convertDisplacementSpace(field, from_, to):
-    """Adjust the source and/or reference spaces of the given displacement
+def convertDeformationSpace(field, from_, to):
+    """Adjust the source and/or reference spaces of the given deformation
     field. See the :meth:`.Nifti.getAffine` method for the valid values for
     the ``from_`` and ``to`` arguments.
 
-    :arg field: A :class:`DisplacementField` instance
+    :arg field: A :class:`DeformationField` instance
     :arg from_: New reference image coordinate system
     :arg to:    New source image coordinate system
 
-    :returns:   A new :class:`DisplacementField` which transforms between
+    :returns:   A new :class:`DeformationField` which transforms between
                 the reference ``from_`` coordinate system and the source ``to``
                 coordinate system.
     """
-
-    # We can't adjust the displacements
-    # for fields with an initial
-    # source-to-ref affine
-    if field.srcToRefMat is not None:
-        raise ValueError('Cannot adjust displacements of '
-                         'fields with an initial affine')
 
     # Get the field in absolute coordinates
     # if necessary - these are our source
     # coordinates in the original "to" space.
     fieldcoords = field.data
-    if field.relative: srccoords = convertDisplacementType(field)
+    if field.relative: srccoords = convertDeformationType(field)
     else:              srccoords = fieldcoords
 
     srccoords = srccoords.reshape((-1, 3))
@@ -631,13 +610,13 @@ def convertDisplacementSpace(field, from_, to):
         srccoords = affine.transform(srccoords, srcmat)
 
     # If we have been asked to return
-    # an absolute displacement, the
+    # absolute coordinates, the
     # reference "from_" coordinate
     # system is irrelevant - we're done.
     if field.absolute:
         fieldcoords = srccoords
 
-    # Otherwise our displacement field
+    # Otherwise our deformation field
     # will contain relative displacements
     # between the reference image "from_"
     # coordinate system and the source
@@ -659,30 +638,30 @@ def convertDisplacementSpace(field, from_, to):
 
         fieldcoords = srccoords - refcoords
 
-    return DisplacementField(
+    return DeformationField(
         fieldcoords.reshape(field.shape),
         header=field.header,
         src=field.src,
         ref=field.ref,
         srcSpace=to,
         refSpace=from_,
-        dispType=field.displacementType)
+        defType=field.deformationType)
 
 
-def coefficientFieldToDisplacementField(field,
-                                        dispType='relative',
-                                        premat=True):
-    """Convert a :class:`CoefficientField` into a :class:`DisplacementField`.
+def coefficientFieldToDeformationField(field,
+                                       defType='relative',
+                                       premat=True):
+    """Convert a :class:`CoefficientField` into a :class:`DeformationField`.
 
-    :arg field:    :class:`CoefficientField` to convert
+    :arg field:   :class:`CoefficientField` to convert
 
-    :arg dispType: The type of displacement field - either ``'relative'`` (the
-                   default) or ``'absolute'``.
+    :arg defType: The type of deformation field - either ``'relative'`` (the
+                  default) or ``'absolute'``.
 
-    :arg premat:   If ``True`` (the default), the :meth:`srcToRefMat` is
-                   encoded into the displacements.
+    :arg premat:  If ``True`` (the default), the :meth:`srcToRefMat` is
+                  encoded into the deformation field.
 
-    :return:       :class:`DisplacementField` calculated from ``field``.
+    :return:      :class:`DeformationField` calculated from ``field``.
     """
 
     # Generate coordinates for every
@@ -715,22 +694,22 @@ def coefficientFieldToDisplacementField(field,
     # from ref space to aligned-src
     # space.
     disps   = field.displacements(xyz).reshape((ix, iy, iz, 3))
-    rdfield = DisplacementField(disps,
-                                src=field.src,
-                                ref=field.ref,
-                                srcSpace=field.srcSpace,
-                                refSpace=field.refSpace,
-                                header=field.ref.header,
-                                dispType='relative')
+    rdfield = DeformationField(disps,
+                               src=field.src,
+                               ref=field.ref,
+                               srcSpace=field.srcSpace,
+                               refSpace=field.refSpace,
+                               header=field.ref.header,
+                               defType='relative')
 
-    if (dispType == 'relative') and (not premat):
+    if (defType == 'relative') and (not premat):
         return rdfield
 
     # Convert to absolute - the
-    # displacements will now be
+    # deformations will now be
     # absolute coordinates in
     # aligned-src space
-    disps = convertDisplacementType(rdfield)
+    disps = convertDeformationType(rdfield)
 
     # Apply the premat if requested -
     # this will transform the coordinates
@@ -756,23 +735,23 @@ def coefficientFieldToDisplacementField(field,
         #
         #   disps = affine.transform(disps, refToSrc)
 
-    adfield = DisplacementField(disps,
+    adfield = DeformationField(disps,
+                               src=field.src,
+                               ref=field.ref,
+                               srcSpace=field.srcSpace,
+                               refSpace=field.refSpace,
+                               header=field.ref.header,
+                               defType='absolute')
+
+    # Not either return absolute displacements,
+    # or convert back to relative displacements
+    if defType == 'absolute':
+        return adfield
+    else:
+        return DeformationField(convertDeformationType(adfield),
                                 src=field.src,
                                 ref=field.ref,
                                 srcSpace=field.srcSpace,
                                 refSpace=field.refSpace,
                                 header=field.ref.header,
-                                dispType='absolute')
-
-    # Not either return absolute displacements,
-    # or convert back to relative displacements
-    if dispType == 'absolute':
-        return adfield
-    else:
-        return DisplacementField(convertDisplacementType(adfield),
-                                 src=field.src,
-                                 ref=field.ref,
-                                 srcSpace=field.srcSpace,
-                                 refSpace=field.refSpace,
-                                 header=field.ref.header,
-                                 dispType='relative')
+                                defType='relative')
