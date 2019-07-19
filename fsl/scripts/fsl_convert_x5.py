@@ -130,6 +130,7 @@ def fnirtToX5(args):
     src   = fslimage.Image(args.source,    loadData=False)
     ref   = fslimage.Image(args.reference, loadData=False)
     field = fnirt.readFnirt(args.input, src=src, ref=ref)
+    field = fnirt.fromFnirt(field, 'world', 'world')
     x5.writeNonLinearX5(args.output, field)
 
 
