@@ -397,16 +397,17 @@ def readNonLinearX5(fname):
 
         _readMetadata(f)
 
-        ref          = _readSpace(      f['/A'])
-        src          = _readSpace(      f['/B'])
-        field, space = _readDeformation(f['/Transform'])
+        ref                   = _readSpace(      f['/A'])
+        src                   = _readSpace(      f['/B'])
+        field, xform, defType = _readDeformation(f['/Transform'])
 
     return nonlinear.DeformationField(field,
-                                      header=space.header,
+                                      xform=xform,
                                       src=src,
                                       ref=ref,
                                       srcSpace='world',
-                                      refSpace='world')
+                                      refSpace='world',
+                                      defType=defType)
 
 
 def writeNonLinearX5(fname, field):
@@ -421,8 +422,8 @@ def writeNonLinearX5(fname, field):
         f.attrs['Type'] = 'nonlinear'
 
         _writeMetadata(f)
-        _writeSpace(      f.create_group('/A'),         f.ref)
-        _writeSpace(      f.create_group('/B'),         f.src)
+        _writeSpace(      f.create_group('/A'),         field.ref)
+        _writeSpace(      f.create_group('/B'),         field.src)
         _writeDeformation(f.create_group('/Transform'), field)
 
 
@@ -538,8 +539,8 @@ def _readDeformation(group):
 
                  - A ``numpy.arrayThe`` containing the deformation field
 
-                 - A :class:`.Nifti` object representing the deformation
-                   field space
+                 - A ``numpy.array`` of shape ``(4, 4) `` containing the
+                   voxel to world affine for the deformation field
 
                  - The deformation type - either ``'absolute'`` or
                    ``'relative'``
@@ -554,7 +555,7 @@ def _readDeformation(group):
     if subtype not in ('absolute', 'relative'):
         raise X5Error('Unknown deformation type: {}'.format(subtype))
 
-    mapping = _readSpace(group['Mapping'])
+    mapping = _readAffine(group['Mapping'])
     field   = group['Matrix']
 
     if len(field.shape) != 4 or field.shape[3] != 3:
@@ -570,10 +571,15 @@ def _writeDeformation(group, field):
     :arg field: A :class:`.DeformationField` object
     """
 
+    if field.srcSpace != 'world' or \
+       field.refSpace != 'world':
+        raise X5Error('Deformation field must encode a '
+                      'world<->world transformation')
+
     group.attrs['Type']    = 'deformation'
     group.attrs['SubType'] = field.deformationType
 
     mapping = group.create_group('Mapping')
 
     group.create_dataset('Matrix', data=field.data)
-    _writeSpace(mapping, field)
+    _writeAffine(mapping, field.getAffine('voxel', 'world'))

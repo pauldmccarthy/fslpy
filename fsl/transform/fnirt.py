@@ -124,33 +124,40 @@ header of the coefficient field file.
 
 import logging
 
-import numpy   as np
 import nibabel as nib
+import numpy   as np
 
 import fsl.data.constants as constants
+import fsl.data.image     as fslimage
+from . import                affine
+from . import                nonlinear
 
 
 log = logging.getLogger(__name__)
 
 
-def _readFnirtDisplacementField(fname, img, src, ref, dispType=None):
-    """Loads ``fname``, assumed to be a FNIRT displacement field.
+def _readFnirtDeformationField(fname, img, src, ref, defType=None):
+    """Loads ``fname``, assumed to be a FNIRT deformation field.
 
-    :arg fname:    File name of FNIRT displacement field
-    :arg img:      ``fname`` loaded as an :class:`.Image`
-    :arg src:      Source image
-    :arg ref:      Reference image
-    :arg dispType: Displacement type - either ``'absolute'`` or ``'relative'``.
-                   If not provided, is automatically inferred from the data.
-    :return:       A :class:`.DisplacementField`
+    :arg fname:   File name of FNIRT deformation field
+
+    :arg img:     ``fname`` loaded as an :class:`.Image`
+
+    :arg src:     Source image
+
+    :arg ref:     Reference image
+
+    :arg defType: Deformation type - either ``'absolute'`` or ``'relative'``.
+                  If not provided, is automatically inferred from the data.
+
+    :return:      A :class:`.DeformationField` object
     """
-    from . import nonlinear
-    return nonlinear.DisplacementField(fname,
-                                       src,
-                                       ref,
-                                       srcSpace='fsl',
-                                       refSpace='fsl',
-                                       dispType=dispType)
+    return nonlinear.DeformationField(fname,
+                                      src,
+                                      ref,
+                                      srcSpace='fsl',
+                                      refSpace='fsl',
+                                      defType=defType)
 
 
 def _readFnirtCoefficientField(fname, img, src, ref):
@@ -162,9 +169,6 @@ def _readFnirtCoefficientField(fname, img, src, ref):
     :arg ref:   Reference image
     :return:    A :class:`.CoefficientField`
     """
-
-    from . import affine
-    from . import nonlinear
 
     # FNIRT uses NIFTI header fields in
     # non-standard ways to store some
@@ -226,22 +230,22 @@ def _readFnirtCoefficientField(fname, img, src, ref):
                                       fieldToRefMat=fieldToRefMat)
 
 
-def readFnirt(fname, src, ref, dispType=None):
+def readFnirt(fname, src, ref, defType=None):
     """Reads a non-linear FNIRT transformation image, returning
-    a :class:`.DisplacementField` or :class:`.CoefficientField` depending
+    a :class:`.DeformationField` or :class:`.CoefficientField` depending
     on the file type.
 
     :arg fname:    File name of FNIRT transformation
     :arg src:      Source image
     :arg ref:      Reference image
-    :arg dispType: Displacement type - either ``'absolute'`` or ``'relative'``.
-                   If not provided, is automatically inferred from the data.
+    :arg defType:  Deformation type - either ``'absolute'`` or ``'relative'``.
+                   Only used if the file is a deformation field. If not
+                   provided, is automatically inferred from the data.
     """
 
     # Figure out whether the file
-    # is a displacement field or
+    # is a deformation field or
     # a coefficient field
-    import fsl.data.image as fslimage
 
     img   = fslimage.Image(fname, loadData=False)
     disps = (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
@@ -253,7 +257,7 @@ def readFnirt(fname, src, ref, dispType=None):
              constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
 
     if img.intent in disps:
-        return _readFnirtDisplacementField(fname, img, src, ref, dispType)
+        return _readFnirtDeformationField(fname, img, src, ref, defType)
     elif img.intent in coefs:
         return _readFnirtCoefficientField(fname, img, src, ref)
     else:
@@ -263,14 +267,12 @@ def readFnirt(fname, src, ref, dispType=None):
 
 def toFnirt(field):
     """Convert a :class:`.NonLinearTransform` to a FNIRT-compatible
-    :class:`.DisplacementField` or :class:`.CoefficientField`.
+    :class:`.DeformationField` or :class:`.CoefficientField`.
 
     :arg field: :class:`.NonLinearTransform` to convert
-    :return:    A FNIRT-compatible :class:`.DisplacementField` or
+    :return:    A FNIRT-compatible :class:`.DeformationField` or
                 :class:`.CoefficientField`.
     """
-
-    from . import nonlinear
 
     # If we have a coefficient field
     # which transforms between fsl
@@ -330,36 +332,35 @@ def toFnirt(field):
             srcToRefMat=field.srcToRefMat)
 
     # Otherwise we have a non-FSL coefficient
-    # field, or a displacement field.
-    #
-    # We can't convert a CoefficientField
-    # which doesn't transform in FSL
-    # coordinates, because the coefficients
-    # will have been calculated between some
-    # other source/reference coordinate
-    # systems, and we can't adjust the
-    # coefficients to encode an FSL->FSL
-    # deformation.
+    # field, or a deformation field.
     else:
 
+        # We can't convert a CoefficientField
+        # which doesn't transform in FSL
+        # coordinates, because the coefficients
+        # will have been calculated between some
+        # other source/reference coordinate
+        # systems, and we can't adjust the
+        # coefficients to encode an FSL->FSL
+        # deformation.
         if isinstance(field, nonlinear.CoefficientField):
-            field = nonlinear.coefficientFieldToDisplacementField(field)
+            field = nonlinear.coefficientFieldToDeformationField(field)
 
         # Again, if we have a displacement
         # field which transforms between
         # fsl spaces, we can just take a copy
         if field.srcSpace == 'fsl' and field.refSpace == 'fsl':
-            field = nonlinear.DisplacementField(
+            field = nonlinear.DeformationField(
                 field.data,
+                header=field.header,
                 src=field.src,
                 ref=field.ref,
-                xform=field.voxToWorldMat,
-                dispType=field.displacementType)
+                defType=field.deformationType)
 
         # Otherwise we have to adjust the
         # displacements so they transform
         # between fsl coordinates.
-        field = nonlinear.convertDisplacementSpace(
+        field = nonlinear.convertDeformationSpace(
             field, from_='fsl', to='fsl')
 
         field.header['intent_code'] = constants.FSL_FNIRT_DISPLACEMENT_FIELD
@@ -369,23 +370,19 @@ def toFnirt(field):
 
 def fromFnirt(field, from_='world', to='world'):
     """Convert a FNIRT-style :class:`.NonLinearTransform` to a generic
-    :class:`.DisplacementField`.
+    :class:`.DeformationField`.
 
     :arg field: A FNIRT-style :class:`.CoefficientField` or
-                :class:`.DisplacementField`
+                :class:`.DeformationField`
 
     :arg from_: Desired reference image coordinate system
 
     :arg to:    Desired source image coordinate system
 
-    :return:    A :class:`.DisplacementField` which contains displacements
+    :return:    A :class:`.DeformationField` which contains displacements
                 from the reference image ``from_`` cordinate system to the
                 source image ``to`` coordinate syste.
     """
-    from . import nonlinear
-
-    # see comments in toFnirt
     if isinstance(field, nonlinear.CoefficientField):
-        field = nonlinear.coefficientFieldToDisplacementField(field)
-
-    return nonlinear.convertDisplacementSpace(field, from_=from_, to=to)
+        field = nonlinear.coefficientFieldToDeformationField(field)
+    return nonlinear.convertDeformationSpace(field, from_=from_, to=to)
