@@ -350,11 +350,16 @@ def readLinearX5(fname):
                   - A :class:`.Nifti` instance representing the source space
                   - A :class:`.Nifti` instance representing the reference space
     """
+
     with h5py.File(fname, 'r') as f:
-        _validateMetadata(   f['/'])
-        xform = _readAffine( f['/'])
-        src   = _readSpace(  f['/From'])
-        ref   = _readSpace(  f['/To'])
+
+        if f.attrs['Type'] != 'linear':
+            raise X5Error('Not a linear transform')
+
+        _readMetadata(      f['/'])
+        xform = _readAffine(f['/Transform'])
+        src   = _readSpace( f['/A'])
+        ref   = _readSpace( f['/B'])
 
     return xform, src, ref
 
@@ -369,14 +374,13 @@ def writeLinearX5(fname, xform, src, ref):
     """
 
     with h5py.File(fname, 'w') as f:
+
+        f.attrs['Type'] = 'linear'
+
         _writeMetadata(f)
-        _writeAffine(f, xform)
-
-        from_ = f.create_group('/From')
-        to    = f.create_group('/To')
-
-        _writeSpace(from_, src)
-        _writeSpace(to,    ref)
+        _writeAffine(  f.create_group('/Transform'), xform)
+        _writeSpace(   f.create_group('/A'),         src)
+        _writeSpace(   f.create_group('/B'),         ref)
 
 
 def readNonLinearX5(fname):
@@ -388,15 +392,21 @@ def readNonLinearX5(fname):
 
     with h5py.File(fname, 'r') as f:
 
-        root = f['/']
-        _validateNonLinearTransform(root)
+        if f.attrs.get('Type') != 'nonlinear':
+            raise X5Error('Not a nonlinear transform')
 
-        subtype = root.attrs['SubType']
+        _readMetadata(f)
 
-        if   subtype == 'displacement': field = _readDisplacementField(root)
-        elif subtype == 'coefficient':  field = _readCoefficientField(root)
+        ref          = _readSpace(      f['/A'])
+        src          = _readSpace(      f['/B'])
+        field, space = _readDeformation(f['/Transform'])
 
-    return field
+    return nonlinear.DeformationField(field,
+                                      header=space.header,
+                                      src=src,
+                                      ref=ref,
+                                      srcSpace='world',
+                                      refSpace='world')
 
 
 def writeNonLinearX5(fname, field):
@@ -407,14 +417,38 @@ def writeNonLinearX5(fname, field):
     """
 
     with h5py.File(fname, 'w') as f:
-        _writeMetadata(f)
 
         f.attrs['Type'] = 'nonlinear'
 
-        if isinstance(field, nonlinear.DisplacementField):
-            _writeDisplacementField(f, field)
-        elif isinstance(field, nonlinear.CoefficientField):
-            _writeCoefficientField(f, field)
+        _writeMetadata(f)
+        _writeSpace(      f.create_group('/A'),         f.ref)
+        _writeSpace(      f.create_group('/B'),         f.src)
+        _writeDeformation(f.create_group('/Transform'), field)
+
+
+def _readMetadata(group):
+    """Reads a metadata block from the given group, and raises a :exc:`X5Error`
+    if it does not look valid.
+
+    :arg group: A ``h5py.Group`` object.
+    :returns:   A ``dict`` containing the metadata.
+    """
+
+    format  = group.attrs.get('Format')
+    version = group.attrs.get('Version')
+    meta    = group.attrs.get('Metadata')
+
+    if (format != X5_FORMAT) or (version != X5_VERSION):
+        raise X5Error('Incompatible format/version (required: {}/{}, '
+                      'present: {}/{})'.format(X5_FORMAT, X5_VERSION,
+                                               format, version))
+
+    meta             = {}
+    meta['Format']   = format
+    meta['Version']  = version
+    meta['Metadata'] = meta
+
+    return meta
 
 
 def _writeMetadata(group):
@@ -427,40 +461,20 @@ def _writeMetadata(group):
     group.attrs['Metadata'] = json.dumps({'fslpy' : version.__version__})
 
 
-def _validateMetadata(group):
-    """Reads a metadata block from the given group, and raises a :exc:`X5Error`
-    if it does not look valid.
-
-    :arg group: A ``h5py.Group`` object.
-    """
-
-    try:
-        format  = group.attrs['Format']
-        version = group.attrs['Version']
-
-    except Exception:
-        raise X5Error('File does not appear to be an X5 file')
-
-    if (format != X5_FORMAT) or (version != X5_VERSION):
-        raise X5Error('Incompatible format/version (required: {}/{}, '
-                      'present: {}/{})'.format(X5_FORMAT, X5_VERSION,
-                                               format, version))
-
-
 def _readAffine(group):
-    """Reads an affine from the given group.
+    """Reads an *affine* from the given group.
 
     :arg group: A ``h5py.Group`` object.
     :returns:   ``numpy`` array containing a ``(4, 4)`` affine transformation.
     """
 
-    if group.attrs['Type'] != 'linear':
-        raise X5Error('Not a linear transform')
+    if group.attrs.get('Type') != 'affine':
+        raise X5Error('Not an affine')
 
-    xform = group['Transform']
+    xform = group['Matrix']
 
     if xform.shape != (4, 4):
-        raise X5Error('Not a linear transform')
+        raise X5Error('Not an affine')
 
     return np.array(xform)
 
@@ -476,21 +490,19 @@ def _writeAffine(group, xform):
     xform = np.asarray(xform,                dtype=np.float64)
     inv   = np.asarray(affine.invert(xform), dtype=np.float64)
 
-    group.attrs['Type'] = 'linear'
-    group.create_dataset('Transform', data=xform)
-    group.create_dataset('Inverse',   data=inv)
+    group.attrs['Type'] = 'affine'
+    group.create_dataset('Matrix',  data=xform)
+    group.create_dataset('Inverse', data=inv)
 
 
 def _readSpace(group):
-    """Reads a "space" group, defining a source or reference space.
+    """Reads a *space* group, defining a source or reference space.
 
     :arg group: A ``h5py.Group`` object.
     :returns:   :class:`.Nifti` object. defining the mapping
     """
 
-    import fsl.data.image as fslimage
-
-    if group.attrs['Type'] != 'image':
+    if group.attrs.get('Type') != 'image':
         raise X5Error('Not an image space')
 
     shape  = group.attrs['Size']
@@ -518,198 +530,50 @@ def _writeSpace(group, img):
     _writeAffine(mapping, img.getAffine('voxel', 'world'))
 
 
-def _validateNonLinearTransform(group):
-    """Checks that the attributes of the given group, assumed to contain a
-    nonlinear transform, are valid. Raises a :exc:`X5Error` if not.
+def _readDeformation(group):
+    """Reads a *deformation* from the given group.
 
-    :arg group: A ``h5py.Group`` object.
+    :arg group: A ``h5py.Group`` object
+    :returns:   A tuple containing
+
+                 - A ``numpy.arrayThe`` containing the deformation field
+
+                 - A :class:`.Nifti` object representing the deformation
+                   field space
+
+                 - The deformation type - either ``'absolute'`` or
+                   ``'relative'``
     """
 
-    type     = group.attrs['Type']
-    subtype  = group.attrs['SubType']
-    repr     = group.attrs['Representation']
+    type = group.attrs.get('Type')
+    subtype = group.attrs['SubType']
 
-    if type != 'nonlinear':
-        raise X5Error('Not a nonlinear transform')
+    if type != 'deformation':
+        raise X5Error('Not a deformation')
 
-    if subtype not in ('displacement', 'coefficient'):
-        raise X5Error('Unrecognised nonlinear subtype: {}'.format(subtype))
+    if subtype not in ('absolute', 'relative'):
+        raise X5Error('Unknown deformation type: {}'.format(subtype))
 
-    if (subtype == 'displacement') and \
-       (repr not in ('absolute', 'relative')):
-        raise X5Error('Unrecognised nonlinear representation: '
-                      '{}'.format(repr))
+    mapping = _readSpace(group['Mapping'])
+    field   = group['Matrix']
 
-    if (subtype == 'coefficient') and \
-       (repr not in ('quadratic bspline', 'cubic bspline')):
-        raise X5Error('Unrecognised nonlinear representation: '
-                      '{}'.format(repr))
+    if len(field.shape) != 4 or field.shape[3] != 3:
+        raise X5Error('Invalid shape for deformation field')
+
+    return np.array(field), mapping, subtype
 
 
-def _readNonLinearCommon(group):
-    """Reads the spaces and affines from the given group, assumed to contain a
-    nonlinear transform.
+def _writeDeformation(group, field):
+    """Write a deformation fieldto the given group.
 
-    :arg group: A ``h5py.Group`` object.
-
-    :returns:   A tuple containing:
-                 - A :class:`.Nifti` representing the source
-                 - A :class:`.Nifti` representing the reference
-                 - A ``(4, 4)`` ``numpy`` array containing the pre affine, or
-                   ``None``  if there is not one.
-                 - A ``(4, 4)`` ``numpy`` array containing the post affine, or
-                   ``None``  if there is not one.
-                 - A ``(4, 4)`` ``numpy`` array containing the initial
-                   alignment affine, or ``None``  if there is not one.
-                 - A string describing the source space - see
-                   :meth:`.Nifti.getAffine`
-                 - A string describing the reference  space - see
-                   :meth:`.Nifti.getAffine`
+    :arg group: A ``h5py.Group`` object
+    :arg field: A :class:`.DeformationField` object
     """
 
-    src  = _readSpace(group['From'])
-    ref  = _readSpace(group['To'])
+    group.attrs['Type']    = 'deformation'
+    group.attrs['SubType'] = field.deformationType
 
-    pre  = group.get('Pre')
-    post = group.get('Post')
-    init = group.get('InitialAlignment')
+    mapping = group.create_group('Mapping')
 
-    if pre  is not None: pre  = _readAffine(pre)
-    if post is not None: post = _readAffine(post)
-    if init is not None: init = _readAffine(init)
-
-    refSpace = 'world'
-    srcSpace = 'world'
-
-    try:
-        if pre is not None:
-            refSpace = fslimage.Nifti.identifyAffine(
-                ref, pre,  from_='world')[1]
-        if post is not None:
-            srcSpace = fslimage.Nifti.identifyAffine(
-                src, post, to='world')[   0]
-
-    except ValueError:
-        raise X5Error('Invalid pre/post affine')
-
-    return src, ref, pre, post, init, srcSpace, refSpace
-
-
-def _writeNonLinearCommon(group, field):
-    """Writes the spaces and affines for the given nonlinear transform to the
-    given group.
-
-    :arg group: A ``h5py.Group`` object.
-    :arg field: A :class:`.NonLinearTransform` object
-    """
-
-    _writeSpace(group.create_group('From'), field.src)
-    _writeSpace(group.create_group('To'),   field.ref)
-
-    pre  = field.ref.getAffine('world', field.refSpace)
-    post = field.src.getAffine(field.srcSpace, 'world')
-
-    _writeAffine(group.create_group('Pre'),  pre)
-    _writeAffine(group.create_group('Post'), post)
-
-    if field.srcToRefMat is not None:
-        _writeAffine(group.create_group('InitialAlignment'), field.srcToRefMat)
-
-
-def _readDisplacementField(group):
-    """Reads a nonlinear displacement field from the given group.
-
-    :arg group: A ``h5py.Group`` object.
-    :returns:   A :class:`.DisplacementField` object
-    """
-
-    src, ref, pre, post, init, srcSpace, refSpace = _readNonLinearCommon(group)
-    field = np.array(group['Transform'])
-    dtype = group.attrs['Representation']
-    field = nonlinear.DisplacementField(field,
-                                        src=src,
-                                        ref=ref,
-                                        srcSpace=srcSpace,
-                                        refSpace=refSpace,
-                                        dispType=dtype,
-                                        srcToRefMat=init,
-                                        xform=ref.voxToWorldMat)
-    return field
-
-
-def _writeDisplacementField(group, field):
-    """Writes a nonlinear displacement field to the given group.
-
-    :arg group: A ``h5py.Group`` object.
-    :arg field: A :class:`.DisplacementField` object
-    """
-
-    _writeNonLinearCommon(group, field)
-
-    group.attrs['SubType']        = 'displacement'
-    group.attrs['Representation'] = field.displacementType
-
-    xform = field.data.astype(np.float64)
-
-    group.create_dataset('Transform', data=xform)
-
-
-def _readCoefficientField(group):
-    """Reads a nonlinear coefficient field from the given group.
-
-    :arg group: A ``h5py.Group`` object.
-    :returns:   A :class:`.CoefficientField` object
-    """
-
-    src, ref, pre, post, init, srcSpace, refSpace = _readNonLinearCommon(group)
-
-    field      = np.array(group['Transform'])
-    ftype      = group.attrs['Representation']
-    spacing    = group['Parameters'].attrs['Spacing']
-    refToField = _readAffine(group['Parameters/ReferenceToField'])
-    fieldToRef = affine.invert(refToField)
-
-    if   ftype == 'quadratic bspline': ftype = 'quadratic'
-    elif ftype == 'cubic bspline':     ftype = 'cubic'
-
-    if spacing.shape != (3,):
-        raise X5Error('Invalid spacing: {}'.format(spacing))
-
-    field = nonlinear.CoefficientField(field,
-                                       src=src,
-                                       ref=ref,
-                                       srcSpace=srcSpace,
-                                       refSpace=refSpace,
-                                       fieldType=ftype,
-                                       knotSpacing=spacing,
-                                       fieldToRefMat=fieldToRef,
-                                       srcToRefMat=init)
-
-    return field
-
-
-def _writeCoefficientField(group, field):
-    """Writes a nonlinear coefficient field to the given group.
-
-    :arg group: A ``h5py.Group`` object.
-    :arg field: A :class:`.CoefficientField` object
-    """
-
-    _writeNonLinearCommon(group, field)
-
-    group.attrs['SubType'] = 'coefficient'
-
-    if field.fieldType == 'cubic':
-        group.attrs['Representation'] = 'cubic bspline'
-    elif field.fieldType == 'quadratic':
-        group.attrs['Representation'] = 'quadratic bspline'
-
-    xform = field.data.astype(np.float64)
-
-    group.create_dataset('Transform', data=xform)
-
-    params = group.create_group('Parameters')
-    refToField = params.create_group('ReferenceToField')
-
-    params.attrs['Spacing'] = field.knotSpacing
-    _writeAffine(refToField, field.refToFieldMat)
+    group.create_dataset('Matrix', data=field.data)
+    _writeSpace(mapping, field)

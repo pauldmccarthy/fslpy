@@ -267,8 +267,8 @@ class DeformationField(NonLinearTransform):
         # can get this through the assumption
         # that field and ref are aligned in
         # the world coordinate system
-        xform = affine.concat(self    .getAffine('world', 'voxel'),
-                              self.ref.getAffine(from_,   'world'))
+        xform = affine.concat(self    .getAffine('world',       'voxel'),
+                              self.ref.getAffine(self.refSpace, 'world'))
 
         if np.all(np.isclose(xform, np.eye(4))):
             voxels = coords
