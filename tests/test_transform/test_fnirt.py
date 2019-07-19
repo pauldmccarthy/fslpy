@@ -39,7 +39,7 @@ def test_readFnirt():
         fnirt.readFnirt(src, src, ref)
 
     assert isinstance(coef, nonlinear.CoefficientField)
-    assert isinstance(disp, nonlinear.DisplacementField)
+    assert isinstance(disp, nonlinear.DeformationField)
 
     assert coef.src.sameSpace(src)
     assert coef.ref.sameSpace(ref)
@@ -68,7 +68,7 @@ def test_toFnirt():
     spaces = it.permutations(('voxel', 'fsl', 'world'), 2)
 
     for from_, to in spaces:
-        field = nonlinear.convertDisplacementSpace(basefield, from_, to)
+        field = nonlinear.convertDeformationSpace(basefield, from_, to)
         got = fnirt.toFnirt(field)
         check(got, basefield)
 
@@ -122,6 +122,6 @@ def test_fromFnirt():
     for from_, to in spaces:
 
         cnv = fnirt.fromFnirt(coef, from_, to)
-        exp = nonlinear.convertDisplacementSpace(disp, from_, to)
+        exp = nonlinear.convertDeformationSpace(disp, from_, to)
         tol = dict(atol=1e-5, rtol=1e-5)
         assert np.all(np.isclose(cnv.data, exp.data, **tol))

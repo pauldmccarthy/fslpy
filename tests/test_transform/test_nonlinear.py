@@ -38,7 +38,7 @@ def _random_field():
         np.random.randint(1, 100, 3),
         np.random.random(3) * np.pi / 2)
 
-    return nonlinear.DisplacementField(field, src=src, xform=aff)
+    return nonlinear.DeformationField(field, src=src, xform=aff)
 
 def _random_affine_field():
 
@@ -61,9 +61,9 @@ def _random_affine_field():
 
     field    = np.zeros(list(ref.shape[:3]) + [3])
     field[:] = (scoords - rcoords).reshape(*it.chain(ref.shape, [3]))
-    field    = nonlinear.DisplacementField(field, src, ref,
-                                           header=ref.header,
-                                           dispType='relative')
+    field    = nonlinear.DeformationField(field, src, ref,
+                                          header=ref.header,
+                                          defType='relative')
     return field, xform
 
 
@@ -78,31 +78,31 @@ def _field_coords(field):
         field.getAffine('voxel', 'fsl')).reshape(field.shape)
 
 
-def test_detectDisplacementType():
+def test_detectDeformationType():
     relfield = _random_field()
     coords   = _field_coords(relfield)
-    absfield = nonlinear.DisplacementField(
+    absfield = nonlinear.DeformationField(
         relfield.data + coords,
         src=relfield.src,
         xform=relfield.voxToWorldMat)
 
-    assert nonlinear.detectDisplacementType(relfield) == 'relative'
-    assert nonlinear.detectDisplacementType(absfield) == 'absolute'
+    assert nonlinear.detectDeformationType(relfield) == 'relative'
+    assert nonlinear.detectDeformationType(absfield) == 'absolute'
 
 
-def test_convertDisplacementType():
+def test_convertDeformationType():
 
     relfield = _random_field()
     coords   = _field_coords(relfield)
-    absfield = nonlinear.DisplacementField(
+    absfield = nonlinear.DeformationField(
         relfield.data + coords,
         src=relfield.src,
         xform=relfield.voxToWorldMat)
 
-    gotconvrel1 = nonlinear.convertDisplacementType(relfield)
-    gotconvabs1 = nonlinear.convertDisplacementType(absfield)
-    gotconvrel2 = nonlinear.convertDisplacementType(relfield, 'absolute')
-    gotconvabs2 = nonlinear.convertDisplacementType(absfield, 'relative')
+    gotconvrel1 = nonlinear.convertDeformationType(relfield)
+    gotconvabs1 = nonlinear.convertDeformationType(absfield)
+    gotconvrel2 = nonlinear.convertDeformationType(relfield, 'absolute')
+    gotconvabs2 = nonlinear.convertDeformationType(absfield, 'relative')
 
     tol = dict(atol=1e-5, rtol=1e-5)
 
@@ -112,7 +112,7 @@ def test_convertDisplacementType():
     assert np.all(np.isclose(gotconvabs2, relfield.data, **tol))
 
 
-def test_convertDisplacementSpace():
+def test_convertDeformationSpace():
 
     basefield, xform = _random_affine_field()
     src              = basefield.src
@@ -137,7 +137,7 @@ def test_convertDisplacementSpace():
         refcoords = affine.transform(refcoords, ref.voxToScaledVoxMat)
         srccoords = basefield.transform(refcoords)
 
-        field   = nonlinear.convertDisplacementSpace(basefield, from_, to)
+        field   = nonlinear.convertDeformationSpace(basefield, from_, to)
         premat  = ref.getAffine('fsl', from_)
         postmat = src.getAffine('fsl', to)
 
@@ -152,7 +152,7 @@ def test_convertDisplacementSpace():
         assert np.all(np.isclose(expect[~enan], got[~gnan]))
 
 
-def test_DisplacementField_transform():
+def test_DeformationField_transform():
 
     relfield, xform = _random_affine_field()
     src             = relfield.src
@@ -168,9 +168,9 @@ def test_DisplacementField_transform():
 
     absfield    = np.zeros(list(ref.shape[:3]) + [3])
     absfield[:] = scoords.reshape(*it.chain(ref.shape, [3]))
-    absfield    = nonlinear.DisplacementField(absfield, src, ref,
-                                              header=ref.header,
-                                              dispType='absolute')
+    absfield    = nonlinear.DeformationField(absfield, src, ref,
+                                             header=ref.header,
+                                             defType='absolute')
 
     got = relfield.transform(rcoords)
     assert np.all(np.isclose(got, scoords))
@@ -279,7 +279,7 @@ def test_CoefficientField_transform():
         assert np.all(np.isclose(gotnp, srccoordsnp[srcspace], **tol))
 
 
-def test_coefficientFieldToDisplacementField():
+def test_coefficientFieldToDeformationField():
 
     nldir = op.join(datadir, 'nonlinear')
     src   = op.join(nldir, 'src.nii.gz')
@@ -293,50 +293,20 @@ def test_coefficientFieldToDisplacementField():
     cf    = fnirt.readFnirt(cf,   src, ref)
     rdf   = fnirt.readFnirt(df,   src, ref)
     rdfnp = fnirt.readFnirt(dfnp, src, ref)
-    adf   = nonlinear.convertDisplacementType(rdf)
-    adfnp = nonlinear.convertDisplacementType(rdfnp)
+    adf   = nonlinear.convertDeformationType(rdf)
+    adfnp = nonlinear.convertDeformationType(rdfnp)
 
-    rcnv   = nonlinear.coefficientFieldToDisplacementField(cf)
-    acnv   = nonlinear.coefficientFieldToDisplacementField(cf,
-                                                           dispType='absolute')
-    acnvnp = nonlinear.coefficientFieldToDisplacementField(cf,
-                                                           dispType='absolute',
-                                                           premat=False)
-    rcnvnp = nonlinear.coefficientFieldToDisplacementField(cf,
-                                                           premat=False)
+    rcnv   = nonlinear.coefficientFieldToDeformationField(cf)
+    acnv   = nonlinear.coefficientFieldToDeformationField(cf,
+                                                          defType='absolute')
+    acnvnp = nonlinear.coefficientFieldToDeformationField(cf,
+                                                          defType='absolute',
+                                                          premat=False)
+    rcnvnp = nonlinear.coefficientFieldToDeformationField(cf,
+                                                          premat=False)
 
     tol = dict(atol=1e-5, rtol=1e-5)
     assert np.all(np.isclose(rcnv.data,   rdf  .data, **tol))
     assert np.all(np.isclose(acnv.data,   adf  .data, **tol))
     assert np.all(np.isclose(rcnvnp.data, rdfnp.data, **tol))
     assert np.all(np.isclose(acnvnp.data, adfnp.data, **tol))
-
-
-def test_DisplacementFIeld_srcToRefMat():
-
-    field1 = _random_field()
-    xform  = affine.compose(
-        np.random.randint( 1, 10, 3),
-        np.random.randint(1, 100, 3),
-        np.random.random(3) * np.pi / 2)
-
-    field2 = nonlinear.DisplacementField(
-        field1.data,
-        xform=field1.voxToWorldMat,
-        src=field1.src,
-        ref=field1.ref,
-        srcToRefMat=xform)
-
-    x = np.random.randint(0, field1.shape[0], 100)
-    y = np.random.randint(0, field1.shape[1], 100)
-    z = np.random.randint(0, field1.shape[2], 100)
-
-    coords = np.array([x, y, z]).T
-    coords = affine.transform(
-        coords, field1.ref.getAffine('voxel', 'fsl'))
-
-    coordsf1 = field1.transform(coords)
-    coordsf2 = field2.transform(coords)
-    coordsf1 = affine.transform(coordsf1, affine.invert(xform))
-
-    assert np.all(np.isclose(coordsf1, coordsf2))
