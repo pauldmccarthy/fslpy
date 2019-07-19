@@ -60,7 +60,7 @@ def test_convert_flirt():
         assert np.all(np.isclose(gotxform, xform))
 
 
-def test_convert_fnirt_displacement_field():
+def test_convert_fnirt_deformation_field():
 
     datadir = op.join(op.dirname(__file__), '..',
                       'test_transform', 'testdata', 'nonlinear')
@@ -86,7 +86,7 @@ def test_convert_fnirt_displacement_field():
         assert dfnii.ref.sameSpace(ref)
         assert dfnii.srcSpace == df.srcSpace
         assert dfnii.refSpace == df.refSpace
-        assert dfnii.displacementType == df.displacementType
+        assert dfnii.deformationType == df.deformationType
         assert np.all(np.isclose(dfnii.data, df.data))
 
 
@@ -97,6 +97,7 @@ def test_convert_fnirt_coefficient_field():
     srcfile = op.join(datadir, 'src.nii.gz')
     reffile = op.join(datadir, 'ref.nii.gz')
     cffile  = op.join(datadir, 'coefficientfield.nii.gz')
+    dffile  = op.join(datadir, 'displacementfield.nii.gz')
 
     with tempdir.tempdir():
 
@@ -109,15 +110,17 @@ def test_convert_fnirt_coefficient_field():
 
         src   = fslimage.Image(srcfile)
         ref   = fslimage.Image(reffile)
-        cf    = fnirt.readFnirt(cffile, src, ref)
-        cfnii = fnirt.readFnirt('coef.nii.gz', src, ref)
+        df    = fnirt.readFnirt(dffile, src, ref)
+        dfnii = fnirt.readFnirt('coef.nii.gz', src, ref)
 
-        assert cfnii.src.sameSpace(src)
-        assert cfnii.ref.sameSpace(ref)
-        assert cfnii.srcSpace    == cf.srcSpace
-        assert cfnii.refSpace    == cf.refSpace
-        assert cfnii.knotSpacing == cf.knotSpacing
+        assert dfnii    .sameSpace(df)
+        assert dfnii.src.sameSpace(src)
+        assert dfnii.ref.sameSpace(ref)
 
-        assert np.all(np.isclose(cfnii.fieldToRefMat, cf.fieldToRefMat))
-        assert np.all(np.isclose(cfnii.srcToRefMat,   cf.srcToRefMat))
-        assert np.all(np.isclose(cfnii.data,          cf.data))
+        assert dfnii.srcSpace        == df.srcSpace
+        assert dfnii.refSpace        == df.refSpace
+        assert dfnii.deformationType == 'relative'
+
+        diff = np.abs(dfnii.data -  df.data)
+        tols = {'rtol' : 1e-5, 'atol' : 1e-5}
+        assert np.all(np.isclose(dfnii.data, df.data, **tols))
