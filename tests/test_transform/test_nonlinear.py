@@ -5,10 +5,11 @@ import os.path   as op
 
 import numpy   as np
 
-import fsl.data.image          as fslimage
-import fsl.transform.affine    as affine
-import fsl.transform.nonlinear as nonlinear
-import fsl.transform.fnirt     as fnirt
+import fsl.data.image           as fslimage
+import fsl.utils.image.resample as resample
+import fsl.transform.affine     as affine
+import fsl.transform.nonlinear  as nonlinear
+import fsl.transform.fnirt      as fnirt
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -39,6 +40,26 @@ def _random_field():
         np.random.random(3) * np.pi / 2)
 
     return nonlinear.DeformationField(field, src=src, xform=aff)
+
+
+def _affine_field(src, ref, xform, srcSpace, refSpace):
+    rx, ry, rz = np.meshgrid(np.arange(ref.shape[0]),
+                             np.arange(ref.shape[1]),
+                             np.arange(ref.shape[2]), indexing='ij')
+
+    rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
+    rcoords  = affine.transform(rvoxels, ref.getAffine('voxel', refSpace))
+    scoords  = affine.transform(rcoords, xform)
+
+    field    = np.zeros(list(ref.shape[:3]) + [3])
+    field[:] = (scoords - rcoords).reshape(*it.chain(ref.shape, [3]))
+    field    = nonlinear.DeformationField(field, src, ref,
+                                          srcSpace=srcSpace,
+                                          refSpace=refSpace,
+                                          header=ref.header,
+                                          defType='relative')
+    return field
+
 
 def _random_affine_field():
 
@@ -310,3 +331,62 @@ def test_coefficientFieldToDeformationField():
     assert np.all(np.isclose(acnv.data,   adf  .data, **tol))
     assert np.all(np.isclose(rcnvnp.data, rdfnp.data, **tol))
     assert np.all(np.isclose(acnvnp.data, adfnp.data, **tol))
+
+
+def test_applyDeformation():
+
+    src2ref = affine.compose(
+        np.random.randint(2, 5, 3),
+        np.random.randint(1, 10, 3),
+        np.random.random(3))
+    ref2src = affine.invert(src2ref)
+
+    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+    refdata = np.random.randint(1, 65536, (10, 10, 10))
+
+    src   = fslimage.Image(srcdata)
+    ref   = fslimage.Image(refdata, xform=src2ref)
+    field = _affine_field(src, ref, ref2src, 'world', 'world')
+
+    expect, xf = resample.resampleToReference(
+        src, ref, matrix=src2ref, order=1, mode='nearest')
+    result = nonlinear.applyDeformation(
+        src, field, order=1, mode='nearest')
+
+    assert np.all(np.isclose(expect, result))
+
+
+
+def test_applyDeformation_altref():
+    src2ref = affine.compose(
+        np.random.randint(2, 5, 3),
+        np.random.randint(1, 10, 3),
+        np.random.random(3))
+    ref2src = affine.invert(src2ref)
+
+    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+    refdata = np.random.randint(1, 65536, (10, 10, 10))
+
+    src   = fslimage.Image(srcdata)
+    ref   = fslimage.Image(refdata, xform=src2ref)
+    field = _affine_field(src, ref, ref2src, 'world', 'world')
+
+    altrefxform = affine.concat(
+        src2ref,
+        affine.scaleOffsetXform([1, 1, 1], [5, 0, 0]))
+
+    altref = fslimage.Image(refdata, xform=altrefxform)
+
+    expect, xf = resample.resampleToReference(
+        src, altref, matrix=src2ref, order=1, mode='constant', cval=0)
+    result = nonlinear.applyDeformation(
+        src, field, ref=altref, order=1, mode='constant', cval=0)
+
+    # We can get imprecision/rounding errors
+    # which may cause affine_transform and
+    # map_coordinates to determine that
+    # boundary voxels are out of bounds
+    expect = expect[1:-1, 1:-1, 1:-1]
+    result = result[1:-1, 1:-1, 1:-1]
+
+    assert np.all(np.isclose(expect, result))
