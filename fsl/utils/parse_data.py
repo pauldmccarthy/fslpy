@@ -8,8 +8,9 @@
 
 Argparse is the built-in python library for resolving command line arguments.
 
-The functions in this module can be passed on to the ``type`` argument in the ``ArgumentParser.add_command`` method
-to interpret command line arguments as neuroimageing objects (.e.g, NIFTI image files)
+The functions in this module can be passed on to the ``type`` argument in the
+``ArgumentParser.add_command`` method to interpret command line arguments as
+neuroimaging objects (.e.g, NIFTI image files)
 
 
 .. autosummary::
@@ -27,18 +28,21 @@ from fsl.utils import path
 import argparse
 
 
-def Image(filename):
+def Image(filename, *args, **kwargs):
     """
     Reads in an image from a NIFTI or Analyze file.
 
     :arg filename: filename provided by the user
     :return: fsl.data.image.Image object
+
+    All other arguments are passed through to the :class:`.Image` upon
+    creation.
     """
     try:
         full_filename = image.addExt(filename)
     except path.PathError as e:
         raise argparse.ArgumentTypeError(*e.args)
-    return image.Image(full_filename)
+    return image.Image(full_filename, *args, **kwargs)
 
 
 def ImageOut(basename):

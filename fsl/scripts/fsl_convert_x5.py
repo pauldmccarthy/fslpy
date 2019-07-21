@@ -9,17 +9,18 @@ transformation file formats.
 """
 
 
-import os.path as       op
-import                  sys
-import                  shutil
-import                  logging
-import                  argparse
-from collections import OrderedDict
+import os.path   as op
+import functools as ft
+import              sys
+import              shutil
+import              logging
+import              argparse
 
-import fsl.data.image      as fslimage
-import fsl.transform.flirt as flirt
-import fsl.transform.fnirt as fnirt
-import fsl.transform.x5    as x5
+import fsl.data.image       as fslimage
+import fsl.utils.parse_data as parse_data
+import fsl.transform.flirt  as flirt
+import fsl.transform.fnirt  as fnirt
+import fsl.transform.x5     as x5
 
 
 log = logging.getLogger(__name__)
@@ -49,11 +50,14 @@ def parseArgs(args):
     subparsers = parser.add_subparsers(dest='ctype')
     flirt      = subparsers.add_parser('flirt')
     fnirt      = subparsers.add_parser('fnirt')
+    imgtype    = ft.partial(parse_data.Image, loadData=False)
 
     flirt.add_argument('input',                  help=helps['input'])
     flirt.add_argument('output',                 help=helps['output'])
-    flirt.add_argument('-s',  '--source',        help=helps['source'])
-    flirt.add_argument('-r',  '--reference',     help=helps['reference'])
+    flirt.add_argument('-s',  '--source',        help=helps['source'],
+                       type=imgtype)
+    flirt.add_argument('-r',  '--reference',     help=helps['reference'],
+                       type=imgtype)
     flirt.add_argument('-if', '--input_format',  help=helps['input_format'],
                        choices=('x5', 'mat'))
     flirt.add_argument('-of', '--output_format', help=helps['output_format'],
@@ -61,8 +65,10 @@ def parseArgs(args):
 
     fnirt  .add_argument('input',                  help=helps['input'])
     fnirt  .add_argument('output',                 help=helps['output'])
-    fnirt  .add_argument('-s',  '--source',        help=helps['source'])
-    fnirt  .add_argument('-r',  '--reference',     help=helps['reference'])
+    fnirt  .add_argument('-s',  '--source',        help=helps['source'],
+                         type=imgtype)
+    fnirt  .add_argument('-r',  '--reference',     help=helps['reference'],
+                         type=imgtype)
     fnirt  .add_argument('-if', '--input_format',  help=helps['input_format'],
                          choices=('x5', 'nii'))
     fnirt  .add_argument('-of', '--output_format', help=helps['output_format'],
@@ -109,8 +115,8 @@ def flirtToX5(args):
     """Convert a linear FLIRT transformation matrix to an X5 transformation
     file.
     """
-    src   = fslimage.Image(args.source,    loadData=False)
-    ref   = fslimage.Image(args.reference, loadData=False)
+    src   = args.source
+    ref   = args.reference
     xform = flirt.readFlirt(args.input)
     xform = flirt.fromFlirt(xform, src, ref, 'world', 'world')
     x5.writeLinearX5(args.output, xform, src, ref)
@@ -127,8 +133,8 @@ def fnirtToX5(args):
     """Convert a non-linear FNIRT transformation into an X5 transformation
     file.
     """
-    src   = fslimage.Image(args.source,    loadData=False)
-    ref   = fslimage.Image(args.reference, loadData=False)
+    src   = args.source
+    ref   = args.reference
     field = fnirt.readFnirt(args.input, src=src, ref=ref)
     field = fnirt.fromFnirt(field, 'world', 'world')
     x5.writeNonLinearX5(args.output, field)

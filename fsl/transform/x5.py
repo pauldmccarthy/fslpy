@@ -10,6 +10,7 @@ transformations from/to BIDS X5 files. The following functions are available:
 .. autosummary::
    :nosignatures:
 
+   inferType
    readLinearX5
    writeLinearX5
    readNonLinearX5
@@ -339,6 +340,23 @@ class X5Error(Exception):
     pass
 
 
+def inferType(fname):
+    """Return the type of the given X5 file - either ``'linear'``or
+    ``'nonlinear'``.
+
+    :arg fname: Name of a X5 file
+    :returns:   ``'linear'``or ``'nonlinear'``
+    """
+    with h5py.File(fname, 'r') as f:
+
+        ftype = f.attrs.get('Type')
+
+        if ftype not in ('linear', 'nonlinear'):
+            raise X5Error('Unknown type: {}'.format(ftype))
+
+    return ftype
+
+
 def readLinearX5(fname):
     """Read a linear X5 transformation file from ``fname``.
 
@@ -565,7 +583,7 @@ def _readDeformation(group):
 
 
 def _writeDeformation(group, field):
-    """Write a deformation fieldto the given group.
+    """Write a deformation field to the given group.
 
     :arg group: A ``h5py.Group`` object
     :arg field: A :class:`.DeformationField` object
