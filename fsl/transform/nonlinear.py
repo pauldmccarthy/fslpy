@@ -19,19 +19,21 @@ utility functions are also available:
    detectDeformationType
    convertDeformationType
    convertDeformationSpace
+   applyDeformation
    coefficientFieldToDeformationField
 """
 
 
-import              logging
-import itertools as it
+import                                logging
+import itertools                   as it
 
-import numpy as np
+import numpy                       as np
+import scipy.ndimage.interpolation as ndinterp
 
-import fsl.utils.memoize as memoize
-import fsl.data.image    as fslimage
-
-from . import               affine
+import fsl.utils.memoize           as memoize
+import fsl.data.image              as fslimage
+import fsl.utils.image.resample    as resample
+from . import                         affine
 
 
 log = logging.getLogger(__name__)
@@ -580,6 +582,9 @@ def convertDeformationType(field, defType=None):
         if field.deformationType == 'absolute': defType = 'relative'
         else:                                   defType = 'absolute'
 
+    if field.deformationType == defType:
+        return field.data
+
     # Regardless of the conversion direction,
     # we need the coordinates of every voxel
     # in the reference coordinate system.
@@ -615,6 +620,9 @@ def convertDeformationSpace(field, from_, to):
                 the reference ``from_`` coordinate system and the source ``to``
                 coordinate system.
     """
+
+    if field.srcSpace == to and field.refSpace == from_:
+        return field
 
     # Get the field in absolute coordinates
     # if necessary - these are our source
@@ -670,6 +678,77 @@ def convertDeformationSpace(field, from_, to):
         srcSpace=to,
         refSpace=from_,
         defType=field.deformationType)
+
+
+def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
+    """Applies a :class:`DeformationField` to an :class:`.Image`.
+
+    The image is transformed into the space of the field's reference image
+    space. See the ``scipy.ndimage.interpolation.map_coordinates`` function
+    for details on the ``order``, ``mode`` and ``cval`` options.
+
+    If an alternate reference image is provided via the ``ref`` argument,
+    the deformation field is resampled into its space, and then applied to
+    the input image. It is therefore assumed that an alternate ``ref``is
+    aligned in world coordinates with the field's actual reference image.
+
+    :arg image: :class:`.Image` to be transformed
+
+    :arg field: :class:`DeformationField` to use
+
+    :arg ref:   Alternate reference image - if not provided, ``field.ref``
+                is used
+
+    :arg order: Spline interpolation order, passed through to the
+                ``scipy.ndimage.affine_transform`` function - ``0``
+                corresponds to nearest neighbour interpolation, ``1``
+                (the default) to linear interpolation, and ``3`` to
+                cubic interpolation.
+
+    :arg mode:  How to handle regions which are outside of the image FOV.
+                Defaults to `''nearest'``.
+
+    :arg cval:  Constant value to use when ``mode='constant'``.
+
+    :return:    ``numpy.array`` containing the transformed image data.
+    """
+
+    if order is None: order = 1
+    if mode  is None: mode  = 'nearest'
+    if cval  is None: cval  = 0
+
+    # We need the field to contain
+    # absolute source image voxel
+    # coordinates
+    field = convertDeformationSpace(field, 'voxel', 'voxel')
+    if field.deformationType != 'absolute':
+        field = DeformationField(convertDeformationType(field, 'absolute'),
+                                 header=field.header,
+                                 src=field.src,
+                                 ref=field.ref,
+                                 srcSpace='voxel',
+                                 refSpace='voxel',
+                                 defType='absolute')
+
+    # Resample to alternate reference image
+    # space if provided - regions of the
+    # field outside of the reference image
+    # space will contain -1s, so will be
+    # detected as out of bounds by
+    # map_coordinates
+    if ref is not None:
+        field = resample.resampleToReference(field,
+                                             ref,
+                                             order=1,
+                                             mode='constant',
+                                             cval=-1)[0]
+
+    field = field.transpose((3, 0, 1, 2))
+    return ndinterp.map_coordinates(image.data,
+                                    field,
+                                    order=order,
+                                    mode=mode,
+                                    cval=cval)
 
 
 def coefficientFieldToDeformationField(field, defType='relative', premat=True):
