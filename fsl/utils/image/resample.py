@@ -39,7 +39,7 @@ def resampleToPixdims(image, newPixdims, **kwargs):
     return resample(image, newShape, **kwargs)
 
 
-def resampleToReference(image, reference, **kwargs):
+def resampleToReference(image, reference, matrix=None, **kwargs):
     """Resample ``image`` into the space of the ``reference``.
 
     This is a wrapper around :func:`resample` - refer to its documenttion
@@ -49,12 +49,16 @@ def resampleToReference(image, reference, **kwargs):
     along the spatial (first three) dimensions.
 
     :arg image:     :class:`.Image` to resample
+    :arg matrix:    Optional world-to-world affine alignment matrix
     :arg reference: :class:`.Nifti` defining the space to resample ``image``
                     into
     """
 
     oldShape = list(image.shape)
     newShape = list(reference.shape[:3])
+
+    if matrix is None:
+        matrix = np.eye(4)
 
     # If the input image is >3D, pad the
     # new shape so that we only resample
@@ -64,7 +68,9 @@ def resampleToReference(image, reference, **kwargs):
 
     # Align the two images together
     # via their vox-to-world affines.
-    matrix = affine.concat(image.worldToVoxMat, reference.voxToWorldMat)
+    matrix = affine.concat(image.worldToVoxMat,
+                           affine.invert(matrix),
+                           reference.voxToWorldMat)
 
     # If the input image is >3D, we
     # have to adjust the resampling
@@ -82,7 +88,12 @@ def resampleToReference(image, reference, **kwargs):
     kwargs['newShape'] = newShape
     kwargs['matrix']   = matrix
 
-    return resample(image, **kwargs)
+    data = resample(image, **kwargs)[0]
+
+    # The image is now in the same space
+    # as the reference, so it inherits
+    # ref's voxel-to-world affine
+    return data, reference.voxToWorldMat
 
 
 def resample(image,
@@ -112,6 +123,12 @@ def resample(image,
     See the ``scipy.ndimage.affine_transform`` function for more details,
     particularly on the ``order``, ``matrix``, ``mode`` and
     ``cval`` arguments.
+
+    .. note:: If a custom resampling ``matrix`` is specified, the adjusted
+              voxel-to-world afffine cannot be calculated by this function,
+              so ``None`` will be returned instead.
+
+    :arg image:    :class:`.Image` object to resample
 
     :arg newShape: Desired shape. May containg floating point values, in which
                    case the resampled image will have shape
@@ -159,7 +176,8 @@ def resample(image,
 
                - A ``numpy`` array of shape ``(4, 4)``, containing the
                  adjusted voxel-to-world transformation for the spatial
-                 dimensions of the resampled data.
+                 dimensions of the resampled data, or ``None`` if a ``matrix``
+                 was provided.
     """
 
     if sliceobj is None:     sliceobj = slice(None)
@@ -167,6 +185,8 @@ def resample(image,
     if origin   is None:     origin   = 'centre'
     if mode     is None:     mode     = 'nearest'
     if origin   == 'center': origin   = 'centre'
+
+    ownMatrix = matrix is None
 
     if origin not in ('centre', 'corner'):
         raise ValueError('Invalid value for origin: {}'.format(origin))
@@ -218,7 +238,15 @@ def resample(image,
         matrix[:3, :3] = rotmat
         matrix[:3, -1] = offsets
 
-    matrix = affine.concat(image.voxToWorldMat, matrix)
+    # We can only adjust the v2w affine if
+    # the input space and resampling space
+    # are aligned (e.g. if we're just
+    # resampling to different dimensions).
+    # We can't assume this when a custom
+    # matrix is specified, so we just give
+    # up and return None.
+    if ownMatrix: matrix = affine.concat(image.voxToWorldMat, matrix)
+    else:         matrix = None
 
     return data, matrix
 

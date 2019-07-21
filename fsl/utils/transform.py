@@ -10,7 +10,9 @@
 
 
 import fsl.utils.deprecated as     deprecated
-from   fsl.transform.affine import *          # noqa
+from   fsl.transform.affine import *                     # noqa
+from   fsl.transform.flirt  import (flirtMatrixToSform,  # noqa
+                                    sformToFlirtMatrix)
 
 
 deprecated.warn('fsl.utils.transform',
