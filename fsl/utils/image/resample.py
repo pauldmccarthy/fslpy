@@ -67,7 +67,9 @@ def resampleToReference(image, reference, matrix=None, **kwargs):
         newShape = newShape + oldShape[len(newShape):]
 
     # Align the two images together
-    # via their vox-to-world affines.
+    # via their vox-to-world affines,
+    # and the world-to-world affine
+    # if provided
     matrix = affine.concat(image.worldToVoxMat,
                            affine.invert(matrix),
                            reference.voxToWorldMat)

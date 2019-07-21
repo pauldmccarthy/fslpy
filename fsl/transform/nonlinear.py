@@ -582,9 +582,6 @@ def convertDeformationType(field, defType=None):
         if field.deformationType == 'absolute': defType = 'relative'
         else:                                   defType = 'absolute'
 
-    if field.deformationType == defType:
-        return field.data
-
     # Regardless of the conversion direction,
     # we need the coordinates of every voxel
     # in the reference coordinate system.
@@ -742,6 +739,9 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
                                              order=1,
                                              mode='constant',
                                              cval=-1)[0]
+
+    else:
+        field = field.data
 
     field = field.transpose((3, 0, 1, 2))
     return ndinterp.map_coordinates(image.data,
