@@ -458,8 +458,8 @@ def _readMetadata(group):
     version   = group.attrs.get('Version')
     meta      = group.attrs.get('Metadata')
 
-    parserver = fslversion.parseVersion(X5_VERSION)
-    filever   = fslversion.parseVersion(version)
+    parserver = fslversion.parseVersionString(X5_VERSION)
+    filever   = fslversion.parseVersionString(version)
 
     if (format != X5_FORMAT) or (filever[0] != parserver[0]):
         raise X5Error('Incompatible format/version (required: {}/{}, '

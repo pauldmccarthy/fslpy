@@ -584,7 +584,8 @@ def convertDeformationType(field, defType=None):
     # we need the coordinates of every voxel
     # in the reference coordinate system.
     dx, dy, dz = field.shape[:3]
-    xform      = field.getAffine('voxel', field.refSpace)
+    xform      = affine.concat(field.ref.getAffine('world', field.refSpace),
+                               field    .getAffine('voxel', 'world'))
 
     coords     = np.meshgrid(np.arange(dx),
                              np.arange(dy),
@@ -659,9 +660,12 @@ def convertDeformationSpace(field, from_, to):
         refcoords = np.array(refcoords)
         refcoords = refcoords.transpose((1, 2, 3, 0)).reshape((-1, 3))
 
-        if from_ != 'voxel':
-            refmat    = field.ref.getAffine('voxel', from_)
-            refcoords = affine.transform(refcoords, refmat)
+        xform = affine.concat(
+            field.ref.getAffine('world', from_),
+            field    .getAffine('voxel', 'world'))
+
+        if not np.all(np.isclose(xform, np.eye(4))):
+            refcoords = affine.transform(refcoords, xform)
 
         fieldcoords = srccoords - refcoords
 
@@ -711,6 +715,7 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
     if order is None: order = 1
     if mode  is None: mode  = 'nearest'
     if cval  is None: cval  = 0
+    if ref   is None: ref   = field.ref
 
     # We need the field to contain
     # absolute source image voxel
@@ -725,13 +730,22 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
                                  refSpace='voxel',
                                  defType='absolute')
 
-    # Resample to alternate reference image
-    # space if provided - regions of the
-    # field outside of the reference image
-    # space will contain -1s, so will be
-    # detected as out of bounds by
-    # map_coordinates
-    if ref is not None:
+    # If the field is not voxel-aligned
+    # to the reference, we need to
+    # resample the field itself into the
+    # reference image space (assumed to
+    # be world-aligned). If field and ref
+    # are not not world  aligned, regions
+    # of the field outside of the
+    # reference image space will contain
+    # -1s, so will be detected as out of
+    # bounds by map_coordinates below.
+    #
+    # This will potentially result in
+    # truncation at the field boundaries,
+    # but there's nothing we can do about
+    # that.
+    if not field.sameSpace(ref):
         field = resample.resampleToReference(field,
                                              ref,
                                              order=1,
