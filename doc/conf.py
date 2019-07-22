@@ -361,7 +361,7 @@ epub_exclude_files = ['search.html']
 autoclass_content = 'class'
 
 # Document private members and special members (e.g. __init__)
-autodocsourc_default_flags = ['private-members', 'special-members']
+autodoc_default_flags = ['private-members', 'special-members']
 
 # Documentation for python modules is in the same order
 # as the source code.
