@@ -42,20 +42,26 @@ def _random_field():
     return nonlinear.DeformationField(field, src=src, xform=aff)
 
 
-def _affine_field(src, ref, xform, srcSpace, refSpace):
-    rx, ry, rz = np.meshgrid(np.arange(ref.shape[0]),
-                             np.arange(ref.shape[1]),
-                             np.arange(ref.shape[2]), indexing='ij')
+def _affine_field(src, ref, xform, srcSpace, refSpace, shape=None, fv2w=None):
+
+    if shape is None: shape = ref.shape[:3]
+    if fv2w  is None: fv2w  = ref.getAffine('voxel', 'world')
+
+    rx, ry, rz = np.meshgrid(np.arange(shape[0]),
+                             np.arange(shape[1]),
+                             np.arange(shape[2]), indexing='ij')
 
     rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
-    rcoords  = affine.transform(rvoxels, ref.getAffine('voxel', refSpace))
+    f2r      = affine.concat(ref.getAffine('world', refSpace), fv2w)
+    rcoords  = affine.transform(rvoxels, f2r)
     scoords  = affine.transform(rcoords, xform)
 
-    field    = np.zeros(list(ref.shape[:3]) + [3])
-    field[:] = (scoords - rcoords).reshape(*it.chain(ref.shape, [3]))
+    field    = np.zeros(list(shape[:3]) + [3])
+    field[:] = (scoords - rcoords).reshape(*it.chain(shape, [3]))
     field    = nonlinear.DeformationField(field, src, ref,
                                           srcSpace=srcSpace,
                                           refSpace=refSpace,
+                                          xform=fv2w,
                                           header=ref.header,
                                           defType='relative')
     return field
@@ -382,10 +388,47 @@ def test_applyDeformation_altref():
     result = nonlinear.applyDeformation(
         src, field, ref=altref, order=1, mode='constant', cval=0)
 
-    # We can get imprecision/rounding errors
-    # which may cause affine_transform and
-    # map_coordinates to determine that
-    # boundary voxels are out of bounds
+    # boundary voxels can get truncated
+    # (4 is the altref-ref overlap boundary)
+    expect[4, :, :] = 0
+    result[4, :, :] = 0
+    expect = expect[1:-1, 1:-1, 1:-1]
+    result = result[1:-1, 1:-1, 1:-1]
+
+    assert np.all(np.isclose(expect, result))
+
+
+# test when reference/field
+# are not voxel-aligned
+def test_applyDeformation_worldAligned():
+    refv2w   = affine.scaleOffsetXform([1, 1, 1], [10,   10,   10])
+    fieldv2w = affine.scaleOffsetXform([2, 2, 2], [10.5, 10.5, 10.5])
+    src2ref  = refv2w
+    ref2src  = affine.invert(src2ref)
+
+    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+
+    src   = fslimage.Image(srcdata)
+    ref   = fslimage.Image(srcdata, xform=src2ref)
+    field = _affine_field(src, ref, ref2src, 'world', 'world',
+                          shape=(5, 5, 5), fv2w=fieldv2w)
+
+    field = nonlinear.DeformationField(
+        nonlinear.convertDeformationType(field, 'absolute'),
+        header=field.header,
+        src=src,
+        ref=ref,
+        srcSpace='world',
+        refSpace='world',
+        defType='absolute')
+
+    expect, xf = resample.resampleToReference(
+        src, ref, matrix=src2ref, order=1, mode='constant', cval=0)
+    result = nonlinear.applyDeformation(
+        src, field, order=1, mode='constant', cval=0)
+
+    fslimage.Image(result, xform=ref.voxToWorldMat).save('result')
+
     expect = expect[1:-1, 1:-1, 1:-1]
     result = result[1:-1, 1:-1, 1:-1]
 
