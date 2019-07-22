@@ -555,9 +555,9 @@ def _readDeformation(group):
     :arg group: A ``h5py.Group`` object
     :returns:   A tuple containing
 
-                 - A ``numpy.arrayThe`` containing the deformation field
+                 - A ``numpy.array`` containing the deformation field
 
-                 - A ``numpy.array`` of shape ``(4, 4) `` containing the
+                 - A ``numpy.array`` of shape ``(4, 4)`` containing the
                    voxel to world affine for the deformation field
 
                  - The deformation type - either ``'absolute'`` or

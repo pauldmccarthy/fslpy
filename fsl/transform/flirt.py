@@ -79,7 +79,6 @@ def fromFlirt(xform, src, ref, from_='voxel', to='world'):
     :returns:   ``numpy`` array of shape ``(4, 4)`` containing a matrix
                 encoding a transformation from the source ``from_`` to
                 the reference ``to`` coordinate systems.
-
     """
     premat  = src.getAffine(from_, 'fsl')
     postmat = ref.getAffine('fsl', to)

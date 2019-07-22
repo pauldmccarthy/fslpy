@@ -174,7 +174,8 @@ class DeformationField(NonLinearTransform):
 
     It is assumed that the a ``DeformationField`` is aligned with the
     reference image in their world coordinate systems (i.e. their ``sform``
-    affines project both images into alignment).
+    affines project the reference image and the deformation field into
+    alignment).
     """
 
 
@@ -686,7 +687,7 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
 
     If an alternate reference image is provided via the ``ref`` argument,
     the deformation field is resampled into its space, and then applied to
-    the input image. It is therefore assumed that an alternate ``ref``is
+    the input image. It is therefore assumed that an alternate ``ref`` is
     aligned in world coordinates with the field's actual reference image.
 
     :arg image: :class:`.Image` to be transformed
