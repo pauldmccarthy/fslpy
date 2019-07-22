@@ -326,14 +326,14 @@ import numpy   as np
 import nibabel as nib
 import h5py
 
-import fsl.version    as version
+import fsl.version    as fslversion
 import fsl.data.image as fslimage
 from . import            affine
 from . import            nonlinear
 
 
 X5_FORMAT  = 'X5'
-X5_VERSION = '0.0.1'
+X5_VERSION = '0.1.0'
 
 
 class X5Error(Exception):
@@ -454,11 +454,14 @@ def _readMetadata(group):
     :returns:   A ``dict`` containing the metadata.
     """
 
-    format  = group.attrs.get('Format')
-    version = group.attrs.get('Version')
-    meta    = group.attrs.get('Metadata')
+    format    = group.attrs.get('Format')
+    version   = group.attrs.get('Version')
+    meta      = group.attrs.get('Metadata')
 
-    if (format != X5_FORMAT) or (version != X5_VERSION):
+    parserver = fslversion.parseVersion(X5_VERSION)
+    filever   = fslversion.parseVersion(version)
+
+    if (format != X5_FORMAT) or (filever[0] != parserver[0]):
         raise X5Error('Incompatible format/version (required: {}/{}, '
                       'present: {}/{})'.format(X5_FORMAT, X5_VERSION,
                                                format, version))
@@ -478,7 +481,7 @@ def _writeMetadata(group):
     """
     group.attrs['Format']   = X5_FORMAT
     group.attrs['Version']  = X5_VERSION
-    group.attrs['Metadata'] = json.dumps({'fslpy' : version.__version__})
+    group.attrs['Metadata'] = json.dumps({'fslpy' : fslversion.__version__})
 
 
 def _readAffine(group):
