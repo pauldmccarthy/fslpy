@@ -182,6 +182,12 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
+    print()
+    print('Warning: this version of fsl_convert_x5 is a development release. '
+          'Interface, behaviour, and input/output formats of future versions '
+          'may differ from this version.')
+    print()
+
     args = parseArgs(args)
 
     if   args.ctype == 'flirt': doFlirt(args)

@@ -20,7 +20,7 @@ import fsl.utils.image.resample as resample
 import fsl.data.image           as fslimage
 
 
-def parseArgs(args=None):
+def parseArgs(args):
     """Parses command-line arguments.
 
     :arg args: Sequence of command-line arguments. If ``None``, ``sys.argv``
@@ -120,6 +120,15 @@ def main(args=None):
     :func:`applyLinear` or :func:`applyNonlinear` depending on the x5 file
     type.
     """
+
+    if args is None:
+        args = sys.argv[1:]
+
+    print()
+    print('Warning: this version of fsl_apply_x5 is a development release. '
+          'Interface, behaviour, and input/output formats of future versions '
+          'may differ from this version.')
+    print()
 
     args = parseArgs(args)
 
