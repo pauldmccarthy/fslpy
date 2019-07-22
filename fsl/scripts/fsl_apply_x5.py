@@ -46,15 +46,15 @@ def parseArgs(args=None):
                    'reference specified in X5 file)',
     }
     opts = {
-        'input'  : dict(helps['input'],
+        'input'  : dict(help=helps['input'],
                         type=parse_data.Image),
-        'xform'  : dict(helps['xform']),
-        'output' : dict(helps['output'],
+        'xform'  : dict(help=helps['xform']),
+        'output' : dict(help=helps['output'],
                         type=parse_data.ImageOut),
-        'interp' : dict(helps['interp'],
+        'interp' : dict(help=helps['interp'],
                         choices=('nearest', 'linear', 'cubic'),
                         default='linear'),
-        'ref'    : dict(helps['ref'],
+        'ref'    : dict(help=helps['ref'],
                         type=ft.partial(parse_data.Image, loadData=False)),
     }
 
