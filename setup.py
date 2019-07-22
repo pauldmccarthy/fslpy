@@ -127,7 +127,7 @@ setup(
             'atlasquery     = fsl.scripts.atlasq:atlasquery_emulation',
             'fsl_ents       = fsl.scripts.fsl_ents:main',
             'resample_image = fsl.scripts.resample_image:main',
-            'fsl_convert_x5 = fsl.scripts.fsl_convert_x5:main'
+            'fsl_convert_x5 = fsl.scripts.fsl_convert_x5:main',
             'fsl_apply_x5   = fsl.scripts.fsl_apply_x5:main'
         ]
     }
