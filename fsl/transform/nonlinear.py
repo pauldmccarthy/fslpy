@@ -204,9 +204,6 @@ class DeformationField(NonLinearTransform):
 
         NonLinearTransform.__init__(self, image, src, ref, **kwargs)
 
-        if not self.sameSpace(self.ref):
-            raise ValueError('Invalid reference image: {}'.format(self.ref))
-
         self.__defType = defType
 
 
