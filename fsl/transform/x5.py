@@ -88,18 +88,18 @@ shape, dimensions, and voxel-to-world affine transformation.
 Groups of type *space* have the following fields:
 
 
-+-------------+-----------+---------------------------------------------------+
-| **Name**    | **Type**  | **Value/Description**                             |
-+-------------+-----------+---------------------------------------------------+
-| ``Type``    | attribute | ``'image'``                                       |
-+-------------+-----------+---------------------------------------------------+
-| ``Size``    | attribute | ``uint64`` ``(X, Y, Z)`` voxel dimensions         |
-+-------------+-----------+---------------------------------------------------+
-| ``Scales``  | attribute | ``float64`` ``(X, Y, Z)`` voxel pixdims           |
-+-------------+-----------+---------------------------------------------------+
-| ``Mapping`` | affine    | The image voxel-to-world transformation (its      |
-|             |           | ``sform``)                                        |
-+-------------+-----------+---------------------------------------------------+
++--------------+-----------+--------------------------------------------------+
+| **Name**     | **Type**  | **Value/Description**                            |
++--------------+-----------+--------------------------------------------------+
+| ``Type``     | attribute | ``'image'``                                      |
++--------------+-----------+--------------------------------------------------+
+| ``Size``     | attribute | ``uint64`` ``(X, Y, Z)`` voxel dimensions        |
++--------------+-----------+--------------------------------------------------+
+| ``Scales``   | attribute | ``float64`` ``(X, Y, Z)`` voxel pixdims          |
++--------------+-----------+--------------------------------------------------+
+| ``Mapping/`` | affine    | The image voxel-to-world transformation (its     |
+|              |           | ``sform``)                                       |
++--------------+-----------+--------------------------------------------------+
 
 
 *deformation*
@@ -131,19 +131,19 @@ coordinate system.
 Groups of type *deformation* have the following fields:
 
 
-+-------------+-----------+---------------------------------------------------+
-| **Name**    | **Type**  | **Value/Description**                             |
-+-------------+-----------+---------------------------------------------------+
-| ``Type``    | attribute | ``'deformation'``                                 |
-+-------------+-----------+---------------------------------------------------+
-| ``SubType`` | attribute | ``'absolute'`` or ``'relative'``.                 |
-+-------------+-----------+---------------------------------------------------+
-| ``Matrix``  | dataset   | The deformation field - a ``float64`` array of    |
-|             |           | shape ``(X, Y, Z, 3)``                            |
-+-------------+-----------+---------------------------------------------------+
-| ``Mapping`` | affine    | The field voxel-to-world transformation (its      |
-|             |           | ``sform``)                                        |
-+-------------+-----------+---------------------------------------------------+
++--------------+-----------+--------------------------------------------------+
+| **Name**     | **Type**  | **Value/Description**                            |
++--------------+-----------+--------------------------------------------------+
+| ``Type``     | attribute | ``'deformation'``                                |
++--------------+-----------+--------------------------------------------------+
+| ``SubType``  | attribute | ``'absolute'`` or ``'relative'``.                |
++--------------+-----------+--------------------------------------------------+
+| ``Matrix``   | dataset   | The deformation field - a ``float64`` array of   |
+|              |           | shape ``(X, Y, Z, 3)``                           |
++--------------+-----------+--------------------------------------------------+
+| ``Mapping/`` | affine    | The field voxel-to-world transformation (its     |
+|              |           | ``sform``)                                       |
++--------------+-----------+--------------------------------------------------+
 
 
 Linear X5 files
@@ -204,7 +204,7 @@ between FLIRT-style matrices and X5 style matrices.
 
 
 .. [*] For a given image, FSL coordinates are voxel coordinates scaled by the
-       ``pixdim`` values in the NIFTI header, and an inversion along the X
+       ``pixdim`` values in the NIFTI header, with an inversion along the X
        axis if the voxel-to-world affine (the ``sform``) has a positive
        determinant.
 
@@ -269,9 +269,9 @@ Storage of FSL FNIRT warp fields in non-linear X5 files
 -------------------------------------------------------
 
 
-FLIRT outputs the result of a non-linear registration from a source image to a
-reference image as either a warp field, or a coefficient field which can be
-used to generate a warp field. A warp field is defined in terms of the
+FLIRT outputs the result of a non-linear registration between a source image
+and a reference image as either a warp field, or a coefficient field which can
+be used to generate a warp field. A warp field is defined in terms of the
 reference image - the warp field has the same shape and FOV as the reference
 image, and contains either:
 
@@ -316,6 +316,7 @@ to source image world coordinates.
 The :mod:`fsl.transform.fnirt` module contains functions which can be used to
 perform all of the conversions and adjustments required to store FNIRT
 transformations as X5 files.
+
 """
 
 
@@ -341,11 +342,11 @@ class X5Error(Exception):
 
 
 def inferType(fname):
-    """Return the type of the given X5 file - either ``'linear'``or
+    """Return the type of the given X5 file - either ``'linear'`` or
     ``'nonlinear'``.
 
     :arg fname: Name of a X5 file
-    :returns:   ``'linear'``or ``'nonlinear'``
+    :returns:   ``'linear'`` or ``'nonlinear'``
     """
     with h5py.File(fname, 'r') as f:
 
@@ -405,7 +406,7 @@ def readNonLinearX5(fname):
     """Read a nonlinear X5 transformation file from ``fname``.
 
     :arg fname: File name to read from
-    :returns:   A :class:`.DisplacementField` or :class:`.CoefficientField`
+    :returns:   A :class:`.DeformationField`
     """
 
     with h5py.File(fname, 'r') as f:
@@ -432,7 +433,7 @@ def writeNonLinearX5(fname, field):
     """Write a nonlinear X5 transformation to ``fname``.
 
     :arg fname: File name to write to
-    :arg field: A :class:`.DisplacementField` or :class:`.CoefficientField`
+    :arg field: A :class:`.DeformationField`
     """
 
     with h5py.File(fname, 'w') as f:

@@ -456,7 +456,7 @@ class CoefficientField(NonLinearTransform):
 
         :arg premat: If ``True``, the inverse :meth:`srcToRefMat` is applied
                      to the coordinates after the displacements have been
-                     addd.
+                     added.
 
         :returns:    ``coords``, transformed into the source image space
         """
@@ -465,7 +465,7 @@ class CoefficientField(NonLinearTransform):
 
 
     def displacements(self, coords):
-        """Calculate the relative displacemenets for the given coordinates.
+        """Calculate the relative displacements for the given coordinates.
 
         :arg coords: ``(N, 3)`` array of reference image voxel coordinates.
         :return:      A ``(N, 3)`` array  of relative displacements to the
