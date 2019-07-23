@@ -745,6 +745,8 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
     # truncation at the field boundaries,
     # but there's nothing we can do about
     # that.
+    src = field.src
+
     if not field.sameSpace(ref):
         field = resample.resampleToReference(field,
                                              ref,
@@ -754,6 +756,21 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
 
     else:
         field = field.data
+
+    # If the input image is in a
+    # different space to the field
+    # source space, we need to
+    # adjust the resampling matrix.
+    # We assume world-world alignment
+    # between the original source
+    # and the image to be resampled
+    if not image.sameSpace(src):
+        post  = affine.concat(image.getAffine('world', 'voxel'),
+                              src  .getAffine('voxel', 'world'))
+        shape = field.shape
+        field = field.reshape((-1, 3))
+        field = affine.transform(field, post)
+        field = field.reshape(shape)
 
     field = field.transpose((3, 0, 1, 2))
     return ndinterp.map_coordinates(image.data,
