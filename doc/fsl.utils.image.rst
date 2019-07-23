@@ -5,6 +5,7 @@
    :hidden:
 
    fsl.utils.image.resample
+   fsl.utils.image.roi
 
 .. automodule:: fsl.utils.image
     :members:
