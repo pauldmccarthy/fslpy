@@ -6,6 +6,14 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+* New :mod:`.image.roi` module, for exracting an ROI of an image, or expanding
+  its field-of-view.
+
+
 Changed
 ^^^^^^^
 
