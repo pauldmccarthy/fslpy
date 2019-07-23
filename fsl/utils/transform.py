@@ -16,6 +16,6 @@ from   fsl.transform.flirt  import (flirtMatrixToSform,  # noqa
 
 
 deprecated.warn('fsl.utils.transform',
-                vin='2.2.0',
+                vin='2.4.0',
                 rin='3.0.0',
                 msg='Use the fsl.transform module instead')

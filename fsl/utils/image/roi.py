@@ -11,8 +11,8 @@ a region-of-interest from, or expand the field-of-view of, an :class:`.Image`.
 
 import numpy as np
 
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
+import fsl.data.image       as fslimage
+import fsl.transform.affine as affine
 
 
 def _normaliseBounds(shape, bounds):
@@ -97,8 +97,8 @@ def roi(image, bounds):
     # each spatial dimension
     oldaff = image.voxToWorldMat
     offset = [lo for lo, hi in bounds[:3]]
-    offset = transform.scaleOffsetXform([1, 1, 1], offset)
-    newaff = transform.concat(oldaff, offset)
+    offset = affine.scaleOffsetXform([1, 1, 1], offset)
+    newaff = affine.concat(oldaff, offset)
 
     return fslimage.Image(newdata,
                           xform=newaff,

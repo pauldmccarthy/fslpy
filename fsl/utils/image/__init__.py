@@ -13,4 +13,5 @@ The following modules are available:
    :nosignature
 
    .image.resample
+   .image.roi
 """
