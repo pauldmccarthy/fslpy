@@ -64,6 +64,10 @@ def parseArgs(args):
     parser.add_argument(*flags['interp'], **opts['interp'])
     parser.add_argument(*flags['ref'],    **opts['ref'])
 
+    if len(args) == 0:
+        parser.print_help()
+        sys.exit(0)
+
     args = parser.parse_args(args)
 
     if   args.interp == 'nearest': args.interp = 0

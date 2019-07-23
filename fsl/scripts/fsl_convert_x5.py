@@ -74,11 +74,17 @@ def parseArgs(args):
     fnirt  .add_argument('-of', '--output_format', help=helps['output_format'],
                          choices=('x5', 'nii'))
 
-    args = parser.parse_args(args)
-
-    if args.ctype is None:
+    if len(args) == 0:
         parser.print_help()
         sys.exit(0)
+
+    if len(args) == 1:
+        if   args[0] == 'flirt': flirt.print_help()
+        elif args[0] == 'fnirt': fnirt.print_help()
+        else: parser.error('Unknown sub-command: {}'.format(args[0]))
+        sys.exit(0)
+
+    args = parser.parse_args(args)
 
     # If input/output formats were not
     # specified, infer them from the
