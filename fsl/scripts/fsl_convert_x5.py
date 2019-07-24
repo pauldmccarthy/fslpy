@@ -81,8 +81,6 @@ def parseArgs(args):
     if len(args) == 1:
         if   args[0] == 'flirt': flirt.print_help()
         elif args[0] == 'fnirt': fnirt.print_help()
-        else: parser.error('Unknown sub-command: {}'.format(args[0]))
-        sys.exit(0)
 
     args = parser.parse_args(args)
 
