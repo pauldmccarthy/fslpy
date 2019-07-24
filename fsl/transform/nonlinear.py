@@ -750,10 +750,9 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
     if not field.sameSpace(ref):
         field = resample.resampleToReference(field,
                                              ref,
-                                             order=1,
+                                             order=order,
                                              mode='constant',
                                              cval=-1)[0]
-
     else:
         field = field.data
 
