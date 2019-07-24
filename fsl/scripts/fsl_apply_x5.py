@@ -129,9 +129,9 @@ def main(args=None):
         args = sys.argv[1:]
 
     print()
-    print('Warning: this version of fsl_apply_x5 is a development release. '
-          'Interface, behaviour, and input/output formats of future versions '
-          'may differ from this version.')
+    print('Warning: this version of fsl_apply_x5 is a development release.\n'
+          'Interface, behaviour, and input/output formats of future versions\n'
+          'may differ substantially from this version.')
     print()
 
     args = parseArgs(args)

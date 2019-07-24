@@ -11,6 +11,7 @@ transformation file formats.
 
 import os.path   as op
 import functools as ft
+import textwrap  as tw
 import              sys
 import              shutil
 import              logging
@@ -46,10 +47,15 @@ def parseArgs(args):
                           'name.',
     }
 
+    epilog = tw.dedent("""
+    If the input and output file formats are the same, the input file
+    is simply copied to the output file.
+    """).strip()
+
     parser     = argparse.ArgumentParser('fsl_convert_x5')
     subparsers = parser.add_subparsers(dest='ctype')
-    flirt      = subparsers.add_parser('flirt')
-    fnirt      = subparsers.add_parser('fnirt')
+    flirt      = subparsers.add_parser('flirt', epilog=epilog)
+    fnirt      = subparsers.add_parser('fnirt', epilog=epilog)
     imgtype    = ft.partial(parse_data.Image, loadData=False)
 
     flirt.add_argument('input',                  help=helps['input'])
@@ -79,8 +85,12 @@ def parseArgs(args):
         sys.exit(0)
 
     if len(args) == 1:
-        if   args[0] == 'flirt': flirt.print_help()
-        elif args[0] == 'fnirt': fnirt.print_help()
+        if   args[0] == 'flirt':
+            flirt.print_help()
+            sys.exit(0)
+        elif args[0] == 'fnirt':
+            fnirt.print_help()
+            sys.exit(0)
 
     args = parser.parse_args(args)
 
@@ -187,9 +197,9 @@ def main(args=None):
         args = sys.argv[1:]
 
     print()
-    print('Warning: this version of fsl_convert_x5 is a development release. '
-          'Interface, behaviour, and input/output formats of future versions '
-          'may differ from this version.')
+    print('Warning: this version of fsl_convert_x5 is a development release.\n'
+          'Interface, behaviour, and input/output formats of future versions\n'
+          'may differ substantially from this version.')
     print()
 
     args = parseArgs(args)
