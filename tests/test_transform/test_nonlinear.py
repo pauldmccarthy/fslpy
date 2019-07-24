@@ -7,6 +7,7 @@ import numpy   as np
 
 import fsl.data.image           as fslimage
 import fsl.utils.image.resample as resample
+import fsl.utils.image.roi      as roi
 import fsl.transform.affine     as affine
 import fsl.transform.nonlinear  as nonlinear
 import fsl.transform.fnirt      as fnirt
@@ -362,6 +363,53 @@ def test_applyDeformation():
     assert np.all(np.isclose(expect, result))
 
 
+def test_applyDeformation_altsrc():
+
+    src2ref = affine.compose(
+        np.random.randint(2, 5, 3),
+        np.random.randint(1, 10, 3),
+        [0, 0, 0])
+    ref2src = affine.invert(src2ref)
+
+    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+    refdata = np.random.randint(1, 65536, (10, 10, 10))
+
+    src   = fslimage.Image(srcdata)
+    ref   = fslimage.Image(refdata, xform=src2ref)
+    field = _affine_field(src, ref, ref2src, 'world', 'world')
+
+    # First try a down-sampled version
+    # of the original source image
+    altsrc, xf = resample.resample(src, (5, 5, 5), origin='corner')
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest')
+    assert np.all(np.isclose(expect, result))
+
+    # Now try a down-sampled ROI
+    # of the original source image
+    altsrc     = roi.roi(src, [(2, 9), (2, 9), (2, 9)])
+    altsrc, xf = resample.resample(altsrc, (4, 4, 4))
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest')
+    assert np.all(np.isclose(expect, result))
+
+    # down-sampled and offset ROI
+    # of the original source image
+    altsrc     = roi.roi(src, [(-5, 8), (-5, 8), (-5, 8)])
+    altsrc, xf = resample.resample(altsrc, (6, 6, 6))
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest')
+    assert np.all(np.isclose(expect, result))
+
 
 def test_applyDeformation_altref():
     src2ref = affine.compose(
@@ -426,8 +474,6 @@ def test_applyDeformation_worldAligned():
         src, ref, matrix=src2ref, order=1, mode='constant', cval=0)
     result = nonlinear.applyDeformation(
         src, field, order=1, mode='constant', cval=0)
-
-    fslimage.Image(result, xform=ref.voxToWorldMat).save('result')
 
     expect = expect[1:-1, 1:-1, 1:-1]
     result = result[1:-1, 1:-1, 1:-1]
