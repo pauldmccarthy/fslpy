@@ -3,6 +3,8 @@
 
 import numpy as np
 
+import pytest
+
 import fsl.scripts.fsl_apply_x5 as fsl_apply_x5
 import fsl.data.image           as fslimage
 import fsl.utils.image.resample as resample
@@ -29,6 +31,17 @@ def _random_image(aff, shape=None):
     data = (np.random.random(shape) - 0.5) * 10
 
     return fslimage.Image(data, xform=aff)
+
+
+def test_help():
+    def run(args):
+        with pytest.raises(SystemExit) as e:
+            fsl_apply_x5.main(args)
+        assert e.value.code == 0
+
+    run([])
+    run(['-h'])
+
 
 
 def test_linear():
