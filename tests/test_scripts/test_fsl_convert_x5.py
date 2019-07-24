@@ -198,7 +198,7 @@ def test_convert_fnirt_sameformat():
         fsl_convert_x5.main(base + [dffile, 'copy.nii.gz'])
 
         # x5 -> x5
-        fsl_convert_x5.main(base + [dffile, 'copy.x5'])
+        fsl_convert_x5.main(base + ['src2ref.x5', 'copy.x5'])
 
         with open(dffile,        'rb') as f: origdef = hashlib.md5(f.read()).digest()
         with open('copy.nii.gz', 'rb') as f: copydef = hashlib.md5(f.read()).digest()
