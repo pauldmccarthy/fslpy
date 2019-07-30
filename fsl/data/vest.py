@@ -22,7 +22,16 @@ def looksLikeVestLutFile(path):
     ``False`` otherwise.
     """
     with open(path, 'rt') as f:
-        return f.readline().strip() == '%!VEST-LUT'
+
+        lines = []
+        for i in range(10):
+            line = f.readline()
+            if line is None: break
+            else:            lines.append(line.strip())
+
+    validHeaders = ('%!VEST-LUT', '%BeginInstance', '%%BeginInstance')
+
+    return len(lines) > 0 and lines[0] in validHeaders
 
 
 def loadVestLutFile(path, normalise=True):
