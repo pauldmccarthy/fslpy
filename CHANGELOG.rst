@@ -2,16 +2,14 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.4.0 (Wednesday July 24th 2019)
---------------------------------
+2.5.0 (Under development)
+-------------------------
 
 
 Added
 ^^^^^
 
 
-* New :mod:`.image.roi` module, for exracting an ROI of an image, or expanding
-  its field-of-view.
 * New :meth:`.Image.getAffine` method, for retrieving an affine between any of
   the voxel, FSL, or world coordinate systems.
 * New :mod:`fsl.transforms` package, which contains classes and functions for
@@ -30,8 +28,8 @@ Changed
 ^^^^^^^
 
 
-* The :mod:`.resample_image` script has been updated to support resampling of
-  images with more than 3 dimensions.
+* The :mod:`.vest.looksLikeVestLutFile` function has been made slightly more
+  lenient.
 * `h5py <https://www.h5py.org/>`_ has been added to the ``fslpy`` dependencies.
 
 
@@ -39,9 +37,29 @@ Deprecated
 ^^^^^^^^^^
 
 
-* The :mod:`fsl.utils.transform` module has been deprecated its functions can
+* The :mod:`fsl.utils.transform` module has been deprecated; its functions can
   now be found in the :mod:`fsl.transforms.affine` and
   :mod:`fsl.transform.flirt` modules.
+
+
+2.4.0 (Wednesday July 24th 2019)
+--------------------------------
+
+
+Added
+^^^^^
+
+
+* New :mod:`.image.roi` module, for extracting an ROI of an image, or expanding
+  its field-of-view.
+
+
+Changed
+^^^^^^^
+
+
+* The :mod:`.resample_image` script has been updated to support resampling of
+  images with more than 3 dimensions.
 
 
 2.3.1 (Friday July 5th 2019)
