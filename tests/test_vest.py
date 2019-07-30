@@ -111,11 +111,37 @@ testfile4Colours = np.array([
 
 testfile5 = """Obviously not a VEST file"""
 
+testfile6 = """%BeginInstance
+/SavedInstanceClassName /ClassLUT
+/PseudoColourmap [
+<-color{0.0,1.0,5.0}->
+<-color{1.0,2.0,4.0}->
+<-color{2.0,3.0,3.0}->
+]
+>>
+%%EndInstance
+%%EOF
+"""
+
+testfile7 = """%%BeginInstance
+/SavedInstanceClassName /ClassLUT
+/PseudoColourmap [
+<-color{0.0,1.0,5.0}->
+<-color{1.0,2.0,4.0}->
+<-color{2.0,3.0,3.0}->
+]
+>>
+%%EndInstance
+%%EOF
+"""
+
 
 def _createFiles(testdir):
 
-    names = ['testfile1', 'testfile2', 'testfile3', 'testfile4', 'testfile5']
-    texts = [ testfile1,   testfile2,   testfile3,   testfile4,   testfile5]
+    names = ['testfile1', 'testfile2', 'testfile3', 'testfile4', 'testfile5',
+             'testfile6', 'testfile7']
+    texts = [ testfile1,   testfile2,   testfile3,   testfile4,   testfile5,
+              testfile6,   testfile7]
 
     for name, text in zip(names, texts):
         filename = op.join(testdir, '{}.txt'.format(name))
@@ -137,6 +163,8 @@ def test_looksLikeVestLutFile():
         assert     vest.looksLikeVestLutFile(op.join(testdir, 'testfile3.txt'))
         assert     vest.looksLikeVestLutFile(op.join(testdir, 'testfile4.txt'))
         assert not vest.looksLikeVestLutFile(op.join(testdir, 'testfile5.txt'))
+        assert     vest.looksLikeVestLutFile(op.join(testdir, 'testfile6.txt'))
+        assert     vest.looksLikeVestLutFile(op.join(testdir, 'testfile7.txt'))
 
     finally:
         shutil.rmtree(testdir)
