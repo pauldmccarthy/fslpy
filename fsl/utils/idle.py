@@ -278,7 +278,7 @@ class IdleTask(object):
 
 def _wxIdleLoop(ev):
     """Function which is called on ``wx.EVT_IDLE`` events, and occasionally
-    on ``wx.EVT_TIMER` events via the :attr:`_idleTimer`. If there
+    on ``wx.EVT_TIMER`` events via the :attr:`_idleTimer`. If there
     is a function on the :attr:`_idleQueue`, it is popped and called.
 
     .. note:: The ``wx.EVT_IDLE`` event is only triggered on user interaction

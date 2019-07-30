@@ -34,6 +34,7 @@ and file names:
 
 import                      os
 import os.path           as op
+import itertools         as it
 import                      string
 import                      logging
 import                      tempfile
@@ -46,7 +47,7 @@ import nibabel           as nib
 import nibabel.fileslice as fileslice
 
 import fsl.utils.meta        as meta
-import fsl.utils.transform   as transform
+import fsl.transform.affine  as affine
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
@@ -135,13 +136,32 @@ class Nifti(notifier.Notifier, meta.Meta):
     methods.
 
 
-    **The affine transformation**
+    **Affine transformations**
 
 
-    The :meth:`voxToWorldMat` and :meth:`worldToVoxMat` attributes contain
-    transformation matrices for transforming between voxel and world
-    coordinates. The ``Nifti`` class follows the same process as ``nibabel``
-    in selecting the affine (see
+    The ``Nifti`` class is aware of three coordinate systems:
+
+      - The ``voxel`` coordinate system, used to access image data
+
+      - The ``world`` coordinate system, where voxel coordinates are
+        transformed into a millimetre coordinate system, defined by the
+        ``sform`` and/or ``qform`` elements of the NIFTI header.
+
+      - The ``fsl`` coordinate system, where voxel coordinates are scaled by
+        the ``pixdim`` values in the NIFTI header, and the X axis is inverted
+        if the voxel-to-world affine has a positive determinant.
+
+
+    The :meth:`getAffine` method is a simple means of acquiring an affine
+    which will transform between any of these coordinate systems.
+
+
+    See `here <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_transformation_parameters.3F>`_
+    for more details on the ``fsl`` coordinate system..
+
+
+    The ``Nifti`` class follows the same process as ``nibabel`` in determining
+    the ``voxel`` to ``world`` affine (see
     http://nipy.org/nibabel/nifti_images.html#the-nifti-affines):
 
 
@@ -204,9 +224,11 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     =============== ========================================================
     ``'transform'`` The affine transformation matrix has changed. This topic
-                    will occur when the ``voxToWorldMat`` is changed.
+                    will occur when the :meth:`voxToWorldMat` is changed.
+    ``'header'``    A header field has changed. This will occur when the
+                    :meth:`intent` is changed.
     =============== ========================================================
-    """
+    """  # noqa
 
 
     def __init__(self, header):
@@ -225,82 +247,22 @@ class Nifti(notifier.Notifier, meta.Meta):
             raise ValueError('Unrecognised header: {}'.format(header))
 
         header                   = header
-        origShape, shape, pixdim = self.__determineShape(header)
+        origShape, shape, pixdim = Nifti.determineShape(header)
+        voxToWorldMat            = Nifti.determineAffine(header)
+        affines, isneuro         = Nifti.generateAffines(voxToWorldMat,
+                                                         shape,
+                                                         pixdim)
 
-        voxToWorldMat = self.__determineTransform(header)
-        worldToVoxMat = transform.invert(voxToWorldMat)
-
-        self.header          = header
-        self.__shape         = shape
-        self.__intent        = header.get('intent_code',
-                                          constants.NIFTI_INTENT_NONE)
-        self.__origShape     = origShape
-        self.__pixdim        = pixdim
-        self.__voxToWorldMat = voxToWorldMat
-        self.__worldToVoxMat = worldToVoxMat
-
-
-    def __determineTransform(self, header):
-        """Called by :meth:`__init__`. Figures out the voxel-to-world
-        coordinate transformation matrix that is associated with this
-        ``Nifti`` instance.
-        """
-
-        # We have to treat FSL/FNIRT images
-        # specially, as FNIRT clobbers the
-        # sform section of the NIFTI header
-        # to store other data.
-        #
-        # TODO Nibabel <= 2.1.0 has a bug in header.get
-        #      for fields with a value of 0. When this
-        #      bug gets fixed, we can replace the if-else
-        #      block below with this:
-        #
-        #          intent = header.get('intent_code', -1)
-        #          qform  = header.get('qform_code',  -1)
-        #          sform  = header.get('sform_code',  -1)
-        #
-        # TODO Change this in fslpy 2.0.0
-        #
-        if isinstance(header, nib.nifti1.Nifti1Header):
-            intent = header['intent_code']
-            qform  = header['qform_code']
-            sform  = header['sform_code']
-        else:
-            intent = -1
-            qform  = -1
-            sform  = -1
-
-        if intent in (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
-                      constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
-                      constants.FSL_DCT_COEFFICIENTS,
-                      constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS):
-            log.debug('FNIRT output image detected - using qform matrix')
-            voxToWorldMat = np.array(header.get_qform())
-
-        # If the qform or sform codes are unknown,
-        # then we can't assume that the transform
-        # matrices are valid. So we fall back to a
-        # pixdim scaling matrix.
-        #
-        # n.b. For images like this, nibabel returns
-        # a scaling matrix where the centre voxel
-        # corresponds to world location (0, 0, 0).
-        # This goes against the NIFTI spec - it
-        # should just be a straight scaling matrix.
-        elif qform == 0 and sform == 0:
-            pixdims       = header.get_zooms()
-            voxToWorldMat = transform.scaleOffsetXform(pixdims, 0)
-
-        # Otherwise we let nibabel decide
-        # which transform to use.
-        else:
-            voxToWorldMat = np.array(header.get_best_affine())
-
-        return voxToWorldMat
+        self.header           = header
+        self.__shape          = shape
+        self.__origShape      = origShape
+        self.__pixdim         = pixdim
+        self.__affines        = affines
+        self.__isNeurological = isneuro
 
 
-    def __determineShape(self, header):
+    @staticmethod
+    def determineShape(header):
         """This method is called by :meth:`__init__`. It figures out the actual
         shape of the image data, and the zooms/pixdims for each data axis. Any
         empty trailing dimensions are squeezed, but the returned shape is
@@ -327,7 +289,179 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         pixdims = pixdims[:len(shape)]
 
+        # should never happen, but if we only
+        # have zoom values for the original
+        # (< 3D) shape, pad them with 1s.
+        if len(pixdims) < len(shape):
+            pixdims = pixdims + [1] * (len(shape) - len(pixdims))
+
         return origShape, shape, pixdims
+
+
+    @staticmethod
+    def determineAffine(header):
+        """Called by :meth:`__init__`. Figures out the voxel-to-world
+        coordinate transformation matrix that is associated with this
+        ``Nifti`` instance.
+        """
+
+        # We have to treat FSL/FNIRT images
+        # specially, as FNIRT clobbers the
+        # sform section of the NIFTI header
+        # to store other data.
+        intent = header.get('intent_code', -1)
+        qform  = header.get('qform_code',  -1)
+        sform  = header.get('sform_code',  -1)
+
+        # FNIRT non-linear coefficient files
+        # clobber the sform/qform/intent
+        # and pixdims of the nifti header,
+        # so we can't correctly place it in
+        # the world coordinate system. See
+        # $FSLDIR/src/fnirt/fnirt_file_writer.cpp
+        # and fsl.transform.nonlinear for more
+        # details.
+        if intent in (constants.FSL_DCT_COEFFICIENTS,
+                      constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_TOPUP_CUBIC_SPLINE_COEFFICIENTS,
+                      constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS):
+
+            log.debug('FNIRT coefficient field detected - generating affine')
+
+            # Knot spacing is stored in the pixdims
+            # (specified in terms of reference image
+            # voxels), and reference image pixdims
+            # are stored as intent code parameters.
+            # If we combine the two, we can at least
+            # get the shape/size of the coefficient
+            # field about right
+            knotpix       =  header.get_zooms()[:3]
+            refpix        = (header.get('intent_p1', 1) or 1,
+                             header.get('intent_p2', 1) or 1,
+                             header.get('intent_p3', 1) or 1)
+            voxToWorldMat = affine.concat(
+                affine.scaleOffsetXform(refpix,  0),
+                affine.scaleOffsetXform(knotpix, 0))
+
+        # If the qform or sform codes are unknown,
+        # then we can't assume that the transform
+        # matrices are valid. So we fall back to a
+        # pixdim scaling matrix.
+        #
+        # n.b. For images like this, nibabel returns
+        # a scaling matrix where the centre voxel
+        # corresponds to world location (0, 0, 0).
+        # This goes against the NIFTI spec - it
+        # should just be a straight scaling matrix.
+        elif qform == 0 and sform == 0:
+            pixdims       = header.get_zooms()
+            voxToWorldMat = affine.scaleOffsetXform(pixdims, 0)
+
+        # Otherwise we let nibabel decide
+        # which transform to use.
+        else:
+            voxToWorldMat = np.array(header.get_best_affine())
+
+        return voxToWorldMat
+
+
+    @staticmethod
+    def generateAffines(voxToWorldMat, shape, pixdim):
+        """Called by :meth:`__init__`, and the :meth:`voxToWorldMat` setter.
+        Generates and returns a dictionary containing affine transformations
+        between the ``voxel``, ``fsl``, and ``world`` coordinate
+        systems. These affines are accessible via the :meth:`getAffine`
+        method.
+
+        :arg voxToWorldMat: The voxel-to-world affine transformation
+        :arg shape:         Image shape (number of voxels along each dimension
+        :arg pixdim:        Image pixdims (size of one voxel along each
+                            dimension)
+        :returns:           A tuple containing:
+
+                             - a dictionary of affine transformations between
+                               each pair of coordinate systems
+                             - ``True`` if the image is to be considered
+                               "neurological", ``False`` otherwise - see the
+                               :meth:`isNeurological` method.
+        """
+
+        import numpy.linalg as npla
+
+        affines = {}
+        shape             = list(shape[ :3])
+        pixdim            = list(pixdim[:3])
+        voxToScaledVoxMat = np.diag(pixdim + [1.0])
+        isneuro           = npla.det(voxToWorldMat) > 0
+
+        if isneuro:
+            x                 = (shape[0] - 1) * pixdim[0]
+            flip              = affine.scaleOffsetXform([-1, 1, 1],
+                                                        [ x, 0, 0])
+            voxToScaledVoxMat = affine.concat(flip, voxToScaledVoxMat)
+
+        affines['fsl',   'fsl']   = np.eye(4)
+        affines['voxel', 'voxel'] = np.eye(4)
+        affines['world', 'world'] = np.eye(4)
+        affines['voxel', 'world'] = voxToWorldMat
+        affines['world', 'voxel'] = affine.invert(voxToWorldMat)
+        affines['voxel', 'fsl']   = voxToScaledVoxMat
+        affines['fsl',   'voxel'] = affine.invert(voxToScaledVoxMat)
+        affines['fsl',   'world'] = affine.concat(affines['voxel', 'world'],
+                                                  affines['fsl',   'voxel'])
+        affines['world', 'fsl']   = affine.concat(affines['voxel',   'fsl'],
+                                                  affines['world', 'voxel'])
+
+        return affines, isneuro
+
+
+    @staticmethod
+    def identifyAffine(image, xform, from_=None, to=None):
+        """Attempt to identify the source or destination space for the given
+        affine.
+
+        ``xform`` is assumed to be an affine transformation which can be used
+        to transform coordinates between two coordinate systems associated with
+        ``image``.
+
+        If one of ``from_`` or ``to`` is provided, the other will be derived.
+        If neither are provided, both will be derived. See the
+        :meth:`.Nifti.getAffine` method for details on the valild values that
+        ``from_`` and ``to`` may take.
+
+        :arg image: :class:`.Nifti` instance associated with the affine.
+
+        :arg xform: ``(4, 4)`` ``numpy`` array encoding an affine
+                    transformation
+
+        :arg from_: Label specifying the coordinate system which ``xform``
+                    takes as input
+
+        :arg to:    Label specifying the coordinate system which ``xform``
+                    produces as output
+
+        :returns:   A tuple containing:
+                      - A label for the ``from_`` coordinate system
+                      - A label for the ``to`` coordinate system
+        """
+
+        if (from_ is not None) and (to is not None):
+            return from_, to
+
+        if from_ is not None: froms = [from_]
+        else:                 froms = ['voxel', 'fsl', 'world']
+        if to    is not None: tos   = [to]
+        else:                 tos   = ['voxel', 'fsl', 'world']
+
+        for from_, to in it.product(froms, tos):
+
+            candidate = image.getAffine(from_, to)
+
+            if np.all(np.isclose(candidate, xform)):
+                return from_, to
+
+        raise ValueError('Could not identify affine')
 
 
     def strval(self, key):
@@ -383,6 +517,16 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     @property
+    def ndim(self):
+        """Returns the number of dimensions in this image. This number may not
+        match the number of dimensions specified in the NIFTI header, as
+        trailing dimensions of length 1 are ignored. But it is guaranteed to be
+        at least 3.
+        """
+        return len(self.__shape)
+
+
+    @property
     def pixdim(self):
         """Returns a tuple containing the image pixdims (voxel sizes)."""
         return tuple(self.__pixdim)
@@ -390,9 +534,17 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     @property
     def intent(self):
-        """Returns the NIFTI intent code of this image.
-        """
-        return self.__intent
+        """Returns the NIFTI intent code of this image. """
+        return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
+
+
+    @intent.setter
+    def intent(self, val):
+        """Sets the NIFTI intent code of this image. """
+        # analyze has no intent
+        if (self.niftiVersion > 0) and (val != self.intent):
+            self.header.set_intent(val, allow_unknown=True)
+            self.notify(topic='header')
 
 
     @property
@@ -426,12 +578,39 @@ class Nifti(notifier.Notifier, meta.Meta):
         return units
 
 
+    def getAffine(self, from_, to):
+        """Return an affine transformation which can be used to transform
+        coordinates from ``from_`` to ``to``.
+
+        Valid values for the ``from_`` and ``to`` arguments are:
+
+         - ``'voxel'``: The voxel coordinate system
+         - ``'world'``: The world coordinate system, as defined by the image
+           sform/qform
+         - ``'fsl'``: The FSL coordinate system (scaled voxels, with a
+           left-right flip if the sform/qform has a positive determinant)
+
+        :arg from_: Source coordinate system
+        :arg to:    Destination coordinate system
+        :returns:   A ``numpy`` array of shape ``(4, 4)``
+        """
+        from_ = from_.lower()
+        to    = to   .lower()
+
+        if from_ not in ('voxel', 'fsl', 'world') or \
+           to    not in ('voxel', 'fsl', 'world'):
+            raise ValueError('Invalid source/reference spaces: '
+                             '{} -> {}'.format(from_, to))
+
+        return np.copy(self.__affines[from_, to])
+
+
     @property
     def worldToVoxMat(self):
         """Returns a ``numpy`` array of shape ``(4, 4)`` containing an
         affine transformation from world coordinates to voxel coordinates.
         """
-        return np.array(self.__worldToVoxMat)
+        return self.getAffine('world', 'voxel')
 
 
     @property
@@ -439,7 +618,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         """Returns a ``numpy`` array of shape ``(4, 4)`` containing an
         affine transformation from voxel coordinates to world coordinates.
         """
-        return np.array(self.__voxToWorldMat)
+        return self.getAffine('voxel', 'world')
 
 
     @voxToWorldMat.setter
@@ -463,8 +642,12 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         header.set_sform(xform, code=sformCode)
 
-        self.__voxToWorldMat = self.__determineTransform(header)
-        self.__worldToVoxMat = transform.invert(self.__voxToWorldMat)
+        affines, isneuro = Nifti.generateAffines(xform,
+                                                 self.shape,
+                                                 self.pixdim)
+
+        self.__affines        = affines
+        self.__isNeurological = isneuro
 
         log.debug('Affine changed:\npixdims: '
                   '%s\nsform: %s\nqform: %s',
@@ -473,6 +656,27 @@ class Nifti(notifier.Notifier, meta.Meta):
                   header.get_qform())
 
         self.notify(topic='transform')
+
+
+    @property
+    def voxToScaledVoxMat(self):
+        """Returns a transformation matrix which transforms from voxel
+        coordinates into scaled voxel coordinates, with a left-right flip
+        if the image appears to be stored in neurological order.
+
+        See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
+        _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
+        _the_transformation_parameters.3F
+        """
+        return self.getAffine('voxel', 'fsl')
+
+
+    @property
+    def scaledVoxToVoxMat(self):
+        """Returns a transformation matrix which transforms from scaled voxels
+        into voxels, the inverse of the :meth:`voxToScaledVoxMat` transform.
+        """
+        return self.getAffine('fsl', 'voxel')
 
 
     def mapIndices(self, sliceobj):
@@ -488,16 +692,6 @@ class Nifti(notifier.Notifier, meta.Meta):
         # How convenient - nibabel has a function
         # that does the dirty work for us.
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
-
-
-    @property
-    def ndim(self):
-        """Returns the number of dimensions in this image. This number may not
-        match the number of dimensions specified in the NIFTI header, as
-        trailing dimensions of length 1 are ignored. But it is guaranteed to be
-        at least 3.
-        """
-        return len(self.__shape)
 
 
     def getXFormCode(self, code=None):
@@ -546,6 +740,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         return int(code)
 
+
     # TODO Check what has worse performance - hashing
     #      a 4x4 array (via memoizeMD5), or the call
     #      to aff2axcodes. I'm guessing the latter,
@@ -563,7 +758,6 @@ class Nifti(notifier.Notifier, meta.Meta):
         return nib.orientations.aff2axcodes(xform, inaxes)
 
 
-    @memoize.Instanceify(memoize.memoize)
     def isNeurological(self):
         """Returns ``True`` if it looks like this ``Nifti`` object has a
         neurological voxel orientation, ``False`` otherwise. This test is
@@ -582,51 +776,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
         _the_transformation_parameters.3F
         """
-        import numpy.linalg as npla
-        return npla.det(self.__voxToWorldMat) > 0
-
-
-    @property
-    def voxToScaledVoxMat(self):
-        """Returns a transformation matrix which transforms from voxel
-        coordinates into scaled voxel coordinates, with a left-right flip
-        if the image appears to be stored in neurological order.
-
-        See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
-        _format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to\
-        _the_transformation_parameters.3F
-        """
-        return self.__voxToScaledVoxMat()
-
-
-    @memoize.Instanceify(memoize.memoize)
-    def __voxToScaledVoxMat(self):
-        """See :meth:`voxToScaledVoxMat`. """
-
-        shape          = list(self.shape[ :3])
-        pixdim         = list(self.pixdim[:3])
-        voxToPixdimMat = np.diag(pixdim + [1.0])
-
-        if self.isNeurological():
-            x              = (shape[0] - 1) * pixdim[0]
-            flip           = transform.scaleOffsetXform([-1, 1, 1], [x, 0, 0])
-            voxToPixdimMat = transform.concat(flip, voxToPixdimMat)
-
-        return voxToPixdimMat
-
-
-    @property
-    def scaledVoxToVoxMat(self):
-        """Returns a transformation matrix which transforms from scaled voxels
-        into voxels, the inverse of the :meth:`voxToScaledVoxMat` transform.
-        """
-        return self.__scaledVoxToVoxMat()
-
-
-    @memoize.Instanceify(memoize.memoize)
-    def __scaledVoxToVoxMat(self):
-        """See :meth:`scaledVoxToVoxMat`. """
-        return transform.invert(self.voxToScaledVoxMat)
+        return self.__isNeurological
 
 
     def sameSpace(self, other):
@@ -879,7 +1029,13 @@ class Image(Nifti):
 
             nibImage = ctr(image, xform, header=header)
 
-        # otherwise, we assume that it is a nibabel image
+        # If it's an Image object, we
+        # just take the nibabel image
+        elif isinstance(image, Image):
+            nibImage = image.nibImage
+
+        # otherwise, we assume that
+        # it is a nibabel image
         else:
             nibImage = image
 
@@ -914,9 +1070,10 @@ class Image(Nifti):
                                                         threaded=threaded)
 
         # Listen to ourself for changes
-        # to the voxToWorldMat, so we
+        # to header attributse so we
         # can update the saveState.
-        self.register(self.name, self.__transformChanged, topic='transform')
+        self.register(self.name, self.__headerChanged, topic='transform')
+        self.register(self.name, self.__headerChanged, topic='header')
 
         if calcRange:
             self.calcRange()
@@ -1055,8 +1212,8 @@ class Image(Nifti):
         self.__nibImage.set_sform(xform, code)
 
 
-    def __transformChanged(self, *args, **kwargs):
-        """Called when the ``voxToWorldMat`` of this :class:`Nifti` instance
+    def __headerChanged(self, *args, **kwargs):
+        """Called when header properties of this :class:`Nifti` instance
         changes. Updates the :attr:`saveState` accordinbgly.
         """
         if self.__saveState:
@@ -1137,7 +1294,9 @@ class Image(Nifti):
         # We save the image out to a temp file,
         # then close the old image, move the
         # temp file to the real destination,
-        # then re-open the file.
+        # then re-open the file. This is done
+        # to ensure that all references to the
+        # old file are destroyed.
         tmphd, tmpfname = tempfile.mkstemp(suffix=getExt(filename))
         os.close(tmphd)
 

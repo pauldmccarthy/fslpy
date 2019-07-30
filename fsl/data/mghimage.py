@@ -14,9 +14,9 @@ import os.path as op
 import            six
 import nibabel as nib
 
-import fsl.utils.path      as fslpath
-import fsl.utils.transform as transform
-import fsl.data.image      as fslimage
+import fsl.utils.path       as fslpath
+import fsl.transform.affine as affine
+import fsl.data.image       as fslimage
 
 
 ALLOWED_EXTENSIONS = ['.mgz', '.mgh']
@@ -55,12 +55,12 @@ class MGHImage(fslimage.Image):
             filename = None
 
         data     = image.get_data()
-        affine   = image.affine
+        xform    = image.affine
         vox2surf = image.header.get_vox2ras_tkr()
 
         fslimage.Image.__init__(self,
                                 data,
-                                xform=affine,
+                                xform=xform,
                                 name=name,
                                 dataSource=filename)
 
@@ -68,9 +68,9 @@ class MGHImage(fslimage.Image):
             self.setMeta('mghImageFile', filename)
 
         self.__voxToSurfMat   = vox2surf
-        self.__surfToVoxMat   = transform.invert(vox2surf)
-        self.__surfToWorldMat = transform.concat(affine, self.__surfToVoxMat)
-        self.__worldToSurfMat = transform.invert(self.__surfToWorldMat)
+        self.__surfToVoxMat   = affine.invert(vox2surf)
+        self.__surfToWorldMat = affine.concat(xform, self.__surfToVoxMat)
+        self.__worldToSurfMat = affine.invert(self.__surfToWorldMat)
 
 
     def save(self, filename=None):

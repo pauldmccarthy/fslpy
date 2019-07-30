@@ -33,9 +33,9 @@ import collections
 import os.path as op
 import numpy   as np
 
-import fsl.utils.meta      as meta
-import fsl.utils.notifier  as notifier
-import fsl.utils.transform as transform
+import fsl.utils.meta       as meta
+import fsl.utils.notifier   as notifier
+import fsl.transform.affine as affine
 
 
 log = logging.getLogger(__name__)
@@ -693,7 +693,7 @@ def calcFaceNormals(vertices, indices):
     v2 = vertices[indices[:, 2]]
 
     fnormals = np.cross((v1 - v0), (v2 - v0))
-    fnormals = transform.normalise(fnormals)
+    fnormals = affine.normalise(fnormals)
 
     return fnormals
 
@@ -724,7 +724,7 @@ def calcVertexNormals(vertices, indices, fnormals):
         vnormals[v2, :] += fnormals[i]
 
     # normalise to unit length
-    return transform.normalise(vnormals)
+    return affine.normalise(vnormals)
 
 
 def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
@@ -769,4 +769,4 @@ def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
     # vertex to the camera is positive
     # If it isn't, we need to flip the
     # triangle winding order.
-    return np.dot(n, transform.normalise(camera - vert)) < 0
+    return np.dot(n, affine.normalise(camera - vert)) < 0

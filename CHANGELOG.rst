@@ -12,6 +12,18 @@ Added
 
 * New :mod:`.image.roi` module, for exracting an ROI of an image, or expanding
   its field-of-view.
+* New :meth:`.Image.getAffine` method, for retrieving an affine between any of
+  the voxel, FSL, or world coordinate systems.
+* New :mod:`fsl.transforms` package, which contains classes and functions for
+  working with linear and non-linear FLIRT and FNIRT transformations.
+* New static methods :meth:`.Nifti.determineShape`,
+  :meth:`.Nifti.determineAffine`, :meth:`.Nifti.generateAffines`, and
+  :meth:`.Nifti.identifyAffine`.
+* New prototype :mod:`fsl.transforms.x5`  module, for reading/writing linear
+  and non-linear X5 files (*preliminary release, subject to change*).
+* New prototype :mod:`.fsl_convert_x5` :mod:`.fsl_apply_x5` programs, for
+  working with X5 transformations (*preliminary release, subject to change*).
+
 
 
 Changed
@@ -20,6 +32,16 @@ Changed
 
 * The :mod:`.resample_image` script has been updated to support resampling of
   images with more than 3 dimensions.
+* `h5py <https://www.h5py.org/>`_ has been added to the ``fslpy`` dependencies.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The :mod:`fsl.utils.transform` module has been deprecated its functions can
+  now be found in the :mod:`fsl.transforms.affine` and
+  :mod:`fsl.transform.flirt` modules.
 
 
 2.3.1 (Friday July 5th 2019)
@@ -169,7 +191,7 @@ Added
 * Simple built-in :mod:`.deprecated` decorator.
 * New :mod:`fsl.data.utils` module, which currently contains one function
   :func:`.guessType`, which guesses the data type of a file/directory path.
-* New `.commonBase` function for finding the common prefix of a set of
+* New :func:`.commonBase` function for finding the common prefix of a set of
   file/directory paths.
 
 
@@ -209,7 +231,7 @@ Fixed
 ^^^^^
 
 
-* Fixed an issue with the `.dicom.loadSeries` using memory-mapping for
+* Fixed an issue with the :func:`.dicom.loadSeries` using memory-mapping for
   image files that would subsequently be deleted.
 * Fixed an issue in the :class:`.GiftiMesh` class, where
   ``numpy``/``nibabel`` was returning read-only index arrays.

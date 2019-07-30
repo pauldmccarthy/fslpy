@@ -23,7 +23,6 @@
    fsl.utils.run
    fsl.utils.settings
    fsl.utils.tempdir
-   fsl.utils.transform
    fsl.utils.weakfuncref
 
 .. automodule:: fsl.utils

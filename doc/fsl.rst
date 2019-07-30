@@ -7,6 +7,7 @@
    fsl.data
    fsl.scripts
    fsl.utils
+   fsl.transform
    fsl.version
    fsl.wrappers
 

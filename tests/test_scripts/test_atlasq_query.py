@@ -15,11 +15,11 @@ import scipy.ndimage as ndi
 
 import                  pytest
 
-import fsl.utils.transform as transform
+import fsl.transform.affine     as affine
+import fsl.data.atlases         as fslatlases
 import fsl.utils.image.resample as resample
-import fsl.data.atlases    as fslatlases
-import fsl.data.image      as fslimage
-import fsl.scripts.atlasq  as fslatlasq
+import fsl.data.image           as fslimage
+import fsl.scripts.atlasq       as fslatlasq
 
 from .. import (tempdir,
                 make_random_mask,
@@ -152,7 +152,7 @@ def _gen_coord_voxel_query(atlas, use_label, q_type, q_in, res):
             dlo = (0, 0, 0)
             dhi = a_img.shape
         else:
-            dlo, dhi = transform.axisBounds(a_img.shape, a_img.voxToWorldMat)
+            dlo, dhi = affine.axisBounds(a_img.shape, a_img.voxToWorldMat)
 
         dlen = [hi - lo for lo, hi in zip(dlo, dhi)]
 
@@ -187,7 +187,7 @@ def _gen_coord_voxel_query(atlas, use_label, q_type, q_in, res):
         coords = np.array(coords, dtype=dtype)
 
         if not voxel:
-            coords = transform.transform(coords, a_img.voxToWorldMat)
+            coords = affine.transform(coords, a_img.voxToWorldMat)
 
     return tuple([dtype(c) for c in coords])
 
@@ -453,8 +453,8 @@ def test_bad_mask(seed):
                             dtype=np.float32))
             wrongspace = fslimage.Image(
                 np.random.random((20, 20, 20)),
-                xform=transform.concat(atlas.voxToWorldMat,
-                                       np.diag([2, 2, 2, 1])))
+                xform=affine.concat(atlas.voxToWorldMat,
+                                    np.diag([2, 2, 2, 1])))
 
             print(wrongdims.shape)
             print(wrongspace.shape)

@@ -263,3 +263,28 @@ def test_resampleToReference3():
     exp     = np.array([refdata[..., 0]] * 15).transpose((1, 2, 3, 0))
     resampled, xform = resample.resampleToReference(img, ref, order=0, mode='nearest')
     assert np.all(resampled == exp)
+
+
+def test_resampleToReference4():
+
+    # the image and ref are out of
+    # alignment, but this affine
+    # will bring them into alignment
+    img2ref = transform.scaleOffsetXform([2, 2, 2], [10, 10, 10])
+
+    imgdata = np.random.randint(0, 65536, (5, 5, 5))
+    refdata = np.zeros((5, 5, 5))
+    img     = fslimage.Image(imgdata)
+    ref     = fslimage.Image(refdata, xform=img2ref)
+
+    # Without the affine, the image
+    # will be out of the FOV of the
+    # reference
+    resampled, xform = resample.resampleToReference(img, ref)
+    assert np.all(resampled == 0)
+
+    # But applying the affine will
+    # cause them to overlap
+    # perfectly in world coordinates
+    resampled, xform = resample.resampleToReference(img, ref, matrix=img2ref)
+    assert np.all(resampled == imgdata)

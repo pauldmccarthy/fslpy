@@ -54,7 +54,7 @@ import fsl.data.image                     as fslimage
 import fsl.data.constants                 as constants
 from   fsl.utils.platform import platform as platform
 import fsl.utils.image.resample           as resample
-import fsl.utils.transform                as transform
+import fsl.transform.affine               as affine
 import fsl.utils.notifier                 as notifier
 import fsl.utils.settings                 as fslsettings
 
@@ -572,7 +572,7 @@ class AtlasDescription(object):
         # Load the appropriate transformation matrix
         # and transform all those voxel coordinates
         # into world coordinates
-        coords = transform.transform(coords, self.xforms[0])
+        coords = affine.transform(coords, self.xforms[0])
 
         # Update the coordinates
         # in our label objects
@@ -810,7 +810,7 @@ class LabelAtlas(Atlas):
         """
 
         if not voxel:
-            loc = transform.transform([loc], self.worldToVoxMat)[0]
+            loc = affine.transform([loc], self.worldToVoxMat)[0]
             loc = [int(v) for v in loc.round()]
 
         if loc[0] <  0             or \
@@ -983,7 +983,7 @@ class ProbabilisticAtlas(Atlas):
         """
 
         if not voxel:
-            loc = transform.transform([loc], self.worldToVoxMat)[0]
+            loc = affine.transform([loc], self.worldToVoxMat)[0]
             loc = [int(v) for v in loc.round()]
 
         if loc[0] <  0             or \

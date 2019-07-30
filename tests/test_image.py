@@ -19,11 +19,10 @@ import nibabel      as nib
 
 from nibabel.spatialimages import ImageFileError
 
-import fsl.data.constants    as constants
-import fsl.data.image        as fslimage
-import fsl.data.imagewrapper as imagewrapper
-import fsl.utils.path        as fslpath
-import fsl.utils.transform   as transform
+import fsl.data.constants   as constants
+import fsl.data.image       as fslimage
+import fsl.utils.path       as fslpath
+import fsl.transform.affine as affine
 
 from fsl.utils.tempdir import tempdir
 
@@ -743,6 +742,48 @@ def _test_Image_changeXform(imgtype, sformcode=None, qformcode=None):
         image = None
 
 
+def  test_Image_changeIntent_analyze(): _test_Image_changeIntent(0)
+def  test_Image_changeIntent_nifti1():  _test_Image_changeIntent(1)
+def  test_Image_changeIntent_nifti2():  _test_Image_changeIntent(2)
+def _test_Image_changeIntent(imgtype):
+    """Test changing the Nifti.intent attribute. """
+
+    with tempdir() as testdir:
+        imagefile = op.join(testdir, 'image')
+
+        image = make_image(imagefile, imgtype)
+        if imgtype > 0:
+            image.header.set_intent(constants.NIFTI_INTENT_NONE)
+        nib.save(image, imagefile)
+
+        notified = {}
+        def onHdr( *a): notified['header'] = True
+        def onSave(*a): notified['save']   = True
+
+        img = fslimage.Image(imagefile)
+
+        img.register('name1', onHdr,  'header')
+        img.register('name2', onSave, 'saveState')
+
+        assert img.intent == constants.NIFTI_INTENT_NONE
+        img.intent = constants.NIFTI_INTENT_BETA
+
+        if imgtype == 0: exp = constants.NIFTI_INTENT_NONE
+        else:            exp = constants.NIFTI_INTENT_BETA
+
+        assert img.intent == exp
+
+        if imgtype > 0:
+            assert img         .header.get_intent('code')[0] == exp
+            assert img.nibImage.header.get_intent('code')[0] == exp
+
+            assert notified.get('header', False)
+            assert notified.get('save',   False)
+
+
+
+
+
 def  test_Image_changeData_analyze(seed): _test_Image_changeData(0)
 def  test_Image_changeData_nifti1(seed):  _test_Image_changeData(1)
 def  test_Image_changeData_nifti2(seed):  _test_Image_changeData(2)
@@ -1072,12 +1113,12 @@ def _test_Image_init_xform(imgtype):
 
     with tempdir() as td:
 
-        sform = transform.compose(np.random.random(3),
-                                  np.random.random(3),
-                                  np.random.random(3))
-        qform = transform.compose(np.random.random(3),
-                                  np.random.random(3),
-                                  np.random.random(3))
+        sform = affine.compose(np.random.random(3),
+                               np.random.random(3),
+                               np.random.random(3))
+        qform = affine.compose(np.random.random(3),
+                               np.random.random(3),
+                               np.random.random(3))
 
         sform_code = 3
         qform_code = 4
@@ -1128,9 +1169,9 @@ def _test_Image_init_xform(imgtype):
         # to the xform. and its
         # s/q form codes the same
         # as what is in the header
-        rxform = transform.compose(np.random.random(3),
-                                   np.random.random(3),
-                                   np.random.random(3))
+        rxform = affine.compose(np.random.random(3),
+                                np.random.random(3),
+                                np.random.random(3))
         fimg = fslimage.Image(img.get_data(),
                               header=img.header,
                               xform=rxform)
@@ -1173,3 +1214,158 @@ def test_rgb_image():
 
         assert img.nvals     == 3
         assert img.dataRange == (0, 255)
+
+
+def test_determineShape():
+    class MockHeader(object):
+        def __init__(self, shape, zooms):
+            self.shape = shape
+            self.zooms = zooms
+        def __getitem__(self, key):
+            return [len(self.zooms)] + self.zooms
+        def get_data_shape(self):
+            return self.shape
+        def get_zooms(self):
+            return self.zooms
+
+    # inshape, inzooms, outshape, outzooms)
+    tests = [
+        ([10],         [2, 2, 2], [10,  1,  1], [2, 2, 2]),
+        ([10],         [2],       [10,  1,  1], [2, 1, 1]),
+        ([10],         [2, 2, 2], [10,  1,  1], [2, 2, 2]),
+        ([10, 10],     [2, 2],    [10, 10,  1], [2, 2, 1]),
+        ([10, 10],     [2, 2, 2], [10, 10,  1], [2, 2, 2]),
+        ([10, 10, 10], [2, 2, 2], [10, 10, 10], [2, 2, 2]),
+
+        ([10, 10, 10, 10], [2, 2, 2, 2],
+         [10, 10, 10, 10], [2, 2, 2, 2]),
+        ([10, 10, 10, 10, 10], [2, 2, 2, 2, 2],
+         [10, 10, 10, 10, 10], [2, 2, 2, 2, 2]),
+    ]
+
+    for inshape, inzooms, outshape, outzooms in tests:
+
+        hdr = MockHeader(inshape, inzooms)
+        origshape, gotshape, gotzooms = fslimage.Nifti.determineShape(hdr)
+
+        assert origshape == inshape
+        assert gotshape  == outshape
+        assert gotzooms  == outzooms
+
+
+def test_determineAffine():
+
+    # sformcode, qformcode, intent, expaff
+    tests = [
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_INTENT_NONE,
+         'sform'),
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_INTENT_NONE,
+         'sform'),
+        (constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_INTENT_NONE,
+         'qform'),
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.FSL_FNIRT_DISPLACEMENT_FIELD,
+         'sform'),
+        (constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.NIFTI_XFORM_ALIGNED_ANAT,
+         constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+         'scaling'),
+        (constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_XFORM_UNKNOWN,
+         constants.NIFTI_INTENT_NONE,
+         'scaling'),
+    ]
+
+    for sformcode, qformcode, intent, exp in tests:
+
+        sform   = affine.compose(np.random.random(3),
+                                 np.random.random(3),
+                                 np.random.random(3))
+        qform   = affine.compose(np.random.random(3),
+                                 np.random.random(3),
+                                 np.random.random(3))
+        pixdims = np.random.randint(1, 10, 3)
+
+        hdr = nib.Nifti1Header()
+        hdr.set_data_shape((10, 10, 10))
+        hdr.set_sform(sform, sformcode)
+        hdr.set_qform(qform, qformcode)
+        hdr.set_intent(intent)
+        hdr.set_zooms(pixdims)
+
+        # the randomly generated qform might
+        # not be fully representable, so let
+        # nibabel fix it for us
+        sform = hdr.get_sform()
+        qform = hdr.get_qform()
+
+        got = fslimage.Nifti.determineAffine(hdr)
+
+        if   exp == 'sform':   exp = sform
+        elif exp == 'qform':   exp = qform
+        elif exp == 'scaling': exp = affine.scaleOffsetXform(pixdims, 0)
+
+        assert np.all(np.isclose(got, exp))
+
+
+def test_generateAffines():
+
+    v2w = affine.compose(np.random.random(3),
+                         np.random.random(3),
+                         np.random.random(3))
+    shape = (10, 10, 10)
+    pixdim = (1, 1, 1)
+
+    got, isneuro = fslimage.Nifti.generateAffines(v2w, shape, pixdim)
+
+    w2v = npla.inv(v2w)
+
+    assert isneuro == (npla.det(v2w) > 0)
+
+    if not isneuro:
+        v2f = np.eye(4)
+        f2v = np.eye(4)
+        f2w = v2w
+        w2f = w2v
+    else:
+        v2f = affine.scaleOffsetXform([-1, 1, 1], [9, 0, 0])
+        f2v = npla.inv(v2f)
+        f2w = affine.concat(v2w, f2v)
+        w2f = affine.concat(v2f, w2v)
+
+    assert np.all(np.isclose(v2w, got['voxel', 'world']))
+    assert np.all(np.isclose(w2v, got['world', 'voxel']))
+    assert np.all(np.isclose(v2f, got['voxel', 'fsl']))
+    assert np.all(np.isclose(f2v, got['fsl',   'voxel']))
+    assert np.all(np.isclose(f2w, got['fsl'  , 'world']))
+    assert np.all(np.isclose(w2f, got['world', 'fsl']))
+
+
+def test_identifyAffine():
+
+    identify = fslimage.Nifti.identifyAffine
+
+    assert identify(None, None, 'ho', 'hum') == ('ho', 'hum')
+
+    xform = affine.compose(0.1        + 5     * np.random.random(3),
+                           -10        + 20    * np.random.random(3),
+                           -np.pi / 2 + np.pi * np.random.random(3))
+
+    img = fslimage.Image(make_random_image(None, xform=xform))
+
+    for from_, to in it.permutations(('voxel', 'fsl', 'world'), 2):
+        assert identify(img, img.getAffine(from_, to)) == (from_, to)
+
+    assert identify(img, img.getAffine('voxel', 'world'), from_='voxel') == ('voxel', 'world')
+    assert identify(img, img.getAffine('voxel', 'world'), to='world')    == ('voxel', 'world')
+
+    rubbish = np.random.random((4, 4))
+    with pytest.raises(ValueError):
+        identify(img, rubbish)

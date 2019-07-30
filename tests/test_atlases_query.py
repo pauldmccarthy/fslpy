@@ -11,11 +11,11 @@ import numpy           as np
 import                    pytest
 
 
-import fsl.data.atlases    as fslatlases
-import fsl.data.image      as fslimage
-import fsl.utils.transform as transform
+import fsl.data.atlases         as fslatlases
+import fsl.data.image           as fslimage
+import fsl.transform.affine     as affine
 import fsl.utils.image.resample as resample
-import fsl.utils.cache     as cache
+import fsl.utils.cache          as cache
 
 from . import (testdir, make_random_mask)
 
@@ -155,7 +155,7 @@ def _gen_coord_voxel_query(atlas, qtype, qin, **kwargs):
             dlo = (0, 0, 0)
             dhi = atlas.shape
         else:
-            dlo, dhi = transform.axisBounds(atlas.shape, atlas.voxToWorldMat)
+            dlo, dhi = affine.axisBounds(atlas.shape, atlas.voxToWorldMat)
 
         dlen = [hi - lo for lo, hi in zip(dlo, dhi)]
 
@@ -190,7 +190,7 @@ def _gen_coord_voxel_query(atlas, qtype, qin, **kwargs):
         coords = np.array(coords, dtype=dtype)
 
         if not voxel:
-            coords = transform.transform(coords, atlas.voxToWorldMat)
+            coords = affine.transform(coords, atlas.voxToWorldMat)
 
     return tuple([dtype(c) for c in coords])
 
@@ -200,7 +200,7 @@ def _eval_coord_voxel_query(atlas, query, qtype, qin):
     voxel = qtype == 'voxel'
 
     if voxel: vx, vy, vz = query
-    else:     vx, vy, vz = transform.transform(query, atlas.worldToVoxMat)
+    else:     vx, vy, vz = affine.transform(query, atlas.worldToVoxMat)
 
     vx, vy, vz = [int(round(v)) for v in [vx, vy, vz]]
 

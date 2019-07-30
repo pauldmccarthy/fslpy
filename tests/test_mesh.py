@@ -6,13 +6,13 @@
 #
 
 
-import os.path as op
-import numpy   as np
-import            mock
-import            pytest
+import os.path  as     op
+import numpy    as     np
+from   unittest import mock
+import                 pytest
 
-import fsl.utils.transform as transform
-import fsl.data.mesh       as fslmesh
+import fsl.transform.affine as affine
+import fsl.data.mesh        as fslmesh
 
 from . import tempdir
 
@@ -58,7 +58,7 @@ CUBE_CCW_VERTEX_NORMALS = np.zeros((8, 3))
 for i in range(8):
     faces = np.where(CUBE_TRIANGLES_CCW == i)[0]
     CUBE_CCW_VERTEX_NORMALS[i] = CUBE_CCW_FACE_NORMALS[faces].sum(axis=0)
-CUBE_CCW_VERTEX_NORMALS = transform.normalise(CUBE_CCW_VERTEX_NORMALS)
+CUBE_CCW_VERTEX_NORMALS = affine.normalise(CUBE_CCW_VERTEX_NORMALS)
 
 
 def test_mesh_create():
@@ -256,6 +256,13 @@ def test_needsFixing():
 
 
 def test_trimesh_no_trimesh():
+
+    # Make sure trimesh and rtree
+    # are imported before messing
+    # with sys.modules, otherwise
+    # weird things can happen.
+    import trimesh
+    import rtree
 
     mods = ['trimesh', 'rtree']
 

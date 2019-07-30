@@ -17,10 +17,10 @@ import mock
 import pytest
 
 import tests
-import fsl.utils.transform      as transform
 import fsl.utils.image.resample as resample
 import fsl.data.atlases         as atlases
 import fsl.data.image           as fslimage
+import fsl.transform.affine     as affine
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -326,7 +326,7 @@ def test_prepareMask():
             np.random.random(list(ashape) + [2]))
         wrongspace    = fslimage.Image(
             np.random.random((20, 20, 20)),
-            xform=transform.concat(atlas.voxToWorldMat, np.diag([2, 2, 2, 1])))
+            xform=affine.concat(atlas.voxToWorldMat, np.diag([2, 2, 2, 1])))
 
         with pytest.raises(atlases.MaskError):
             atlas.prepareMask(wrongdims)
