@@ -5,6 +5,7 @@
    :hidden:
 
    fsl.scripts.atlasq
+   fsl.scripts.fsl_apply_x5
    fsl.scripts.fsl_convert_x5
    fsl.scripts.fsl_ents
    fsl.scripts.imcp
