@@ -113,7 +113,36 @@ def test_expiry():
     with pytest.raises(cache.Expired):
         c.get(0)
 
+    with pytest.raises(cache.Expired):
+        c.get(1)
+
     assert c.get(1, default='default') == 'default'
 
     # And that the cache is empty
     assert len(c) == 0
+
+
+def test_lru():
+    c = cache.Cache(maxsize=3, lru=True)
+
+    c[0] = '0'
+    c[1] = '1'
+    c[2] = '2'
+    c[3] = '3'
+
+    # normal behaviour - first inserted
+    # is dropped
+    with pytest.raises(KeyError):
+        assert c.get(0)
+
+    # lru behaviour - oldest accessed is
+    # dropped
+    c[1]
+    c[4] = '4'
+    with pytest.raises(KeyError):
+        c[2]
+
+    c[1]
+    c[3]
+    c[4]
+    assert len(c) == 3
