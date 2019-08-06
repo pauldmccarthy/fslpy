@@ -17,6 +17,9 @@ transformations from/to BIDS X5 files. The following functions are available:
    writeNonLinearX5
 
 
+.. warning:: This is a development release, and is subject to change.
+
+
 An X5 file is a HDF5 container file which stores a linear or non-linear
 transformation from one NIfTI image to another.
 
