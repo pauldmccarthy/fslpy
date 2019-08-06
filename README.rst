@@ -83,16 +83,16 @@ Non-Python dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 
-The ``fsl.data.dicom`` module requires the presence of Chris Rorden's
-`dcm2niix <https://github.com/rordenlab/dcm2niix>`_ program.
+The `fsl.data.dicom <fsl/data/dicom.py>`_ module requires the presence of
+Chris Rorden's `dcm2niix <https://github.com/rordenlab/dcm2niix>`_ program.
 
 
 The ``rtree`` library assumes that ``libspatialindex`` is installed on
 your system.
 
 
-The :mod:`fsl.transform.x5` module uses `h5py <https://www.h5py.org/>`_,
-which requires ``libhdf5``.
+The `fsl.transform.x5 <fsl/transform/x5.py>`_ module uses `h5py
+<https://www.h5py.org/>`_, which requires ``libhdf5``.
 
 
 Documentation
