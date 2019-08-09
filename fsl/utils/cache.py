@@ -143,6 +143,13 @@ class Cache(object):
         return self.put(key, value)
 
 
+    def __contains__(self, key):
+        """Check whether an item is in the cache. Note that the item may
+        be in the cache, but it may be expired.
+        """
+        return key in self.__cache
+
+
     def __parseDefault(self, *args, **kwargs):
         """Used by the :meth:`get` method. Parses the ``default`` argument,
         which may be specified as either a positional or keyword argumnet.
