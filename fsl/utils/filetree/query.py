@@ -30,7 +30,8 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-from . import FileTree
+from fsl.utils.deprecated import deprecated
+from .                    import FileTree
 
 
 log = logging.getLogger(__name__)
@@ -44,11 +45,11 @@ class FileTreeQuery(object):
     by a :class:`.FileTree`, and identifies all file types (a.k.a. *templates*
     or *short names*) that are present, and the values of variables within each
     short name that are present. The :meth:`query` method can be used to
-    retrieve files which match a specific short name, and variable values.
+    retrieve files which match a specific template, and variable values.
 
     The :meth:`query` method returns a multi-dimensional ``numpy.array``
     which contains :class:`Match` objects, where each dimension one
-    represents variable for the short name in question.
+    represents variable for the template in question.
 
     Example usage::
 
@@ -71,15 +72,13 @@ class FileTreeQuery(object):
          'session': [None]}
 
         >>> query.query('anat_image', participant='01')
-        array([[[[[[[Match(./my_bids_data/sub-01/anat/sub-01_T1w.nii.gz)],
-                    [nan],
-                    [nan],
-                    [nan]]]],
+        [Match(./my_bids_data/sub-01/anat/sub-01_T1w.nii.gz),
+         Match(./my_bids_data/sub-01/anat/sub-01_T2w.nii.gz)]
 
-                 [[[[Match(./my_bids_data/sub-01/anat/sub-01_T2w.nii.gz)],
-                    [nan],
-                    [nan],
-                    [nan]]]]]]], dtype=object)
+
+    Matches for templates contained within sub-trees are referred to by
+    constructing a hierarchical path from the sub-tree template name(s),
+    and the template name - see the :meth:`Match.full_name` method.
     """
 
 
@@ -93,115 +92,123 @@ class FileTreeQuery(object):
 
         # Find all files present in the directory
         # (as Match objects), and find all variables,
-        # plus their values, and all short names,
+        # plus their values, and all templates,
         # that are present in the directory.
-        matches                = scan(tree)
-        allvars, shortnamevars = allVariables(tree, matches)
+        matches               = scan(tree)
+        allvars, templatevars = allVariables(tree, matches)
 
         # Now we are going to build a series of ND
         # arrays to store Match objects. We create
-        # one array for each short name. Each axis
+        # one array for each template. Each axis
         # in an array corresponds to a variable
-        # present in files of that short name type,
+        # present in files of that template type,
         # and each position along an axis corresponds
         # to one value of that variable.
         #
         # These arrays will be used to store and
-        # retrieve Match objects - given a short
-        # name and a set of variable values, we
-        # can quickly find the corresponding Match
+        # retrieve Match objects - given a template
+        # and a set of variable values, we can
+        # quickly find the corresponding Match
         # object (or objects).
 
-        # matcharrays contains {shortname : ndarray}
+        # matcharrays contains {template : ndarray}
         # mappings, and varidxs contains
-        # {shortname : {varvalue : index}} mappings
+        # {template : {varvalue : index}} mappings
         matcharrays = {}
         varidxs     = {}
 
-        for shortname in shortnamevars.keys():
+        for template, tvars in templatevars.items():
 
-            snvars    = shortnamevars[shortname]
-            snvarlens = [len(allvars[v]) for v in snvars]
+            tvarlens = [len(allvars[v]) for v in tvars]
 
             # An ND array for this short
             # name. Each element is a
             # Match object, or nan.
-            matcharray    = np.zeros(snvarlens, dtype=np.object)
+            matcharray    = np.zeros(tvarlens, dtype=np.object)
             matcharray[:] = np.nan
 
             # indices into the match array
             # for each variable value
-            snvaridxs = {}
-            for v in snvars:
-                snvaridxs[v] = {n : i for i, n in enumerate(allvars[v])}
+            tvaridxs = {}
+            for v in tvars:
+                tvaridxs[v] = {n : i for i, n in enumerate(allvars[v])}
 
-            matcharrays[shortname] = matcharray
-            varidxs[    shortname] = snvaridxs
+            matcharrays[template] = matcharray
+            varidxs[    template] = tvaridxs
 
         # Populate the match arrays
         for match in matches:
-            snvars    = shortnamevars[match.short_name]
-            snvaridxs = varidxs[      match.short_name]
-            snarr     = matcharrays[  match.short_name]
-            idx       = []
-            for var in snvars:
+            tvars    = templatevars[match.full_name]
+            tvaridxs = varidxs[     match.full_name]
+            tarr     = matcharrays[ match.full_name]
+            idx      = []
+            for var in tvars:
 
                 val = match.variables[var]
-                idx.append(snvaridxs[var][val])
+                idx.append(tvaridxs[var][val])
 
-            snarr[tuple(idx)] = match
+            tarr[tuple(idx)] = match
 
         self.__allvars       = allvars
-        self.__shortnamevars = shortnamevars
+        self.__templatevars  = templatevars
         self.__matches       = matches
         self.__matcharrays   = matcharrays
         self.__varidxs       = varidxs
 
 
-    def axes(self, short_name) -> List[str]:
+    def axes(self, template) -> List[str]:
         """Returns a list containing the names of variables present in files
-        of the given ``short_name`` type, in the same order of the axes of
+        of the given ``template`` type, in the same order of the axes of
         :class:`Match` arrays that are returned by the :meth:`query` method.
         """
-        return self.__shortnamevars[short_name]
+        return self.__templatevars[template]
 
 
-    def variables(self, short_name=None) -> Dict[str, List]:
+    def variables(self, template=None) -> Dict[str, List]:
         """Return a dict of ``{variable : [values]}`` mappings.
         This dict describes all variables and their possible values in
         the tree.
 
-        If a ``short_name`` is specified, only variables which are present in
-        files of that ``short_name`` type are returned.
+        If a ``template`` is specified, only variables which are present in
+        files of that ``template`` type are returned.
         """
-        if short_name is None:
+        if template is None:
             return {var : list(vals) for var, vals in self.__allvars.items()}
         else:
-            varnames = self.__shortnamevars[short_name]
+            varnames = self.__templatevars[template]
             return {var : list(self.__allvars[var]) for var in varnames}
 
 
     @property
-    def short_names(self) -> List[str]:
-        """Returns a list containing all short names of the ``FileTree`` that
+    def templates(self) -> List[str]:
+        """Returns a list containing all templates of the ``FileTree`` that
         are present in the directory.
         """
-        return list(self.__shortnamevars.keys())
+        return list(self.__templatevars.keys())
 
 
-    def query(self, short_name, asarray=False, **variables):
-        """Search for files of the given ``short_name``, which match
+    @property
+    @deprecated('2.6.0', '3.0.0', 'Use templates instead')
+    def short_names(self) -> List[str]:
+        """Returns a list containing all templates of the ``FileTree`` that
+        are present in the directory.
+        """
+        return self.templates
+
+
+    def query(self, template, asarray=False, **variables):
+        """Search for files of the given ``template``, which match
         the specified ``variables``. All hits are returned for variables
         that are unspecified.
 
-        :arg short_name:  Short name of files to search for.
+        :arg template: Template of files to search for.
 
-        :arg asarray: If ``True``, the relevant :class:`Match` objects are
-                      returned in a in a ND ``numpy.array`` where each
-                      dimension corresponds to a variable for the
-                      ``short_name`` in question (as returned by
-                      :meth:`axes`). Otherwise (the default), they are
-                      returned in a list.
+        :arg asarray:  If ``True``, the relevant :class:`Match` objects are
+                       returned in a in a ND ``numpy.array`` where each
+                       dimension corresponds to a variable for the
+                       ``templates`` in question (as returned by
+                       :meth:`axes`). Otherwise (the default), they are
+                       returned in a list.
 
         All other arguments are assumed to be ``variable=value`` pairs,
         used to restrict which matches are returned. All values are returned
@@ -213,9 +220,9 @@ class FileTreeQuery(object):
         """
 
         varnames    = list(variables.keys())
-        allvarnames = self.__shortnamevars[short_name]
-        varidxs     = self.__varidxs[    short_name]
-        matcharray  = self.__matcharrays[short_name]
+        allvarnames = self.__templatevars[template]
+        varidxs     = self.__varidxs[     template]
+        matcharray  = self.__matcharrays[ template]
         slc         = []
 
         for var in allvarnames:
@@ -244,17 +251,17 @@ class Match(object):
     """
 
 
-    def __init__(self, filename, short_name, tree, variables):
+    def __init__(self, filename, template, tree, variables):
         """Create a ``Match`` object. All arguments are added as attributes.
 
         :arg filename:   name of existing file
-        :arg short_name: template identifier
+        :arg template:   template identifier
         :arg tree:       :class:`.FileTree` which contains this ``Match``
         :arg variables:  Dictionary of ``{variable : value}`` mappings
                          containing all variables present in the file name.
         """
         self.__filename   = filename
-        self.__short_name = short_name
+        self.__template   = template
         self.__tree       = tree
         self.__variables  = dict(variables)
 
@@ -265,8 +272,39 @@ class Match(object):
 
 
     @property
+    @deprecated('2.6.0', '3.0.0', 'Use template instead')
     def short_name(self):
-        return self.__short_name
+        return self.template
+
+
+    @property
+    def template(self):
+        return self.__template
+
+
+    @property
+    def full_name(self):
+        """The ``full_name`` of a ``Match`` is a combination of the
+        ``template`` (i.e. the matched template), and the name(s) of
+        the relevant ``FileTree`` objects.
+
+        It allows one to unamiguously identify the location of a ``Match``
+        in a ``FileTree`` hierarchy, where the same ``short_name`` may be
+        used in different sub-trees.
+        """
+
+        def parents(tree):
+            if tree.parent is None:
+                return []
+            else:
+                return [tree.parent] + parents(tree.parent)
+
+        trees = [self.tree] + parents(self.tree)
+
+        # Drop the root tree
+        trees = list(reversed(trees))[1:]
+
+        return '/'.join([t.name for t in trees] + [self.template])
 
 
     @property
@@ -282,7 +320,7 @@ class Match(object):
     def __eq__(self, other):
         return (isinstance(other, Match)            and
                 self.filename   == other.filename   and
-                self.short_name == other.short_name and
+                self.template   == other.template   and
                 self.tree       is other.tree       and
                 self.variables  == other.variables)
 
@@ -297,7 +335,7 @@ class Match(object):
 
     def __repr__(self):
         """Returns a string representation of this ``Match``. """
-        return 'Match({})'.format(self.filename)
+        return 'Match({}: {})'.format(self.full_name, self.filename)
 
 
     def __str__(self):
@@ -346,26 +384,25 @@ def allVariables(
                  variables and their possible values present in the given list
                  of ``Match`` objects.
 
-               - A dict of ``{ short_name : [variables] }`` mappings,
-                 containing the variables which are relevant to each short
-                 name.
+               - A dict of ``{ full_name : [variables] }`` mappings,
+                 containing the variables which are relevant to each template.
     """
-    allvars       = collections.defaultdict(set)
-    allshortnames = collections.defaultdict(set)
+    allvars      = collections.defaultdict(set)
+    alltemplates = collections.defaultdict(set)
 
     for m in matches:
         for var, val in m.variables.items():
-            allvars[      var]         .add(val)
-            allshortnames[m.short_name].add(var)
+            allvars[     var]        .add(val)
+            alltemplates[m.full_name].add(var)
 
     # allow us to compare None with strings
     def key(v):
         if v is None: return ''
         else:         return v
 
-    allvars       = {var : list(sorted(vals, key=key))
-                     for var, vals in allvars.items()}
-    allshortnames = {sn  : list(sorted(vars))
-                     for sn, vars in allshortnames.items()}
+    allvars      = {var : list(sorted(vals, key=key))
+                    for var, vals in allvars.items()}
+    alltemplates = {sn  : list(sorted(vars))
+                    for sn, vars in alltemplates.items()}
 
-    return allvars, allshortnames
+    return allvars, alltemplates

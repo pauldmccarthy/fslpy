@@ -358,6 +358,7 @@ class FileTree(object):
             filename = tree_name + '.tree'
         else:
             filename = parse.search_tree(tree_name)
+        tree_name = op.splitext(op.basename(filename))[0]
         filename = Path(filename)
 
         templates = {}
@@ -396,7 +397,7 @@ class FileTree(object):
                         raise ValueError("Name of sub_tree {short_name} used multiple times in {tree_name}.tree".format(**locals()))
 
                     sub_trees[short_name] = sub_tree
-                    sub_tree._name = sub_tree._name + '[' + short_name + ']'
+                    sub_tree._name = short_name
                 elif '=' in line:
                     key, value = line.split('=')
                     if len(key.split()) != 1:
