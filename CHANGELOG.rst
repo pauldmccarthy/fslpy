@@ -12,6 +12,8 @@ Changed
 
 * The :class:`.Cache` class has a new ``lru`` option, allowing it to be used
   as a least-recently-used cache.
+* The :mod:`.filetree` module has been refactored to make it easier for the
+  :mod:`.query` module to work with file tree hierarchies.
 
 
 2.5.0 (Tuesday 6th August 2019)
