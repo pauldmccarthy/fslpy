@@ -244,16 +244,18 @@ class Match(object):
     """
 
 
-    def __init__(self, filename, short_name, variables):
+    def __init__(self, filename, short_name, tree, variables):
         """Create a ``Match`` object. All arguments are added as attributes.
 
         :arg filename:   name of existing file
         :arg short_name: template identifier
+        :arg tree:       :class:`.FileTree` which contains this ``Match``
         :arg variables:  Dictionary of ``{variable : value}`` mappings
                          containing all variables present in the file name.
         """
         self.__filename   = filename
         self.__short_name = short_name
+        self.__tree       = tree
         self.__variables  = dict(variables)
 
 
@@ -268,6 +270,11 @@ class Match(object):
 
 
     @property
+    def tree(self):
+        return self.__tree
+
+
+    @property
     def variables(self):
         return dict(self.__variables)
 
@@ -276,6 +283,7 @@ class Match(object):
         return (isinstance(other, Match)            and
                 self.filename   == other.filename   and
                 self.short_name == other.short_name and
+                self.tree       is other.tree       and
                 self.variables  == other.variables)
 
 
@@ -301,11 +309,13 @@ def scan(tree : FileTree) -> List[Match]:
     """Scans the directory of the given ``FileTree`` to find all files which
     match a tree template.
 
-    :return: list of :class:`Match` objects
+    :arg tree: :class:`.FileTree` to scan
+    :returns:  list of :class:`Match` objects
     """
 
     matches = []
     for template in tree.templates:
+
         for filename in tree.get_all(template, glob_vars='all'):
 
             if not op.isfile(filename):
@@ -313,7 +323,7 @@ def scan(tree : FileTree) -> List[Match]:
 
             variables = dict(tree.extract_variables(template, filename))
 
-            matches.append(Match(filename, template, variables))
+            matches.append(Match(filename, template, tree, variables))
 
     for tree_name, sub_tree in tree.sub_trees.items():
         matches.extend(scan(sub_tree))
