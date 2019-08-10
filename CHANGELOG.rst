@@ -12,6 +12,7 @@ Changed
 
 * The :class:`.Cache` class has a new ``lru`` option, allowing it to be used
   as a least-recently-used cache.
+* The :class:`.FileTree` class now has a ``name`` attribute.
 
 
 2.5.0 (Tuesday 6th August 2019)
