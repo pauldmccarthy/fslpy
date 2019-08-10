@@ -52,7 +52,7 @@ def _test_data():
         yield
 
 
-def _expected_matches(short_name, **kwargs):
+def _expected_matches(template, tree, **kwargs):
 
     matches = []
     subjs   = kwargs.get('participant', _subjs)
@@ -64,18 +64,20 @@ def _expected_matches(short_name, **kwargs):
 
         sesdir = op.join('subj-{}'.format(subj), 'ses-{}'.format(ses))
 
-        if short_name in ('T1w', 'T2w'):
-            f = op.join(sesdir, '{}.nii.gz'.format(short_name))
+        if template in ('T1w', 'T2w'):
+            f = op.join(sesdir, '{}.nii.gz'.format(template))
             matches.append(ftquery.Match(f,
-                                         short_name,
+                                         template,
+                                         tree,
                                          {'participant' : subj,
                                           'session'     : ses}))
 
-        elif short_name == 'surface':
+        elif template == 'surface':
             for hemi, surf in it.product(hemis, surfs):
                 f = op.join(sesdir, '{}.{}.gii'.format(hemi, surf))
                 matches.append(ftquery.Match(f,
-                                             short_name,
+                                             template,
+                                             tree,
                                              {'participant' : subj,
                                               'session'     : ses,
                                               'hemi'        : hemi,
@@ -84,19 +86,19 @@ def _expected_matches(short_name, **kwargs):
     return matches
 
 
-def _run_and_check_query(query, short_name, asarray=False, **vars):
+def _run_and_check_query(query, template, asarray=False, **vars):
 
-    gotmatches = query.query(      short_name, asarray=asarray, **vars)
-    expmatches = _expected_matches(short_name, **{k : [v]
-                                                  for k, v
-                                                  in vars.items()})
+    gotmatches = query.query(      template, asarray=asarray, **vars)
+    expmatches = _expected_matches(template, query.tree, **{k : [v]
+                                                            for k, v
+                                                            in vars.items()})
 
     if not asarray:
         assert len(gotmatches) == len(expmatches)
         for got, exp in zip(sorted(gotmatches), sorted(expmatches)):
             assert got == exp
     else:
-        snvars = query.variables(short_name)
+        snvars = query.variables(template)
 
         assert len(snvars) == len(gotmatches.shape)
 
@@ -108,7 +110,7 @@ def _run_and_check_query(query, short_name, asarray=False, **vars):
 
         for expmatch in expmatches:
             slc = []
-            for var in query.axes(short_name):
+            for var in query.axes(template):
                 if var not in vars or vars[var] == '*':
                     vidx = snvars[var].index(expmatch.variables[var])
                     slc.append(vidx)
@@ -128,7 +130,7 @@ def test_query_properties():
                                                  'participant',
                                                  'session',
                                                  'surf']
-        assert sorted(query.short_names)     == ['T1w', 'T2w', 'surface']
+        assert sorted(query.templates)       == ['T1w', 'T2w', 'surface']
 
         assert query.variables('T1w')     == {'participant' : ['01', '02', '03'],
                                               'session'     : ['1', '2']}
@@ -318,7 +320,7 @@ def test_query_subtree():
         tree = filetree.FileTree.read('tree1.tree', '.')
         query = filetree.FileTreeQuery(tree)
 
-        assert sorted(query.short_names) == ['T1w', 'surface']
+        assert sorted(query.templates) == ['T1w', 'surfdir/surface']
 
         qvars = query.variables()
         assert sorted(qvars.keys()) == ['hemi', 'participant', 'surf']
@@ -330,7 +332,7 @@ def test_query_subtree():
         assert sorted(qvars.keys()) == ['participant']
         assert qvars['participant'] == ['01', '02', '03']
 
-        qvars = query.variables('surface')
+        qvars = query.variables('surfdir/surface')
         assert sorted(qvars.keys()) == ['hemi', 'participant', 'surf']
         assert qvars['hemi']        == ['L', 'R']
         assert qvars['participant'] == ['01', '02', '03']
@@ -346,7 +348,7 @@ def test_query_subtree():
         assert [m.filename for m in sorted(got)] == [
             op.join('subj-01', 'T1w.nii.gz')]
 
-        got = query.query('surface')
+        got = query.query('surfdir/surface')
         assert [m.filename for m in sorted(got)] == [
             op.join('subj-01', 'surf', 'L.pial.gii'),
             op.join('subj-01', 'surf', 'L.white.gii'),
@@ -361,7 +363,7 @@ def test_query_subtree():
             op.join('subj-03', 'surf', 'R.pial.gii'),
             op.join('subj-03', 'surf', 'R.white.gii')]
 
-        got = query.query('surface', hemi='L')
+        got = query.query('surfdir/surface', hemi='L')
         assert [m.filename for m in sorted(got)] == [
             op.join('subj-01', 'surf', 'L.pial.gii'),
             op.join('subj-01', 'surf', 'L.white.gii'),
@@ -370,7 +372,7 @@ def test_query_subtree():
             op.join('subj-03', 'surf', 'L.pial.gii'),
             op.join('subj-03', 'surf', 'L.white.gii')]
 
-        got = query.query('surface', surf='white')
+        got = query.query('surfdir/surface', surf='white')
         assert [m.filename for m in sorted(got)] == [
             op.join('subj-01', 'surf', 'L.white.gii'),
             op.join('subj-01', 'surf', 'R.white.gii'),
@@ -394,16 +396,17 @@ def test_scan():
         t1wf   = op.join(sesdir, 'T1w.nii.gz')
         t2wf   = op.join(sesdir, 'T2w.nii.gz')
 
-        expmatches.append(ftquery.Match(t1wf, 'T1w', {'participant' : subj,
-                                                      'session'     : ses}))
-        expmatches.append(ftquery.Match(t2wf, 'T2w', {'participant' : subj,
-                                                      'session'     : ses}))
+        expmatches.append(ftquery.Match(t1wf, 'T1w', tree, {'participant' : subj,
+                                                            'session'     : ses}))
+        expmatches.append(ftquery.Match(t2wf, 'T2w', tree, {'participant' : subj,
+                                                            'session'     : ses}))
 
         for hemi, surf in it.product(_hemis, _surfs):
             surff = op.join(sesdir, '{}.{}.gii'.format(hemi, surf))
 
             expmatches.append(ftquery.Match(surff,
                                             'surface',
+                                            tree,
                                             {'participant' : subj,
                                              'session'     : ses,
                                              'surf'        : surf,
@@ -414,7 +417,7 @@ def test_scan():
 
     for got, exp in zip(sorted(gotmatches), sorted(expmatches)):
         assert got.filename   == exp.filename
-        assert got.short_name == exp.short_name
+        assert got.template   == exp.template
         assert got.variables  == exp.variables
 
 
