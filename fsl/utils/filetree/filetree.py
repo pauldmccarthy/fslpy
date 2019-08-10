@@ -25,12 +25,14 @@ class FileTree(object):
     - ``variables``: dictionary mapping variables in the templates to specific values (variables set to None are explicitly unset)
     - ``sub_trees``: filename trees describing specific sub-directories
     - ``parent``: parent FileTree, of which this sub-tree is a sub-directory
+    - ``name``: descriptive name of the tree
     """
     def __init__(self,
                  templates: Dict[str, str],
                  variables: Dict[str, Any],
-                 sub_trees: Dict[str, "FileTree"]=None,
-                 parent: Optional["FileTree"]=None):
+                 sub_trees: Dict[str, "FileTree"] = None,
+                 parent:    Optional["FileTree"] = None,
+                 name:      str = None):
         """
         Creates a new filename tree.
         """
@@ -40,6 +42,7 @@ class FileTree(object):
             sub_trees = {}
         self.sub_trees = sub_trees
         self._parent = parent
+        self._name = name
 
     @property
     def parent(self, ):
@@ -47,6 +50,15 @@ class FileTree(object):
         Parent FileTree, of which this sub-tree is a sub-directory
         """
         return self._parent
+
+
+    @property
+    def name(self, ):
+        """
+        Name of this ``FileTree``, or ``None`` if it has no name.
+        """
+        return self._name
+
 
     @property
     def all_variables(self, ):
@@ -384,6 +396,7 @@ class FileTree(object):
                         raise ValueError("Name of sub_tree {short_name} used multiple times in {tree_name}.tree".format(**locals()))
 
                     sub_trees[short_name] = sub_tree
+                    sub_tree._name = sub_tree._name + '[' + short_name + ']'
                 elif '=' in line:
                     key, value = line.split('=')
                     if len(key.split()) != 1:
@@ -413,7 +426,7 @@ class FileTree(object):
                     templates[short_name] = str(current_filename)
 
         file_variables.update(variables)
-        res = get_registered(tree_name, cls)(templates, variables=file_variables, sub_trees=sub_trees)
+        res = get_registered(tree_name, cls)(templates, variables=file_variables, sub_trees=sub_trees, name=tree_name)
         for tree in sub_trees.values():
             tree._parent = res
         return res
