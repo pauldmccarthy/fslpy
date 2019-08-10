@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.6.0 (Under development)
+-------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :class:`.Cache` class has a new ``lru`` option, allowing it to be used
+  as a least-recently-used cache.
+
+
 2.5.0 (Tuesday 6th August 2019)
 -------------------------------
 

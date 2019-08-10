@@ -42,14 +42,20 @@ class Cache(object):
          raised.
     """
 
-    def __init__(self, maxsize=100):
+    def __init__(self, maxsize=100, lru=False):
         """Create a ``Cache``.
 
         :arg maxsize: Maximum number of items allowed in the ``Cache`` before
                       it starts dropping old items
+
+        :arg lru:     (least recently used) If ``False`` (the default), items
+                      are dropped according to their insertion time. Otherwise,
+                      items are dropped according to their most recent access
+                      time.
         """
         self.__cache   = collections.OrderedDict()
         self.__maxsize = maxsize
+        self.__lru     = lru
 
 
     def put(self, key, value, expiry=0):
@@ -94,13 +100,25 @@ class Cache(object):
         else:
             entry = self.__cache[key]
 
+        # Check to see if the entry
+        # has expired
+        now = time.time()
+
         if entry.expiry > 0:
-            if time.time() - entry.storetime > entry.expiry:
+            if now - entry.storetime > entry.expiry:
 
                 self.__cache.pop(key)
 
                 if defaultSpecified: return default
                 else:                raise Expired(key)
+
+        # If we are an lru cache, update
+        # this entry's expiry, and update
+        # its order in the cache dict
+        if self.__lru:
+            entry.storetime = now
+            self.__cache.pop(key)
+            self.__cache[key] = entry
 
         return entry.value
 
@@ -125,6 +143,13 @@ class Cache(object):
         return self.put(key, value)
 
 
+    def __contains__(self, key):
+        """Check whether an item is in the cache. Note that the item may
+        be in the cache, but it may be expired.
+        """
+        return key in self.__cache
+
+
     def __parseDefault(self, *args, **kwargs):
         """Used by the :meth:`get` method. Parses the ``default`` argument,
         which may be specified as either a positional or keyword argumnet.
@@ -134,7 +159,7 @@ class Cache(object):
                     - ``True`` if a default argument was specified, ``False``
                       otherwise.
 
-                    - The specifeid default value, or ``None`` if it wasn't
+                    - The specified default value, or ``None`` if it wasn't
                       specified.
         """
 
