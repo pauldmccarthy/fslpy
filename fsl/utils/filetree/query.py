@@ -149,6 +149,7 @@ class FileTreeQuery(object):
 
             tarr[tuple(idx)] = match
 
+        self.__tree          = tree
         self.__allvars       = allvars
         self.__templatevars  = templatevars
         self.__matches       = matches
@@ -177,6 +178,14 @@ class FileTreeQuery(object):
         else:
             varnames = self.__templatevars[template]
             return {var : list(self.__allvars[var]) for var in varnames}
+
+
+    @property
+    def tree(self):
+        """Returns the :class:`.FileTree` associated with this
+        ``FileTreeQuery``.
+        """
+        return self.__tree
 
 
     @property
