@@ -6,7 +6,7 @@
 # Author: Michiel Cottaar <michiel.cottaar@.ndcn.ox.ac.uk>
 #
 """This module contains the :class:`FileTreeQuery` class, which can be used to
-search for files in a directory described by a `.FileTree`. A
+search for files in a directory described by a :class:`.FileTree`. A
 ``FileTreeQuery`` object returns :class:`Match` objects which each represent a
 file that is described by the ``FileTree``, and which is present in the
 directory.
@@ -22,8 +22,9 @@ defined in this module:
 """
 
 
-import logging
-import collections
+import              logging
+import              collections
+import functools as ft
 
 import os.path as op
 from typing import Dict, List, Tuple
@@ -121,6 +122,12 @@ class FileTreeQuery(object):
 
             tvarlens = [len(allvars[v]) for v in tvars]
 
+            # "Scalar" match objects - templates
+            # which have no variables, and for
+            # which zero or one file is present
+            if len(tvarlens) == 0:
+                tvarlens = 1
+
             # An ND array for this short
             # name. Each element is a
             # Match object, or nan.
@@ -142,10 +149,13 @@ class FileTreeQuery(object):
             tvaridxs = varidxs[     match.full_name]
             tarr     = matcharrays[ match.full_name]
             idx      = []
-            for var in tvars:
 
-                val = match.variables[var]
-                idx.append(tvaridxs[var][val])
+            if len(match.variables) == 0:
+                idx = [0]
+            else:
+                for var in tvars:
+                    val = match.variables[var]
+                    idx.append(tvaridxs[var][val])
 
             tarr[tuple(idx)] = match
 
@@ -253,6 +263,7 @@ class FileTreeQuery(object):
         else:       return [m for m in result.flat if isinstance(m, Match)]
 
 
+@ft.total_ordering
 class Match(object):
     """A ``Match`` object represents a file with a name matching a template in
     a ``FileTree``.  The :func:`scan` function and :meth:`FileTree.query`
@@ -338,10 +349,6 @@ class Match(object):
         return isinstance(other, Match) and self.filename < other.filename
 
 
-    def __le__(self, other):
-        return isinstance(other, Match) and self.filename <= other.filename
-
-
     def __repr__(self):
         """Returns a string representation of this ``Match``. """
         return 'Match({}: {})'.format(self.full_name, self.filename)
@@ -397,9 +404,13 @@ def allVariables(
                  containing the variables which are relevant to each template.
     """
     allvars      = collections.defaultdict(set)
-    alltemplates = collections.defaultdict(set)
+    alltemplates = {}
 
     for m in matches:
+
+        if m.full_name not in alltemplates:
+            alltemplates[m.full_name] = set()
+
         for var, val in m.variables.items():
             allvars[     var]        .add(val)
             alltemplates[m.full_name].add(var)
@@ -411,7 +422,7 @@ def allVariables(
 
     allvars      = {var : list(sorted(vals, key=key))
                     for var, vals in allvars.items()}
-    alltemplates = {sn  : list(sorted(vars))
-                    for sn, vars in alltemplates.items()}
+    alltemplates = {tn  : list(sorted(vars))
+                    for tn, vars in alltemplates.items()}
 
     return allvars, alltemplates
