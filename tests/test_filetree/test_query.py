@@ -25,6 +25,7 @@ subj-{participant}
     T1w.nii.gz (T1w)
     T2w.nii.gz (T2w)
     {hemi}.{surf}.gii (surface)
+scalar_file.txt (scalar)
 """.strip()
 
 _subjs = ['01', '02', '03']
@@ -36,7 +37,7 @@ _surfs = ['midthickness', 'pial', 'white']
 @contextlib.contextmanager
 def _test_data():
 
-    files = []
+    files = ['scalar_file.txt']
 
     for subj, ses in it.product(_subjs, _sess):
         sesdir = op.join('subj-{}'.format(subj), 'ses-{}'.format(ses))
@@ -59,6 +60,12 @@ def _expected_matches(template, tree, **kwargs):
     sess    = kwargs.get('session',     _sess)
     surfs   = kwargs.get('surf',        _surfs)
     hemis   = kwargs.get('hemi',        _hemis)
+
+    if template == 'scalar':
+        matches.append(ftquery.Match('scalar_file.txt',
+                                     template,
+                                     tree,
+                                     {}))
 
     for subj, ses in it.product(subjs, sess):
 
@@ -100,7 +107,10 @@ def _run_and_check_query(query, template, asarray=False, **vars):
     else:
         snvars = query.variables(template)
 
-        assert len(snvars) == len(gotmatches.shape)
+        if len(snvars) == 0:
+            assert gotmatches.shape == (1,)
+        else:
+            assert len(snvars) == len(gotmatches.shape)
 
         for i, var in enumerate(sorted(snvars.keys())):
             if var not in vars or vars[var] == '*':
@@ -124,30 +134,32 @@ def test_query_properties():
         tree  = filetree.FileTree.read('_test_tree.tree', '.')
         query = filetree.FileTreeQuery(tree)
 
+        assert sorted(query.axes('scalar'))  == []
         assert sorted(query.axes('T1w'))     == ['participant', 'session']
         assert sorted(query.axes('T2w'))     == ['participant', 'session']
         assert sorted(query.axes('surface')) == ['hemi',
                                                  'participant',
                                                  'session',
                                                  'surf']
-        assert sorted(query.templates)       == ['T1w', 'T2w', 'surface']
+        assert sorted(query.templates)       == ['T1w', 'T2w', 'scalar', 'surface']
 
-        assert query.variables('T1w')     == {'participant' : ['01', '02', '03'],
-                                              'session'     : ['1', '2']}
-        assert query.variables('T2w')     == {'participant' : ['01', '02', '03'],
-                                              'session'     : ['1', '2']}
-        assert query.variables('surface') == {'participant' : ['01', '02', '03'],
-                                              'session'     : ['1', '2'],
-                                              'surf'        : ['midthickness',
-                                                               'pial',
-                                                               'white'],
-                                              'hemi'        : ['L', 'R']}
-        assert query.variables()          == {'participant' : ['01', '02', '03'],
-                                              'session'     : ['1', '2'],
-                                              'surf'        : ['midthickness',
-                                                               'pial',
-                                                               'white'],
-                                              'hemi'        : ['L', 'R']}
+        assert query.variables('scalar')     == {}
+        assert query.variables('T1w')        == {'participant' : ['01', '02', '03'],
+                                                 'session'     : ['1', '2']}
+        assert query.variables('T2w')        == {'participant' : ['01', '02', '03'],
+                                                 'session'     : ['1', '2']}
+        assert query.variables('surface')    == {'participant' : ['01', '02', '03'],
+                                                 'session'     : ['1', '2'],
+                                                 'surf'        : ['midthickness',
+                                                                  'pial',
+                                                                  'white'],
+                                                 'hemi'        : ['L', 'R']}
+        assert query.variables()             == {'participant' : ['01', '02', '03'],
+                                                 'session'     : ['1', '2'],
+                                                 'surf'        : ['midthickness',
+                                                                  'pial',
+                                                                  'white'],
+                                                 'hemi'        : ['L', 'R']}
 
 
 def test_query():
@@ -155,6 +167,7 @@ def test_query():
         tree  = filetree.FileTree.read('_test_tree.tree', '.')
         query = filetree.FileTreeQuery(tree)
 
+    _run_and_check_query(query, 'scalar')
     _run_and_check_query(query, 'T1w')
     _run_and_check_query(query, 'T1w', participant='01')
     _run_and_check_query(query, 'T1w', session='2')
@@ -269,6 +282,7 @@ def test_query_asarray():
         tree  = filetree.FileTree.read('_test_tree.tree', '.')
         query = filetree.FileTreeQuery(tree)
 
+        _run_and_check_query(query, 'scalar', asarray=True)
         _run_and_check_query(query, 'T1w', asarray=True)
         _run_and_check_query(query, 'T1w', asarray=True, participant='01')
         _run_and_check_query(query, 'T1w', asarray=True, session='2')
@@ -388,7 +402,10 @@ def test_scan():
         tree    = filetree.FileTree.read('_test_tree.tree', '.')
         gotmatches = ftquery.scan(tree)
 
-    expmatches = []
+    expmatches = [ftquery.Match('scalar_file.txt',
+                                'scalar',
+                                tree,
+                                {})]
 
     for subj, ses in it.product(_subjs, _sess):
 
@@ -416,6 +433,8 @@ def test_scan():
     assert len(gotmatches) == len(expmatches)
 
     for got, exp in zip(sorted(gotmatches), sorted(expmatches)):
+        assert got            == exp
+        assert str(got)       == str(exp)
         assert got.filename   == exp.filename
         assert got.template   == exp.template
         assert got.variables  == exp.variables
@@ -433,6 +452,7 @@ def test_allVariables():
             'surf'        : _surfs,
             'hemi'        : _hemis}
         expsnames = {
+            'scalar'  : [],
             'T1w'     : ['participant', 'session'],
             'T2w'     : ['participant', 'session'],
             'surface' : ['hemi', 'participant', 'session', 'surf']}
