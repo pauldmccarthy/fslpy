@@ -1,12 +1,32 @@
 import glob
 import os.path as op
 from . import filetree
+from contextlib import contextmanager
 from pathlib import PurePath
 from typing import Tuple, List
 import re
 
 
 tree_directories = ['.', op.join(op.split(__file__)[0], 'trees')]
+
+
+@contextmanager
+def extra_tree_dirs(extra_dirs):
+    """Temporarily insert ``extra_dirs`` to the beginning of :attr:`tree_directories`.
+
+    :arg extra_dirs: Sequence of additional tree file directories to search.
+    """
+
+    global tree_directories
+
+    old_tree_directories = list(tree_directories)
+
+    tree_directories = list(extra_dirs) + list(tree_directories)
+
+    try:
+        yield
+    finally:
+        tree_directories = old_tree_directories
 
 
 def search_tree(name: str) -> str:

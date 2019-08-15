@@ -4,6 +4,7 @@ from pathlib import PurePath
 import os.path as op
 import pytest
 from glob import glob
+import os
 
 
 def same_path(p1, p2):
@@ -161,3 +162,14 @@ def test_extract_vars_but():
     assert {'p1': 'opt_file', 'p2': 'test'} == tree.update(p1='opt_file').extract_variables('fn', fn)
     assert {'p1': 'opt', 'p2': 'file_test'} == tree.update(p1='opt').extract_variables('fn', fn)
     assert {'p1': 'opt_{p3}', 'p2': 'test', 'p3': 'file'} == tree.update(p1='opt_{p3}').extract_variables('fn', fn)
+
+
+def test_read_local_sub_children():
+    """
+    Look for trees defined in the same folder as the test directory
+    """
+    directory = op.split(__file__)[0]
+    if op.abspath(op.curdir) == op.abspath(directory):
+        # ensure current directory is not the test directory, which would cause the test to be too easy
+        os.chdir('..')
+    filetree.FileTree.read(op.join(directory, 'local_parent.tree'))
