@@ -360,6 +360,7 @@ class FileTree(object):
             filename = parse.search_tree(tree_name)
         tree_name = op.splitext(op.basename(filename))[0]
         filename = Path(filename)
+        dirname = str(filename.parent)
 
         templates = {}
         nspaces_level = []
@@ -392,7 +393,8 @@ class FileTree(object):
                     else:
                         sub_dir = current_filename.parents[0]
 
-                    _, sub_tree, short_name = parse.read_subtree_line(line, sub_dir)
+                    with parse.extra_tree_dirs([dirname]):
+                        _, sub_tree, short_name = parse.read_subtree_line(line, sub_dir)
                     if short_name in sub_trees:
                         raise ValueError("Name of sub_tree {short_name} used multiple times in {tree_name}.tree".format(**locals()))
 
