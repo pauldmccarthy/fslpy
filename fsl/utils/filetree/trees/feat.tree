@@ -1,0 +1,13 @@
+filtered_func_data.nii.gz (filtered_func_data)
+mask.nii.gz (mask)
+example_func.nii.gz (example_func)
+mean_func.nii.gz (mean_func)
+cluster_mask_zfstat{ftest}.nii.gz (cluster_mask_zfstat)
+cluster_mask_zstat{contrast}.nii.gz (cluster_mask_zstat)
+thresh_zfstat{ftest}.nii.gz (thresh_zfstat)
+thresh_zstat{contrast}.nii.gz (thresh_zstat)
+rendered_thresh_zstat{contrast}.nii.gz (rendered_thresh_zstat)
+reg
+  ->feat_reg (reg)
+stats
+  ->feat_stats (stats)
