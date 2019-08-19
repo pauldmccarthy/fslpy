@@ -1,0 +1,8 @@
+tstat{contrast}.nii.gz (tstat)
+zstat{contrast}.nii.gz (zstat)
+cope{contrast}.nii.gz (cope)
+varcope{contrast}.nii.gz (varcope)
+fstat{ftest}.nii.gz (fstat)
+zfstat{ftest}.nii.gz (zfstat)
+pe{pe}.nii.gz (pe)
+res4d.nii.gz (res4d)

@@ -1,0 +1,14 @@
+origdata
+  {subject}.nii.gz (rawdata)
+struc
+  {subject}_struc_GM.nii.gz (struc_GM)
+  {subject}_struc_GM_to_template_GM.nii.gz (struc_GM_to_template_GM)
+  {subject}_struc_GM_to_template_GM_mod.nii.gz  (struc_GM_to_template_GM_mod)
+  template_4D_GM.nii.gz
+  template_GM.nii.gz
+stats
+  GM_mask.nii.gz
+  GM_merg.nii.gz
+  GM_mod_merg.nii.gz
+  GM_mod_merg_s{smoothing}.nii.gz (GM_mod_merg_s)
+  GM_mod_merg_s{smoothing}_tstat{contrast}.nii.gz  (GM_mod_merg_tstat)
