@@ -1195,6 +1195,14 @@ class Image(Nifti):
         else:          return nvals
 
 
+    @property
+    def iscomplex(self):
+        """Returns ``True`` if this image has a complex data type, ``False``
+        otherwise.
+        """
+        return np.issubdtype(self.dtype, np.complexfloating)
+
+
     @Nifti.voxToWorldMat.setter
     def voxToWorldMat(self, xform):
         """Overrides the :meth:`Nifti.voxToWorldMat` property setter.
