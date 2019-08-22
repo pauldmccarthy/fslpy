@@ -6,6 +6,13 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+* New :meth:`.Image.iscomplex` attribute.
+
+
 Changed
 ^^^^^^^
 
