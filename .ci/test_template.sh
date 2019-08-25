@@ -36,9 +36,9 @@ TEST_OPTS="--cov-report= --cov-append"
 # We run some tests under xvfb-run
 # because they invoke wx. Sleep in
 # between, otherwise xvfb gets upset.
-xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_idle.py"
+xvfb-run -a python setup.py test --addopts="$TEST_OPTS tests/test_idle.py"
 sleep 5
-xvfb-run python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
+xvfb-run -a python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
 
 # We run the immv/imcp tests as the nobody
 # user because some tests expect permission
