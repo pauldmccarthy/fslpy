@@ -299,6 +299,7 @@ def _test_Image_atts(imgtype):
             path = op.abspath(op.join(testdir, path))
             i    = fslimage.Image(path)
 
+            assert not   i.iscomplex
             assert tuple(i.shape)                       == tuple(expdims)
             assert tuple(i.data.shape)                  == tuple(expdims)
             assert tuple(i.pixdim)                      == tuple(exppixdims)
@@ -1369,3 +1370,15 @@ def test_identifyAffine():
     rubbish = np.random.random((4, 4))
     with pytest.raises(ValueError):
         identify(img, rubbish)
+
+
+def test_complex():
+    data       = np.random.random((5, 5, 5)) + \
+                 np.random.random((5, 5, 5)) * 1j
+    image      = fslimage.Image(data)
+    dmin, dmax = image.dataRange
+
+    assert image.iscomplex
+    assert image[3, 3, 3] == data[3, 3, 3]
+    assert dmin == data.min()
+    assert dmax == data.max()
