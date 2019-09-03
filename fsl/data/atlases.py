@@ -949,15 +949,18 @@ class LabelAtlas(Atlas):
         return fslimage.Image(arr, name=label.name, header=self.header)
 
 
-class ProbabilisticAtlas(Atlas):
-    """A 4D atlas which contains one volume for each region.
+class StatisticAtlas(Atlas):
+    """A ``StatisticAtlas`` is a 4D image which contains one volume for
+    each region in the atlas; each volume contains some statistic value
+    for the corresponding region.
 
-    The ``ProbabilisticAtlas`` provides the :meth`proportions` method,
-    which makes looking up region probabilities easy.
+    The :class:`ProbabilisticAtlas` is a specialisation of the
+    ``StatisticAtlas``
     """
 
+
     def __init__(self, atlasDesc, resolution=None, **kwargs):
-        """Create a ``ProbabilisticAtlas`` instance.
+        """Create a ``StatisticAtlas`` instance.
 
         :arg atlasDesc:  The :class:`AtlasDescription` instance describing
                          the atlas.
@@ -966,17 +969,18 @@ class ProbabilisticAtlas(Atlas):
         """
         Atlas.__init__(self, atlasDesc, resolution, False, **kwargs)
 
+
     def get(self, label=None, index=None, value=None, name=None):
-        """
-        Returns the probabilistic image for given label
+        """Returns the statistic image at the given label.
 
         Only one of the arguments should be used to define the label
 
-        :arg label: AtlasLabel contained within this atlas
+        :arg label: :class:`AtlasLabel` contained within this atlas
         :arg index: index of the label
         :arg value: value of the label
-        :arg name: string of the label
-        :return: image.Image with the probabilistic mask
+        :arg name:  string of the label
+        :return:    :class:`.Image` with the statistic values for the
+                    specified label.
         """
         if ((label is not None) + (index is not None) +
             (value is not None) + (name is not None)) != 1:
@@ -988,7 +992,8 @@ class ProbabilisticAtlas(Atlas):
         arr = self[..., label.index]
         return fslimage.Image(arr, name=label.name, header=self.header)
 
-    def proportions(self, location, *args, **kwargs):
+
+    def values(self, location, *args, **kwargs):
         """Looks up and returns the proportions of of all regions at the given
         location.
 
@@ -1011,13 +1016,13 @@ class ProbabilisticAtlas(Atlas):
         """
 
         if isinstance(location, fslimage.Image):
-            return self.maskProportions(location, *args, **kwargs)
+            return self.maskValues(location, *args, **kwargs)
         else:
-            return self.coordProportions(location, *args, **kwargs)
+            return self.coordValues(location, *args, **kwargs)
 
 
-    def coordProportions(self, loc, voxel=False):
-        """Looks up the region probabilities for the given location.
+    def coordValues(self, loc, voxel=False):
+        """Looks up the region values for the given location.
 
         :arg loc:   A sequence of three values, interpreted as atlas
                     world or voxel coordinates.
@@ -1025,10 +1030,8 @@ class ProbabilisticAtlas(Atlas):
         :arg voxel: Defaults to ``False``. If ``True``, the ``loc``
                     argument is interpreted as voxel coordinates.
 
-        :returns: a list of values, one per region, which represent
-                  the probability of each region for the specified
-                  location. Returns an empty list if the given
-                  location is out of bounds.
+        :returns: a list of values, one per region.  Returns an empty
+                  list if the given location is out of bounds.
         """
 
         if not voxel:
@@ -1043,30 +1046,27 @@ class ProbabilisticAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return []
 
-        props = self[loc[0], loc[1], loc[2], :]
+        vals = self[loc[0], loc[1], loc[2], :]
 
         # We only return labels for this atlas -
         # the underlying image may have more
         # volumes than this atlas has labels.
-        return [props[l.index] for l in self.desc.labels]
+        return [vals[l.index] for l in self.desc.labels]
 
 
-    def maskProportions(self, mask):
-        """Looks up the probabilities of all regions in the given ``mask``.
+    def maskValues(self, mask):
+        """Looks up the average values of all regions in the given ``mask``.
 
         :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
                    mask. If the ``mask`` shape does not match that of this
-                   ``ProbabilisticAtlas``, it is resampled using
-                   :meth:`.Image.resample`, with nearest-neighbour
-                   interpolation.
+                   ``StatisticAtlas``, it is resampled using
+                   :meth:`Atlas.prepareMask`.
 
-        :returns:  A sequence containing the proportion, within the mask,
-                   of all regions in the atlas. The proportions are returned as
-                   values between 0 and 100.
+        :returns:  A sequence containing the average value, within the mask,
+                   of all regions in the atlas.
         """
 
-        props = []
-
+        avgvals   = []
         mask      = self.prepareMask(mask)
         boolmask  = mask > 0
         weights   = mask[boolmask]
@@ -1079,11 +1079,35 @@ class ProbabilisticAtlas(Atlas):
 
             vals  = self[..., label.index]
             vals  = vals[boolmask] * weights
-            prop  = vals.sum() / weightsum
+            val   = vals.sum() / weightsum
 
-            props.append(prop)
+            avgvals.append(val)
 
-        return props
+        return avgvals
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use values instead')
+    def proportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`values` instead. """
+        return self.values(*args, **kwargs)
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use coordValues instead')
+    def coordProportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`coordValues` instead. """
+        return self.coordValues(*args, **kwargs)
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use maskValues instead')
+    def maskProportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`maskValues` instead. """
+        return self.maskValues(*args, **kwargs)
+
+
+class ProbabilisticAtlas(StatisticAtlas):
+    """A 4D atlas which contains one volume for each region. Each volume
+    contains probabiliy values for one region, between 0 and 100.
+    """
 
 
 registry            = AtlasRegistry()
