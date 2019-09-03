@@ -36,27 +36,29 @@ load an atlas image, which will be one of the following atlas-specific
    :nosignatures:
 
    LabelAtlas
+   StatisticAtlas
    ProbabilisticAtlas
 """
 
 
 from __future__ import division
 
-import xml.etree.ElementTree              as et
-import os.path                            as op
-import                                       glob
-import                                       bisect
-import                                       logging
+import xml.etree.ElementTree    as et
+import os.path                  as op
+import                             glob
+import                             bisect
+import                             logging
 
-import numpy                              as np
+import numpy                    as np
 
-import fsl.data.image                     as fslimage
-import fsl.data.constants                 as constants
-from   fsl.utils.platform import platform as platform
-import fsl.utils.image.resample           as resample
-import fsl.transform.affine               as affine
-import fsl.utils.notifier                 as notifier
-import fsl.utils.settings                 as fslsettings
+import fsl.data.image           as fslimage
+import fsl.data.constants       as constants
+from   fsl.utils.platform import   platform
+import fsl.utils.image.resample as resample
+import fsl.transform.affine     as affine
+import fsl.utils.notifier       as notifier
+import fsl.utils.settings       as fslsettings
+import fsl.utils.deprecated     as deprecated
 
 
 log = logging.getLogger(__name__)
@@ -322,9 +324,9 @@ class AtlasLabel(object):
     ========= ================================================================
     ``name``  Region name
     ``index`` The index of this label into the list of all labels in the
-              ``AtlasDescription`` that owns it. For probabilistic atlases,
-              this is also the index into the 4D atlas image of the volume
-              that corresponds to this region.
+              ``AtlasDescription`` that owns it. For statistic/probabilistic
+              atlases, this is also the index into the 4D atlas image of the
+              volume that corresponds to this region.
     ``value`` For label atlases and summary images, the value of voxels that
               are in this region.
     ``x``     X coordinate of the region in world space
@@ -386,8 +388,13 @@ class AtlasDescription(object):
 
        <atlas>
          <header>
-           <name></name>        # Atlas name
-           <type></type>        # 'Probabilistic' or 'Label'
+           <name></name>           # Atlas name
+           <type></type>           # 'Statistic', 'Probabilistic' or 'Label'
+           <statistic></statistic> # Optional. Type of statistic
+           <units></units>         # Optional. Units of measurement
+           <precision></precision> # Optional. Decimal precision to report
+           <upper></upper>         # Optional. Upper threshold
+           <lower></lower>         # Optional. Lower threshold
            <images>
             <imagefile>
             </imagefile>        # If type is Probabilistic, path
@@ -412,11 +419,12 @@ class AtlasDescription(object):
          </header>
         <data>
 
-         # index - For probabilistic atlases, index of corresponding volume in
-         #         4D image file. For label images, the value of voxels which
-         #         are in the corresponding region. For probabilistic atlases,
-         #         it is assumed that the value for each region in the  summary
-         #         image(s) are equal to ``index + 1``.
+         # index - For statistic/probabilistic atlases, index of corresponding
+         #         volume in 4D image file. For label images, the value of
+         #         voxels which are in the corresponding region. For
+         #         statistic/probabilistic atlases, it is assumed that the
+         #         value for each region in the summary image(s) are equal to
+         #         ``index + 1``.
          #
          #
          # x    |
@@ -452,7 +460,18 @@ class AtlasDescription(object):
 
     ``specPath``      Path to the atlas XML specification file.
 
-    ``atlasType``     Atlas type - either *probabilistic* or *label*.
+    ``atlasType``     Atlas type - either *statistic*, *probabilistic* or
+                      *label*.
+
+    ``statistic``     Type of statistic, for statistic atlases.
+
+    ``units``         Unit of measurement, for statistic atlases.
+
+    ``precision``     Reporting precision, for statistic atlases.
+
+    ``upper``         Upper threshold, for statistic atlases.
+
+    ``lower``         Lower threshold, for statistic atlases.
 
     ``images``        A list of images available for this atlas - usually
                       :math:`1mm^3` and :math:`2mm^3` images are present.
@@ -499,6 +518,38 @@ class AtlasDescription(object):
         # Spelling error in some of the atlas.xml files.
         if self.atlasType == 'probabalistic':
             self.atlasType = 'probabilistic'
+
+        if self.atlasType == 'statistic':
+
+            statistic = header.find('statistic')
+            units     = header.find('units')
+            lower     = header.find('lower')
+            upper     = header.find('upper')
+            precision = header.find('precision')
+
+            if statistic is None: statistic = ''
+            else:                 statistic = statistic.text.strip()
+            if units     is None: units     = ''
+            else:                 units     = units.text.strip()
+            if lower     is None: lower     = 0
+            else:                 lower     = float(lower.text.strip())
+            if upper     is None: upper     = 100
+            else:                 upper     = float(upper.text.strip())
+            if precision is None: precision = 2
+            else:                 precision = float(precision.text.strip())
+
+            self.statistic = statistic
+            self.units     = units
+            self.lower     = lower
+            self.upper     = upper
+            self.precision = precision
+
+        elif self.atlasType == 'probabilistic':
+            self.statistic = ''
+            self.units     = '%'
+            self.lower     = 5
+            self.upper     = 100
+            self.precision = 0
 
         images             = header.findall('images')
         self.images        = []
@@ -661,7 +712,7 @@ class Atlas(fslimage.Image):
         :arg resolution: Desired isotropic resolution in millimetres.
 
         :arg isLabel:    Pass in ``True`` for label atlases, ``False`` for
-                         probabilistic atlases.
+                         statistic/probabilistic atlases.
 
         All other arguments are passed to :meth:`.Image.__init__`.
         """
@@ -708,7 +759,7 @@ class Atlas(fslimage.Image):
         """Makes sure that the given mask has the same resolution as this
         atlas, so it can be used for querying. Used by the
         :meth:`.LabelAtlas.maskLabels` and
-        :meth:`.ProbabilisticAtlas.maskProportions` methods.
+        :meth:`.StatisticAtlas.maskProportions` methods.
 
         :arg mask: A :class:`.Image`
 
@@ -738,13 +789,11 @@ class Atlas(fslimage.Image):
         return mask
 
 
-
 class MaskError(Exception):
     """Exception raised by the :meth:`LabelAtlas.maskLabel` and
     :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
     does not match the atlas space.
     """
-    pass
 
 
 class LabelAtlas(Atlas):
