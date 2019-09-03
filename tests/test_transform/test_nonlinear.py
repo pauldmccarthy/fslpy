@@ -132,7 +132,7 @@ def test_convertDeformationType():
     gotconvrel2 = nonlinear.convertDeformationType(relfield, 'absolute')
     gotconvabs2 = nonlinear.convertDeformationType(absfield, 'relative')
 
-    tol = dict(atol=1e-5, rtol=1e-5)
+    tol = dict(atol=1e-3, rtol=1e-3)
 
     assert np.all(np.isclose(gotconvrel1, absfield.data, **tol))
     assert np.all(np.isclose(gotconvabs1, relfield.data, **tol))
