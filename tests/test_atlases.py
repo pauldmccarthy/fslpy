@@ -149,9 +149,8 @@ def test_AtlasDescription():
 def test_StatisticHeader():
     with tests.testdir() as testdir:
         hdr = '<statistic>T</statistic>' \
-              '<units>M</units>' \
+              '<units></units>' \
               '<precision>3</precision>' \
-              '<lower>15</lower>' \
               '<upper>75</upper>'
         xmlfile = _make_dummy_atlas(testdir,
                                     'statlas',
@@ -163,9 +162,9 @@ def test_StatisticHeader():
         desc = atlases.AtlasDescription(xmlfile, 'StAtlas')
         assert desc.atlasType == 'statistic'
         assert desc.statistic == 'T'
-        assert desc.units     == 'M'
+        assert desc.units     == ''
         assert desc.precision == 3
-        assert desc.lower     == 15
+        assert desc.lower     == 0
         assert desc.upper     == 75
 
 
