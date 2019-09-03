@@ -521,28 +521,19 @@ class AtlasDescription(object):
 
         if self.atlasType == 'statistic':
 
-            statistic = header.find('statistic')
-            units     = header.find('units')
-            lower     = header.find('lower')
-            upper     = header.find('upper')
-            precision = header.find('precision')
+            fields = ['statistic', 'units', 'lower', 'upper', 'precision']
+            values = {}
 
-            if statistic is None: statistic = ''
-            else:                 statistic = statistic.text.strip()
-            if units     is None: units     = ''
-            else:                 units     = units.text.strip()
-            if lower     is None: lower     = 0
-            else:                 lower     = float(lower.text.strip())
-            if upper     is None: upper     = 100
-            else:                 upper     = float(upper.text.strip())
-            if precision is None: precision = 2
-            else:                 precision = float(precision.text.strip())
+            for field in fields:
+                elem = header.find(field)
+                if elem is not None and elem.text is not None:
+                    values[field] = elem.text.strip()
 
-            self.statistic = statistic
-            self.units     = units
-            self.lower     = lower
-            self.upper     = upper
-            self.precision = precision
+            self.statistic =       values.get('statistic', '')
+            self.units     =       values.get('units',     '')
+            self.lower     = float(values.get('lower',     0))
+            self.upper     = float(values.get('upper',     100))
+            self.precision = int(  values.get('precision', 2))
 
         elif self.atlasType == 'probabilistic':
             self.statistic = ''
