@@ -327,17 +327,6 @@ class FileTree(object):
             return False
         return True
 
-    @deprecated(rin='2.4', msg='Use FileTree.defines or FileTree.on_disk instead')
-    def exists(self, short_names, on_disk=False, error=False, glob_vars=()):
-        """
-        Deprecated in favor of :meth:`on_disk` and :meth:`defines`.
-        """
-        if on_disk:
-            return self.on_disk(short_names, error=error, glob_vars=glob_vars)
-        else:
-            return self.defines(short_names, error=error, glob_vars=glob_vars)
-
-
     @classmethod
     def read(cls, tree_name: str, directory='.', **variables) -> "FileTree":
         """
