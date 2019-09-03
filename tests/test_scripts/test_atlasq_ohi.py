@@ -51,7 +51,7 @@ def test_coords(seed):
     """Test the ohi -a "atlas" -c "coords" mode. """
 
     def expectedProbOutput(atlas, coords):
-        probs    = atlas.proportions(coords)
+        probs    = atlas.values(coords)
         expected = '<b>{}</b><br>'.format(atlas.desc.name)
         nzprobs  = []
 
@@ -161,7 +161,7 @@ def test_mask(seed):
 
     def expectedProbOutput(mask, atlas):
 
-        props  = atlas.maskProportions(mask)
+        props  = atlas.maskValues(mask)
         labels = [l.index for l in atlas.desc.labels]
         exp    = []
 
