@@ -926,17 +926,20 @@ class LabelAtlas(Atlas):
 
         return values, props
 
-    def get(self, label=None, index=None, value=None, name=None):
-        """
-        Returns the binary image for given label
+
+    def get(self, label=None, index=None, value=None, name=None, binary=True):
+        """Returns the binary image for the given label.
 
         Only one of the arguments should be used to define the label
 
-        :arg label: AtlasLabel contained within this atlas
-        :arg index: index of the label
-        :arg value: value of the label
-        :arg name: string of the label
-        :return: image.Image with the mask
+        :arg label:  :class:`AtlasLabel` contained within this atlas
+        :arg index:  index of the label
+        :arg value:  value of the label
+        :arg name:   string of the label
+        :arg binary: If ``True`` (the default), the image will contain 1s in
+                     the label region. Otherwise the image will contain the
+                     label value.
+        :return:     :class:`.Image` with the mask
         """
         if ((label is not None) + (index is not None) +
             (value is not None) + (name is not None)) != 1:
@@ -945,7 +948,12 @@ class LabelAtlas(Atlas):
             label = self.find(index=index, name=name, value=value)
         elif label not in self.desc.labels:
             raise ValueError("Unknown label provided")
-        arr = (self.data == label.value).astype(int)
+
+        arr = (self.data == label.value).astype(np.int32)
+
+        if not binary:
+            arr[arr > 0] = label.value
+
         return fslimage.Image(arr, name=label.name, header=self.header)
 
 
