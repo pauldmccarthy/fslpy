@@ -759,7 +759,7 @@ class Atlas(fslimage.Image):
         """Makes sure that the given mask has the same resolution as this
         atlas, so it can be used for querying. Used by the
         :meth:`.LabelAtlas.maskLabels` and
-        :meth:`.StatisticAtlas.maskProportions` methods.
+        :meth:`.StatisticAtlas.maskValues` methods.
 
         :arg mask: A :class:`.Image`
 
@@ -791,7 +791,7 @@ class Atlas(fslimage.Image):
 
 class MaskError(Exception):
     """Exception raised by the :meth:`LabelAtlas.maskLabel` and
-    :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
+    :meth:`StatisticAtlas.maskValues` when a mask is provided which
     does not match the atlas space.
     """
 
@@ -1002,25 +1002,25 @@ class StatisticAtlas(Atlas):
 
 
     def values(self, location, *args, **kwargs):
-        """Looks up and returns the proportions of of all regions at the given
+        """Looks up and returns the values of of all regions at the given
         location.
 
         :arg location: Can be one of the following:
 
                         - A sequence of three values, interpreted as atlas
-                          coordinates. In this case, :meth:`coordProportions`
+                          coordinates. In this case, :meth:`coordValues`
                           is called.
 
                         - An :class:`.Image` which is interpreted as a
-                          weighted mask. In this case, :meth:`maskProportions`
+                          weighted mask. In this case, :meth:`maskValues`
                           is called.
 
-        All other arguments are passed through to the :meth:`coordProportions`
-        or :meth:`maskProportions` methods.
+        All other arguments are passed through to the :meth:`coordValues`
+        or :meth:`maskValues` methods.
 
 
-        :returns: The return value of either :meth:`coordProportions` or
-                  :meth:`maskProportions`.
+        :returns: The return value of either :meth:`coordValues` or
+                  :meth:`maskValues`.
         """
 
         if isinstance(location, fslimage.Image):
