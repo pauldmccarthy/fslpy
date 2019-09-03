@@ -40,7 +40,8 @@ dummy_atlas_desc = """<?xml version="1.0" encoding="ISO-8859-1"?>
   <header>
     <name>{name}</name>
     <shortname>{shortname}</shortname>
-    <type>Label</type>
+    <type>{atlastype}</type>
+    {extraheader}
     <images>
       <imagefile>/{shortname}/{filename}</imagefile>
        <summaryimagefile>/{shortname}/My{filename}</summaryimagefile>
@@ -52,7 +53,8 @@ dummy_atlas_desc = """<?xml version="1.0" encoding="ISO-8859-1"?>
   </data>
 </atlas>
 """
-def _make_dummy_atlas(savedir, name, shortName, filename):
+def _make_dummy_atlas(
+        savedir, name, shortName, filename, atlastype='Label', extraheader=''):
     mladir     = op.join(savedir, shortName)
     mlaxmlfile = op.join(savedir, '{}.xml'.format(shortName))
     mlaimgfile = op.join(savedir, shortName, '{}.nii.gz'.format(filename))
@@ -70,7 +72,9 @@ def _make_dummy_atlas(savedir, name, shortName, filename):
         desc = dummy_atlas_desc.format(
             name=name,
             shortname=shortName,
-            filename=filename)
+            filename=filename,
+            atlastype=atlastype,
+            extraheader=extraheader)
         f.write(desc)
 
     return mlaxmlfile
@@ -140,6 +144,28 @@ def test_AtlasDescription():
 
     with pytest.raises(Exception):
         registry.getAtlasDescription('non-existent-atlas')
+
+
+def test_StatisticHeader():
+    with tests.testdir() as testdir:
+        hdr = '<statistic>T</statistic>' \
+              '<units></units>' \
+              '<precision>3</precision>' \
+              '<upper>75</upper>'
+        xmlfile = _make_dummy_atlas(testdir,
+                                    'statlas',
+                                    'STA',
+                                    'StAtlas',
+                                    atlastype='Statistic',
+                                    extraheader=hdr)
+
+        desc = atlases.AtlasDescription(xmlfile, 'StAtlas')
+        assert desc.atlasType == 'statistic'
+        assert desc.statistic == 'T'
+        assert desc.units     == ''
+        assert desc.precision == 3
+        assert desc.lower     == 0
+        assert desc.upper     == 75
 
 
 def test_add_remove_atlas():
@@ -250,6 +276,9 @@ def test_get():
             assert (target == atlas.get(index=label.index).data).all()
             assert (target == atlas.get(value=label.value).data).all()
             assert (target == atlas.get(name=label.name).data).all()
+            if atlas is lblatlas:
+                target = target * label.value
+                assert (target == atlas.get(value=label.value, binary=False).data).all()
 
 
 def test_find():

@@ -218,8 +218,8 @@ def _eval_coord_voxel_query(atlas, query, qtype, qin):
         elif qin == 'out':
             expval = []
 
-        assert atlas.proportions(     query, voxel=voxel) == expval
-        assert atlas.coordProportions(query, voxel=voxel) == expval
+        assert atlas.values(     query, voxel=voxel) == expval
+        assert atlas.coordValues(query, voxel=voxel) == expval
 
     if   isinstance(atlas, fslatlases.LabelAtlas):         evalLabel()
     elif isinstance(atlas, fslatlases.ProbabilisticAtlas): evalProb()
@@ -343,13 +343,13 @@ def _eval_mask_query(atlas, query, qtype, qin):
 
         if qin == 'out':
             with pytest.raises(fslatlases.MaskError):
-                atlas.maskProportions(mask)
+                atlas.maskValues(mask)
             with pytest.raises(fslatlases.MaskError):
-                atlas.proportions(    mask)
+                atlas.values(    mask)
             return
 
-        props  = atlas.    proportions(mask)
-        props2 = atlas.maskProportions(mask)
+        props  = atlas.    values(mask)
+        props2 = atlas.maskValues(mask)
 
         assert np.all(np.isclose(props, props2))
 

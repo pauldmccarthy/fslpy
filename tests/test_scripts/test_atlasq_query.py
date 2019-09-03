@@ -294,7 +294,7 @@ def _eval_coord_voxel_query(
         if o_type == 'normal': evalLabelNormalOutput(explabel)
         else:                  evalLabelShortOutput(explabel)
     elif isinstance(a_img, fslatlases.ProbabilisticAtlas):
-        expprops = a_img.proportions(query, voxel=voxel)
+        expprops = a_img.values(query, voxel=voxel)
         if o_type == 'normal': evalProbNormalOutput(expprops)
         else:                  evalProbShortOutput(expprops)
 
@@ -400,7 +400,7 @@ def _eval_mask_query(
             explabels, expprops = [], []
     elif isinstance(aimg, fslatlases.ProbabilisticAtlas):
         try:
-            expprops  = aimg.maskProportions(maskimg)
+            expprops  = aimg.maskValues(maskimg)
             explabels = aimg.desc.labels
         except fslatlases.MaskError:
             explabels = []

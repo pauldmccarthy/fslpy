@@ -36,27 +36,29 @@ load an atlas image, which will be one of the following atlas-specific
    :nosignatures:
 
    LabelAtlas
+   StatisticAtlas
    ProbabilisticAtlas
 """
 
 
 from __future__ import division
 
-import xml.etree.ElementTree              as et
-import os.path                            as op
-import                                       glob
-import                                       bisect
-import                                       logging
+import xml.etree.ElementTree    as et
+import os.path                  as op
+import                             glob
+import                             bisect
+import                             logging
 
-import numpy                              as np
+import numpy                    as np
 
-import fsl.data.image                     as fslimage
-import fsl.data.constants                 as constants
-from   fsl.utils.platform import platform as platform
-import fsl.utils.image.resample           as resample
-import fsl.transform.affine               as affine
-import fsl.utils.notifier                 as notifier
-import fsl.utils.settings                 as fslsettings
+import fsl.data.image           as fslimage
+import fsl.data.constants       as constants
+from   fsl.utils.platform import   platform
+import fsl.utils.image.resample as resample
+import fsl.transform.affine     as affine
+import fsl.utils.notifier       as notifier
+import fsl.utils.settings       as fslsettings
+import fsl.utils.deprecated     as deprecated
 
 
 log = logging.getLogger(__name__)
@@ -322,9 +324,9 @@ class AtlasLabel(object):
     ========= ================================================================
     ``name``  Region name
     ``index`` The index of this label into the list of all labels in the
-              ``AtlasDescription`` that owns it. For probabilistic atlases,
-              this is also the index into the 4D atlas image of the volume
-              that corresponds to this region.
+              ``AtlasDescription`` that owns it. For statistic/probabilistic
+              atlases, this is also the index into the 4D atlas image of the
+              volume that corresponds to this region.
     ``value`` For label atlases and summary images, the value of voxels that
               are in this region.
     ``x``     X coordinate of the region in world space
@@ -386,8 +388,13 @@ class AtlasDescription(object):
 
        <atlas>
          <header>
-           <name></name>        # Atlas name
-           <type></type>        # 'Probabilistic' or 'Label'
+           <name></name>           # Atlas name
+           <type></type>           # 'Statistic', 'Probabilistic' or 'Label'
+           <statistic></statistic> # Optional. Type of statistic
+           <units></units>         # Optional. Units of measurement
+           <precision></precision> # Optional. Decimal precision to report
+           <upper></upper>         # Optional. Upper threshold
+           <lower></lower>         # Optional. Lower threshold
            <images>
             <imagefile>
             </imagefile>        # If type is Probabilistic, path
@@ -412,11 +419,12 @@ class AtlasDescription(object):
          </header>
         <data>
 
-         # index - For probabilistic atlases, index of corresponding volume in
-         #         4D image file. For label images, the value of voxels which
-         #         are in the corresponding region. For probabilistic atlases,
-         #         it is assumed that the value for each region in the  summary
-         #         image(s) are equal to ``index + 1``.
+         # index - For statistic/probabilistic atlases, index of corresponding
+         #         volume in 4D image file. For label images, the value of
+         #         voxels which are in the corresponding region. For
+         #         statistic/probabilistic atlases, it is assumed that the
+         #         value for each region in the summary image(s) are equal to
+         #         ``index + 1``.
          #
          #
          # x    |
@@ -452,7 +460,18 @@ class AtlasDescription(object):
 
     ``specPath``      Path to the atlas XML specification file.
 
-    ``atlasType``     Atlas type - either *probabilistic* or *label*.
+    ``atlasType``     Atlas type - either *statistic*, *probabilistic* or
+                      *label*.
+
+    ``statistic``     Type of statistic, for statistic atlases.
+
+    ``units``         Unit of measurement, for statistic atlases.
+
+    ``precision``     Reporting precision, for statistic atlases.
+
+    ``upper``         Upper threshold, for statistic atlases.
+
+    ``lower``         Lower threshold, for statistic atlases.
 
     ``images``        A list of images available for this atlas - usually
                       :math:`1mm^3` and :math:`2mm^3` images are present.
@@ -499,6 +518,29 @@ class AtlasDescription(object):
         # Spelling error in some of the atlas.xml files.
         if self.atlasType == 'probabalistic':
             self.atlasType = 'probabilistic'
+
+        if self.atlasType == 'statistic':
+
+            fields = ['statistic', 'units', 'lower', 'upper', 'precision']
+            values = {}
+
+            for field in fields:
+                elem = header.find(field)
+                if elem is not None and elem.text is not None:
+                    values[field] = elem.text.strip()
+
+            self.statistic =       values.get('statistic', '')
+            self.units     =       values.get('units',     '')
+            self.lower     = float(values.get('lower',     0))
+            self.upper     = float(values.get('upper',     100))
+            self.precision = int(  values.get('precision', 2))
+
+        elif self.atlasType == 'probabilistic':
+            self.statistic = ''
+            self.units     = '%'
+            self.lower     = 5
+            self.upper     = 100
+            self.precision = 0
 
         images             = header.findall('images')
         self.images        = []
@@ -661,7 +703,7 @@ class Atlas(fslimage.Image):
         :arg resolution: Desired isotropic resolution in millimetres.
 
         :arg isLabel:    Pass in ``True`` for label atlases, ``False`` for
-                         probabilistic atlases.
+                         statistic/probabilistic atlases.
 
         All other arguments are passed to :meth:`.Image.__init__`.
         """
@@ -708,7 +750,7 @@ class Atlas(fslimage.Image):
         """Makes sure that the given mask has the same resolution as this
         atlas, so it can be used for querying. Used by the
         :meth:`.LabelAtlas.maskLabels` and
-        :meth:`.ProbabilisticAtlas.maskProportions` methods.
+        :meth:`.StatisticAtlas.maskValues` methods.
 
         :arg mask: A :class:`.Image`
 
@@ -738,13 +780,11 @@ class Atlas(fslimage.Image):
         return mask
 
 
-
 class MaskError(Exception):
     """Exception raised by the :meth:`LabelAtlas.maskLabel` and
-    :meth:`ProbabilisticAtlas.maskProportions` when a mask is provided which
+    :meth:`StatisticAtlas.maskValues` when a mask is provided which
     does not match the atlas space.
     """
-    pass
 
 
 class LabelAtlas(Atlas):
@@ -877,17 +917,20 @@ class LabelAtlas(Atlas):
 
         return values, props
 
-    def get(self, label=None, index=None, value=None, name=None):
-        """
-        Returns the binary image for given label
+
+    def get(self, label=None, index=None, value=None, name=None, binary=True):
+        """Returns the binary image for the given label.
 
         Only one of the arguments should be used to define the label
 
-        :arg label: AtlasLabel contained within this atlas
-        :arg index: index of the label
-        :arg value: value of the label
-        :arg name: string of the label
-        :return: image.Image with the mask
+        :arg label:  :class:`AtlasLabel` contained within this atlas
+        :arg index:  index of the label
+        :arg value:  value of the label
+        :arg name:   string of the label
+        :arg binary: If ``True`` (the default), the image will contain 1s in
+                     the label region. Otherwise the image will contain the
+                     label value.
+        :return:     :class:`.Image` with the mask
         """
         if ((label is not None) + (index is not None) +
             (value is not None) + (name is not None)) != 1:
@@ -896,19 +939,27 @@ class LabelAtlas(Atlas):
             label = self.find(index=index, name=name, value=value)
         elif label not in self.desc.labels:
             raise ValueError("Unknown label provided")
-        arr = (self.data == label.value).astype(int)
+
+        arr = (self.data == label.value).astype(np.int32)
+
+        if not binary:
+            arr[arr > 0] = label.value
+
         return fslimage.Image(arr, name=label.name, header=self.header)
 
 
-class ProbabilisticAtlas(Atlas):
-    """A 4D atlas which contains one volume for each region.
+class StatisticAtlas(Atlas):
+    """A ``StatisticAtlas`` is a 4D image which contains one volume for
+    each region in the atlas; each volume contains some statistic value
+    for the corresponding region.
 
-    The ``ProbabilisticAtlas`` provides the :meth`proportions` method,
-    which makes looking up region probabilities easy.
+    The :class:`ProbabilisticAtlas` is a specialisation of the
+    ``StatisticAtlas``
     """
 
+
     def __init__(self, atlasDesc, resolution=None, **kwargs):
-        """Create a ``ProbabilisticAtlas`` instance.
+        """Create a ``StatisticAtlas`` instance.
 
         :arg atlasDesc:  The :class:`AtlasDescription` instance describing
                          the atlas.
@@ -917,17 +968,18 @@ class ProbabilisticAtlas(Atlas):
         """
         Atlas.__init__(self, atlasDesc, resolution, False, **kwargs)
 
+
     def get(self, label=None, index=None, value=None, name=None):
-        """
-        Returns the probabilistic image for given label
+        """Returns the statistic image at the given label.
 
         Only one of the arguments should be used to define the label
 
-        :arg label: AtlasLabel contained within this atlas
+        :arg label: :class:`AtlasLabel` contained within this atlas
         :arg index: index of the label
         :arg value: value of the label
-        :arg name: string of the label
-        :return: image.Image with the probabilistic mask
+        :arg name:  string of the label
+        :return:    :class:`.Image` with the statistic values for the
+                    specified label.
         """
         if ((label is not None) + (index is not None) +
             (value is not None) + (name is not None)) != 1:
@@ -939,36 +991,37 @@ class ProbabilisticAtlas(Atlas):
         arr = self[..., label.index]
         return fslimage.Image(arr, name=label.name, header=self.header)
 
-    def proportions(self, location, *args, **kwargs):
-        """Looks up and returns the proportions of of all regions at the given
+
+    def values(self, location, *args, **kwargs):
+        """Looks up and returns the values of of all regions at the given
         location.
 
         :arg location: Can be one of the following:
 
                         - A sequence of three values, interpreted as atlas
-                          coordinates. In this case, :meth:`coordProportions`
+                          coordinates. In this case, :meth:`coordValues`
                           is called.
 
                         - An :class:`.Image` which is interpreted as a
-                          weighted mask. In this case, :meth:`maskProportions`
+                          weighted mask. In this case, :meth:`maskValues`
                           is called.
 
-        All other arguments are passed through to the :meth:`coordProportions`
-        or :meth:`maskProportions` methods.
+        All other arguments are passed through to the :meth:`coordValues`
+        or :meth:`maskValues` methods.
 
 
-        :returns: The return value of either :meth:`coordProportions` or
-                  :meth:`maskProportions`.
+        :returns: The return value of either :meth:`coordValues` or
+                  :meth:`maskValues`.
         """
 
         if isinstance(location, fslimage.Image):
-            return self.maskProportions(location, *args, **kwargs)
+            return self.maskValues(location, *args, **kwargs)
         else:
-            return self.coordProportions(location, *args, **kwargs)
+            return self.coordValues(location, *args, **kwargs)
 
 
-    def coordProportions(self, loc, voxel=False):
-        """Looks up the region probabilities for the given location.
+    def coordValues(self, loc, voxel=False):
+        """Looks up the region values for the given location.
 
         :arg loc:   A sequence of three values, interpreted as atlas
                     world or voxel coordinates.
@@ -976,10 +1029,8 @@ class ProbabilisticAtlas(Atlas):
         :arg voxel: Defaults to ``False``. If ``True``, the ``loc``
                     argument is interpreted as voxel coordinates.
 
-        :returns: a list of values, one per region, which represent
-                  the probability of each region for the specified
-                  location. Returns an empty list if the given
-                  location is out of bounds.
+        :returns: a list of values, one per region.  Returns an empty
+                  list if the given location is out of bounds.
         """
 
         if not voxel:
@@ -994,30 +1045,27 @@ class ProbabilisticAtlas(Atlas):
            loc[2] >= self.shape[2]:
             return []
 
-        props = self[loc[0], loc[1], loc[2], :]
+        vals = self[loc[0], loc[1], loc[2], :]
 
         # We only return labels for this atlas -
         # the underlying image may have more
         # volumes than this atlas has labels.
-        return [props[l.index] for l in self.desc.labels]
+        return [vals[l.index] for l in self.desc.labels]
 
 
-    def maskProportions(self, mask):
-        """Looks up the probabilities of all regions in the given ``mask``.
+    def maskValues(self, mask):
+        """Looks up the average values of all regions in the given ``mask``.
 
         :arg mask: A 3D :class:`.Image`` which is interpreted as a weighted
                    mask. If the ``mask`` shape does not match that of this
-                   ``ProbabilisticAtlas``, it is resampled using
-                   :meth:`.Image.resample`, with nearest-neighbour
-                   interpolation.
+                   ``StatisticAtlas``, it is resampled using
+                   :meth:`Atlas.prepareMask`.
 
-        :returns:  A sequence containing the proportion, within the mask,
-                   of all regions in the atlas. The proportions are returned as
-                   values between 0 and 100.
+        :returns:  A sequence containing the average value, within the mask,
+                   of all regions in the atlas.
         """
 
-        props = []
-
+        avgvals   = []
         mask      = self.prepareMask(mask)
         boolmask  = mask > 0
         weights   = mask[boolmask]
@@ -1030,11 +1078,35 @@ class ProbabilisticAtlas(Atlas):
 
             vals  = self[..., label.index]
             vals  = vals[boolmask] * weights
-            prop  = vals.sum() / weightsum
+            val   = vals.sum() / weightsum
 
-            props.append(prop)
+            avgvals.append(val)
 
-        return props
+        return avgvals
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use values instead')
+    def proportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`values` instead. """
+        return self.values(*args, **kwargs)
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use coordValues instead')
+    def coordProportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`coordValues` instead. """
+        return self.coordValues(*args, **kwargs)
+
+
+    @deprecated.deprecated('2.6.0', '3.0.0', 'Use maskValues instead')
+    def maskProportions(self, *args, **kwargs):
+        """Deprecated - use :meth:`maskValues` instead. """
+        return self.maskValues(*args, **kwargs)
+
+
+class ProbabilisticAtlas(StatisticAtlas):
+    """A 4D atlas which contains one volume for each region. Each volume
+    contains probabiliy values for one region, between 0 and 100.
+    """
 
 
 registry            = AtlasRegistry()

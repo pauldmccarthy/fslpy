@@ -11,6 +11,7 @@ Added
 
 
 * New :meth:`.Image.iscomplex` attribute.
+* Support for a new ``Statistic`` atlas type.
 
 
 Changed
@@ -21,6 +22,20 @@ Changed
   as a least-recently-used cache.
 * The :mod:`.filetree` module has been refactored to make it easier for the
   :mod:`.query` module to work with file tree hierarchies.
+* The :meth:`.LabelAtlas.get` method has a new ``binary`` flag, allowing
+  either a binary mask, or a mask with the original label value, to be
+  returned.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :meth:`.ProbabilisticAtlas.proportions`,
+  :meth:`.ProbabilisticAtlas.maskProportions`, and
+  :meth:`.ProbabilisticAtlas.labelProportions` have been deprecated in favour
+  of :meth:`.StatisticAtlas.values`, :meth:`.StatisticAtlas.maskValues`, and
+  :meth:`.StatisticAtlas.labelValues`
 
 
 2.5.0 (Tuesday 6th August 2019)

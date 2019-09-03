@@ -381,7 +381,7 @@ def maskQuery(atlas, masks, *args, **kwargs):
 
             labels = []
             props  = []
-            zprops = atlas.maskProportions(mask)
+            zprops = atlas.maskValues(mask)
 
             for i in range(len(zprops)):
                 if zprops[i] > 0:
@@ -405,7 +405,7 @@ def coordQuery(atlas, coords, voxel, *args, **kwargs):
 
         if isinstance(atlas, fslatlases.ProbabilisticAtlas):
 
-            props   = atlas.proportions(coord, voxel=voxel)
+            props   = atlas.values(coord, voxel=voxel)
             labels  = []
             nzprops = []
 
