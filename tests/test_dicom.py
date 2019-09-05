@@ -145,8 +145,8 @@ def test_sersiesCRC():
     for series, expect in tests:
         series = dict(series)
         if expect is RANDOM:
-            expect = ''.join(random.choices(
-                string.ascii_letters + string.digits, k=30))
+            expect = ''.join([random.choice(string.ascii_letters + string.digits)
+                              for i in range(30)])
             series['SeriesInstanceUID'] = expect
             expect = str(binascii.crc32(expect.encode()))
         echo = series.get('EchoNumber', 0)
