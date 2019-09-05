@@ -7,12 +7,22 @@ import pytest
 import fsl.utils.deprecated as deprecated
 
 
-# the line number of the warning is hard coded in
-# the unit tests below. Don't change the line number!
+# these  get updated in the relevant functions
+WARNING_LINE_NUMBER = None
+DEPRECATED_LINE_NUMBER = None
+
+def _linenum(pattern):
+    with open(__file__, 'rt') as f:
+        for i, line in enumerate(f.readlines(), 1):
+            if pattern in line:
+                return i
+    return -1
+
+
 def emit_warning():
     deprecated.warn('blag', vin='1.0.0', rin='2.0.0', msg='yo')
-
-WARNING_LINE_NUMBER = 13
+    global WARNING_LINE_NUMBER
+    WARNING_LINE_NUMBER = _linenum('deprecated.warn(\'blag\'')
 
 
 @deprecated.deprecated(vin='1.0.0', rin='2.0.0', msg='yo')
@@ -20,9 +30,9 @@ def depfunc():
     pass
 
 def call_dep_func():
-    depfunc()
-
-DEPRECATED_LINE_NUMBER = 23
+    depfunc()  # mark
+    global DEPRECATED_LINE_NUMBER
+    DEPRECATED_LINE_NUMBER = _linenum('depfunc()  # mark')
 
 
 def _check_warning(w, name, lineno):
