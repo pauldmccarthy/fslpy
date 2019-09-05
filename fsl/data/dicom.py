@@ -51,7 +51,7 @@ MIN_DCM2NIIX_VERSION = (1, 0, 2017, 12, 15)
 """
 
 
-CRC_DCM2NIIX_VERSION = (1, 0, 2019, 09, 02)
+CRC_DCM2NIIX_VERSION = (1, 0, 2019, 9, 2)
 """For versions of ``dcm2niix`` orf this version or newer, the ``-n`` flag,
 used to convert a single DICOM series, requires that a CRC checksum
 identifying the series be passed (see the :func:`seriesCRC`
@@ -92,7 +92,7 @@ class DicomImage(fslimage.Image):
 
 
 @memoize.memoize
-def installedVersion(version):
+def installedVersion():
     """Return a tuple describing the version of ``dcm2niix`` that is installed,
     or ``None`` if dcm2niix cannot be found, or its version not parsed.
 
@@ -121,21 +121,16 @@ def installedVersion(version):
 
             match = re.match(versionPattern, word)
 
-            if match is None:
-                continue
-
-            installedVersion = (
-                int(match.group('major')),
-                int(match.group('minor')),
-                int(match.group('year')),
-                int(match.group('month')),
-                int(match.group('day')))
-
-            return installedVersion
+            if match is not None:
+                return (int(match.group('major')),
+                        int(match.group('minor')),
+                        int(match.group('year')),
+                        int(match.group('month')),
+                        int(match.group('day')))
 
     except Exception as e:
         log.debug('Error parsing dcm2niix version string: {}'.format(e))
-        return None
+    return None
 
 
 def compareVersions(v1, v2):
@@ -153,14 +148,14 @@ def compareVersions(v1, v2):
     return 0
 
 
-@memoize.memoize
 def enabled():
     """Returns ``True`` if ``dcm2niix`` is present, and recent enough,
     ``False`` otherwise.
     """
     installed = installedVersion()
     required  = MIN_DCM2NIIX_VERSION
-    return installed is None or compareVersions(installed, required) < 0
+    return ((installed is not None) and
+            (compareVersions(installed, required) >= 0))
 
 
 def scanDir(dcmdir):
@@ -256,10 +251,23 @@ def loadSeries(series):
     if not enabled():
         raise RuntimeError('dcm2niix is not available or is too old')
 
-    dcmdir = series['DicomDir']
-    snum   = series['SeriesNumber']
-    desc   = series['SeriesDescription']
-    cmd    = 'dcm2niix -b n -f %s -z n -o . -n "{}" "{}"'.format(snum, dcmdir)
+    dcmdir  = series['DicomDir']
+    snum    = series['SeriesNumber']
+    desc    = series['SeriesDescription']
+    version = installedVersion()
+
+    # Newer versions of dcm2niix
+    # require a CRC to identify
+    # series
+    if compareVersions(version, CRC_DCM2NIIX_VERSION) >= 0:
+        ident = seriesCRC(series)
+
+    # Older versions require
+    # the series number
+    else:
+        ident = snum
+
+    cmd = 'dcm2niix -b n -f %s -z n -o . -n "{}" "{}"'.format(ident, dcmdir)
 
     with tempdir.tempdir() as td:
 
