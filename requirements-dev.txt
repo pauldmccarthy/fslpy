@@ -1,6 +1,5 @@
 sphinx
 sphinx_rtd_theme
-mock
 coverage
 pytest
 pytest-cov
