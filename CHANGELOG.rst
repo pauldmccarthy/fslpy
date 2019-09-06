@@ -25,6 +25,8 @@ Changed
 * The :meth:`.LabelAtlas.get` method has a new ``binary`` flag, allowing
   either a binary mask, or a mask with the original label value, to be
   returned.
+* The :mod:`.dicom` module has been updated to work with the latest version of
+  ``dcm2niix``.
 
 
 Deprecated

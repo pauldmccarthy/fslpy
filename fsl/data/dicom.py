@@ -29,9 +29,12 @@ import               os
 import os.path    as op
 import subprocess as sp
 import               re
+import               sys
 import               glob
 import               json
+import               shlex
 import               logging
+import               binascii
 
 import nibabel    as nib
 
@@ -44,7 +47,16 @@ log = logging.getLogger(__name__)
 
 
 MIN_DCM2NIIX_VERSION = (1, 0, 2017, 12, 15)
-"""Minimum version of dcm2niix that is required for this module to work. """
+"""Minimum version of ``dcm2niix`` that is required for this module to work.
+"""
+
+
+CRC_DCM2NIIX_VERSION = (1, 0, 2019, 9, 2)
+"""For versions of ``dcm2niix`` orf this version or newer, the ``-n`` flag,
+used to convert a single DICOM series, requires that a CRC checksum
+identifying the series be passed (see the :func:`seriesCRC`
+function). Versions prior to this require the series number to be passed.
+"""
 
 
 class DicomImage(fslimage.Image):
@@ -80,9 +92,16 @@ class DicomImage(fslimage.Image):
 
 
 @memoize.memoize
-def enabled():
-    """Returns ``True`` if ``dcm2niix`` is present, and recent enough,
-    ``False`` otherwise.
+def installedVersion():
+    """Return a tuple describing the version of ``dcm2niix`` that is installed,
+    or ``None`` if dcm2niix cannot be found, or its version not parsed.
+
+    The returned tuple contains the following fields, all integers:
+      - Major version number
+      - Minor version number
+      - Year
+      - Month
+      - Day
     """
 
     cmd            = 'dcm2niix -h'
@@ -102,80 +121,120 @@ def enabled():
 
             match = re.match(versionPattern, word)
 
-            if match is None:
-                continue
-
-            installedVersion = (
-                int(match.group('major')),
-                int(match.group('minor')),
-                int(match.group('year')),
-                int(match.group('month')),
-                int(match.group('day')))
-
-            # make sure installed version
-            # is equal to or newer than
-            # minimum required version
-            for iv, mv in zip(installedVersion, MIN_DCM2NIIX_VERSION):
-                if   iv > mv: return True
-                elif iv < mv: return False
-
-            # if we get here, versions are equal
-            return True
+            if match is not None:
+                return (int(match.group('major')),
+                        int(match.group('minor')),
+                        int(match.group('year')),
+                        int(match.group('month')),
+                        int(match.group('day')))
 
     except Exception as e:
         log.debug('Error parsing dcm2niix version string: {}'.format(e))
+    return None
 
-    return False
+
+def compareVersions(v1, v2):
+    """Compares two ``dcm2niix`` versions ``v1`` and ``v2``.  The versions are
+    assumed to be in the format returned by :func:`installedVersion`.
+
+    :returns: - 1 if ``v1`` is newer than ``v2``
+              - -1 if ``v1`` is older than ``v2``
+              - 0 if ``v1`` the same as ``v2``.
+    """
+
+    for iv1, iv2 in zip(v1, v2):
+        if   iv1 > iv2: return  1
+        elif iv1 < iv2: return -1
+    return 0
+
+
+def enabled():
+    """Returns ``True`` if ``dcm2niix`` is present, and recent enough,
+    ``False`` otherwise.
+    """
+    installed = installedVersion()
+    required  = MIN_DCM2NIIX_VERSION
+    return ((installed is not None) and
+            (compareVersions(installed, required) >= 0))
 
 
 def scanDir(dcmdir):
-    """Uses ``dcm2niix`` to scans the given DICOM directory, and returns a
-    list of dictionaries, one for each data series that was identified.
-    Each dictionary is populated with some basic metadata about the series.
+    """Uses the ``dcm2niix -b o`` option to generate a BIDS sidecar JSON
+    file for each series in the given DICOM directory. Reads them all in,
+    and returns them as a sequence of dicts.
 
-    :arg dcmdir: Directory containing DICOM files.
+    Some additional metadata is added to each dictionary:
+     - ``DicomDir``: The absolute path to ``dcmdir``
 
-    :returns:    A list of dictionaries, each containing metadata about
-                 one DICOM data series.
+    :arg dcmdir: Directory containing DICOM series
+
+    :returns:    A list of dicts, each containing the BIDS sidecar JSON
+                 metadata for one DICOM series.
     """
 
     if not enabled():
         raise RuntimeError('dcm2niix is not available or is too old')
 
-    dcmdir      = op.abspath(dcmdir)
-    cmd         = 'dcm2niix -b o -ba n -f %s -o . {}'.format(dcmdir)
-    snumPattern = re.compile('^[0-9]+')
+    dcmdir = op.abspath(dcmdir)
+    cmd    = 'dcm2niix -b o -ba n -f %s -o . "{}"'.format(dcmdir)
+    series = []
 
     with tempdir.tempdir() as td:
 
         with open(os.devnull, 'wb') as devnull:
-            sp.call(cmd.split(), stdout=devnull, stderr=devnull)
+            sp.call(shlex.split(cmd), stdout=devnull, stderr=devnull)
 
         files = glob.glob(op.join(td, '*.json'))
 
         if len(files) == 0:
             return []
 
-        # sort numerically by series number if possible
-        try:
-            def sortkey(f):
-                match = re.match(snumPattern, f)
-                snum  = int(match.group(0))
-                return snum
-
-            files = sorted(files, key=sortkey)
-
-        except Exception:
-            files = sorted(files)
-
-        series = []
         for fn in files:
             with open(fn, 'rt') as f:
-                meta = json.load(f)
+                meta             = json.load(f)
                 meta['DicomDir'] = dcmdir
                 series.append(meta)
 
-        return series
+    # sort by series number
+    def key(s):
+        return s.get('SeriesNumber', sys.maxsize)
+
+    series = list(sorted(series, key=key))
+
+    return series
+
+
+def seriesCRC(series):
+    """Calculate a checksum string of the given DICOM series.
+
+    The returned string is of the form::
+
+         SeriesCRC[.echonumber]
+
+    Where ``SeriesCRC`` is an unsigned integer which is the CRC32
+    checksum of the ``SeriesInstanceUID``, and ``echonumber`` is
+    the ``EchoNumber`` of the series - this is only present for
+    multi-echo data, where the series is from the second or subsequent
+    echos.
+
+    :arg series: Dict containing BIDS metadata about a DICOM series,
+                 as returned by :func:`scanDir`.
+
+    :returns:    String containing a CRC32 checksum for the series.
+    """
+
+    uid  = series.get('SeriesInstanceUID', None)
+    echo = series.get('EchoNumber',        None)
+
+    if uid is None:
+        return None
+
+    crc32 = str(binascii.crc32(uid.encode()))
+
+    if echo is not None and echo > 1:
+        crc32 = '{}.{}'.format(crc32, echo)
+
+    return crc32
 
 
 def loadSeries(series):
@@ -192,15 +251,28 @@ def loadSeries(series):
     if not enabled():
         raise RuntimeError('dcm2niix is not available or is too old')
 
-    dcmdir = series['DicomDir']
-    snum   = series['SeriesNumber']
-    desc   = series['SeriesDescription']
-    cmd    = 'dcm2niix -b n -f %s -z n -o . -n {} {}'.format(snum, dcmdir)
+    dcmdir  = series['DicomDir']
+    snum    = series['SeriesNumber']
+    desc    = series['SeriesDescription']
+    version = installedVersion()
+
+    # Newer versions of dcm2niix
+    # require a CRC to identify
+    # series
+    if compareVersions(version, CRC_DCM2NIIX_VERSION) >= 0:
+        ident = seriesCRC(series)
+
+    # Older versions require
+    # the series number
+    else:
+        ident = snum
+
+    cmd = 'dcm2niix -b n -f %s -z n -o . -n "{}" "{}"'.format(ident, dcmdir)
 
     with tempdir.tempdir() as td:
 
         with open(os.devnull, 'wb') as devnull:
-            sp.call(cmd.split(), stdout=devnull, stderr=devnull)
+            sp.call(shlex.split(cmd), stdout=devnull, stderr=devnull)
 
         files  = glob.glob(op.join(td, '{}*.nii'.format(snum)))
         images = [nib.load(f, mmap=False) for f in files]
