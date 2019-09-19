@@ -72,7 +72,7 @@ def dryrun(*args):
         DRY_RUN = oldval
 
 
-def _prepareArgs(args):
+def prepareArgs(args):
     """Used by the :func:`run` function. Ensures that the given arguments is a
     list of strings.
     """
@@ -179,7 +179,7 @@ def run(*args, **kwargs):
     logStdout      = log   .get('stdout',   None)
     logStderr      = log   .get('stderr',   None)
     logCmd         = log   .get('cmd',      None)
-    args           = _prepareArgs(args)
+    args           = prepareArgs(args)
 
     if not bool(submit):
         submit = None
@@ -345,7 +345,7 @@ def runfsl(*args, **kwargs):
     if not prefixes:
         raise FSLNotPresent('$FSLDIR is not set - FSL cannot be found!')
 
-    args = _prepareArgs(args)
+    args = prepareArgs(args)
     for prefix in prefixes:
         cmdpath = op.join(prefix, args[0])
         if op.isfile(cmdpath):
