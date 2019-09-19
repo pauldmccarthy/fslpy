@@ -286,7 +286,7 @@ def _eval_coord_voxel_query(
         else:
             exp = [q_type, squery]
 
-        _stdout = re.sub('\s+', ' ', stdout).strip()
+        _stdout = re.sub(r'\s+', ' ', stdout).strip()
         assert _stdout == ' '.join(exp)
 
     if isinstance(a_img, fslatlases.LabelAtlas):
@@ -388,7 +388,7 @@ def _eval_mask_query(
             if expprop > 0:
                 exp.append('{} {:0.4f}'.format(explabel, expprop))
 
-        _stdout = re.sub('\s+', ' ', stdout).strip()
+        _stdout = re.sub(r'\s+', ' ', stdout).strip()
         assert _stdout == ' '.join(exp)
 
     if isinstance(aimg, fslatlases.LabelAtlas):

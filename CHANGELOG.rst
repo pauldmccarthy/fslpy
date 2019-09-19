@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.6.1 (Thursday 19th September 2019)
+------------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* ``fslpy`` is no longer tested against Python 3.5, and is now tested against
+  Python 3.6, 3.7, and 3.8.
+
+
 2.6.0 (Tuesday 10th September 2019)
 -----------------------------------
 
