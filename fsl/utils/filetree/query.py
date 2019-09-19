@@ -48,9 +48,8 @@ class FileTreeQuery(object):
     short name that are present. The :meth:`query` method can be used to
     retrieve files which match a specific template, and variable values.
 
-    The :meth:`query` method returns a multi-dimensional ``numpy.array``
-    which contains :class:`Match` objects, where each dimension one
-    represents variable for the template in question.
+    The :meth:`query` method returns a collection of :class:`Match` objects,
+    each of which represents one file which matches the query.
 
     Example usage::
 
