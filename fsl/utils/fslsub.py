@@ -104,7 +104,7 @@ def submit(*command,
     :return:             string of submitted job id
     """
 
-    from fsl.utils.run import runfsl, _prepareArgs
+    from fsl.utils.run import runfsl, prepareArgs
 
     base_cmd = ['fsl_sub']
 
@@ -135,7 +135,7 @@ def submit(*command,
         base_cmd.append('-s')
         base_cmd.extend(multi_threaded)
 
-    base_cmd.extend(_prepareArgs(command))
+    base_cmd.extend(prepareArgs(command))
 
     return runfsl(*base_cmd).strip()
 
