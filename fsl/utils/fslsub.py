@@ -55,7 +55,7 @@ import importlib
 log = logging.getLogger(__name__)
 
 
-def submit(command,
+def submit(*command,
            minutes=None,
            queue=None,
            architecture=None,
@@ -70,9 +70,12 @@ def submit(command,
            flags=False,
            multi_threaded=None,
            verbose=False):
-    """Submits a given command to the cluster
+    """
+    Submits a given command to the cluster
 
-    :arg command:        single string with the job command
+    You can pass the command and arguments as a single string, or as a regular or unpacked sequence.
+
+    :arg command:        string or regular/unpacked sequence of strings with the job command
     :arg minutes:        Estimated job length in minutes, used to auto-set
                          queue name
     :arg queue:          Explicitly sets the queue name
@@ -101,7 +104,7 @@ def submit(command,
     :return:             string of submitted job id
     """
 
-    from fsl.utils.run import runfsl
+    from fsl.utils.run import runfsl, _prepareArgs
 
     base_cmd = ['fsl_sub']
 
@@ -132,7 +135,7 @@ def submit(command,
         base_cmd.append('-s')
         base_cmd.extend(multi_threaded)
 
-    base_cmd.append(command)
+    base_cmd.extend(_prepareArgs(command))
 
     return runfsl(*base_cmd).strip()
 
