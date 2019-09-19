@@ -98,7 +98,7 @@ def resolve_optionals(text):
         else:
             return ''
 
-    res = [resolve_single_optional(text) for text in re.split('(\[.*?\])', text)]
+    res = [resolve_single_optional(text) for text in re.split(r'(\[.*?\])', text)]
     return ''.join(res)
 
 
@@ -109,7 +109,7 @@ def find_variables(template):
     :param template: full template
     :return: sequence of variables
     """
-    return tuple(var.split(':')[0] for var in re.findall("\{(.*?)\}", template))
+    return tuple(var.split(':')[0] for var in re.findall(r"\{(.*?)\}", template))
 
 
 def optional_variables(template):
@@ -121,7 +121,7 @@ def optional_variables(template):
     """
     include = set()
     exclude = set()
-    for text in re.split('(\[.*?\])', template):
+    for text in re.split(r'(\[.*?\])', template):
         if len(text) == 0:
             continue
         variables = find_variables(text)
@@ -152,13 +152,13 @@ def extract_variables(template, filename, known_vars=None):
         sub_re = resolve_optionals(fill_known(
                 template,
                 dict(
-                        **{var: '(\S+)' for k, var in zip(keep, optional) if k},
-                        **{var: '(\S+)' for var in remaining.difference(optional)}
+                        **{var: r'(\S+)' for k, var in zip(keep, optional) if k},
+                        **{var: r'(\S+)' for var in remaining.difference(optional)}
                 )
         ))
         while '//' in sub_re:
             sub_re = sub_re.replace('//', '/')
-        sub_re = sub_re.replace('.', '\.')
+        sub_re = sub_re.replace('.', r'\.')
         if re.match(sub_re, filename) is None:
             continue
 
