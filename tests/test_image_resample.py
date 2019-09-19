@@ -9,13 +9,13 @@ import pytest
 import scipy.ndimage       as ndimage
 
 import fsl.data.image           as     fslimage
-import fsl.utils.transform      as     transform
+import fsl.transform.affine     as     affine
 import fsl.utils.image.resample as     resample
 
 from . import make_random_image
 
 def random_affine():
-    return transform.compose(
+    return affine.compose(
         0.25   + 4.75      * np.random.random(3),
         -50    + 100       * np.random.random(3),
         -np.pi + 2 * np.pi * np.random.random(3))
@@ -61,9 +61,9 @@ def test_resample(seed):
             resx,  resy,  resz  = restestcoords.T
             resvals  = resampled[resx, resy, resz]
 
-            res2orig = transform.concat(img.worldToVoxMat, xf)
+            res2orig = affine.concat(img.worldToVoxMat, xf)
 
-            origtestcoords = transform.transform(restestcoords, res2orig)
+            origtestcoords = affine.transform(restestcoords, res2orig)
 
             # remove any coordinates which are out of
             # bounds in the original image space, or
@@ -130,8 +130,8 @@ def test_resample_origin(seed):
         shape = np.random.randint(5, 50, 3)
         res = resample.resample(img, shape, origin='corner')
         res = fslimage.Image(res[0], xform=res[1])
-        imgb = transform.axisBounds(img.shape, img.voxToWorldMat)
-        resb = transform.axisBounds(res.shape, res.voxToWorldMat)
+        imgb = affine.axisBounds(img.shape, img.voxToWorldMat)
+        resb = affine.axisBounds(res.shape, res.voxToWorldMat)
         assert np.all(np.isclose(imgb, resb, rtol=1e-5, atol=1e-5))
 
     # with origin='centre' image
@@ -142,8 +142,8 @@ def test_resample_origin(seed):
         res = resample.resample(img, shape, origin='centre')
         res = fslimage.Image(res[0], xform=res[1])
         off = (np.array(img.shape) / np.array(res.shape) - 1) / 2
-        imgb = np.array(transform.axisBounds(img.shape, img.voxToWorldMat))
-        resb = np.array(transform.axisBounds(res.shape, res.voxToWorldMat))
+        imgb = np.array(affine.axisBounds(img.shape, img.voxToWorldMat))
+        resb = np.array(affine.axisBounds(res.shape, res.voxToWorldMat))
         assert np.all(np.isclose(imgb, resb + off, rtol=1e-5, atol=1e-5))
 
     # with origin='corner', using
@@ -165,7 +165,7 @@ def test_resample_origin(seed):
 def test_resampleToPixdims():
 
     img          = fslimage.Image(make_random_image(dims=(10, 10, 10)))
-    imglo, imghi = transform.axisBounds(img.shape, img.voxToWorldMat)
+    imglo, imghi = affine.axisBounds(img.shape, img.voxToWorldMat)
     oldpix       = np.array(img.pixdim, dtype=np.float)
     oldshape     = np.array(img.shape,  dtype=np.float)
 
@@ -177,7 +177,7 @@ def test_resampleToPixdims():
 
         res = resample.resampleToPixdims(img, newpix, origin=origin)
         res = fslimage.Image(res[0], xform=res[1])
-        reslo, reshi = transform.axisBounds(res.shape, res.voxToWorldMat)
+        reslo, reshi = affine.axisBounds(res.shape, res.voxToWorldMat)
         resfov       = reshi - reslo
         expfov       = newpix * res.shape
 
@@ -219,7 +219,7 @@ def test_resampleToReference2():
     img[1, 1, 1] = 1
     img          = fslimage.Image(img)
 
-    refv2w = transform.scaleOffsetXform([1, 1, 1], [-1, -1, -1])
+    refv2w = affine.scaleOffsetXform([1, 1, 1], [-1, -1, -1])
     ref    = np.zeros((5, 5, 5), dtype=np.float)
     ref    = fslimage.Image(ref, xform=refv2w)
     res    = resample.resampleToReference(img, ref, order=0)
@@ -235,7 +235,7 @@ def test_resampleToReference3():
     # Test resampling image to ref
     # with mismatched dimensions
     imgdata = np.random.randint(0, 65536, (5, 5, 5))
-    img     = fslimage.Image(imgdata, xform=transform.scaleOffsetXform(
+    img     = fslimage.Image(imgdata, xform=affine.scaleOffsetXform(
         (2, 2, 2), (0.5, 0.5, 0.5)))
 
     # reference/expected data when
@@ -270,7 +270,7 @@ def test_resampleToReference4():
     # the image and ref are out of
     # alignment, but this affine
     # will bring them into alignment
-    img2ref = transform.scaleOffsetXform([2, 2, 2], [10, 10, 10])
+    img2ref = affine.scaleOffsetXform([2, 2, 2], [10, 10, 10])
 
     imgdata = np.random.randint(0, 65536, (5, 5, 5))
     refdata = np.zeros((5, 5, 5))
