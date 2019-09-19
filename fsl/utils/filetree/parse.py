@@ -77,7 +77,7 @@ def read_line(line: str) -> Tuple[int, PurePath, str]:
     """
     Parses line from the tree file
 
-    :param line: input line from a \*.tree file
+    :param line: input line from a ``*.tree`` file
     :return: Tuple with:
 
         - number of spaces in front of the name
@@ -105,7 +105,7 @@ def read_subtree_line(line: str, directory: str) -> Tuple[int, "filetree.FileTre
     """
     Parses the line defining a sub_tree
 
-    :param line: input line from a \*.tree file
+    :param line: input line from a ``*.tree`` file
     :param directory: containing directory
     :return: Tuple with
 
