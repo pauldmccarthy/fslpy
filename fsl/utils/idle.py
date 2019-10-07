@@ -196,6 +196,13 @@ _idleCallRate = 200
 """
 
 
+_idleAllowErrors = False
+"""Used for testing/debugging. If ``True``, and a function called on the idle
+loop raises an error, that error will not be caught, and the idle loop will
+stop.
+"""
+
+
 def idleReset():
     """Reset the internal :func:`idle` queue state.
 
@@ -211,6 +218,7 @@ def idleReset():
     global _idleQueueDict
     global _idleTimer
     global _idleCallRate
+    global _idleAllowErrors
 
     if _idleTimer is not None:
         _idleTimer.Stop()
@@ -221,11 +229,12 @@ def idleReset():
     if queue is not None: newQueue = queue.Queue()
     else:                 newQueue = None
 
-    _idleRegistered = False
-    _idleQueue      = newQueue
-    _idleQueueDict  = {}
-    _idleTimer      = None
-    _idleCallRate   = 200
+    _idleRegistered  = False
+    _idleQueue       = newQueue
+    _idleQueueDict   = {}
+    _idleTimer       = None
+    _idleCallRate    = 200
+    _idleAllowErrors = False
 
 
 # Call idleReset on exit, in
@@ -294,6 +303,7 @@ def _wxIdleLoop(ev):
     global _idleQueueDict
     global _idleTimer
     global _idleCallRate
+    global _idleAllowErrors
 
     ev.Skip()
 
@@ -341,6 +351,9 @@ def _wxIdleLoop(ev):
         except Exception as e:
             log.warning('Idle task {} crashed - {}: {}'.format(
                 taskName, type(e).__name__, str(e)), exc_info=True)
+
+            if _idleAllowErrors:
+                raise e
 
         if task.name is not None:
             try:             _idleQueueDict.pop(task.name)
