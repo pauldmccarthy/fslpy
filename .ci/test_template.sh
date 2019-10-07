@@ -9,7 +9,7 @@ set -e
 # which gitlab CE does not currently do for us.
 if [[ "$CI_PROJECT_PATH" != "$UPSTREAM_PROJECT" ]]; then
   git fetch upstream;
-  git merge --no-commit --no-ff upstream/master;
+  git merge --no-commit --no-ff -s recursive -X ours upstream/master;
 fi;
 
 source /test.venv/bin/activate
