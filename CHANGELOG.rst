@@ -2,6 +2,21 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.6.2 (Monday 7th October 2019)
+-------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Added a debugging hook in the :mod:`.idle` module.
+* The :func:`.fslsub.submit` function is now more flexible in the way it
+  accepts the command and input arguments.
+* The :func:`.run.prepareArgs` function has been renamed (from
+  ``_prepareArgs``).
+
+
 2.6.1 (Thursday 19th September 2019)
 ------------------------------------
 
