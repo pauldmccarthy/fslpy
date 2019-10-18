@@ -185,6 +185,25 @@ def _test_block():
 
 
 @pytest.mark.wxtest
+def test_block_until_with_gui():    _run_with_wx(   _test_block_until)
+def test_block_until_without_gui(): _run_without_wx(_test_block_until)
+def _test_block_until():
+    ev = threading.Event()
+
+    def task():
+        time.sleep(1)
+        ev.set()
+
+    threading.Thread(target=task).start()
+
+    start = time.time()
+    idle.block(3, until=ev.is_set)
+    end = time.time()
+
+    assert end - start < 3
+
+
+@pytest.mark.wxtest
 def test_idle():
 
     called = [False]
