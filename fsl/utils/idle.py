@@ -391,27 +391,41 @@ def cancelIdle(taskName):
     _idleQueueDict[taskName].timeout = -1
 
 
-def block(secs, delta=0.01):
+def block(secs, delta=0.01, until=None):
     """Blocks for the specified number of seconds, yielding to the main ``wx``
     loop.
 
     If ``wx`` is not available, or a ``wx`` application is not running, this
     function is equivalent to ``time.sleep(secs)``.
 
+    If ``until`` is provided, this function will block until ``until``
+    returns ``True``, or ``secs`` have elapsed, whichever comes first.
+
     :arg secs:  Time in seconds to block
     :arg delta: Time in seconds to sleep between successive yields to ``wx``.
+    :arg until: Function which returns ``True`` or ``False``, and which
+                determins when calls to ``block`` will return.
     """
+
+    def defaultUntil():
+        return False
+
+    def tick():
+        if fslplatform.haveGui:
+            import wx
+            wx.YieldIfNeeded()
+        time.sleep(delta)
+
+    if until is None:
+        until = defaultUntil
 
     from fsl.utils.platform import platform as fslplatform
 
-    if not fslplatform.haveGui:
-        time.sleep(secs)
-    else:
-        import wx
-        start = time.time()
-        while (time.time() - start) < secs:
-            wx.YieldIfNeeded()
-            time.sleep(delta)
+    start = time.time()
+    while (time.time() - start) < secs:
+        tick()
+        if until():
+            break
 
 
 def idle(task, *args, **kwargs):
