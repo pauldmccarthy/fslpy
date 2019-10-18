@@ -59,6 +59,7 @@ def test_haveGui():
     wx.CallLater(500, runtest)
 
     app.MainLoop()
+    del app
 
     assert passed[0]
 
