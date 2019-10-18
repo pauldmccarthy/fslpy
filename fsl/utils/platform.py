@@ -163,9 +163,27 @@ class Platform(notifier.Notifier):
         try:
             import wx
             app = wx.GetApp()
+
+            # TODO Previously this conditional
+            #      also used app.IsMainLoopRunning()
+            #      to check that the wx main loop
+            #      was running. But this doesn't
+            #      suit situations where a non-main
+            #      event loop is running (e.g. when
+            #      the event loop is being run by
+            #      IPython).
+            #
+            #      In c++ wx, there is the
+            #      wx.App.UsesEventLoop method, but
+            #      this is not presently exposed to
+            #      Python code.
+            #
+            #      So this constraint has been
+            #      (hopefully) temporarily relaxed
+            #      until UsesEventLoop can be called
+            #      from Python.
             return (self.canHaveGui and
-                    app is not None and
-                    app.IsMainLoopRunning())
+                    app is not None)
 
         except ImportError:
             return False
