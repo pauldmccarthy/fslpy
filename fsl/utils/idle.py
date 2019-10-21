@@ -141,6 +141,7 @@ class IdleLoop(object):
         self.__timer       = None
         self.__callRate    = 200
         self.__allowErrors = False
+        self.__neverQueue  = False
 
         # Call reset on exit, in case
         # the idle.timer is active.
@@ -221,6 +222,20 @@ class IdleLoop(object):
         self.__allowErrors = allow
 
 
+    @property
+    def neverQueue(self):
+        """If ``True``, tasks passed to :meth:`idle` will never be queued, and
+        instead will always be executed directly/synchonously.
+        """
+        return self.__neverQueue
+
+
+    @neverQueue.setter
+    def neverQueue(self, allow):
+        """Update the ``neverQueue`` flag. """
+        self.__neverQueue = allow
+
+
     def reset(self):
         """Reset the internal idle loop state.
 
@@ -249,6 +264,7 @@ class IdleLoop(object):
         self.__timer       = None
         self.__callRate    = 200
         self.__allowErrors = False
+        self.__neverQueue  = False
 
 
     def inIdle(self, taskName):
@@ -315,9 +331,11 @@ class IdleLoop(object):
         All other arguments are passed through to the task function.
 
 
-        If a ``wx.App`` is not running, the ``timeout``, ``name`` and
-        ``skipIfQueued`` arguments are ignored. Instead, the call will sleep
-        for ``after`` seconds, and then the ``task`` is called directly.
+        If a ``wx.App`` is not running, or :meth:`neverQueue` has been set to
+        ``True``, the ``timeout``, ``name``, ``dropIfQueued``,
+        ``skipIfQueued``, and ``alwaysQueue`` arguments are ignored. Instead,
+        the call will sleep for ``after`` seconds, and then the ``task`` will
+        be called directly.
 
 
         .. note:: If the ``after`` argument is used, there is no guarantee that
@@ -347,8 +365,8 @@ class IdleLoop(object):
         skipIfQueued = kwargs.pop('skipIfQueued', False)
         alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
-        canHaveGui = fslplatform.canHaveGui
-        haveGui    = fslplatform.haveGui
+        canHaveGui   = fslplatform.canHaveGui
+        haveGui      = fslplatform.haveGui
 
         # If there is no possibility of a
         # gui being available in the future
@@ -358,7 +376,7 @@ class IdleLoop(object):
 
         # We don't have wx - run the task
         # directly/synchronously.
-        if not (haveGui or alwaysQueue):
+        if self.__neverQueue or not (haveGui or alwaysQueue):
             time.sleep(after)
             log.debug('Running idle task directly')
             task(*args, **kwargs)
