@@ -2,6 +2,37 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.7.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New ``until`` option to the :func:`.idle.block` function.
+* New :meth:`.Idle.neverQueue` setting, which can be used to force all
+  tasks passed to :func:`.idle.idle` to be executed synchronously.
+
+
+Changed
+^^^^^^^
+
+
+* Internal reorganisation inm the :mod:`.idle` module.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :func:`.idle.inIdle` - replaced by :meth:`.IdleLoop.inIdle`.
+* :func:`.idle.cancelIdle` - replaced by :meth:`.IdleLoop.cancelIdle`.
+* :func:`.idle.idleReser` - replaced by :meth:`.IdleLoop.idleReset`.
+* :func:`.idle.getIdleTimeout` - replaced by :meth:`.IdleLoop.callRate`.
+* :func:`.idle.setIdleTimeout` - replaced by :meth:`.IdleLoop.callRate`.
+
+
 2.6.2 (Monday 7th October 2019)
 -------------------------------
 

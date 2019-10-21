@@ -62,7 +62,7 @@ def _run_with_wx(func, *args, **kwargs):
 
     time.sleep(1)
 
-    idle.idleReset()
+    idle.idleLoop.reset()
 
     if raised[0] and propagateRaise:
         raise raised[0]
@@ -146,15 +146,15 @@ def _test_run():
 
 
 @pytest.mark.wxtest
-def test_idleTimeout_with_gui():    _run_with_wx(   _test_idleTimeout)
-def test_idleTimeout_without_gui(): _run_without_wx(_test_idleTimeout)
-def _test_idleTimeout():
-    idle.idleReset()
-    default = idle.getIdleTimeout()
-    idle.setIdleTimeout(999)
-    assert idle.getIdleTimeout() == 999
-    idle.setIdleTimeout()
-    assert idle.getIdleTimeout() == default
+def test_callRate_with_gui():    _run_with_wx(   _test_callRate)
+def test_callRate_without_gui(): _run_without_wx(_test_callRate)
+def _test_callRate():
+    idle.idleLoop.reset()
+    default = idle.idleLoop.callRate
+    idle.idleLoop.callRate = 999
+    assert idle.idleLoop.callRate == 999
+    idle.idleLoop.callRate = None
+    assert idle.idleLoop.callRate == default
 
 
 @pytest.mark.wxtest
@@ -214,7 +214,7 @@ def test_idle():
     def errtask(arg, kwarg1=None):
         raise Exception('Task which was supposed to crash crashed!')
 
-    assert idle.getIdleTimeout() > 0
+    assert idle.idleLoop.callRate > 0
 
     # Run directly
     _run_without_wx(idle.idle, task, 1, kwarg1=2, name='direct')
@@ -246,7 +246,7 @@ def test_inidle():
     def queuetask():
 
         idle.idle(task, after=0.01, name=name)
-        assert idle.inIdle(name)
+        assert idle.idleLoop.inIdle(name)
 
     _run_with_wx(queuetask)
 
@@ -265,7 +265,7 @@ def test_cancelidle():
     def queuetask():
 
         idle.idle(task, after=0.01, name=name)
-        idle.cancelIdle(name)
+        idle.idleLoop.cancelIdle(name)
 
     _run_with_wx(queuetask)
 
@@ -453,7 +453,7 @@ def test_idleWhen():
     def task():
         called[0] = True
 
-    idle.setIdleTimeout(1)
+    idle.idleLoop.callRate = 1
 
     _run_with_wx(idle.idleWhen, task, condition, pollTime=0.001)
 

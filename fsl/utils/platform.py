@@ -159,7 +159,14 @@ class Platform(notifier.Notifier):
 
     @property
     def haveGui(self):
-        """``True`` if we are running with a GUI, ``False`` otherwise. """
+        """``True`` if we are running with a GUI, ``False`` otherwise.
+
+        This currently equates to testing whether a display is available
+        (see :meth:`canHaveGui`) and whether a ``wx.App`` exists. It
+        previously also tested whether an event loop was running, but this
+        is not compatible with execution from IPython/Jupyter notebook, where
+        the event loop is called periodically, and so is not always running.
+        """
         try:
             import wx
             app = wx.GetApp()
