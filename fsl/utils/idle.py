@@ -8,9 +8,9 @@
 asynchronously, either in an idle loop, or on a separate thread.
 
 
-.. note:: The *idle* functions in this module are intended to be run from
-          within a ``wx`` application. However, they will still work without
-          ``wx``, albeit with slightly modified behaviour.
+.. note:: The :class:`IdleLoop` functionality in this module is intended to be
+          run from within a ``wx`` application. However, it will still work
+          without ``wx``, albeit with slightly modified behaviour.
 
 
 Idle tasks
@@ -19,28 +19,20 @@ Idle tasks
 .. autosummary::
    :nosignatures:
 
-   block
+   IdleLoop
    idle
    idleWhen
-   inIdle
-   cancelIdle
-   idleReset
-   getIdleTimeout
-   setIdleTimeout
+   block
 
 
-The :func:`idle` function is a simple way to run a task on an ``wx``
-``EVT_IDLE`` event handler. This effectively performs the same job as the
-:func:`run` function, but is more suitable for short tasks which do not
-warrant running in a separate thread.
+The :class:`IdleLoop` class provides a simple way to run a task on an ``wx``
+``EVT_IDLE`` event handler. A single ``IdleLoop`` instance is created when
+this module is imported; it can be accessed via the :attr:`idleLoop` attribute,
+and via the module-level :func:`idle` and :func:`idleWhen` functions.
 
-
-The ``EVT_IDLE`` event is generated automatically by ``wx``. However, there
-are some circumstances in which ``EVT_IDLE`` will not be generated, and
-pending events may be left on the queue. For this reason, the
-:func:`_wxIdleLoop` will occasionally use a ``wx.Timer`` to ensure that it
-continues to be called. The time-out used by this ``Timer`` can be queried
-and set via the :func:`getIdleTimeout` and :func:`setIdleTimeout` functions.
+The :meth:`IdleLoop.idle` method effectively performs the same job as the
+:func:`run` function (described below), but is more suitable for short tasks
+which do not warrant running in a separate thread.
 
 
 Thread tasks
@@ -58,9 +50,10 @@ The :func:`run` function simply runs a task in a separate thread.  This
 doesn't seem like a worthy task to have a function of its own, but the
 :func:`run` function additionally provides the ability to schedule another
 function to run on the ``wx.MainLoop`` when the original function has
-completed.  This therefore gives us a simple way to run a computationally
-intensitve task off the main GUI thread (preventing the GUI from locking up),
-and to perform some clean up/refresh afterwards.
+completed (via :func:`idle`). This therefore gives us a simple way to run a
+computationally intensitve task off the main GUI thread (preventing the GUI
+from locking up), and to perform some clean up/refresh/notification
+afterwards.
 
 
 The :func:`wait` function is given one or more ``Thread`` instances, and a
@@ -91,8 +84,549 @@ from   collections import abc
 try:                import queue
 except ImportError: import Queue as queue
 
+from fsl.utils.deprecated import deprecated
+
 
 log = logging.getLogger(__name__)
+
+
+class IdleTask(object):
+    """Container object used by the :class:`IdleLoop` class.
+    Used to encapsulate information about a queued task.
+    """
+
+    def __init__(self,
+                 name,
+                 task,
+                 schedtime,
+                 after,
+                 timeout,
+                 args,
+                 kwargs):
+        self.name      = name
+        self.task      = task
+        self.schedtime = schedtime
+        self.after     = after
+        self.timeout   = timeout
+        self.args      = args
+        self.kwargs    = kwargs
+
+
+class IdleLoop(object):
+    """This class contains logic for running tasks via ``wx.EVT_IDLE`` events.
+
+    A single ``IdleLoop`` instance is created when this module is first
+    imported - it is accessed via the module-level :attr:`idleLoop` attribute.
+
+    In normal circumstances, this ``idleLoop`` instance should be treated as a
+    singleton, although this is not enforced in any way.
+
+    The ``EVT_IDLE`` event is generated automatically by ``wx`` during periods
+    of inactivity. However, there are some circumstances in which ``EVT_IDLE``
+    will not be generated, and pending events may be left on the queue. For
+    this reason, the ``IdleLoop`` will occasionally use a ``wx.Timer`` to
+    ensure that it continues to be called. The time-out used by this ``Timer``
+    can be queried and set via the :meth:`callRate` property.
+    """
+
+    def __init__(self):
+        """Create an ``IdleLoop``.
+
+        This method does not do much - the real initialisation takes place
+        on the first call to :meth:`idle`.
+        """
+        self.__registered  = False
+        self.__queue       = queue.Queue()
+        self.__queueDict   = {}
+        self.__timer       = None
+        self.__callRate    = 200
+        self.__allowErrors = False
+
+        # Call reset on exit, in case
+        # the idle.timer is active.
+        atexit.register(self.reset)
+
+
+    @property
+    def registered(self):
+        """Boolean flag indicating whether a handler has been registered on
+        ``wx.EVT_IDLE`` events. Checked and set in the :meth:`idle` method.
+        """
+        return self.__registered
+
+
+    @property
+    def queue(self):
+        """A ``Queue`` of functions which are to be run on the ``wx.EVT_IDLE``
+        loop.
+        """
+        return self.__queue
+
+
+    @property
+    def queueDict(self):
+        """A ``dict`` containing the names of all named tasks which are
+        currently queued on the idle loop (see the ``name`` parameter to the
+        :meth:`idle` method).
+        """
+        return self.__queueDict
+
+
+    @property
+    def timer(self):
+        """A ``wx.Timer`` instance which is used to periodically trigger the
+        :func:`_wxIdleLoop` in circumstances where ``wx.EVT_IDLE`` events may
+        not be generated. This is created in the first call to :meth:`idle`.
+        """
+        return self.__timer
+
+
+    @property
+    def callRate(self):
+        """Minimum time (in milliseconds) between consecutive calls to the idle
+        loop (:meth:`__idleLoop`). If ``wx.EVT_IDLE`` events are not being
+        fired, the :meth:`timer` is used to maintain the idle loop at this
+        rate.
+        """
+        return self.__callRate
+
+
+    @callRate.setter
+    def callRate(self, rate):
+        """Update the :meth:`callRate` to ``rate`` (specified in milliseconds).
+
+        If ``rate is None``, it is set to the default of 200 milliseconds.
+        """
+
+        if rate is None:
+            rate = 200
+
+        log.debug('Idle loop timeout changed to {}'.format(rate))
+
+        self.__callRate = rate
+
+
+    @property
+    def allowErrors(self):
+        """Used for testing/debugging. If ``True``, and a function called on
+        the idle loop raises an error, that error will not be caught, and the
+        idle loop will stop.
+        """
+        return self.__allowErrors
+
+
+    @allowErrors.setter
+    def allowErrors(self, allow):
+        """Update the ``allowErrors`` flag. """
+        self.__allowErrors = allow
+
+
+    def reset(self):
+        """Reset the internal idle loop state.
+
+        In a normal execution environment, this method will never need to be
+        called.  However, in an execution environment where multiple ``wx.App``
+        instances are created, run, and destroyed sequentially, this function
+        will need to be called after each ``wx.App`` has been destroyed.
+        Otherwise the ``idle`` function will not work during exeution of
+        subsequent ``wx.App`` instances.
+        """
+
+        if self.__timer is not None:
+            self.__timer.Stop()
+
+        # If we're atexit, the ref to
+        # the queue module might have
+        # been cleared, in which case
+        # we don't want to create a
+        # new one.
+        if self.__queue is not None: newQueue = queue.Queue()
+        else:                        newQueue = None
+
+        self.__registered  = False
+        self.__queue       = newQueue
+        self.__queueDict   = {}
+        self.__timer       = None
+        self.__callRate    = 200
+        self.__allowErrors = False
+
+
+    def inIdle(self, taskName):
+        """Returns ``True`` if a task with the given name is queued on the
+        idle loop (or is currently running), ``False`` otherwise.
+        """
+        return taskName in self.__queueDict
+
+
+    def cancelIdle(self, taskName):
+        """If a task with the given ``taskName`` is in the idle queue, it
+        is cancelled. If the task is already running, it cannot be cancelled.
+
+        A ``KeyError`` is raised if no task called ``taskName`` exists.
+        """
+        self.__queueDict[taskName].timeout = -1
+
+
+    def idle(self, task, *args, **kwargs):
+        """Run the given task on a ``wx.EVT_IDLE`` event.
+
+        :arg task:         The task to run.
+
+        :arg name:         Optional. If provided, must be provided as a keyword
+                           argument. Specifies a name that can be used to
+                           query the state of this task via :meth:`inIdle`.
+
+        :arg after:        Optional. If provided, must be provided as a keyword
+                           argument. A time, in seconds, which specifies the
+                           amount of time to wait before running this task
+                           after it has been scheduled.
+
+        :arg timeout:      Optional. If provided, must be provided as a keyword
+                           argument. Specifies a time out, in seconds. If this
+                           amount of time passes before the function gets
+                           scheduled to be called on the idle loop, the
+                           function is not called, and is dropped from the
+                           queue.
+
+        :arg dropIfQueued: Optional. If provided, must be provided as a keyword
+                           argument. If ``True``, and a task with the given
+                           ``name`` is already enqueud, that function is
+                           dropped from the queue, and the new task is
+                           enqueued. Defaults to ``False``. This argument takes
+                           precedence over the ``skipIfQueued`` argument.
+
+        :arg skipIfQueued: Optional. If provided, must be provided as a keyword
+                           argument. If ``True``, and a task with the given
+                           ``name`` is already enqueud, (or is running), the
+                           function is not called. Defaults to ``False``.
+
+        :arg alwaysQueue:  Optional. If provided, must be provided as a keyword
+                           argument. If ``True``, and a ``wx.MainLoop`` is not
+                           running, the task is enqueued anyway, under the
+                           assumption that a ``wx.MainLoop`` will be started in
+                           the future. Note that, if ``wx.App`` has not yet
+                           been created, another  call to ``idle`` must be made
+                           after the app has been created for the original task
+                           to be executed. If ``wx`` is not available, this
+                           parameter will be ignored, and the task executed
+                           directly.
+
+
+        All other arguments are passed through to the task function.
+
+
+        If a ``wx.App`` is not running, the ``timeout``, ``name`` and
+        ``skipIfQueued`` arguments are ignored. Instead, the call will sleep
+        for ``after`` seconds, and then the ``task`` is called directly.
+
+
+        .. note:: If the ``after`` argument is used, there is no guarantee that
+                  the task will be executed in the order that it is scheduled.
+                  This is because, if the required time has not elapsed when
+                  the task is popped from the queue, it will be re-queued.
+
+        .. note:: If you schedule multiple tasks with the same ``name``, and
+                  you do not use the ``skipIfQueued`` or ``dropIfQueued``
+                  arguments, all of those tasks will be executed, but you will
+                  only be able to query/cancel the most recently enqueued
+                  task.
+
+        .. note:: You will run into difficulties if you schedule a function
+                  that expects/accepts its own keyword arguments called
+                  ``name``, ``skipIfQueued``, ``dropIfQueued``, ``after``,
+                  ``timeout``, or ``alwaysQueue``.
+        """
+
+        from fsl.utils.platform import platform as fslplatform
+
+        schedtime    = time.time()
+        timeout      = kwargs.pop('timeout',      0)
+        after        = kwargs.pop('after',        0)
+        name         = kwargs.pop('name',         None)
+        dropIfQueued = kwargs.pop('dropIfQueued', False)
+        skipIfQueued = kwargs.pop('skipIfQueued', False)
+        alwaysQueue  = kwargs.pop('alwaysQueue',  False)
+
+        canHaveGui = fslplatform.canHaveGui
+        haveGui    = fslplatform.haveGui
+
+        # If there is no possibility of a
+        # gui being available in the future
+        # (determined by canHaveGui), then
+        # alwaysQueue is ignored.
+        alwaysQueue = alwaysQueue and canHaveGui
+
+        # We don't have wx - run the task
+        # directly/synchronously.
+        if not (haveGui or alwaysQueue):
+            time.sleep(after)
+            log.debug('Running idle task directly')
+            task(*args, **kwargs)
+            return
+
+        import wx
+        app = wx.GetApp()
+
+        # Register on the idle event
+        # if an app is available
+        #
+        # n.b. The 'app is not None' test will
+        # potentially fail in scenarios where
+        # multiple wx.Apps have been instantiated,
+        # as it may return a previously created
+        # app that is no longer active.
+        if (not self.registered) and (app is not None):
+
+            log.debug('Registering async idle loop')
+            app.Bind(wx.EVT_IDLE, self.__idleLoop)
+
+            # We also occasionally use a
+            # timer to drive the loop, so
+            # let's register that as well
+            self.__timer = wx.Timer(app)
+            self.__timer.Bind(wx.EVT_TIMER, self.__idleLoop)
+            self.__registered = True
+
+        # A task with the specified
+        # name is already in the queue
+        if name is not None and self.inIdle(name):
+
+            # Drop the old task
+            # with the same name
+            if dropIfQueued:
+
+                # The cancelIdle function sets the old
+                # task timeout to -1, so it won't get
+                # executed. But the task is left in the
+                # queue, and in the queueDict.
+                # In the latter, the old task gets
+                # overwritten with the new task below.
+                self.cancelIdle(name)
+                log.debug('Idle task ({}) is already queued - '
+                          'dropping the old task'.format(name))
+
+            # Ignore the new task
+            # with the same name
+            elif skipIfQueued:
+                log.debug('Idle task ({}) is already queued '
+                          '- skipping it'.format(name))
+                return
+
+        log.debug('Scheduling idle task ({}) on wx idle '
+                  'loop'.format(getattr(task, '__name__', '<unknown>')))
+
+        idleTask = IdleTask(name,
+                            task,
+                            schedtime,
+                            after,
+                            timeout,
+                            args,
+                            kwargs)
+
+        self.__queue.put_nowait(idleTask)
+
+        if name is not None:
+            self.__queueDict[name] = idleTask
+
+
+    def idleWhen(self, func, condition, *args, **kwargs):
+        """Poll the ``condition`` function periodically, and schedule ``func``
+        on :meth:`idle` when it returns ``True``.
+
+        :arg func:      Function to call.
+
+        :arg condition: Function which returns ``True`` or ``False``. The
+                        ``func`` function is only called when the
+                        ``condition`` function returns ``True``.
+
+        :arg pollTime:  Must be passed as a keyword argument. Time (in seconds)
+                        to wait between successive calls to ``when``. Defaults
+                        to ``0.2``.
+        """
+
+        pollTime = kwargs.get('pollTime', 0.2)
+
+        if not condition():
+            self.idle(self.idleWhen,
+                      func,
+                      condition,
+                      after=pollTime,
+                      *args,
+                      **dict(kwargs))
+        else:
+            kwargs.pop('pollTime', None)
+            self.idle(func, *args, **kwargs)
+
+
+    def __idleLoop(self, ev):
+        """This method is called on ``wx.EVT_IDLE`` events, and occasionally
+        on ``wx.EVT_TIMER`` events via the :meth:`timer`. If there
+        is a function on the :meth:`queue`, it is popped and called.
+
+        .. note:: The ``wx.EVT_IDLE`` event is only triggered on user
+                  interaction (e.g. mouse movement). This means that a
+                  situation may arise whereby a function is queued via the
+                  :meth:`idle` method, but no ``EVT_IDLE`` event gets
+                  generated. Therefore, the :meth:`timer` object is
+                  occasionally used to call this function as well.
+        """
+
+        import wx
+
+        ev.Skip()
+
+        try:
+            task = self.__queue.get_nowait()
+
+        except queue.Empty:
+
+            # Make sure that we get called periodically,
+            # if EVT_IDLE decides to stop firing. If
+            # self.timer is None, then self.reset has
+            # probably been called.
+            if self.__timer is not None:
+                self.__timer.Start(self.__callRate, wx.TIMER_ONE_SHOT)
+            return
+
+        now             = time.time()
+        elapsed         = now - task.schedtime
+        queueSizeOffset = 0
+        taskName        = task.name
+        funcName        = getattr(task.task, '__name__', '<unknown>')
+
+        if taskName is None: taskName = funcName
+        else:                taskName = '{} [{}]'.format(taskName, funcName)
+
+        # Has enough time elapsed
+        # since the task was scheduled?
+        # If not, re-queue the task.
+        # If this is the only task on the
+        # queue, the idle loop will be
+        # called again after
+        # callRate millisecs.
+        if elapsed < task.after:
+            log.debug('Re-queueing function ({}) on '
+                      'wx idle loop'.format(taskName))
+            self.__queue.put_nowait(task)
+            queueSizeOffset = 1
+
+        # Has the task timed out?
+        elif task.timeout == 0 or (elapsed < task.timeout):
+
+            log.debug('Running function ({}) on wx '
+                      'idle loop'.format(taskName))
+
+            try:
+                task.task(*task.args, **task.kwargs)
+            except Exception as e:
+                log.warning('Idle task {} crashed - {}: {}'.format(
+                    taskName, type(e).__name__, str(e)), exc_info=True)
+
+                if self.__allowErrors:
+                    raise e
+
+            if task.name is not None:
+                try:             self.__queueDict.pop(task.name)
+                except KeyError: pass
+
+        # More tasks on the queue?
+        # Request anotherd event
+        if self.__queue.qsize() > queueSizeOffset:
+            ev.RequestMore()
+
+        # Otherwise use the idle
+        # timer to make sure that
+        # the loop keeps ticking
+        # over
+        else:
+            self.__timer.Start(self.__callRate, wx.TIMER_ONE_SHOT)
+
+
+idleLoop = IdleLoop()
+"""A singleton :class:`IdleLoop` instance, created when this module is
+imported.
+"""
+
+
+def idle(*args, **kwargs):
+    """Equivalent to calling :meth:`IdleLoop.idle` on the ``idleLoop``
+    singleton.
+    """
+    idleLoop.idle(*args, **kwargs)
+
+
+def idleWhen(*args, **kwargs):
+    """Equivalent to calling :meth:`IdleLoop.idleWhen` on the ``idleLoop``
+    singleton.
+    """
+    idleLoop.idleWhen(*args, **kwargs)
+
+
+@deprecated('2.7.0', '3.0.0', 'Use idleLoop.inIdle instead')
+def inIdle(taskName):
+    """Deprecated - use ``idleLoop.inIdle`` instead. """
+    return idleLoop.inIdle(taskName)
+
+
+@deprecated('2.7.0', '3.0.0', 'Use idleLoop.cancelIdle instead')
+def cancelIdle(taskName):
+    """Deprecated - use ``idleLoop.cancelIdle`` instead. """
+    return idleLoop.cancelIdle(taskName)
+
+
+@deprecated('2.7.0', '3.0.0', 'Use idleLoop.reset instead')
+def idleReset():
+    """Deprecated - use ``idleLoop.reset`` instead. """
+    return idleLoop.reset()
+
+
+@deprecated('2.7.0', '3.0.0', 'Use idleLoop.callRate instead')
+def getIdleTimeout():
+    """Deprecated - use ``idleLoop.callRate`` instead. """
+    return idleLoop.callRate
+
+
+@deprecated('2.7.0', '3.0.0', 'Use idleLoop.callRate instead')
+def setIdleTimeout(timeout=None):
+    """Deprecated - use ``idleLoop.callRate`` instead. """
+    idleLoop.callRate = timeout
+
+
+def block(secs, delta=0.01, until=None):
+    """Blocks for the specified number of seconds, yielding to the main ``wx``
+    loop.
+
+    If ``wx`` is not available, or a ``wx`` application is not running, this
+    function is equivalent to ``time.sleep(secs)``.
+
+    If ``until`` is provided, this function will block until ``until``
+    returns ``True``, or ``secs`` have elapsed, whichever comes first.
+
+    :arg secs:  Time in seconds to block
+    :arg delta: Time in seconds to sleep between successive yields to ``wx``.
+    :arg until: Function which returns ``True`` or ``False``, and which
+                determins when calls to ``block`` will return.
+    """
+
+    def defaultUntil():
+        return False
+
+    def tick():
+        if fslplatform.haveGui:
+            import wx
+            wx.YieldIfNeeded()
+        time.sleep(delta)
+
+    if until is None:
+        until = defaultUntil
+
+    from fsl.utils.platform import platform as fslplatform
+
+    start = time.time()
+    while (time.time() - start) < secs:
+        tick()
+        if until():
+            break
 
 
 def run(task, onFinish=None, onError=None, name=None):
@@ -160,449 +694,6 @@ def run(task, onFinish=None, onError=None, name=None):
         log.debug('Running task "{}" directly'.format(name))
         wrapper()
         return None
-
-
-_idleRegistered = False
-"""Boolean flag indicating whether the :func:`_wxIdleLoop` function has
-been registered as a ``wx.EVT_IDLE`` event handler. Checked and set
-in the :func:`idle` function.
-"""
-
-
-_idleQueue = queue.Queue()
-"""A ``Queue`` of functions which are to be run on the ``wx.EVT_IDLE``
-loop.
-"""
-
-
-_idleQueueDict = {}
-"""A ``dict`` containing the names of all named tasks which are
-currently queued on the idle loop (see the ``name`` parameter to the
-:func:`idle` function).
-"""
-
-
-_idleTimer = None
-"""A ``wx.Timer`` instance which is used to periodically trigger the
-:func:`_wxIdleLoop` in circumstances where ``wx.EVT_IDLE`` events may not
-be generated. This is created in the first call to :func:`idle`.
-"""
-
-
-_idleCallRate = 200
-"""Minimum time (in milliseconds) between consecutive calls to
-:func:`_wxIdleLoop`. If ``wx.EVT_IDLE`` events are not being fired, the
-:attr:`_idleTimer` is used to maintain the idle loop at this rate.
-"""
-
-
-_idleAllowErrors = False
-"""Used for testing/debugging. If ``True``, and a function called on the idle
-loop raises an error, that error will not be caught, and the idle loop will
-stop.
-"""
-
-
-def idleReset():
-    """Reset the internal :func:`idle` queue state.
-
-    In a normal execution environment, this function will never need to be
-    called.  However, in an execution environment where multiple ``wx.App``
-    instances are created, run, and destroyed sequentially, this function
-    will need to be called after each ``wx.App`` has been destroyed.
-    Otherwise the ``idle`` function will not work during exeution of
-    subsequent ``wx.App`` instances.
-    """
-    global _idleRegistered
-    global _idleQueue
-    global _idleQueueDict
-    global _idleTimer
-    global _idleCallRate
-    global _idleAllowErrors
-
-    if _idleTimer is not None:
-        _idleTimer.Stop()
-
-    # If we're atexit, the ref
-    # to the queue module might
-    # have been cleared.
-    if queue is not None: newQueue = queue.Queue()
-    else:                 newQueue = None
-
-    _idleRegistered  = False
-    _idleQueue       = newQueue
-    _idleQueueDict   = {}
-    _idleTimer       = None
-    _idleCallRate    = 200
-    _idleAllowErrors = False
-
-
-# Call idleReset on exit, in
-# case the idleTimer is active.
-atexit.register(idleReset)
-
-
-def getIdleTimeout():
-    """Returns the current ``wx`` idle loop time out/call rate.
-    """
-    return _idleCallRate
-
-
-def setIdleTimeout(timeout=None):
-    """Set the ``wx`` idle loop time out/call rate. If ``timeout`` is not
-    provided, or is set to ``None``, the timeout is set to 200 milliseconds.
-    """
-
-    global _idleCallRate
-
-    if timeout is None:
-        timeout = 200
-
-    log.debug('Idle loop timeout changed to {}'.format(timeout))
-
-    _idleCallRate = timeout
-
-
-class IdleTask(object):
-    """Container object used by the :func:`idle` and :func:`_wxIdleLoop`
-    functions.
-    """
-
-    def __init__(self,
-                 name,
-                 task,
-                 schedtime,
-                 after,
-                 timeout,
-                 args,
-                 kwargs):
-        self.name      = name
-        self.task      = task
-        self.schedtime = schedtime
-        self.after     = after
-        self.timeout   = timeout
-        self.args      = args
-        self.kwargs    = kwargs
-
-
-def _wxIdleLoop(ev):
-    """Function which is called on ``wx.EVT_IDLE`` events, and occasionally
-    on ``wx.EVT_TIMER`` events via the :attr:`_idleTimer`. If there
-    is a function on the :attr:`_idleQueue`, it is popped and called.
-
-    .. note:: The ``wx.EVT_IDLE`` event is only triggered on user interaction
-              (e.g. mouse movement). This means that a situation may arise
-              whereby a function is queued via the :func:`idle` function, but
-              no ``EVT_IDLE`` event gets generated. Therefore, the
-              :attr:`_idleTimer` object is occasionally used to call this
-              function as well.
-    """
-
-    import wx
-    global _idleQueue
-    global _idleQueueDict
-    global _idleTimer
-    global _idleCallRate
-    global _idleAllowErrors
-
-    ev.Skip()
-
-    try:
-        task = _idleQueue.get_nowait()
-
-    except queue.Empty:
-
-        # Make sure that we get called periodically,
-        # if EVT_IDLE decides to stop firing. If
-        # _idleTimer is None, then idleReset has
-        # probably been called.
-        if _idleTimer is not None:
-            _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
-        return
-
-    now             = time.time()
-    elapsed         = now - task.schedtime
-    queueSizeOffset = 0
-    taskName        = task.name
-    funcName        = getattr(task.task, '__name__', '<unknown>')
-
-    if taskName is None: taskName = funcName
-    else:                taskName = '{} [{}]'.format(taskName, funcName)
-
-    # Has enough time elapsed
-    # since the task was scheduled?
-    # If not, re-queue the task.
-    # If this is the only task on the
-    # queue, the idle loop will be
-    # called again after
-    # _idleCallRate millisecs.
-    if elapsed < task.after:
-        log.debug('Re-queueing function ({}) on wx idle loop'.format(taskName))
-        _idleQueue.put_nowait(task)
-        queueSizeOffset = 1
-
-    # Has the task timed out?
-    elif task.timeout == 0 or (elapsed < task.timeout):
-
-        log.debug('Running function ({}) on wx idle loop'.format(taskName))
-
-        try:
-            task.task(*task.args, **task.kwargs)
-        except Exception as e:
-            log.warning('Idle task {} crashed - {}: {}'.format(
-                taskName, type(e).__name__, str(e)), exc_info=True)
-
-            if _idleAllowErrors:
-                raise e
-
-        if task.name is not None:
-            try:             _idleQueueDict.pop(task.name)
-            except KeyError: pass
-
-    # More tasks on the queue?
-    # Request anotherd event
-    if _idleQueue.qsize() > queueSizeOffset:
-        ev.RequestMore()
-
-    # Otherwise use the idle
-    # timer to make sure that
-    # the loop keeps ticking
-    # over
-    else:
-        _idleTimer.Start(_idleCallRate, wx.TIMER_ONE_SHOT)
-
-
-def inIdle(taskName):
-    """Returns ``True`` if a task with the given name is queued on the
-    idle loop (or is currently running), ``False`` otherwise.
-    """
-    global _idleQueueDict
-    return taskName in _idleQueueDict
-
-
-def cancelIdle(taskName):
-    """If a task with the given ``taskName`` is in the idle queue, it
-    is cancelled. If the task is already running, it cannot be cancelled.
-
-    A ``KeyError`` is raised if no task called ``taskName`` exists.
-    """
-
-    global _idleQueueDict
-    _idleQueueDict[taskName].timeout = -1
-
-
-def block(secs, delta=0.01, until=None):
-    """Blocks for the specified number of seconds, yielding to the main ``wx``
-    loop.
-
-    If ``wx`` is not available, or a ``wx`` application is not running, this
-    function is equivalent to ``time.sleep(secs)``.
-
-    If ``until`` is provided, this function will block until ``until``
-    returns ``True``, or ``secs`` have elapsed, whichever comes first.
-
-    :arg secs:  Time in seconds to block
-    :arg delta: Time in seconds to sleep between successive yields to ``wx``.
-    :arg until: Function which returns ``True`` or ``False``, and which
-                determins when calls to ``block`` will return.
-    """
-
-    def defaultUntil():
-        return False
-
-    def tick():
-        if fslplatform.haveGui:
-            import wx
-            wx.YieldIfNeeded()
-        time.sleep(delta)
-
-    if until is None:
-        until = defaultUntil
-
-    from fsl.utils.platform import platform as fslplatform
-
-    start = time.time()
-    while (time.time() - start) < secs:
-        tick()
-        if until():
-            break
-
-
-def idle(task, *args, **kwargs):
-    """Run the given task on a ``wx.EVT_IDLE`` event.
-
-    :arg task:         The task to run.
-
-    :arg name:         Optional. If provided, must be provided as a keyword
-                       argument. Specifies a name that can be used to query
-                       the state of this task via the :func:`inIdle` function.
-
-    :arg after:        Optional. If provided, must be provided as a keyword
-                       argument. A time, in seconds, which specifies the
-                       amount of time to wait before running this task after
-                       it has been scheduled.
-
-    :arg timeout:      Optional. If provided, must be provided as a keyword
-                       argument. Specifies a time out, in seconds. If this
-                       amount of time passes before the function gets
-                       scheduled to be called on the idle loop, the function
-                       is not called, and is dropped from the queue.
-
-    :arg dropIfQueued: Optional. If provided, must be provided as a keyword
-                       argument. If ``True``, and a task with the given
-                       ``name`` is already enqueud, that function is dropped
-                       from the queue, and the new task is enqueued. Defaults
-                       to ``False``. This argument takes precedence over the
-                       ``skipIfQueued`` argument.
-
-    :arg skipIfQueued: Optional. If provided, must be provided as a keyword
-                       argument. If ``True``, and a task with the given
-                       ``name`` is already enqueud, (or is running), the
-                       function is not called. Defaults to ``False``.
-
-    :arg alwaysQueue:  Optional. If provided, must be provided as a keyword
-                       argument. If ``True``, and a ``wx.MainLoop`` is not
-                       running, the task is enqueued anyway, under the
-                       assumption that a ``wx.MainLoop`` will be started in
-                       the future. Note that, if ``wx.App`` has not yet been
-                       created, another  call to ``idle`` must be made after
-                       the app has been created for the original task to be
-                       executed. If ``wx`` is not available, this parameter
-                       will be ignored, and the task executed directly.
-
-
-    All other arguments are passed through to the task function.
-
-
-    If a ``wx.App`` is not running, the ``timeout``, ``name`` and
-    ``skipIfQueued`` arguments are ignored. Instead, the call will sleep for
-    ``after`` seconds, and then the ``task`` is called directly.
-
-
-    .. note:: If the ``after`` argument is used, there is no guarantee that
-              the task will be executed in the order that it is scheduled.
-              This is because, if the required time has not elapsed when
-              the task is popped from the queue, it will be re-queued.
-
-    .. note:: If you schedule multiple tasks with the same ``name``, and you
-              do not use the ``skipIfQueued`` or ``dropIfQueued`` arguments,
-              all of those tasks will be executed, but you will only be able
-              to query/cancel the most recently enqueued task.
-
-    .. note:: You will run into difficulties if you schedule a function that
-              expects/accepts its own keyword arguments called ``name``,
-              ``skipIfQueued``, ``dropIfQueued``, ``after``, ``timeout``, or
-              ``alwaysQueue``.
-    """
-
-    from fsl.utils.platform import platform as fslplatform
-
-    global _idleRegistered
-    global _idleTimer
-    global _idleQueue
-    global _idleQueueDict
-
-    schedtime    = time.time()
-    timeout      = kwargs.pop('timeout',      0)
-    after        = kwargs.pop('after',        0)
-    name         = kwargs.pop('name',         None)
-    dropIfQueued = kwargs.pop('dropIfQueued', False)
-    skipIfQueued = kwargs.pop('skipIfQueued', False)
-    alwaysQueue  = kwargs.pop('alwaysQueue',  False)
-
-    canHaveGui = fslplatform.canHaveGui
-    haveGui    = fslplatform.haveGui
-
-    # If there is no possibility of a
-    # gui being available in the future,
-    # then alwaysQueue is ignored.
-    if haveGui or (alwaysQueue and canHaveGui):
-
-        import wx
-        app = wx.GetApp()
-
-        # Register on the idle event
-        # if an app is available
-        #
-        # n.b. The 'app is not None' test will
-        # potentially fail in scenarios where
-        # multiple wx.Apps have been instantiated,
-        # as it may return a previously created
-        # app.
-        if (not _idleRegistered) and (app is not None):
-
-            log.debug('Registering async idle loop')
-
-            app.Bind(wx.EVT_IDLE, _wxIdleLoop)
-
-            _idleTimer      = wx.Timer(app)
-            _idleRegistered = True
-
-            _idleTimer.Bind(wx.EVT_TIMER, _wxIdleLoop)
-
-        if name is not None and inIdle(name):
-
-            if dropIfQueued:
-
-                # The cancelIdle function sets the old
-                # task timeout to -1, so it won't get
-                # executed. But the task is left in the
-                # _idleQueue, and in the _idleQueueDict.
-                # In the latter, the old task gets
-                # overwritten with the new task below.
-                cancelIdle(name)
-                log.debug('Idle task ({}) is already queued - '
-                          'dropping the old task'.format(name))
-
-            elif skipIfQueued:
-                log.debug('Idle task ({}) is already queued '
-                          '- skipping it'.format(name))
-                return
-
-        log.debug('Scheduling idle task ({}) on wx idle '
-                  'loop'.format(getattr(task, '__name__', '<unknown>')))
-
-        idleTask = IdleTask(name,
-                            task,
-                            schedtime,
-                            after,
-                            timeout,
-                            args,
-                            kwargs)
-
-        _idleQueue.put_nowait(idleTask)
-
-        if name is not None:
-            _idleQueueDict[name] = idleTask
-
-    else:
-        time.sleep(after)
-        log.debug('Running idle task directly')
-        task(*args, **kwargs)
-
-
-def idleWhen(func, condition, *args, **kwargs):
-    """Poll the ``condition`` function periodically, and schedule ``func`` on
-    :func:`idle` when it returns ``True``.
-
-    :arg func:      Function to call.
-
-    :arg condition: Function which returns ``True`` or ``False``. The ``func``
-                    function is only called when the ``condition`` function
-                    returns ``True``.
-
-    :arg pollTime:  Must be passed as a keyword argument. Time (in seconds) to
-                    wait between successive calls to ``when``. Defaults to
-                    ``0.2``.
-    """
-
-    pollTime = kwargs.get('pollTime', 0.2)
-
-    if not condition():
-        idle(idleWhen, func, condition, after=pollTime, *args, **dict(kwargs))
-    else:
-        kwargs.pop('pollTime', None)
-        idle(func, *args, **kwargs)
 
 
 def wait(threads, task, *args, **kwargs):
