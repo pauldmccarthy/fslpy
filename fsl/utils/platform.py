@@ -176,19 +176,23 @@ class Platform(notifier.Notifier):
             #      to check that the wx main loop
             #      was running. But this doesn't
             #      suit situations where a non-main
-            #      event loop is running (e.g. when
+            #      event loop is running, or where
+            #      the mainloop is periodically
+            #      started and stopped (e.g. when
             #      the event loop is being run by
             #      IPython).
             #
             #      In c++ wx, there is the
             #      wx.App.UsesEventLoop method, but
             #      this is not presently exposed to
-            #      Python code.
+            #      Python code (and wouldn't help
+            #      to detect the loop start/stop
+            #      scenario).
             #
             #      So this constraint has been
             #      (hopefully) temporarily relaxed
-            #      until UsesEventLoop can be called
-            #      from Python.
+            #      until I can think of a better
+            #      solution.
             return (self.canHaveGui and
                     app is not None)
 
