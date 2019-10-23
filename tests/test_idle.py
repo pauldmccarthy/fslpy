@@ -428,6 +428,65 @@ def test_idle_alwaysQueue4():
 
 
 @pytest.mark.wxtest
+def test_neverQueue(): _run_with_wx(_test_neverQueue)
+def _test_neverQueue():
+    called = [False]
+    def task():
+        called[0] = True
+
+    oldval = idle.idleLoop.neverQueue
+
+    try:
+        idle.idleLoop.neverQueue = True
+
+        idle.idle(task)
+        assert called[0]
+
+        idle.idleLoop.neverQueue = False
+        called[0] = False
+        idle.idle(task)
+
+        assert not called[0]
+        _wait_for_idle_loop_to_clear()
+        assert called[0]
+
+    finally:
+        idle.idleLoop.neverQueue = oldval
+
+
+@pytest.mark.wxtest
+def test_synchronous(): _run_with_wx(_test_synchronous)
+def _test_synchronous():
+
+    called = [False]
+    def task():
+        called[0] = True
+
+    def test_async():
+        called[0] = False
+        idle.idle(task)
+        assert not called[0]
+        _wait_for_idle_loop_to_clear()
+        assert called[0]
+
+    oldval = idle.idleLoop.neverQueue
+
+    try:
+        idle.idleLoop.neverQueue = False
+        test_async()
+
+        with idle.idleLoop.synchronous():
+            called[0] = False
+            idle.idle(task)
+            assert called[0]
+
+        test_async()
+
+    finally:
+        idle.idleLoop.neverQueue = oldval
+
+
+@pytest.mark.wxtest
 def test_idle_timeout():
 
     called = [False]
