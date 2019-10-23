@@ -79,6 +79,7 @@ import atexit
 import logging
 import functools
 import threading
+from   contextlib  import contextmanager
 from   collections import abc
 
 try:                import queue
@@ -225,15 +226,31 @@ class IdleLoop(object):
     @property
     def neverQueue(self):
         """If ``True``, tasks passed to :meth:`idle` will never be queued, and
-        instead will always be executed directly/synchonously.
+        instead will always be executed directly/synchonously. See also the
+        :meth:`synchronous` context manager.
         """
         return self.__neverQueue
 
 
     @neverQueue.setter
-    def neverQueue(self, allow):
+    def neverQueue(self, val):
         """Update the ``neverQueue`` flag. """
-        self.__neverQueue = allow
+        self.__neverQueue = val
+
+
+    @contextmanager
+    def synchronous(self):
+        """Context manager which can be used to tenporarily set :meth:`neverQueue` to
+        ``True``, restoring its previous value afterwards.
+        """
+
+        oldval = self.__neverQueue
+        self.__neverQueue = True
+
+        try:
+            yield
+        finally:
+            self.__neverQueue = oldval
 
 
     def reset(self):
