@@ -13,6 +13,8 @@ Added
 * New ``until`` option to the :func:`.idle.block` function.
 * New :meth:`.Idle.neverQueue` setting, which can be used to force all
   tasks passed to :func:`.idle.idle` to be executed synchronously.
+* New :meth:`.IdleLoop.synchronous` context manager, to temporarily change the
+  value of :meth:`.IdleLoop.neverQueue`.
 
 
 Changed
