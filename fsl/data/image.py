@@ -1443,12 +1443,21 @@ def addExt(prefix, mustExist=True, unambiguous=True):
     """Adds a file extension to the given file ``prefix``.  See
     :func:`~fsl.utils.path.addExt`.
     """
-    return fslpath.addExt(prefix,
-                          allowedExts=ALLOWED_EXTENSIONS,
-                          mustExist=mustExist,
-                          defaultExt=defaultExt(),
-                          fileGroups=FILE_GROUPS,
-                          unambiguous=unambiguous)
+    try:
+        return fslpath.addExt(prefix,
+                              allowedExts=ALLOWED_EXTENSIONS,
+                              mustExist=mustExist,
+                              defaultExt=defaultExt(),
+                              fileGroups=FILE_GROUPS,
+                              unambiguous=unambiguous)
+    except fslpath.PathError as e:
+        # hacky: if more than one file with
+        # the prefix exists, we emit a
+        # warning, because in most cases
+        # this is a bad thing.
+        if str(e).startswith('More than'):
+            log.warning(e)
+        raise e
 
 
 def splitExt(filename):
