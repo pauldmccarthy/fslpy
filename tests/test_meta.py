@@ -22,3 +22,8 @@ def test_meta():
     assert list(data.keys())   == list(m.metaKeys())
     assert list(data.values()) == list(m.metaValues())
     assert list(data.items())  == list(m.metaItems())
+
+    data.update( {'d' : 4, 'e' : 5})
+    m.updateMeta({'d' : 4, 'e' : 5})
+
+    assert list(data.items())  == list(m.metaItems())

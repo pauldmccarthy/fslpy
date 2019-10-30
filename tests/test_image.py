@@ -8,6 +8,7 @@
 
 
 import              os
+import              json
 import os.path   as op
 import itertools as it
 
@@ -1382,3 +1383,50 @@ def test_complex():
     assert image[3, 3, 3] == data[3, 3, 3]
     assert dmin == data.min()
     assert dmax == data.max()
+
+
+def test_loadMeta():
+    with tempdir():
+        make_image('image.nii.gz')
+
+        meta = {'a' : 1, 'b' : 2}
+        with open('image.json', 'wt') as f:
+            json.dump(meta, f)
+
+        img = fslimage.Image('image.nii.gz', loadMeta=True)
+
+        assert img.getMeta('a') == 1
+        assert img.getMeta('b') == 2
+
+
+def test_loadMetadata():
+    with tempdir():
+        make_image('image.nii.gz')
+
+        meta = {'a' : 1, 'b' : 2}
+        with open('image.json', 'wt') as f:
+            json.dump(meta, f)
+
+        img = fslimage.Image('image.nii.gz')
+        gotmeta = fslimage.loadMetadata(img)
+
+        assert gotmeta == meta
+
+    with tempdir():
+        imgfile  = op.join('data', 'sub-01', 'anat', 'sub-01_T1w.nii.gz')
+        metafile = op.join('data', 'T1w.json')
+
+        os.makedirs(op.dirname(imgfile))
+        make_image(imgfile)
+
+        with open(op.join('data', 'dataset_description.json'), 'wt') as f:
+            pass
+
+        meta = {'a' : 1, 'b' : 2}
+        with open(metafile, 'wt') as f:
+            json.dump(meta, f)
+
+        img = fslimage.Image(imgfile)
+        gotmeta = fslimage.loadMetadata(img)
+
+        assert gotmeta == meta
