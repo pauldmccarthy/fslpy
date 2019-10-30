@@ -140,11 +140,11 @@ def isBIDSFile(filename):
     """Returns ``True`` if ``filename`` looks like a BIDS image or JSON file.
     """
 
-    filename  = op.basename(filename)
+    name      = op.basename(filename)
     pattern   = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
     flags     = re.ASCII | re.IGNORECASE
 
-    return inBIDSDir(filename) and re.fullmatch(pattern, filename, flags)
+    return inBIDSDir(filename) and re.fullmatch(pattern, name, flags)
 
 
 @memoize.memoize

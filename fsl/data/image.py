@@ -35,6 +35,7 @@ and file names:
 import                      os
 import os.path           as op
 import itertools         as it
+import                      json
 import                      string
 import                      logging
 import                      tempfile
@@ -54,6 +55,7 @@ import fsl.utils.path        as fslpath
 import fsl.utils.deprecated  as deprecated
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
+import fsl.data.bids         as fslbids
 
 
 log = logging.getLogger(__name__)
@@ -904,6 +906,7 @@ class Image(Nifti):
                  indexed=False,
                  threaded=False,
                  dataSource=None,
+                 loadMeta=False,
                  **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
@@ -952,6 +955,12 @@ class Image(Nifti):
         :arg dataSource: If ``image`` is not a file name, this argument may be
                          used to specify the file from which the image was
                          loaded.
+
+        :arg loadMeta:   If ``True``, any metadata contained in JSON sidecar
+                         files is loaded and attached to this ``Image`` via
+                         the :class:`.Meta` interface. if ``False``, metadata
+                         can be loaded at a later stage via the
+                         :func:`loadMeta` function. Defaults to ``False``.
 
         All other arguments are passed through to the ``nibabel.load`` function
         (if it is called).
@@ -1076,6 +1085,9 @@ class Image(Nifti):
 
         if calcRange:
             self.calcRange()
+
+        if self.dataSource is not None and loadMeta:
+            self.updateMeta(loadMetadata(self))
 
         self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
 
@@ -1416,6 +1428,36 @@ def canonicalShape(shape):
         shape = shape + [1] * (3 - len(shape))
 
     return shape
+
+
+def loadMetadata(image):
+    """Searches for and loads any sidecar JSON files associated with the given
+    :class:`.Image`.
+
+    If the image looks to be part of a BIDS data set,
+    :func:`.bids.loadMetadata` is used. Otherwise, if a JSON file with the same
+    file prefix is present alongside the image, it is directly loaded.
+
+    :arg image: :class:`.Image` instance
+    :returns:   Dict containing any metadata that was loaded.
+    """
+
+    if image.dataSource is None:
+        return {}
+
+    filename = image.dataSource
+    basename = op.basename(removeExt(filename))
+    dirname  = op.dirname(filename)
+
+    if fslbids.inBIDSDir(image.dataSource):
+        return fslbids.loadMetadata(image.dataSource)
+
+    jsonfile = op.join(dirname, '{}.json'.format(basename))
+    if op.exists(jsonfile):
+        with open(jsonfile, 'rt') as f:
+            return json.load(f)
+
+    return {}
 
 
 def looksLikeImage(filename, allowedExts=None):

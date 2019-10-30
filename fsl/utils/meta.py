@@ -25,6 +25,7 @@ class Meta(object):
        metaItems
        getMeta
        setMeta
+       updateMeta
     """
 
     def __new__(cls, *args, **kwargs):
@@ -67,3 +68,8 @@ class Meta(object):
         """Add some metadata with the specified key (``dict.__setitem__``).
         """
         self.__meta.__setitem__(*args, **kwargs)
+
+
+    def updateMeta(self, *args, **kwargs):
+        """Update the metadata dict (``dict.update``). """
+        self.__meta.update(*args, **kwargs)
