@@ -1,0 +1,204 @@
+#!/usr/bin/env python
+#
+# bids.py - Simple BIDS metadata reader.
+#
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
+#
+"""This module provides a few functions for working with BIDS data sets.
+
+.. autosummary::
+   :nosignatures:
+
+   isBIDSDir
+   inBIDSDir
+   isBIDSFile
+   loadMetadata
+
+
+.. note::  The `pybids <https://bids-standard.github.io/pybids/>`_ library is
+           a more suitable choice if you are after a more robust and featured
+           interface for working with BIDS datasets.
+"""
+
+
+import os.path   as op
+import itertools as it
+import              re
+import              glob
+import              json
+
+import fsl.utils.memoize as memoize
+import fsl.utils.path    as fslpath
+
+
+class BIDSFile(object):
+    """The ``BIDSFile`` class parses and stores the entities and suffix contained
+    in a BIDS file. See the :func:`parseFilename` function.
+
+    The :meth:`match` method can be used to compare two ``BIDSFile`` instances.
+
+    The following attributes are available on a ``BIDSFile`` instance:
+
+     - ``filename``: Absolute path to the file
+     - ``entities``: Dict of ``key : value`` pairs, the entities that are
+       present in the file name (e.g. ``{'sub' : '01}``)
+     - ``suffix``: File suffix (e.g. ``T1w``, ``bold``, etc.)
+    """
+
+
+    def __init__(self, filename):
+        """Create a ``BIDSFile``. """
+        entities, suffix = parseFilename(filename)
+        self.filename    = op.abspath(filename)
+        self.entities    = entities
+        self.suffix      = suffix
+
+
+    def match(self, other):
+        """Compare this ``BIDSFile`` to ``other``.
+
+        :arg other: ``BIDSFile`` to compare
+        :returns:   ``True`` if ``self.suffix == other.suffix`` and if
+                    all of the entities in ``other`` are present in ``self``,
+                    ``False`` otherwise.
+        """
+
+        suffix   = self.suffix == other.suffix
+        entities = True
+
+        for key, value in other.entities.items():
+            entities = entities and self.entities.get(key, None) == value
+
+        return suffix and entities
+
+
+def parseFilename(filename):
+    """Parses a BIDS-like file name. The file name is assumed to consist of
+    zero or more "entities" (alpha-numeric ``name-value`` pairs), a "suffix",
+    all separated by underscores, and a regular file extension. For example,
+    the following file::
+
+        sub-01_ses-01_task-stim_bold.nii.gz
+
+    has suffix ``bold``, and entities ``sub=01``, ``ses=01`` and ``task=stim``.
+
+    :returns: A tuple containing:
+               - A dict containing the entities.
+               - The suffix, or ``None`` if there is no suffix.
+    """
+
+    suffix   = None
+    entities = []
+    filename = op.basename(filename)
+    filename = fslpath.removeExt(filename, ['.nii', '.nii.gz', '.json'])
+    parts    = filename.split('_')
+
+    for part in parts[:-1]:
+        entities.append(part.split('-'))
+
+    part = parts[-1].split('-')
+
+    if len(part) == 1: suffix = part[0]
+    else:              entities.append(part.split('-'))
+
+    entities = dict(entities)
+
+    return entities, suffix
+
+
+def isBIDSDir(dirname):
+    """Returns ``True`` if ``dirname`` is the root directory of a BIDS dataset.
+    """
+    return op.exists(op.join(dirname, 'dataset_description.json'))
+
+
+def inBIDSDir(filename):
+    """Returns ``True`` if ``filename`` looks like it is within a BIDS dataset
+    directory, ``False`` otherwise.
+    """
+
+    dirname = op.abspath(op.dirname(filename))
+    inBIDS  = False
+
+    while True:
+
+        if isBIDSDir(dirname):
+            inBIDS = True
+            break
+
+        prevdir = dirname
+        dirname = op.dirname(dirname)
+
+        # at filesystem root
+        if prevdir == dirname:
+            break
+
+    return inBIDS
+
+
+def isBIDSFile(filename):
+    """Returns ``True`` if ``filename`` looks like a BIDS image or JSON file.
+    """
+
+    filename  = op.basename(filename)
+    pattern   = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
+    flags     = re.ASCII | re.IGNORECASE
+
+    return inBIDSDir(filename) and re.fullmatch(pattern, filename, flags)
+
+
+@memoize.memoize
+def loadMetadataFile(filename):
+    """Load ``filename`` (assumed to be JSON), returning its contents. """
+    with open(filename, 'rt') as f:
+        return json.load(f)
+
+
+def loadMetadata(filename):
+    """Load all of the metadata associated with ``filename``.
+
+    :arg filename: Path to a data file in a BIDS dataset.
+    :returns:      A dict containing all of the metadata associated with
+                   ``filename``
+    """
+
+    filename  = op.realpath(op.abspath(filename))
+    bfile     = BIDSFile(filename)
+    dirname   = op.dirname(filename)
+    prevdir   = filename
+    metafiles = []
+    metadata  = {}
+
+    # Walk up the directory tree until
+    # we hit the BIDS dataset root, or
+    # the filesystem root
+    while True:
+
+        # Gather all json files in this
+        # directory with matching entities
+        # and suffix, sorted alphabetically
+        files = sorted(glob.glob(op.join(dirname, '*.json')))
+        files = [BIDSFile(f) for f in files if isBIDSFile(f)]
+        files = [f.filename  for f in files if bfile.match(f)]
+
+        # build a list of all files
+        metafiles.append(files)
+
+        # move to the next dir up
+        prevdir = dirname
+        dirname = op.dirname(dirname)
+
+        # stop when we hit the dataset or filesystem root
+        if isBIDSDir(prevdir) or dirname == prevdir:
+            break
+
+    # Load in each json file, from
+    # shallowest to deepest, so entries
+    # in deeper files take precedence
+    # over shallower ones.
+    for f in it.chain(*reversed(metafiles)):
+
+        # assuming here that every file contains a dict
+        metadata.update(loadMetadataFile(f))
+
+    return metadata

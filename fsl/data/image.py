@@ -61,8 +61,8 @@ log = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
 """The file extensions which we understand. This list is used as the default
-if the ``allowedExts`` parameter is not passed to any of the functions
-below.
+if the ``allowedExts`` parameter is not passed to any of the ``*Ext``
+functions, or the :func:`looksLikeImage` function.
 """
 
 
@@ -246,7 +246,6 @@ class Nifti(notifier.Notifier, meta.Meta):
         if not isinstance(header, nib.analyze.AnalyzeHeader):
             raise ValueError('Unrecognised header: {}'.format(header))
 
-        header                   = header
         origShape, shape, pixdim = Nifti.determineShape(header)
         voxToWorldMat            = Nifti.determineAffine(header)
         affines, isneuro         = Nifti.generateAffines(voxToWorldMat,
