@@ -14,6 +14,9 @@
    isBIDSFile
    loadMetadata
 
+All of the other functions in this module should not be considered part of the
+public API.
+
 
 .. note::  The `pybids <https://bids-standard.github.io/pybids/>`_ library is
            a more suitable choice if you are after a more robust and featured
@@ -73,19 +76,23 @@ class BIDSFile(object):
 
 
 def parseFilename(filename):
-    """Parses a BIDS-like file name. The file name is assumed to consist of
-    zero or more "entities" (alpha-numeric ``name-value`` pairs), a "suffix",
-    all separated by underscores, and a regular file extension. For example,
-    the following file::
+    """Parses a BIDS-like file name. The file name must consist of zero or more
+    "entities" (alpha-numeric ``name-value`` pairs), a "suffix", all separated
+    by underscores, and a regular file extension. For example, the following
+    file::
 
         sub-01_ses-01_task-stim_bold.nii.gz
 
     has suffix ``bold``, and entities ``sub=01``, ``ses=01`` and ``task=stim``.
 
     :returns: A tuple containing:
-               - A dict containing the entities.
-               - The suffix, or ``None`` if there is no suffix.
+               - A dict containing the entities
+               - The suffix
     """
+
+    if not isBIDSFile(filename, strict=False):
+        raise ValueError('Does not look like a BIDS '
+                         'file: {}'.format(filename))
 
     suffix   = None
     entities = []
@@ -96,11 +103,7 @@ def parseFilename(filename):
     for part in parts[:-1]:
         entities.append(part.split('-'))
 
-    part = parts[-1].split('-')
-
-    if len(part) == 1: suffix = part[0]
-    else:              entities.append(part.split('-'))
-
+    suffix   = parts[-1]
     entities = dict(entities)
 
     return entities, suffix
@@ -136,15 +139,20 @@ def inBIDSDir(filename):
     return inBIDS
 
 
-def isBIDSFile(filename):
+def isBIDSFile(filename, strict=True):
     """Returns ``True`` if ``filename`` looks like a BIDS image or JSON file.
+
+    :arg filename: Name of file to check
+    :arg strict:   If ``True`` (the default), the file must be within a BIDS
+                   dataset directory, as defined by :func:`inBIDSDir`.
     """
 
-    name      = op.basename(filename)
-    pattern   = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
-    flags     = re.ASCII | re.IGNORECASE
+    name    = op.basename(filename)
+    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
+    flags   = re.ASCII | re.IGNORECASE
+    match   = re.fullmatch(pattern, name, flags)
 
-    return inBIDSDir(filename) and re.fullmatch(pattern, name, flags)
+    return ((not strict) or inBIDSDir(filename)) and match
 
 
 @memoize.memoize
@@ -177,7 +185,9 @@ def loadMetadata(filename):
         # Gather all json files in this
         # directory with matching entities
         # and suffix, sorted alphabetically
-        files = sorted(glob.glob(op.join(dirname, '*.json')))
+        # and reversed, so that earlier
+        # ones take precedence
+        files = reversed(sorted(glob.glob(op.join(dirname, '*.json'))))
         files = [BIDSFile(f) for f in files if isBIDSFile(f)]
         files = [f.filename  for f in files if bfile.match(f)]
 

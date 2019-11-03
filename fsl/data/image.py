@@ -53,9 +53,9 @@ import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
 import fsl.utils.deprecated  as deprecated
+import fsl.utils.bids        as fslbids
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
-import fsl.data.bids         as fslbids
 
 
 log = logging.getLogger(__name__)
