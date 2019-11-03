@@ -15,13 +15,18 @@ Added
   tasks passed to :func:`.idle.idle` to be executed synchronously.
 * New :meth:`.IdleLoop.synchronous` context manager, to temporarily change the
   value of :meth:`.IdleLoop.neverQueue`.
+* New :mod:`.bids` module, containing a few simple functions for working with
+  `BIDS <https://bids.neuroimaging.io>`_ datasets.
+* New :func:`.image.loadMetadata` function, and ``loadMeta`` option to the
+  :class:`.Image` class, to automatically find and load any sidecar JSON files
+  associated with an image file.
 
 
 Changed
 ^^^^^^^
 
 
-* Internal reorganisation inm the :mod:`.idle` module.
+* Internal reorganisation in the :mod:`.idle` module.
 
 
 Deprecated

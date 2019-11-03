@@ -5,6 +5,7 @@
    :hidden:
 
    fsl.utils.assertions
+   fsl.utils.bids
    fsl.utils.cache
    fsl.utils.deprecated
    fsl.utils.ensure
