@@ -29,6 +29,14 @@ Changed
 * Internal reorganisation in the :mod:`.idle` module.
 
 
+Fixed
+^^^^^
+
+
+* Fixed incorrect usage of ``setuptools.find_packages``, which was causing
+  unit tests to be installed.
+
+
 Deprecated
 ^^^^^^^^^^
 
