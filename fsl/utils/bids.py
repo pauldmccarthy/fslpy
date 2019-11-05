@@ -150,7 +150,7 @@ def isBIDSFile(filename, strict=True):
     name    = op.basename(filename)
     pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
     flags   = re.ASCII | re.IGNORECASE
-    match   = re.fullmatch(pattern, name, flags)
+    match   = re.fullmatch(pattern, name, flags) is not None
 
     return ((not strict) or inBIDSDir(filename)) and match
 
