@@ -758,15 +758,19 @@ def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
     ivert = np.argmin(dists)
     vert  = vertices[ivert]
 
-    # Pick a triangle that
-    # this vertex is in and
-    # ges its face normal
-    itri = np.where(indices == ivert)[0][0]
-    n    = fnormals[itri, :]
+    # Get all the triangles
+    # that this vertex is in
+    # and their face normals
+    itris = np.where(indices == ivert)[0]
+    norms = fnormals[itris, :]
 
-    # Make sure the angle between the
+    # Calculate the angle between each
     # normal, and a vector from the
-    # vertex to the camera is positive
-    # If it isn't, we need to flip the
-    # triangle winding order.
-    return np.dot(n, affine.normalise(camera - vert)) < 0
+    # vertex to the camera. If more than
+    # 50% of the angles are negative
+    # (== more than 90 degrees == the
+    # face is facing away from the
+    # camera), assume that we need to
+    # flip the triangle winding order.
+    angles = np.dot(norms, affine.normalise(camera - vert))
+    return ((angles > 0).sum() / len(itris)) < 0.5
