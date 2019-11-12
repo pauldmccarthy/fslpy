@@ -254,6 +254,28 @@ def test_needsFixing():
     assert     fslmesh.needsFixing(verts, tris_cw, -fnormals, blo, bhi)
     assert     np.all(np.isclose(mesh.indices, tris_ccw))
 
+    # regression: needsFixing used to use the first triangle
+    # of the nearest vertex to the camera. But this will fail
+    # if that triangle is facing away from the camera.
+    verts = np.array([
+        [ -1,    -1,   -1], # vertex 0 will be nearest the camera
+        [  0.5,  -0.5,  0],
+        [  1,    -1,    0],
+        [  1,     1,    1],
+        [  0,    -1,    1]])
+    tris = np.array([
+        [0, 4, 1], # first triangle will be facing away from the camera
+        [0, 1, 2],
+        [1, 3, 2],
+        [0, 2, 4],
+        [2, 3, 4],
+        [1, 4, 3]])
+    mesh     = fslmesh.Mesh(tris, vertices=verts, fixWinding=True)
+    fnormals = fslmesh.calcFaceNormals(verts, tris)
+    blo      = verts.min(axis=0)
+    bhi      = verts.max(axis=0)
+    assert not fslmesh.needsFixing(verts, tris, fnormals, blo, bhi)
+
 
 def test_trimesh_no_trimesh():
 
