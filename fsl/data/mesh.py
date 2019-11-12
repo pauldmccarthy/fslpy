@@ -773,4 +773,4 @@ def needsFixing(vertices, indices, fnormals, loBounds, hiBounds):
     # camera), assume that we need to
     # flip the triangle winding order.
     angles = np.dot(norms, affine.normalise(camera - vert))
-    return ((angles > 0).sum() / len(itris)) < 0.5
+    return ((angles >= 0).sum() / len(itris)) < 0.5
