@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+2.8.0 (Under development)
+-------------------------
+
+
+Fixed
+^^^^^
+
+
+* Improved the algorithm used by the :func:`.mesh.needsFixing` function.
+
+
 2.7.0 (Wednesday 6th November 2019)
 -----------------------------------
 
