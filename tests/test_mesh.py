@@ -245,7 +245,7 @@ def test_needsFixing():
     verts    = np.array(CUBE_VERTICES)
     tris_cw  = np.array(CUBE_TRIANGLES_CW)
     tris_ccw = np.array(CUBE_TRIANGLES_CCW)
-    fnormals = np.array(CUBE_CCW_VERTEX_NORMALS)
+    fnormals = np.array(CUBE_CCW_FACE_NORMALS)
     blo      = verts.min(axis=0)
     bhi      = verts.max(axis=0)
     mesh     = fslmesh.Mesh(tris_cw, vertices=verts, fixWinding=True)
