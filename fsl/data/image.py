@@ -840,17 +840,12 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     def adjust(self, pixdim=None, shape=None, origin=None):
-        """Return a new ``Nifti`` object with the specified ``pixdim``
-        or ``shape``. The affine is of the new ``Nifti`` is adjusted
-        accordingly.
+        """Return a new ``Nifti`` object with the specified ``pixdim`` or
+        ``shape``. The affine of the new ``Nifti`` is adjusted accordingly.
 
         Only one of ``pixdim`` or ``shape`` can be specified.
 
-        The default behaviour of the ``origin`` argument (``'centre'``) causes
-        the corner voxel of the output to have the same centre as the corner
-        voxel of the input. If the origin is ``'corner'``, an offset is
-        applied which effectively causes the origin corners of the voxel grids
-        of the input and output to be aligned.
+        See :func:`.affine.rescale` for the meaning of the ``origin`` argument.
 
         :arg pixdim: New voxel dimensions
         :arg shape:  New image shape
