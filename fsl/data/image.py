@@ -196,7 +196,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     A ``Nifti`` instance expects to be passed either a
     ``nibabel.nifti1.Nifti1Header`` or a ``nibabel.nifti2.Nifti2Header``, but
-    can als encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
+    can also encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
 
       - The image voxel orientation is assumed to be R->L, P->A, I->S.
 
