@@ -847,6 +847,10 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         See :func:`.affine.rescale` for the meaning of the ``origin`` argument.
 
+        Only the spatial dimensions may be adjusted - use the functions in
+        the :mod:`.image.resample` module if you need to adjust non-spatial
+        dimensions.
+
         :arg pixdim: New voxel dimensions
         :arg shape:  New image shape
         :arg origin: Voxel grid alignment - either ``'centre'`` (the default)
@@ -872,7 +876,8 @@ class Nifti(notifier.Notifier, meta.Meta):
             oldPixdim = np.array(self.pixdim[:npixdim])
             newShape  = oldShape * (oldPixdim / newPixdim)
 
-        # pad shape to full dimensions
+        # We only allow adjustment of
+        # the spatial dimensions
         if len(newShape) != 3:
             raise ValueError('Three dimensions must be specified')
 
