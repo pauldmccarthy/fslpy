@@ -7,6 +7,16 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+* New :meth:`.Nifti.adjust` method, for creating a copy of a :class:`.Nifti`
+  header with adjusted shape, pixdims, and affine. This can be useful for
+  creating a resampling reference.
+* New :func:`.affine.rescale` function, for adjusting a scaling matrix.
+
+
 Fixed
 ^^^^^
 
