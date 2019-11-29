@@ -283,7 +283,7 @@ def applySmoothing(data, matrix, newShape):
     return ndimage.gaussian_filter(data, sigma)
 
 
-@deprecated.deprecated('2.9.0', '3.0.0',
+@deprecated.deprecated('2.8.0', '3.0.0',
                        'Use fsl.transform.affine.rescale instead')
 def calculateMatrix(oldShape, newShape, origin):
     """Deprecated - use :func:`.affine.rescale` instead. """
