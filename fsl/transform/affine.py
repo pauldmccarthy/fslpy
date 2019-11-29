@@ -585,7 +585,7 @@ def rmsdev(T1, T2, R=None, xc=None):
     return erms
 
 
-def rescale(oldShape, newShape, origin='centre'):
+def rescale(oldShape, newShape, origin=None):
     """Calculates an affine matrix to use for resampling.
 
     This function generates an affine transformation matreix that can be used
@@ -602,9 +602,13 @@ def rescale(oldShape, newShape, origin='centre'):
 
     :arg oldShape: Shape of input data
     :arg newShape: Shape to resample data to
-    :arg origin:   Voxel grid alignment - either ``'centre'`` or ``'corner'``
+    :arg origin:   Voxel grid alignment - either ``'centre'`` (the default) or
+                   ``'corner'``
     :returns:      An affine resampling matrix
     """
+
+    if origin is None:
+        origin = 'centre'
 
     oldShape = np.array(oldShape, dtype=np.float)
     newShape = np.array(newShape, dtype=np.float)
