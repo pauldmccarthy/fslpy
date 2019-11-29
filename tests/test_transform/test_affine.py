@@ -528,3 +528,48 @@ def test_rmsdev():
         assert result < lastdist
 
         lastdist = result
+
+
+def test_rescale():
+
+    with pytest.raises(ValueError):
+        affine.rescale((5, 5), (10, 10, 10))
+
+    assert np.all(affine.rescale((5, 5),       (5, 5))       == np.eye(3))
+    assert np.all(affine.rescale((5, 5, 5),    (5, 5, 5))    == np.eye(4))
+    assert np.all(affine.rescale((5, 5, 5, 5), (5, 5, 5, 5)) == np.eye(5))
+
+    # (old shape, new shape, origin, expect)
+    tests = [
+        ((5, 5), (10, 10), 'centre', np.array([[0.5, 0,    0],
+                                               [0,   0.5,  0],
+                                               [0,   0,    1]])),
+        ((5, 5), (10, 10), 'corner', np.array([[0.5, 0,   -0.25],
+                                               [0,   0.5, -0.25],
+                                               [0,   0,    1]])),
+        ((5, 5, 5), (10, 10, 10), 'centre', np.array([[0.5, 0,    0,   0],
+                                                      [0,   0.5,  0,   0],
+                                                      [0,   0,    0.5, 0],
+                                                      [0,   0,    0,   1]])),
+        ((5, 5, 5), (10, 10, 10), 'corner', np.array([[0.5, 0,    0,   -0.25],
+                                                      [0,   0.5,  0,   -0.25],
+                                                      [0,   0,    0.5, -0.25],
+                                                      [0,   0,    0,    1]])),
+        ((5, 5, 5, 5), (10, 10, 10, 10), 'centre', np.array([[0.5, 0,    0,   0,   0],
+                                                             [0,   0.5,  0,   0,   0],
+                                                             [0,   0,    0.5, 0,   0],
+                                                             [0,   0,    0,   0.5, 0],
+                                                             [0,   0,    0,   0,   1]])),
+        ((5, 5, 5, 5), (10, 10, 10, 10), 'corner', np.array([[0.5, 0,    0,   0,   -0.25],
+                                                             [0,   0.5,  0,   0,   -0.25],
+                                                             [0,   0,    0.5, 0,   -0.25],
+                                                             [0,   0,    0,   0.5, -0.25],
+                                                             [0,   0,    0,   0,   1]])),
+    ]
+
+    for oldshape, newshape, origin, expect in tests:
+
+        got = affine.rescale(oldshape, newshape, origin)
+        assert np.all(np.isclose(got, expect))
+        got = affine.rescale(newshape, oldshape, origin)
+        assert np.all(np.isclose(got, affine.invert(expect)))
