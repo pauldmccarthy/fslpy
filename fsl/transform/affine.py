@@ -588,7 +588,7 @@ def rmsdev(T1, T2, R=None, xc=None):
 def rescale(oldShape, newShape, origin=None):
     """Calculates an affine matrix to use for resampling.
 
-    This function generates an affine transformation matreix that can be used
+    This function generates an affine transformation matrix that can be used
     to resample an N-D array from ``oldShape`` to ``newShape`` using, for
     example, ``scipy.ndimage.affine_transform``.
 

@@ -864,22 +864,26 @@ class Nifti(notifier.Notifier, meta.Meta):
             raise ValueError('Exactly one of pixdim or '
                              'shape must be specified')
 
+        if shape is not None: ndim = len(shape)
+        else:                 ndim = len(pixdim)
+
+        # We only allow adjustment of
+        # the spatial dimensions
+        if ndim != 3:
+            raise ValueError('Three dimensions must be specified')
+
+        oldShape  = np.array(self.shape[ :ndim])
+        oldPixdim = np.array(self.pixdim[:ndim])
         newShape  = shape
         newPixdim = pixdim
 
         # if pixdims were specified,
-        # convert them into a shape
+        # convert them into a shape,
+        # and vice versa
         if newPixdim is not None:
-            npixdim   = len(newPixdim)
-            newPixdim = np.array(newPixdim)
-            oldShape  = np.array(self.shape[ :npixdim])
-            oldPixdim = np.array(self.pixdim[:npixdim])
-            newShape  = oldShape * (oldPixdim / newPixdim)
-
-        # We only allow adjustment of
-        # the spatial dimensions
-        if len(newShape) != 3:
-            raise ValueError('Three dimensions must be specified')
+            newShape = oldShape * (oldPixdim / newPixdim)
+        else:
+            newPixdim = oldPixdim * (oldShape / newShape)
 
         # Rescale the voxel-to-world affine
         xform = affine.rescale(oldShape, newShape, origin)
