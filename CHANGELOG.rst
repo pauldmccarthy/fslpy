@@ -24,6 +24,14 @@ Fixed
 * Improved the algorithm used by the :func:`.mesh.needsFixing` function.
 
 
+Deprecated
+^^^^^^^^^^
+
+
+* :func:`.calculateMatrix` - its functionality has been moved to the
+  :func:`.affine.rescale` function.
+
+
 2.7.0 (Wednesday 6th November 2019)
 -----------------------------------
 
