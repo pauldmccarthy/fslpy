@@ -50,7 +50,10 @@ def mockFSLDIR(**kwargs):
                 if not op.isdir(subdir):
                     os.makedirs(subdir)
                 for fname in files:
-                    touch(op.join(subdir, fname))
+                    fname = op.join(subdir, fname)
+                    touch(fname)
+                    if subdir == bindir:
+                        os.chmod(fname, 0o755)
             fslplatform.fsldir = fsldir
             fslplatform.fsldevdir = None
 
