@@ -15,9 +15,9 @@ from . import wrapperutils as wutils
 class fslmaths(object):
     """Perform mathematical manipulation of images.
 
-    ``fslmaths`` is unlike the other FSL wrapper tools in that it provdes
-    an object-oriented interface which is hopefully easier to use than
-    constructing a ``fslmaths`` command-line call. For example, the
+    ``fslmaths`` is unlike the other FSL wrapper tools in that it provides an
+    object-oriented method-chaining interface, which is hopefully easier to
+    use than constructing a ``fslmaths`` command-line call. For example, the
     following call to the ``fslmaths`` wrapper function::
 
         fslmaths('input.nii').thr(0.25).mul(-1).run('output.nii')
