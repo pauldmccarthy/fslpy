@@ -5,14 +5,19 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import              os
 import os.path   as op
 import itertools as it
+import textwrap  as tw
+
+import numpy as np
 
 import fsl.wrappers                       as fw
 import fsl.utils.assertions               as asrt
 import fsl.utils.run                      as run
+from fsl.utils.tempdir import tempdir
 
-from . import mockFSLDIR
+from . import mockFSLDIR, make_random_image
 
 
 def checkResult(cmd, base, args, stripdir=None):
@@ -272,7 +277,23 @@ def test_fslmaths():
 
         assert result.output[0] == expected
 
-        # TODO test LOAD output
+    # test LOAD output
+    with tempdir() as td, mockFSLDIR(bin=('fslmaths',)) as fsldir:
+        expect = make_random_image(op.join(td, 'output.nii.gz'))
+
+        with open(op.join(fsldir, 'bin', 'fslmaths'), 'wt') as f:
+            f.write(tw.dedent("""
+            #!/usr/bin/env python
+            import sys
+            import shutil
+            shutil.copy('{}', sys.argv[2])
+            """.format(op.join(td, 'output.nii.gz'))).strip())
+            os.chmod(op.join(fsldir, 'bin', 'fslmaths'), 0o755)
+
+        got = fw.fslmaths('input').run()
+        assert np.all(expect.dataobj[:] == got.dataobj[:])
+        got = fw.fslmaths('input').run(fw.LOAD)
+        assert np.all(expect.dataobj[:] == got.dataobj[:])
 
 def test_fast():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fast',)) as fsldir:

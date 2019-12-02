@@ -13,7 +13,28 @@ from . import wrapperutils as wutils
 
 
 class fslmaths(object):
-    """Perform mathematical manipulation of images."""
+    """Perform mathematical manipulation of images.
+
+    ``fslmaths`` is unlike the other FSL wrapper tools in that it provides an
+    object-oriented method-chaining interface, which is hopefully easier to
+    use than constructing a ``fslmaths`` command-line call. For example, the
+    following call to the ``fslmaths`` wrapper function::
+
+        fslmaths('input.nii').thr(0.25).mul(-1).run('output.nii')
+
+    will be translated into the following command-line call::
+
+        fslmaths input.nii -thr 0.25 -mul -1 output.nii
+
+    The ``fslmaths`` wrapper function can also be used with in-memory
+    images. If no output file name is passed to the :meth:`run` method, the
+    result is loaded into memory and returned as a ``nibabel`` image.  For
+    example::
+
+        import nibabel as nib
+        input  = nib.load('input.nii')
+        output = fslmaths(input).thr(0.25).mul(-1).run()
+    """
 
     def __init__(self, input):
         """Constructor."""
@@ -138,20 +159,24 @@ class fslmaths(object):
         return self
 
     def run(self, output=None):
-        """Save output of operations to image."""
+        """Save output of operations to image. Set ``output`` to a filename to have
+        the result saved to file, or omit ``output`` entirely to have the
+        result returned as a ``nibabel`` image.
+        """
 
         cmd = ['fslmaths', self.__input] + self.__args
 
-        if output is None: cmd += [wutils.LOAD]
-        else:              cmd += [output]
+        if output is None:
+            output = wutils.LOAD
 
+        cmd   += [output]
         result = self.__run(*cmd)
 
         # if output is LOADed, there
         # will only be one entry in
         # the result dict.
-        if output is None: return list(result.values())[0]
-        else:              return result
+        if output == wutils.LOAD: return list(result.values())[0]
+        else:                     return result
 
     @wutils.fileOrImage()
     @wutils.fslwrapper

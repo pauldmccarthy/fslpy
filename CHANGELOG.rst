@@ -22,6 +22,8 @@ Fixed
 
 
 * Improved the algorithm used by the :func:`.mesh.needsFixing` function.
+* The :meth:`.fslmaths.run` method now accepts :attr:`.wrappers.LOAD` as an
+  output specification.
 
 
 Deprecated
