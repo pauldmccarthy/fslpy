@@ -63,11 +63,11 @@ if we want to FLIRT two images and get the result, we can do this::
 Similarly, we can run a ``fslmaths`` command on in-memory images::
 
     import nibabel as nib
-    from fsl.wrappers import fslmaths, LOAD
+    from fsl.wrappers import fslmaths
 
     image  = nib.load('image.nii')
     mask   = nib.load('mask.nii')
-    output = fslmaths(image).mas(mask).bin().run(LOAD)
+    output = fslmaths(image).mas(mask).bin().run()
 
 
 If you are *writing* wrapper functions, take a look at the
