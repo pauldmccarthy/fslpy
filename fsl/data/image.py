@@ -196,7 +196,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     A ``Nifti`` instance expects to be passed either a
     ``nibabel.nifti1.Nifti1Header`` or a ``nibabel.nifti2.Nifti2Header``, but
-    can als encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
+    can also encapsulate a ``nibabel.analyze.AnalyzeHeader``. In this case:
 
       - The image voxel orientation is assumed to be R->L, P->A, I->S.
 
@@ -837,6 +837,73 @@ class Nifti(notifier.Notifier, meta.Meta):
              (constants.ORIENT_S2I, constants.ORIENT_I2S)))[axis]
 
         return code
+
+
+    def adjust(self, pixdim=None, shape=None, origin=None):
+        """Return a new ``Nifti`` object with the specified ``pixdim`` or
+        ``shape``. The affine of the new ``Nifti`` is adjusted accordingly.
+
+        Only one of ``pixdim`` or ``shape`` can be specified.
+
+        See :func:`.affine.rescale` for the meaning of the ``origin`` argument.
+
+        Only the spatial dimensions may be adjusted - use the functions in
+        the :mod:`.image.resample` module if you need to adjust non-spatial
+        dimensions.
+
+        :arg pixdim: New voxel dimensions
+        :arg shape:  New image shape
+        :arg origin: Voxel grid alignment - either ``'centre'`` (the default)
+                     or ``'corner'``
+        :returns:    A new ``Nifti`` object based on this one, with adjusted
+                     pixdims, shape and affine.
+        """
+
+        if ((pixdim is not None) and (shape is not None)) or \
+           ((pixdim is     None) and (shape is     None)):
+            raise ValueError('Exactly one of pixdim or '
+                             'shape must be specified')
+
+        if shape is not None: ndim = len(shape)
+        else:                 ndim = len(pixdim)
+
+        # We only allow adjustment of
+        # the spatial dimensions
+        if ndim != 3:
+            raise ValueError('Three dimensions must be specified')
+
+        oldShape  = np.array(self.shape[ :ndim])
+        oldPixdim = np.array(self.pixdim[:ndim])
+        newShape  = shape
+        newPixdim = pixdim
+
+        # if pixdims were specified,
+        # convert them into a shape,
+        # and vice versa
+        if newPixdim is not None:
+            newShape = oldShape * (oldPixdim / newPixdim)
+        else:
+            newPixdim = oldPixdim * (oldShape / newShape)
+
+        # Rescale the voxel-to-world affine
+        xform = affine.rescale(oldShape, newShape, origin)
+        xform = affine.concat(self.getAffine('voxel', 'world'), xform)
+
+        # Now that we've got our spatial
+        # scaling/offset matrix, pad the
+        # new shape/pixdims with those
+        # from any non-spatial dimensions
+        newShape  = list(newShape)  + list(self.shape[ 3:])
+        newPixdim = list(newPixdim) + list(self.pixdim[3:])
+
+        # And create the new header
+        # and we're away
+        header = self.header.copy()
+        header.set_data_shape(newShape)
+        header.set_zooms(     newPixdim)
+        header.set_sform(     xform)
+        header.set_qform(     xform)
+        return Nifti(header)
 
 
 class Image(Nifti):

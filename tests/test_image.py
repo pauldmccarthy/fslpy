@@ -1430,3 +1430,28 @@ def test_loadMetadata():
         gotmeta = fslimage.loadMetadata(img)
 
         assert gotmeta == meta
+
+
+def test_adjust():
+
+    with tempdir():
+        make_image('image.nii', dims=(10, 10, 10), pixdims=(1, 1, 1))
+
+        img = fslimage.Image('image.nii')
+
+        assert img.sameSpace(img.adjust(pixdim=(1, 1, 1)))
+        assert img.sameSpace(img.adjust(shape=(10, 10, 10)))
+
+        adj = img.adjust(shape=(20, 20, 20))
+        assert adj.shape  == (20,  20,  20)
+        assert adj.pixdim == (0.5, 0.5, 0.5)
+
+        adj = img.adjust(pixdim=(0.5, 0.5, 0.5))
+        assert adj.shape  == (20,  20,  20)
+        assert adj.pixdim == (0.5, 0.5, 0.5)
+
+
+        adj  = img.adjust(shape=(8, 7, 11), origin='corner')
+        imgb = affine.axisBounds(img.shape, img.voxToWorldMat)
+        adjb = affine.axisBounds(adj.shape, adj.voxToWorldMat)
+        assert np.all(np.isclose(imgb, adjb, rtol=1e-5, atol=1e-5))

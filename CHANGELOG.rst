@@ -7,11 +7,29 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+* New :meth:`.Nifti.adjust` method, for creating a copy of a :class:`.Nifti`
+  header with adjusted shape, pixdims, and affine. This can be useful for
+  creating a resampling reference.
+* New :func:`.affine.rescale` function, for adjusting a scaling matrix.
+
+
 Fixed
 ^^^^^
 
 
 * Improved the algorithm used by the :func:`.mesh.needsFixing` function.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :func:`.calculateMatrix` - its functionality has been moved to the
+  :func:`.affine.rescale` function.
 
 
 2.7.0 (Wednesday 6th November 2019)

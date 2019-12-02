@@ -10,17 +10,15 @@ to resample an :class:`.Image` object to a different resolution.
 The :func:`resampleToPixdims` and :func:`resampleToReference` functions
 are convenience wrappers around :func:`resample`.
 
-The :func:`applySmoothing` and :func:`calculateMatrix` functions are
-sub-functions of :func:`resample`.
+The :func:`applySmoothing` function is a sub-function of :func:`resample`.
 """
 
-
-import collections.abc      as abc
 
 import numpy                as np
 import scipy.ndimage        as ndimage
 
 import fsl.transform.affine as affine
+import fsl.utils.deprecated as deprecated
 
 
 def resampleToPixdims(image, newPixdims, **kwargs):
@@ -204,12 +202,11 @@ def resample(image,
     # old/new shape ratio and the origin
     # setting.
     if matrix is None:
-        matrix = calculateMatrix(data.shape, newShape, origin)
+        matrix = affine.rescale(data.shape, newShape, origin)
 
-    # calculateMatrix will return None
-    # if it decides that the image
+    # identity matrix? the image
     # doesn't need to be resampled
-    if matrix is None:
+    if np.all(np.isclose(matrix, np.eye(len(newShape) + 1))):
         return data, image.voxToWorldMat
 
     newShape = np.array(np.round(newShape), dtype=np.int)
@@ -230,9 +227,9 @@ def resample(image,
     # Construct an affine transform which
     # puts the resampled image into the
     # same world coordinate system as this
-    # image. The calculateMatrix function
-    # might not return a 4x4 matrix, so we
-    # make sure it is valid.
+    # image. We may be working with >3D data,
+    # so here we discard the non-spatial
+    # parts of the resampling matrix
     if matrix.shape != (4, 4):
         rotmat         = matrix[:3, :3]
         offsets        = matrix[:3, -1]
@@ -286,53 +283,11 @@ def applySmoothing(data, matrix, newShape):
     return ndimage.gaussian_filter(data, sigma)
 
 
+@deprecated.deprecated('2.8.0', '3.0.0',
+                       'Use fsl.transform.affine.rescale instead')
 def calculateMatrix(oldShape, newShape, origin):
-    """Calculates an affine matrix to use for resampling.
-
-    Called by :func:`resample`.  The matrix will contain scaling factors
-    determined from the ``oldShape / newShape`` ratio, and an offset
-    determined from the ``origin``.
-
-    :arg oldShape: Shape of input data
-    :arg newShape: Shape to resample data to
-    :arg origin:   Voxel grid alignment - either ``'centre'`` or ``'corner'``
-    :returns:      An affine matrix that can be passed to
-                   ``scipy.ndimage.affine_transform``.
-    """
-
-    oldShape = np.array(oldShape, dtype=np.float)
-    newShape = np.array(newShape, dtype=np.float)
-
-    if np.all(np.isclose(oldShape, newShape)):
+    """Deprecated - use :func:`.affine.rescale` instead. """
+    xform = affine.rescale(oldShape, newShape, origin)
+    if np.all(np.isclose(xform, np.eye(len(oldShape) + 1))):
         return None
-
-    # Otherwise we calculate a
-    # scaling matrix from the
-    # old/new shape ratio, and
-    # specify an offset
-    # according to the origin
-    else:
-        ratio = oldShape / newShape
-        scale = np.diag(ratio)
-
-        # Calculate an offset from the
-        # origin - the default behaviour
-        # (centre) causes the corner voxel
-        # of the output to have the same
-        # centre as the corner voxel of
-        # the input. If the origin is
-        # 'corner', we apply an offset
-        # which effectively causes the
-        # voxel grids of the input and
-        # output to be aligned.
-        if   origin == 'centre': offset = 0
-        elif origin == 'corner': offset = list((ratio - 1) / 2)
-
-        if not isinstance(offset, abc.Sequence):
-            offset = [offset] * len(newShape)
-
-        # ndimage.affine_transform will accept
-        # a matrix of shape (ndim, ndim + 1)
-        matrix = np.hstack((scale, np.atleast_2d(offset).T))
-
-    return matrix
+    return xform[:-1, :]
