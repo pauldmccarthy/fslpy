@@ -444,18 +444,18 @@ class ImageWrapper(notifier.Notifier):
         _, expansions = calcExpansion(slices, self.__coverage)
         expansions    = collapseExpansions(expansions, self.__numRealDims - 1)
 
-        log.debug('Updating image {} data range [slice: {}] '
-                  '(current range: [{}, {}]; '
-                  'number of expansions: {}; '
-                  'current coverage: {}; '
-                  'volume ranges: {})'.format(
-                      self.__name,
-                      slices,
-                      self.__range[0],
-                      self.__range[1],
-                      len(expansions),
-                      self.__coverage,
-                      self.__volRanges))
+        log.debug('Updating image %s data range [slice: %s] '
+                  '(current range: [%s, %s]; '
+                  'number of expansions: %s; '
+                  'current coverage: %s; '
+                  'volume ranges: %s)',
+                  self.__name,
+                  slices,
+                  self.__range[0],
+                  self.__range[1],
+                  len(expansions),
+                  self.__coverage,
+                  self.__volRanges)
 
         # As we access the data for each expansions,
         # we want it to have the same dimensionality
@@ -507,12 +507,12 @@ class ImageWrapper(notifier.Notifier):
 
         if any((oldmin is None, oldmax is None)) or \
            not np.all(np.isclose([oldmin, oldmax], [newmin, newmax])):
-            log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
-                self.__name,
-                oldmin,
-                oldmax,
-                newmin,
-                newmax))
+            log.debug('Image %s range changed: [%s, %s] -> [%s, %s]',
+                      self.__name,
+                      oldmin,
+                      oldmax,
+                      newmin,
+                      newmax)
             self.notify()
 
 
@@ -591,15 +591,15 @@ class ImageWrapper(notifier.Notifier):
             slices = np.array(slices.T, dtype=np.uint32)
             slices = tuple(it.chain(map(tuple, slices), [(lowVol, highVol)]))
 
-            log.debug('Image {} data written - clearing known data '
-                      'range on volumes {} - {} (write slice: {}; '
-                      'coverage: {}; volRanges: {})'.format(
-                          self.__name,
-                          lowVol,
-                          highVol,
-                          slices,
-                          self.__coverage[:, :, lowVol:highVol],
-                          self.__volRanges[lowVol:highVol, :]))
+            log.debug('Image %s data written - clearing known data '
+                      'range on volumes %s - %s (write slice: %s; '
+                      'coverage: %s; volRanges: %s)',
+                      self.__name,
+                      lowVol,
+                      highVol,
+                      slices,
+                      self.__coverage[:, :, lowVol:highVol],
+                      self.__volRanges[lowVol:highVol, :])
 
             for vol in range(lowVol, highVol):
                 self.__coverage[:, :, vol]    = np.nan
@@ -622,7 +622,7 @@ class ImageWrapper(notifier.Notifier):
         :arg sliceobj: Something which can slice the image data.
         """
 
-        log.debug('Getting image data: {}'.format(sliceobj))
+        log.debug('Getting image data: %s', sliceobj)
 
         shape              = self.__canonicalShape
         realShape          = self.__image.shape
