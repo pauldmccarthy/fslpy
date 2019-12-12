@@ -823,7 +823,7 @@ def _test_Image_changeData(imgtype):
         img.register('name3', onDataRange, 'dataRange')
 
         # Calculate the actual data range
-        data   = img.nibImage.get_data()
+        data   = np.asanyarray(img.nibImage.dataobj)
         dmin   = data.min()
         dmax   = data.max()
         drange = dmax - dmin
@@ -1135,7 +1135,7 @@ def _test_Image_init_xform(imgtype):
         # an image created off a
         # header should have
         # identical sform/qform
-        fimg = fslimage.Image(img.get_data(), header=img.header)
+        fimg = fslimage.Image(np.asanyarray(img.dataobj), header=img.header)
 
         fsform, fsform_code = fimg.header.get_sform(True)
         fqform, fqform_code = fimg.header.get_qform(True)
@@ -1153,7 +1153,7 @@ def _test_Image_init_xform(imgtype):
         # set to that xform,
         # qform to None, and
         # and codes set to (s2, q0)
-        fimg = fslimage.Image(img.get_data(), xform=sform)
+        fimg = fslimage.Image(np.asanyarray(img.dataobj), xform=sform)
 
         fsform, fsform_code = fimg.header.get_sform(True)
         fqform, fqform_code = fimg.header.get_qform(True)
@@ -1174,7 +1174,7 @@ def _test_Image_init_xform(imgtype):
         rxform = affine.compose(np.random.random(3),
                                 np.random.random(3),
                                 np.random.random(3))
-        fimg = fslimage.Image(img.get_data(),
+        fimg = fslimage.Image(np.asanyarray(img.dataobj),
                               header=img.header,
                               xform=rxform)
 

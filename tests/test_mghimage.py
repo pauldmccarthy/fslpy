@@ -31,7 +31,7 @@ def test_MGHImage():
     v2s      = nbimg.header.get_vox2ras_tkr()
     w2s      = affine.concat(v2s, affine.invert(nbimg.affine))
 
-    assert np.all(np.isclose(img[:],             nbimg.get_data()))
+    assert np.all(np.isclose(img[:],             np.asanyarray(nbimg.dataobj)))
     assert np.all(np.isclose(img.voxToWorldMat,  nbimg.affine))
     assert np.all(np.isclose(img.voxToSurfMat,   v2s))
     assert np.all(np.isclose(img.surfToVoxMat,   affine.invert(v2s)))
@@ -44,7 +44,7 @@ def test_MGHImage():
 
     # Load from an in-memory nibabel object
     img = fslmgh.MGHImage(nbimg)
-    assert np.all(np.isclose(img[:],            nbimg.get_data()))
+    assert np.all(np.isclose(img[:],            np.asanyarray(nbimg.dataobj)))
     assert np.all(np.isclose(img.voxToWorldMat, nbimg.affine))
     assert img.dataSource   is None
     assert img.mghImageFile is None

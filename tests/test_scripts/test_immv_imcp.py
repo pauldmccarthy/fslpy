@@ -269,7 +269,7 @@ def test_imcp_script_shouldPass(move=False):
                         for inf in infiles:
                             img     = nib.load(op.join(tindir, inf),
                                                mmap=False)
-                            imghash = hash(img.get_data().tobytes())
+                            imghash = hash(np.asanyarray(img.dataobj).tobytes())
                             img = None
                             imageHashes.append(imghash)
 

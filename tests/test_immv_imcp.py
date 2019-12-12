@@ -14,6 +14,7 @@ import               os
 import               shutil
 import               tempfile
 
+import numpy as np
 import nibabel as nib
 
 import fsl.utils.imcp        as imcp
@@ -31,7 +32,7 @@ def print(*args, **kwargs):
 
 
 def makeImage(filename):
-    return hash(make_random_image(filename).get_data().tobytes())
+    return hash(np.asanyarray(make_random_image(filename).dataobj).tobytes())
 
 
 def checkImageHash(filename, datahash):
@@ -39,7 +40,7 @@ def checkImageHash(filename, datahash):
     """
 
     img = nib.load(filename)
-    assert hash(img.get_data().tobytes()) == datahash
+    assert hash(np.asanyarray(img.dataobj).tobytes()) == datahash
 
 
 def checkFilesToExpect(files, outdir, outputType, datahashes):

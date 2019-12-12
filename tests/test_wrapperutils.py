@@ -231,8 +231,8 @@ def test_fileOrImage():
 
     @wutils.fileOrImage('img1', 'img2', 'output')
     def func(img1, **kwargs):
-        img1   = nib.load(img1).get_data()
-        img2   = nib.load(kwargs['img2']).get_data()
+        img1   = np.asanyarray(nib.load(img1).dataobj)
+        img2   = np.asanyarraynib.load(kwargs['img2']).dataobj)
         output = nib.nifti1.Nifti1Image(img1 * img2, np.eye(4))
         nib.save(output, kwargs['output'])
 
@@ -247,43 +247,43 @@ def test_fileOrImage():
 
         # file  file  file
         func('img1.nii', img2='img2.nii', output='output.nii')
-        assert np.all(nib.load('output.nii').get_data() == expected)
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
         os.remove('output.nii')
 
         # file  file  array
         result = func('img1.nii', img2='img2.nii', output=wutils.LOAD)['output']
-        assert np.all(result.get_data() == expected)
+        assert np.all(np.asanyarrary(result.dataobj) == expected)
 
         # file  array file
         func('img1.nii', img2=img2, output='output.nii')
-        assert np.all(nib.load('output.nii').get_data() == expected)
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
         os.remove('output.nii')
 
         # file  array array
         result = func('img1.nii', img2=img2, output=wutils.LOAD)['output']
-        assert np.all(result.get_data() == expected)
+        assert np.all(np.asanyarray(result.dataobj) == expected)
 
         # array file  file
         func(img1, img2='img2.nii', output='output.nii')
-        assert np.all(nib.load('output.nii').get_data() == expected)
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
         os.remove('output.nii')
 
         # array file  array
         result = func(img1, img2='img2.nii', output=wutils.LOAD)['output']
-        assert np.all(result.get_data() == expected)
+        assert np.all(np.asanyarray(result.dataobj) == expected)
 
         # array array file
         func(img1, img2=img2, output='output.nii')
-        assert np.all(nib.load('output.nii').get_data() == expected)
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
         os.remove('output.nii')
 
         # array array array
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
-        assert np.all(result.get_data() == expected)
+        assert np.all(np.asanyarray(result.dataobj) == expected)
 
         # in-memory image, file, file
         result = func(img3, img2='img2.nii', output='output.nii')
-        assert np.all(nib.load('output.nii').get_data() == expected)
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
         os.remove('output.nii')
 
         # fslimage, file, load
@@ -307,7 +307,7 @@ def test_fileOrImage():
         # nib.image, nib.image, load
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
         assert isinstance(result, nib.nifti1.Nifti1Image)
-        assert np.all(result.get_data()[:] == expected)
+        assert np.all(np.asanyarray(result.dataobj)[:] == expected)
 
 
 def test_fileOrThing_sequence():
@@ -357,7 +357,7 @@ def test_fileOrThing_outprefix():
 
     @wutils.fileOrImage('img', outprefix='output_base')
     def basefunc(img, output_base):
-        img = nib.load(img).get_data()
+        img = np.asanyarray(nib.load(img).dataobj)
 
         out1 = nib.nifti1.Nifti1Image(img * 5,  np.eye(4))
         out2 = nib.nifti1.Nifti1Image(img * 10, np.eye(4))
@@ -368,31 +368,31 @@ def test_fileOrThing_outprefix():
 
     with tempdir.tempdir() as td:
         img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
-        exp1 = img.get_data() * 5
-        exp2 = img.get_data() * 10
+        exp1 = np.asanyarray(img.dataobj) * 5
+        exp2 = np.asanyarray(img.dataobj) * 10
         nib.save(img, 'img.nii')
 
         basefunc('img.nii', 'myout')
-        assert np.all(nib.load('myout_times5.nii.gz') .get_data() == exp1)
-        assert np.all(nib.load('myout_times10.nii.gz').get_data() == exp2)
+        assert np.all(np.asanyarray(nib.load('myout_times5.nii.gz') .dataobj) == exp1)
+        assert np.all(np.asanyarray(nib.load('myout_times10.nii.gz').dataobj) == exp2)
         cleardir(td, 'myout*')
 
         basefunc(img, 'myout')
-        assert np.all(nib.load('myout_times5.nii.gz') .get_data() == exp1)
-        assert np.all(nib.load('myout_times10.nii.gz').get_data() == exp2)
+        assert np.all(np.asanyarray(nib.load('myout_times5.nii.gz') .dataobj) == exp1)
+        assert np.all(np.asanyarray(nib.load('myout_times10.nii.gz').dataobj) == exp2)
         cleardir(td, 'myout*')
 
         res = basefunc(img, 'myout', myout_times5=wutils.LOAD)
-        assert np.all(res['myout_times5'].get_data() == exp1)
+        assert np.all(np.asanyarray(res['myout_times5'].dataobj) == exp1)
         cleardir(td, 'myout*')
 
         res = basefunc(img, 'myout', myout_times10=wutils.LOAD)
-        assert np.all(res['myout_times10'].get_data() == exp2)
+        assert np.all(np.asanyarray(res['myout_times10'].dataobj) == exp2)
         cleardir(td, 'myout*')
 
         res = basefunc(img, 'myout', myout=wutils.LOAD)
-        assert np.all(res['myout_times5'] .get_data() == exp1)
-        assert np.all(res['myout_times10'].get_data() == exp2)
+        assert np.all(np.asanyarray(res['myout_times5'] .dataobj) == exp1)
+        assert np.all(np.asanyarray(res['myout_times10'].dataobj) == exp2)
         cleardir(td, 'myout*')
 
 
@@ -402,7 +402,7 @@ def test_fileOrThing_outprefix_differentTypes():
     def func(img, outpref):
 
         img  = nib.load(img)
-        img  = nib.nifti1.Nifti1Image(img.get_data() * 2, np.eye(4))
+        img  = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 2, np.eye(4))
         text = '1234567890'
 
         nib.save(img, '{}_image.nii.gz' .format(outpref))
@@ -412,23 +412,23 @@ def test_fileOrThing_outprefix_differentTypes():
 
     with tempdir.tempdir() as td:
         img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
-        expi = img.get_data() * 2
+        expi = np.asanyarray(img.dataobj) * 2
         expt = '1234567890'
 
         func(img, 'myout')
-        assert np.all(nib.load('myout_image.nii.gz') .get_data() == expi)
+        assert np.all(np.asanyarray(nib.load('myout_image.nii.gz') .dataobj) == expi)
         with open('myout_text.txt', 'rt') as f:
             assert f.read().strip() == expt
         cleardir(td, 'myout*')
 
         res = func(img, 'myout', myout_image=wutils.LOAD)
         assert list(res.keys()) == ['myout_image']
-        assert np.all(res['myout_image'].get_data() == expi)
+        assert np.all(np.asanyarray(res['myout_image'].dataobj) == expi)
         cleardir(td, 'myout*')
 
         res = func(img, 'myout', myout=wutils.LOAD)
         assert list(res.keys()) == ['myout_image']
-        assert np.all(res['myout_image'].get_data() == expi)
+        assert np.all(np.asanyarray(res['myout_image'].dataobj) == expi)
         cleardir(td, 'myout*')
 
         res = func(img, 'myout', myout_text=wutils.LOAD)
@@ -445,8 +445,8 @@ def test_fileOrThing_outprefix_directory():
     @wutils.fileOrImage('img', outprefix='outpref')
     def func(img, outpref):
         img  = nib.load(img)
-        img2 = nib.nifti1.Nifti1Image(img.get_data() * 2, np.eye(4))
-        img4 = nib.nifti1.Nifti1Image(img.get_data() * 4, np.eye(4))
+        img2 = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 2, np.eye(4))
+        img4 = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 4, np.eye(4))
 
         outdir = op.abspath('{}_imgs'.format(outpref))
 
@@ -457,8 +457,8 @@ def test_fileOrThing_outprefix_directory():
 
     with tempdir.tempdir() as td:
         img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
-        exp2 = img.get_data() * 2
-        exp4 = img.get_data() * 4
+        exp2 = np.asanyarray(img.dataobj) * 2
+        exp4 = np.asanyarray(img.dataobj) * 4
 
         res = func(img, 'myout')
         assert len(res) == 0
@@ -469,17 +469,17 @@ def test_fileOrThing_outprefix_directory():
 
         res = func(img, 'myout', myout_imgs=wutils.LOAD)
         assert len(res) == 2
-        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
-        assert np.all(res[op.join('myout_imgs', 'img4')].get_data() == exp4)
+        assert np.all(np.asanyarray(res[op.join('myout_imgs', 'img2')].dataobj) == exp2)
+        assert np.all(np.asanyarray(res[op.join('myout_imgs', 'img4')].dataobj) == exp4)
 
         res = func(img, 'myout', **{op.join('myout_imgs', 'img2') : wutils.LOAD})
         assert len(res) == 1
-        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
+        assert np.all(np.asanyarray(res[op.join('myout_imgs', 'img2')].dataobj) == exp2)
 
         res = func(img, 'myout', **{op.join('myout_imgs', 'img') : wutils.LOAD})
         assert len(res) == 2
-        assert np.all(res[op.join('myout_imgs', 'img2')].get_data() == exp2)
-        assert np.all(res[op.join('myout_imgs', 'img4')].get_data() == exp4)
+        assert np.all(np.asanyarray(res[op.join('myout_imgs', 'img2')].dataobj) == exp2)
+        assert np.all(np.asanyarray(res[op.join('myout_imgs', 'img4')].dataobj) == exp4)
 
         os.mkdir('foo')
         res = func(img, op.join('foo', 'myout'))
@@ -492,8 +492,8 @@ def test_fileOrThing_outprefix_directory():
         os.mkdir('foo')
         res = func(img, op.join('foo', 'myout'), **{op.join('foo', 'myout') : wutils.LOAD})
         assert len(res) == 2
-        assert np.all(res[op.join('foo', 'myout_imgs', 'img2')].get_data() == exp2)
-        assert np.all(res[op.join('foo', 'myout_imgs', 'img4')].get_data() == exp4)
+        assert np.all(np.asanyarray(res[op.join('foo', 'myout_imgs', 'img2')].dataobj) == exp2)
+        assert np.all(np.asanyarray(res[op.join('foo', 'myout_imgs', 'img4')].dataobj) == exp4)
 
 
 def test_chained_fileOrImageAndArray():
@@ -503,7 +503,7 @@ def test_chained_fileOrImageAndArray():
         image = nib.load(image)
         array = np.loadtxt(array)
 
-        outimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+        outimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
 
         np.savetxt(outarray, array * 2)
         outimg.to_filename(outimage)
@@ -511,7 +511,7 @@ def test_chained_fileOrImageAndArray():
     image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
     array = np.array([[5, 6, 7, 8]])
 
-    expimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+    expimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
     exparr = array * 2
 
     with tempdir.tempdir():
@@ -520,31 +520,31 @@ def test_chained_fileOrImageAndArray():
         np.savetxt('array.txt', array)
 
         func('image.nii', 'array.txt', 'outimg.nii', 'outarr.txt')
-        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('outimg.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('outarr.txt') == exparr)
 
         func('image.nii', array, 'outimg.nii', 'outarr.txt')
-        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('outimg.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('outarr.txt') == exparr)
 
         func( image, 'array.txt', 'outimg.nii', 'outarr.txt')
-        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('outimg.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('outarr.txt') == exparr)
 
         func( image, array, 'outimg.nii', 'outarr.txt')
-        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('outimg.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('outarr.txt') == exparr)
 
         res = func(image, array, wutils.LOAD, 'outarr.txt')
-        assert np.all(res['outimage'].get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(res['outimage'].dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('outarr.txt') == exparr)
 
         res = func(image, array, 'outimg.nii', wutils.LOAD)
-        assert np.all(nib.load('outimg.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('outimg.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(res['outarray'] == exparr)
 
         res = func(image, array, wutils.LOAD, wutils.LOAD)
-        assert np.all(res['outimage'].get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(res['outimage'].dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(res['outarray'] == exparr)
 
 
@@ -561,7 +561,7 @@ def test_fileOrThing_chained_outprefix():
         image = nib.load(image)
         array = np.loadtxt(array)
 
-        outimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+        outimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
         outarr = array * 2
 
         np.savetxt('{}_array.txt'.format(out), outarr)
@@ -570,17 +570,17 @@ def test_fileOrThing_chained_outprefix():
     image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
     array = np.array([[5, 6, 7, 8]])
 
-    expimg = nib.nifti1.Nifti1Image(image.get_data() * 2, np.eye(4))
+    expimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
     exparr = array * 2
 
     with tempdir.tempdir():
 
         func(image, array, 'myout')
-        assert np.all(nib.load('myout_image.nii').get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(nib.load('myout_image.nii').dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(np.loadtxt('myout_array.txt') == exparr)
 
         res = func(image, array, wutils.LOAD)
-        assert np.all(res['out_image'].get_data() == expimg.get_data())
+        assert np.all(np.asanyarray(res['out_image'].dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(res['out_array'] == exparr)
 
 
