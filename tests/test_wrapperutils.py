@@ -232,7 +232,7 @@ def test_fileOrImage():
     @wutils.fileOrImage('img1', 'img2', 'output')
     def func(img1, **kwargs):
         img1   = np.asanyarray(nib.load(img1).dataobj)
-        img2   = np.asanyarraynib.load(kwargs['img2']).dataobj)
+        img2   = np.asanyarray(nib.load(kwargs['img2']).dataobj)
         output = nib.nifti1.Nifti1Image(img1 * img2, np.eye(4))
         nib.save(output, kwargs['output'])
 
