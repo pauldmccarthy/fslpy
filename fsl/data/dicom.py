@@ -36,6 +36,7 @@ import               shlex
 import               logging
 import               binascii
 
+import numpy      as np
 import nibabel    as nib
 
 import fsl.utils.tempdir as tempdir
@@ -279,9 +280,11 @@ def loadSeries(series):
 
         # copy images so nibabel no longer
         # refs to the files (as they will
-        # be deleted), and use get_data()
-        # to force-load the image data.
-        images = [nib.Nifti1Image(i.get_data(), None, i.header)
+        # be deleted), and force-load the
+        # the image data into memory (to
+        # avoid any disk accesses due to
+        # e.g. memmap)
+        images = [nib.Nifti1Image(np.asanyarray(i.dataobj), None, i.header)
                   for i in images]
 
         return [DicomImage(i, series, dcmdir, name=desc) for i in images]

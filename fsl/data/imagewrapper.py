@@ -76,8 +76,7 @@ class ImageWrapper(notifier.Notifier):
      - The image data is not modified (via :meth:`__setitem__`.
 
     If any of these conditions do not hold, the image data will be loaded into
-    memory and accessed directly, via the ``nibabel.Nifti1Image.get_data``
-    method.
+    memory and accessed directly.
 
 
     *Image dimensionality*
@@ -218,7 +217,11 @@ class ImageWrapper(notifier.Notifier):
 
         self.reset(dataRange)
 
-        if loadData:
+        # We keep an internal ref to
+        # the data numpy array if/when
+        # it is loaded in memory
+        self.__data = None
+        if loadData or image.in_memory:
             self.loadData()
 
         if threaded:
@@ -232,6 +235,7 @@ class ImageWrapper(notifier.Notifier):
         the :class:`.TaskThread` is stopped.
         """
         self.__image = None
+        self.__data  = None
         if self.__taskThread is not None:
             self.__taskThread.stop()
             self.__taskThread = None
@@ -377,16 +381,11 @@ class ImageWrapper(notifier.Notifier):
         """Forces all of the image data to be loaded into memory.
 
         .. note:: This method will be called by :meth:`__init__` if its
-                  ``loadData`` parameter is ``True``.
+                  ``loadData`` parameter is ``True``. It will also be called
+                  on all write operations (see :meth:`__setitem__`).
         """
-
-        # If the data is not already loaded, this will
-        # cause nibabel to load it. By default, nibabel
-        # will cache the numpy array that contains the
-        # image data, so subsequent calls to this
-        # method will not overwrite any changes that
-        # have been made to the data array.
-        self.__image.get_data()
+        if self.__data is None:
+            self.__data = np.asanyarray(self.__image.dataobj)
 
 
     def __getData(self, sliceobj, isTuple=False):
@@ -407,14 +406,7 @@ class ImageWrapper(notifier.Notifier):
         # ArrayProxy. Otheriwse if it is in
         # memory, we can access it directly.
         #
-        # Furthermore, if it is in memory and
-        # has been modified, the ArrayProxy
-        # will give us out-of-date values (as
-        # the ArrayProxy reads from disk). So
-        # we have to read from the in-memory
-        # array to get changed values.
-        #
-        # Finally, note that if the caller has
+        # Note also that if the caller has
         # given us a 'fancy' slice object (a
         # boolean numpy array), but the image
         # data is not in memory, we can't access
@@ -422,8 +414,8 @@ class ImageWrapper(notifier.Notifier):
         # (the dataobj attribute) cannot handle
         # fancy indexing. In this case an error
         # will be raised.
-        if self.__image.in_memory: return self.__image.get_data()[sliceobj]
-        else:                      return self.__image.dataobj[   sliceobj]
+        if self.__data is not None: return self.__data[         sliceobj]
+        else:                       return self.__image.dataobj[sliceobj]
 
 
     def __imageIsCovered(self):
@@ -444,18 +436,18 @@ class ImageWrapper(notifier.Notifier):
         _, expansions = calcExpansion(slices, self.__coverage)
         expansions    = collapseExpansions(expansions, self.__numRealDims - 1)
 
-        log.debug('Updating image {} data range [slice: {}] '
-                  '(current range: [{}, {}]; '
-                  'number of expansions: {}; '
-                  'current coverage: {}; '
-                  'volume ranges: {})'.format(
-                      self.__name,
-                      slices,
-                      self.__range[0],
-                      self.__range[1],
-                      len(expansions),
-                      self.__coverage,
-                      self.__volRanges))
+        log.debug('Updating image %s data range [slice: %s] '
+                  '(current range: [%s, %s]; '
+                  'number of expansions: %s; '
+                  'current coverage: %s; '
+                  'volume ranges: %s)',
+                  self.__name,
+                  slices,
+                  self.__range[0],
+                  self.__range[1],
+                  len(expansions),
+                  self.__coverage,
+                  self.__volRanges)
 
         # As we access the data for each expansions,
         # we want it to have the same dimensionality
@@ -507,12 +499,12 @@ class ImageWrapper(notifier.Notifier):
 
         if any((oldmin is None, oldmax is None)) or \
            not np.all(np.isclose([oldmin, oldmax], [newmin, newmax])):
-            log.debug('Image {} range changed: [{}, {}] -> [{}, {}]'.format(
-                self.__name,
-                oldmin,
-                oldmax,
-                newmin,
-                newmax))
+            log.debug('Image %s range changed: [%s, %s] -> [%s, %s]',
+                      self.__name,
+                      oldmin,
+                      oldmax,
+                      newmin,
+                      newmax)
             self.notify()
 
 
@@ -591,15 +583,15 @@ class ImageWrapper(notifier.Notifier):
             slices = np.array(slices.T, dtype=np.uint32)
             slices = tuple(it.chain(map(tuple, slices), [(lowVol, highVol)]))
 
-            log.debug('Image {} data written - clearing known data '
-                      'range on volumes {} - {} (write slice: {}; '
-                      'coverage: {}; volRanges: {})'.format(
-                          self.__name,
-                          lowVol,
-                          highVol,
-                          slices,
-                          self.__coverage[:, :, lowVol:highVol],
-                          self.__volRanges[lowVol:highVol, :]))
+            log.debug('Image %s data written - clearing known data '
+                      'range on volumes %s - %s (write slice: %s; '
+                      'coverage: %s; volRanges: %s)',
+                      self.__name,
+                      lowVol,
+                      highVol,
+                      slices,
+                      self.__coverage[:, :, lowVol:highVol],
+                      self.__volRanges[lowVol:highVol, :])
 
             for vol in range(lowVol, highVol):
                 self.__coverage[:, :, vol]    = np.nan
@@ -622,7 +614,7 @@ class ImageWrapper(notifier.Notifier):
         :arg sliceobj: Something which can slice the image data.
         """
 
-        log.debug('Getting image data: {}'.format(sliceobj))
+        log.debug('Getting image data: %s', sliceobj)
 
         shape              = self.__canonicalShape
         realShape          = self.__image.shape
@@ -721,7 +713,7 @@ class ImageWrapper(notifier.Notifier):
         # have any effect.
         self.loadData()
 
-        self.__image.get_data()[sliceobj] = values
+        self.__data[sliceobj] = values
         self.__updateDataRangeOnWrite(slices, values)
 
 

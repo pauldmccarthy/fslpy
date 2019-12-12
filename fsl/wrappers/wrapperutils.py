@@ -952,16 +952,17 @@ def fileOrImage(*args, **kwargs):
 
         # create an independent in-memory
         # copy of the image file
-        img = nib.load(path, mmap=False)
+        img  = nib.load(path, mmap=False)
+        data = np.asanyarray(img.dataobj)
 
         # if any arguments were fsl images,
         # that takes precedence.
         if fslimage.Image in intypes:
-            return fslimage.Image(img.get_data(), header=img.header)
+            return fslimage.Image(data, header=img.header)
         # but if all inputs were file names,
         # nibabel takes precedence
         elif nib.nifti1.Nifti1Image in intypes or len(intypes) == 0:
-            return nib.nifti1.Nifti1Image(img.get_data(), None, img.header)
+            return nib.nifti1.Nifti1Image(data, None, img.header)
 
         # this function should not be called
         # under any other circumstances

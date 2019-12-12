@@ -17,6 +17,16 @@ Added
 * New :func:`.affine.rescale` function, for adjusting a scaling matrix.
 
 
+Changed
+^^^^^^^
+
+
+* The :class:`.ImageWrapper` now maintains its own image data cache, rather
+  than depending on ``nibabel``.
+* Internal changes to avoid using the deprecated
+  ``nibabel.dataobj_images.DataobjImage.get_data`` method.
+
+
 Fixed
 ^^^^^
 

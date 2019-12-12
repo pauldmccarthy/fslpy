@@ -1204,6 +1204,9 @@ class Image(Nifti):
     @property
     def nibImage(self):
         """Returns a reference to the ``nibabel`` NIFTI image instance.
+        Note that if the image data has been modified through this ``Image``,
+        it will be out of sync with what is returned by the ``nibabel`` object,
+        until a call to :meth:`save` is made.
         """
         return self.__nibImage
 
@@ -1387,6 +1390,21 @@ class Image(Nifti):
         os.close(tmphd)
 
         try:
+            # First of all, the nibabel object won't know
+            # about any image data modifications, so if
+            # any have occurred, we need to create a new
+            # nibabel image using the data managed by the
+            # imagewrapper, and the old header.
+            #
+            # Assuming here that analyze/nifti1/nifti2
+            # nibabel classes have an __init__ which
+            # expects (data, affine, header)
+            if not self.saveState:
+                self.__nibImage = type(self.__nibImage)(self[:],
+                                                        None,
+                                                        self.header)
+                self.header     = self.__nibImage.header
+
             nib.save(self.__nibImage, tmpfname)
 
             # nibabel should close any old
@@ -1395,6 +1413,8 @@ class Image(Nifti):
             self.__nibImage = None
             self.header     = None
 
+            # Copy to final destination,
+            # and reload from there
             imcp.imcp(tmpfname, filename, overwrite=True)
 
             self.__nibImage = nib.load(filename)

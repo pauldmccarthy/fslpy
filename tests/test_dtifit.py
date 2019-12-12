@@ -169,12 +169,12 @@ def test_DTIFitTensor():
         l2file = op.join(testdir, 'dti_L2.nii')
         l3file = op.join(testdir, 'dti_L3.nii')
 
-        v1 = tests.make_random_image(v1file, (5, 5, 5, 3)).get_data()
-        v2 = tests.make_random_image(v2file, (5, 5, 5, 3)).get_data()
-        v3 = tests.make_random_image(v3file, (5, 5, 5, 3)).get_data()
-        l1 = tests.make_random_image(l1file, (5, 5, 5))   .get_data()
-        l2 = tests.make_random_image(l2file, (5, 5, 5))   .get_data()
-        l3 = tests.make_random_image(l3file, (5, 5, 5))   .get_data()
+        v1 = np.asanyarray(tests.make_random_image(v1file, (5, 5, 5, 3)).dataobj)
+        v2 = np.asanyarray(tests.make_random_image(v2file, (5, 5, 5, 3)).dataobj)
+        v3 = np.asanyarray(tests.make_random_image(v3file, (5, 5, 5, 3)).dataobj)
+        l1 = np.asanyarray(tests.make_random_image(l1file, (5, 5, 5))   .dataobj)
+        l2 = np.asanyarray(tests.make_random_image(l2file, (5, 5, 5))   .dataobj)
+        l3 = np.asanyarray(tests.make_random_image(l3file, (5, 5, 5))   .dataobj)
 
         dtiobj = dtifit.DTIFitTensor(testdir)
 

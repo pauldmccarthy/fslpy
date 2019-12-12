@@ -27,7 +27,7 @@ def test_ensureIsImage():
 
         for l in loaded:
             assert isinstance(l, nib.nifti1.Nifti1Image)
-            assert np.all(img.get_data() == l.get_data())
+            assert np.all(np.asanyarray(img.dataobj) == np.asanyarray(l.dataobj))
 
         l = None
         loaded = None

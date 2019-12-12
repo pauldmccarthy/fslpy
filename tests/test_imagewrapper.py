@@ -790,7 +790,7 @@ def _test_ImageWrapper_write_out(niters, seed, threaded):
                 wrapper[tuple(sliceobjs)] = newData
                 _ImageWraper_busy_wait(wrapper)
 
-                expLo, expHi = coverageDataRange(img.get_data(), cov, slices)
+                expLo, expHi = coverageDataRange(np.asanyarray(img.dataobj), cov, slices)
                 newLo, newHi = wrapper.dataRange
 
                 # print('Old    range: {} - {}'.format(clo,   chi))
@@ -917,10 +917,10 @@ def _test_ImageWrapper_write_in_overlap(niters, seed, threaded):
 
                 print('Expected range:    {} - {}'.format(expLo, expHi))
                 print('New range:         {} - {}'.format(newLo, newHi))
-                print('Slice min/max:     {} - {}'.format(img.get_data()[tuple(sliceobjs)].min(),
-                                                          img.get_data()[tuple(sliceobjs)].max()))
-                print('Data min/max:      {} - {}'.format(img.get_data().min(),
-                                                          img.get_data().max()))
+                print('Slice min/max:     {} - {}'.format(np.asanyarray(img.dataobj)[tuple(sliceobjs)].min(),
+                                                          np.asanyarray(img.dataobj)[tuple(sliceobjs)].max()))
+                print('Data min/max:      {} - {}'.format(np.asanyarray(img.dataobj).min(),
+                                                          np.asanyarray(img.dataobj).max()))
 
                 assert np.all(newCov == expCov)
 
