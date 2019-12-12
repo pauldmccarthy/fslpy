@@ -76,8 +76,7 @@ class ImageWrapper(notifier.Notifier):
      - The image data is not modified (via :meth:`__setitem__`.
 
     If any of these conditions do not hold, the image data will be loaded into
-    memory and accessed directly, via the ``nibabel.Nifti1Image.get_data``
-    method.
+    memory and accessed directly.
 
 
     *Image dimensionality*
@@ -218,7 +217,11 @@ class ImageWrapper(notifier.Notifier):
 
         self.reset(dataRange)
 
-        if loadData:
+        # We keep an internal ref to
+        # the data numpy array if/when
+        # it is loaded in memory
+        self.__data = None
+        if loadData or image.in_memory:
             self.loadData()
 
         if threaded:
@@ -232,6 +235,7 @@ class ImageWrapper(notifier.Notifier):
         the :class:`.TaskThread` is stopped.
         """
         self.__image = None
+        self.__data  = None
         if self.__taskThread is not None:
             self.__taskThread.stop()
             self.__taskThread = None
@@ -379,14 +383,8 @@ class ImageWrapper(notifier.Notifier):
         .. note:: This method will be called by :meth:`__init__` if its
                   ``loadData`` parameter is ``True``.
         """
-
-        # If the data is not already loaded, this will
-        # cause nibabel to load it. By default, nibabel
-        # will cache the numpy array that contains the
-        # image data, so subsequent calls to this
-        # method will not overwrite any changes that
-        # have been made to the data array.
-        self.__image.get_data()
+        if self.__data is None:
+            self.__data = np.asanyarray(self.__image.dataobj)
 
 
     def __getData(self, sliceobj, isTuple=False):
@@ -407,14 +405,7 @@ class ImageWrapper(notifier.Notifier):
         # ArrayProxy. Otheriwse if it is in
         # memory, we can access it directly.
         #
-        # Furthermore, if it is in memory and
-        # has been modified, the ArrayProxy
-        # will give us out-of-date values (as
-        # the ArrayProxy reads from disk). So
-        # we have to read from the in-memory
-        # array to get changed values.
-        #
-        # Finally, note that if the caller has
+        # Note also that if the caller has
         # given us a 'fancy' slice object (a
         # boolean numpy array), but the image
         # data is not in memory, we can't access
@@ -422,8 +413,8 @@ class ImageWrapper(notifier.Notifier):
         # (the dataobj attribute) cannot handle
         # fancy indexing. In this case an error
         # will be raised.
-        if self.__image.in_memory: return self.__image.get_data()[sliceobj]
-        else:                      return self.__image.dataobj[   sliceobj]
+        if self.__data is not None: return self.__data[         sliceobj]
+        else:                       return self.__image.dataobj[sliceobj]
 
 
     def __imageIsCovered(self):
@@ -721,7 +712,7 @@ class ImageWrapper(notifier.Notifier):
         # have any effect.
         self.loadData()
 
-        self.__image.get_data()[sliceobj] = values
+        self.__data[sliceobj] = values
         self.__updateDataRangeOnWrite(slices, values)
 
 
