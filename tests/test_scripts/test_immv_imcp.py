@@ -11,6 +11,7 @@ import               tempfile
 
 import               pytest
 
+import numpy as np
 import nibabel as nib
 
 from   fsl.utils.tempdir import tempdir
