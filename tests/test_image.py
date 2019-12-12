@@ -1098,14 +1098,16 @@ def _test_Image_save(imgtype):
             # Load the image back in
             img2 = fslimage.Image(img.dataSource)
 
-            assert img.saveState
-            assert img.dataSource == expDataSource
+            assert img2.saveState
+            assert img2.dataSource == expDataSource
 
-            if imgtype > 0:
-                assert np.all(np.isclose(img.voxToWorldMat, xform))
+            for i in (img, img2):
+                if imgtype > 0:
+                    assert np.all(np.isclose(i.voxToWorldMat, xform))
 
-            for (x, y, z), v in zip(rvoxs, rvals):
-                assert np.isclose(img[x, y, z], v)
+                for (x, y, z), v in zip(rvoxs, rvals):
+                    assert np.isclose(i[x, y, z], v)
+            img  = None
             img2 = None
 
 
