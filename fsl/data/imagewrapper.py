@@ -381,7 +381,8 @@ class ImageWrapper(notifier.Notifier):
         """Forces all of the image data to be loaded into memory.
 
         .. note:: This method will be called by :meth:`__init__` if its
-                  ``loadData`` parameter is ``True``.
+                  ``loadData`` parameter is ``True``. It will also be called
+                  on all write operations (see :meth:`__setitem__`).
         """
         if self.__data is None:
             self.__data = np.asanyarray(self.__image.dataobj)
