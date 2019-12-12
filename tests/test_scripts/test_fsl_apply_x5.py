@@ -44,7 +44,7 @@ def test_help():
 
 
 
-def test_linear():
+def test_linear(seed):
     with tempdir.tempdir():
 
         src2ref = _random_affine()
@@ -65,7 +65,7 @@ def test_linear():
         assert np.all(np.isclose(result.data, expect))
 
 
-def test_nonlinear():
+def test_nonlinear(seed):
     with tempdir.tempdir():
 
         src2ref = _random_affine()
@@ -92,7 +92,7 @@ def test_nonlinear():
         assert np.all(np.isclose(result, expect))
 
 
-def test_linear_altref():
+def test_linear_altref(seed):
     with tempdir.tempdir():
 
         src2ref = affine.scaleOffsetXform([1, 1, 1], [5,  5,  5])
@@ -119,7 +119,7 @@ def test_linear_altref():
         assert np.all(result.data == expect)
 
 
-def test_nonlinear_altref():
+def test_nonlinear_altref(seed):
     with tempdir.tempdir():
 
         src2ref = affine.scaleOffsetXform([1, 1, 1], [5,  5,  5])
@@ -149,7 +149,7 @@ def test_nonlinear_altref():
         assert np.all(result.data == expect)
 
 
-def test_linear_altsrc():
+def test_linear_altsrc(seed):
     with tempdir.tempdir():
 
         src2ref = _random_affine()
@@ -198,7 +198,7 @@ def test_linear_altsrc():
         assert np.all(np.isclose(outoff.data, expoff))
 
 
-def test_nonlinear_altsrc():
+def test_nonlinear_altsrc(seed):
     with tempdir.tempdir():
 
         src2ref = _random_affine()
@@ -252,13 +252,20 @@ def test_nonlinear_altsrc():
         assert outhi .sameSpace(ref)
         assert outoff.sameSpace(ref)
 
-        # We get boundary issues just at the first
-        # voxel, so I'm masking that voxel out
-        for img in (out, outlo, outhi, outoff,
-                    exp, explo, exphi, expoff):
-            img[0, 0, 0] = 0
+        # We get boundary cropping,
+        # so ignore edge slices
+        out    = out   .data[1:-1, 1:-1, 1:-1]
+        outlo  = outlo .data[1:-1, 1:-1, 1:-1]
+        outhi  = outhi .data[1:-1, 1:-1, 1:-1]
+        outoff = outoff.data[1:-1, 1:-1, 1:-1]
+        exp    = exp[        1:-1, 1:-1, 1:-1]
+        explo  = explo[      1:-1, 1:-1, 1:-1]
+        exphi  = exphi[      1:-1, 1:-1, 1:-1]
+        expoff = expoff[     1:-1, 1:-1, 1:-1]
 
-        assert np.all(np.isclose(out   .data, exp))
-        assert np.all(np.isclose(outlo .data, explo))
-        assert np.all(np.isclose(outhi .data, exphi))
-        assert np.all(np.isclose(outoff.data, expoff))
+        tol = dict(atol=1e-3, rtol=1e-3)
+
+        assert np.all(np.isclose(out,    exp,   **tol))
+        assert np.all(np.isclose(outlo,  explo, **tol))
+        assert np.all(np.isclose(outhi,  exphi, **tol))
+        assert np.all(np.isclose(outoff, expoff, **tol))
