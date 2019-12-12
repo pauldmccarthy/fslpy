@@ -252,7 +252,7 @@ def test_fileOrImage():
 
         # file  file  array
         result = func('img1.nii', img2='img2.nii', output=wutils.LOAD)['output']
-        assert np.all(np.asanyarrary(result.dataobj) == expected)
+        assert np.all(np.asanyarray(result.dataobj) == expected)
 
         # file  array file
         func('img1.nii', img2=img2, output='output.nii')
