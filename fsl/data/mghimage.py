@@ -12,6 +12,7 @@ Freesurfer ``mgh``/``mgz`` image files.
 import os.path as op
 
 import            six
+import numpy   as np
 import nibabel as nib
 
 import fsl.utils.path       as fslpath
@@ -54,7 +55,7 @@ class MGHImage(fslimage.Image):
             name     = 'MGH image'
             filename = None
 
-        data     = image.get_data()
+        data     = np.asanyarray(image.dataobj)
         xform    = image.affine
         vox2surf = image.header.get_vox2ras_tkr()
 
