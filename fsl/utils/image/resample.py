@@ -206,7 +206,7 @@ def resample(image,
 
     # same shape and identity matrix? the
     # image doesn't need to be resampled
-    if np.all(np.isclose(image.shape, newShape)) and \
+    if np.all(np.isclose(data.shape, newShape)) and \
        np.all(np.isclose(matrix, np.eye(len(newShape) + 1))):
         return data, image.voxToWorldMat
 
