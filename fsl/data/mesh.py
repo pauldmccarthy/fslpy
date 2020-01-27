@@ -154,14 +154,6 @@ class Mesh(notifier.Notifier, meta.Meta):
     """
 
 
-    def __new__(cls, *args, **kwargs):
-        """Create a ``Mesh``. We must override ``__new__``, otherwise the
-        :class:`Meta` and :class:`Notifier` ``__new__`` methods will not be
-        called correctly.
-        """
-        return super(Mesh, cls).__new__(cls, *args, **kwargs)
-
-
     def __init__(self,
                  indices,
                  name='mesh',
@@ -189,7 +181,7 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         self.__name       = name
         self.__dataSource = dataSource
-        self.__nvertices  = indices.max() + 1
+        self.__nvertices  = int(indices.max()) + 1
         self.__selected   = None
 
         # We potentially store two copies of
@@ -197,7 +189,7 @@ class Mesh(notifier.Notifier, meta.Meta):
         # orders. The vindices dict stores refs
         # to one or the other for each vertex
         # set.
-        self.__indices      = np.asarray(indices).reshape((-1, 3))
+        self.__indices      = np.asarray(indices, dtype=np.int32).reshape((-1, 3))
         self.__fixedIndices = None
         self.__vindices     = collections.OrderedDict()
 

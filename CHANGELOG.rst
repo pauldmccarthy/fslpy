@@ -34,6 +34,9 @@ Fixed
 * Improved the algorithm used by the :func:`.mesh.needsFixing` function.
 * The :meth:`.fslmaths.run` method now accepts :attr:`.wrappers.LOAD` as an
   output specification.
+* Fixed a bug in the :class:`.Mesh` class to prevent indices from being loaded
+  as floating point type.
+* Fixed a bug in the :func:`.resample` function.
 
 
 Deprecated

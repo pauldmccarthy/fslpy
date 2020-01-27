@@ -47,9 +47,9 @@ def resampleToReference(image, reference, matrix=None, **kwargs):
     along the spatial (first three) dimensions.
 
     :arg image:     :class:`.Image` to resample
-    :arg matrix:    Optional world-to-world affine alignment matrix
     :arg reference: :class:`.Nifti` defining the space to resample ``image``
                     into
+    :arg matrix:    Optional world-to-world affine alignment matrix
     """
 
     oldShape = list(image.shape)
@@ -204,9 +204,10 @@ def resample(image,
     if matrix is None:
         matrix = affine.rescale(data.shape, newShape, origin)
 
-    # identity matrix? the image
-    # doesn't need to be resampled
-    if np.all(np.isclose(matrix, np.eye(len(newShape) + 1))):
+    # same shape and identity matrix? the
+    # image doesn't need to be resampled
+    if np.all(np.isclose(data.shape, newShape)) and \
+       np.all(np.isclose(matrix, np.eye(len(newShape) + 1))):
         return data, image.voxToWorldMat
 
     newShape = np.array(np.round(newShape), dtype=np.int)
