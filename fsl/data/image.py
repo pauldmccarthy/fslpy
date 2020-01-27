@@ -1362,6 +1362,10 @@ class Image(Nifti):
     def save(self, filename=None):
         """Saves this ``Image`` to the specifed file, or the :attr:`dataSource`
         if ``filename`` is ``None``.
+
+        Note that calling ``save`` on an image with modified data will cause
+        the entire image data to be loaded into memory if it has not already
+        been loaded.
         """
 
         import fsl.utils.imcp as imcp
