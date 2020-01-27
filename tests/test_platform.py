@@ -7,6 +7,7 @@
 
 
 import            os
+import            gc
 import os.path as op
 import            sys
 import            shutil
@@ -66,6 +67,8 @@ def test_haveGui():
 
 @pytest.mark.wxtest
 def test_wxatts():
+
+    gc.collect()
 
     with mock.patch.dict('sys.modules', wx=None):
         p = fslplatform.Platform()
