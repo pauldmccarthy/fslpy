@@ -187,6 +187,15 @@ def _test_image_indexed_save(threaded):
         # make sure the data range is correct
         assert img.dataRange == (0, 40)
 
+        # Save the image to a different
+        # location (no changes to data though)
+        filename = op.join(testdir, 'image2.nii.gz')
+        img.save(filename)
+
+        # known data range
+        # should not have changed
+        assert img.dataRange == (0, 40)
+
         # change some data
         data = np.zeros((100, 100, 100))
         data[:] = 45
@@ -195,35 +204,21 @@ def _test_image_indexed_save(threaded):
         if threaded:
             img.getImageWrapper().getTaskThread().waitUntilIdle()
 
-        # save the image
+        # save the image - this will
+        # cause the image data to be
+        # loaded into memory
         img.save()
 
-        assert img.dataRange == (0, 45)
-
-        # access the data  - index should
-        # get rebuilt to this point
-        img[..., 0]
-        img[..., 40]
-
         if threaded:
             img.getImageWrapper().getTaskThread().waitUntilIdle()
 
-        # make sure we got the modified data
-        assert img.dataRange == (0, 45)
-
-        img[..., 49]
-
-        if threaded:
-            img.getImageWrapper().getTaskThread().waitUntilIdle()
-
-        # make sure we got the modified data
         assert img.dataRange == (0, 49)
-
+        assert np.all(img[..., 40] == data)
 
         # Finally, reload, and verify the change
         img = fslimage.Image(filename)
 
-        assert np.all(img[..., 40] == 45)
+        assert np.all(img[..., 40] == data)
 
 
 @pytest.mark.longtest
