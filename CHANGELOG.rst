@@ -36,6 +36,7 @@ Fixed
   output specification.
 * Fixed a bug in the :class:`.Mesh` class to prevent indices from being loaded
   as floating point type.
+* Fixed a bug in the :func:`.resample` function.
 
 
 Deprecated
