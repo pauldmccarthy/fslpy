@@ -128,3 +128,30 @@ class MGHImage(fslimage.Image):
         coordinates into the surface coordinate system for this image.
         """
         return self.__worldToSurfMat
+
+
+def voxToSurfMat(img):
+    """Generate an affine which can transform the voxel coordinates of
+    the given image into a corresponding Freesurfer surface coordinate
+    system (known as "Torig", or "vox2ras-tkr").
+
+    See https://surfer.nmr.mgh.harvard.edu/fswiki/CoordinateSystems
+
+    :arg img: An :class:`.Image` object.
+
+    :return:  A ``(4, 4)`` matrix encoding an affine transformation from the
+              image voxel coordinate system to the corresponding Freesurfer
+              surface coordinate system.
+    """
+
+    zooms = np.array(img.pixdim[:3])
+    dims  = img.shape[ :3] * zooms / 2
+
+    xform        = np.zeros((4, 4), dtype=np.float32)
+    xform[ 0, 0] = -zooms[0]
+    xform[ 1, 2] =  zooms[2]
+    xform[ 2, 1] = -zooms[1]
+    xform[ 3, 3] = 1
+    xform[:3, 3] = [dims[0], -dims[2], dims[1]]
+
+    return xform
