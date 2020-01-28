@@ -38,7 +38,7 @@ class MGHImage(fslimage.Image):
      - http://nipy.org/nibabel/reference/nibabel.freesurfer.html
     """
 
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, image, **kwargs):
         """Create a ``MGHImage``.
 
         :arg image: Name of MGH file, or a
@@ -57,13 +57,32 @@ class MGHImage(fslimage.Image):
 
         data     = np.asanyarray(image.dataobj)
         xform    = image.affine
+        pixdim   = image.header.get_zooms()
         vox2surf = image.header.get_vox2ras_tkr()
+
+        # the image may have an affine which
+        # transforms the data into some space
+        # with a scaling that is different to
+        # the pixdims. So we create a header
+        # object with both the affine and the
+        # pixdims, so they are both preserved.
+        #
+        # Note that we have to set the zooms
+        # after the s/qform, otherwise nibabel
+        # will clobber them with zooms gleaned
+        # fron the affine.
+        header = nib.nifti1.Nifti1Header()
+        header.set_data_shape(data.shape)
+        header.set_sform(xform)
+        header.set_qform(xform)
+        header.set_zooms(pixdim)
 
         fslimage.Image.__init__(self,
                                 data,
-                                xform=xform,
+                                header=header,
                                 name=name,
-                                dataSource=filename)
+                                dataSource=filename,
+                                **kwargs)
 
         if filename is not None:
             self.setMeta('mghImageFile', filename)
