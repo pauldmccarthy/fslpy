@@ -38,7 +38,7 @@ class MGHImage(fslimage.Image):
      - http://nipy.org/nibabel/reference/nibabel.freesurfer.html
     """
 
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, image, **kwargs):
         """Create a ``MGHImage``.
 
         :arg image: Name of MGH file, or a
@@ -57,13 +57,32 @@ class MGHImage(fslimage.Image):
 
         data     = np.asanyarray(image.dataobj)
         xform    = image.affine
+        pixdim   = image.header.get_zooms()
         vox2surf = image.header.get_vox2ras_tkr()
+
+        # the image may have an affine which
+        # transforms the data into some space
+        # with a scaling that is different to
+        # the pixdims. So we create a header
+        # object with both the affine and the
+        # pixdims, so they are both preserved.
+        #
+        # Note that we have to set the zooms
+        # after the s/qform, otherwise nibabel
+        # will clobber them with zooms gleaned
+        # fron the affine.
+        header = nib.nifti1.Nifti1Header()
+        header.set_data_shape(data.shape)
+        header.set_sform(xform)
+        header.set_qform(xform)
+        header.set_zooms(pixdim)
 
         fslimage.Image.__init__(self,
                                 data,
-                                xform=xform,
+                                header=header,
                                 name=name,
-                                dataSource=filename)
+                                dataSource=filename,
+                                **kwargs)
 
         if filename is not None:
             self.setMeta('mghImageFile', filename)
@@ -128,3 +147,30 @@ class MGHImage(fslimage.Image):
         coordinates into the surface coordinate system for this image.
         """
         return self.__worldToSurfMat
+
+
+def voxToSurfMat(img):
+    """Generate an affine which can transform the voxel coordinates of
+    the given image into a corresponding Freesurfer surface coordinate
+    system (known as "Torig", or "vox2ras-tkr").
+
+    See https://surfer.nmr.mgh.harvard.edu/fswiki/CoordinateSystems
+
+    :arg img: An :class:`.Image` object.
+
+    :return:  A ``(4, 4)`` matrix encoding an affine transformation from the
+              image voxel coordinate system to the corresponding Freesurfer
+              surface coordinate system.
+    """
+
+    zooms = np.array(img.pixdim[:3])
+    dims  = img.shape[ :3] * zooms / 2
+
+    xform        = np.zeros((4, 4), dtype=np.float32)
+    xform[ 0, 0] = -zooms[0]
+    xform[ 1, 2] =  zooms[2]
+    xform[ 2, 1] = -zooms[1]
+    xform[ 3, 3] = 1
+    xform[:3, 3] = [dims[0], -dims[2], dims[1]]
+
+    return xform
