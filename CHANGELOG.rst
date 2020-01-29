@@ -15,6 +15,8 @@ Added
   header with adjusted shape, pixdims, and affine. This can be useful for
   creating a resampling reference.
 * New :func:`.affine.rescale` function, for adjusting a scaling matrix.
+* New :func:`.mghimage.voxToSurfMat` function, for creating a
+  voxel-to-freesurfer affine transform from any image.
 
 
 Changed
@@ -37,6 +39,8 @@ Fixed
 * Fixed a bug in the :class:`.Mesh` class to prevent indices from being loaded
   as floating point type.
 * Fixed a bug in the :func:`.resample` function.
+* Fixed a bug in the :class:`.MGHImage` class, which was causing pixdims to
+  be overridden by scales derived from the affine.
 
 
 Deprecated
