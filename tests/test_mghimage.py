@@ -67,3 +67,9 @@ def test_MGHImage_save():
         expfile = op.abspath(fslimage.addExt('example', mustExist=False))
 
         assert img.dataSource == op.abspath(expfile)
+
+
+def test_voxToSurfMat():
+    testfile = op.join(datadir, 'example.mgz')
+    img = fslmgh.MGHImage(testfile)
+    assert np.all(np.isclose(img.voxToSurfMat, fslmgh.voxToSurfMat(img)))
