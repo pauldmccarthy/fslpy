@@ -1401,6 +1401,25 @@ def test_loadMeta():
         assert img.getMeta('b') == 2
 
 
+def test_loadMeta_nonBids():
+    with tempdir():
+
+        # non-bids file in a BIDS-like directory
+        imgfile  = op.join('data', 'sub-01', 'anat', 'sub-01_T1w_nonbids.nii.gz')
+
+        os.makedirs(op.dirname(imgfile))
+
+        make_image(imgfile)
+
+        with open(op.join('data', 'dataset_description.json'), 'wt') as f:
+            pass
+
+
+        img = fslimage.Image(imgfile, loadMeta=True)
+        assert list(img.metaKeys()) == []
+
+
+
 def test_loadMetadata():
     with tempdir():
         make_image('image.nii.gz')
