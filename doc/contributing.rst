@@ -67,9 +67,9 @@ numbers::
 
 
 The version number in the ``master`` branch should be of the form
-``major.minor.patch.dev``, to indicate that any releases made from this branch
-are development releases (although development releases are not part of the
-release model).
+``major.minor.patch.dev0``, to indicate that any releases made from this
+branch are development releases (although development releases are not part of
+the release model).
 
 
 Releases
@@ -92,6 +92,44 @@ Every release commit is also tagged with its full version number.  For
 example, the first release off the ``v1.0`` branch would be tagged with
 ``1.0.0``.  Patch releases to the ``v1.0`` branch would be tagged with
 ``1.0.1``, ``1.0.2``, etc.
+
+
+Major/minor releases
+^^^^^^^^^^^^^^^^^^^^
+
+
+Follow this process for major and minor releases. Steps 1 and 2 should be
+performed via a merge request onto the master branch, and step 4 via a merge
+request onto the relevant minor branch.
+
+
+1. Update the changelog on the master branch to include the new version number
+   and release date.
+2. On the master branch, update the version number in ``fsl/version.py`` to
+   a development version of **the next** minor release number. For example,
+   if you are about to release version ``1.3.0``, the version in the master
+   branch should be ``1.4.0.dev0``.
+3. Create the new minor release branch off the master branch.
+4. Update the version number on the release branch. If CI tests fail on the
+   release branch, postpone the release until they are fixed.
+5. Tag the new release on the minor release branch.
+
+
+Bugfix/patch releases
+^^^^^^^^^^^^^^^^^^^^^
+
+
+Follow this process for patch releases. Step 1 should be performed via
+a merge request onto the master branch, and step 2 via a merge request onto
+the relevant minor branch.
+
+
+1. Add the fix to the master branch, along with an updated changelog including
+   the version number and date for the bugfix release.
+2. Cherry-pick the relevant commit(s) from the master branch onto the minor
+   release branch, and update the version number on the minor release branch.
+   If CI tests fail on the release branch, go back to step 1.
+3. Tag the new release on the minor release branch.
 
 
 Testing

@@ -1540,7 +1540,8 @@ def loadMetadata(image):
     basename = op.basename(removeExt(filename))
     dirname  = op.dirname(filename)
 
-    if fslbids.inBIDSDir(image.dataSource):
+    if fslbids.isBIDSFile(image.dataSource) and \
+       fslbids.inBIDSDir( image.dataSource):
         return fslbids.loadMetadata(image.dataSource)
 
     jsonfile = op.join(dirname, '{}.json'.format(basename))

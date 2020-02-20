@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.8.1 (Thursday 20th February 2020)
+-----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug where an error would be raised on attempts to load an image file
+  without a BIDS-compatible name from a BIDS-like directory.
+
 
 2.8.0 (Wednesday 29th January 2020)
 -----------------------------------
