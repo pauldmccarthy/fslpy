@@ -398,16 +398,18 @@ def wslpath(patharg):
     Convert a command line argument containing a Windows path to the equivalent WSL path (e.g. ``c:\\Users`` -> ``/mnt/c/Users``) 
     
     :param patharg: Command line argument which may (or may not) contain a Windows path. It is assumed to be 
-                    either of the form <windows path> or --arg=<windows path>
+                    either of the form <windows path> or --<arg>=<windows path>
+    :return: If ``patharg`` matches a Windows path, the converted argument (including the --<arg>= portion). Otherwise
+             returns ``patharg`` unchanged.
     """
-    match = re.match("^(--[\w-]+=)?([a-zA-z]):(.+)$", path)
+    match = re.match("^(--[\w-]+=)?([a-zA-z]):(.+)$", patharg)
     if match:
         arg, drive, path = match.group(1, 2, 3)
         if arg is None:
             arg = ""
         return arg + "/mnt/" + drive.lower() + path.replace("\\", "/") 
     else:
-        return path
+        return patharg
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """
