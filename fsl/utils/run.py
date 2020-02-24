@@ -28,6 +28,8 @@ import               contextlib
 import               collections
 import subprocess as sp
 import os.path    as op
+import               os
+import               re
 
 import               six
 
@@ -359,7 +361,27 @@ def runfsl(*args, **kwargs):
     args = prepareArgs(args)
     for prefix in prefixes:
         cmdpath = op.join(prefix, args[0])
-        if op.isfile(cmdpath):
+        if fslplatform.fslwsl:
+            # We want to run the command from FSL installed in the Windows Subsystem for Linux
+            # First we check it exists in WSL (translating Windows path separators to Unix)
+            # Then we convert any Windows paths in the arguments (e.g. temp files) to the
+            # corresponding WSL Unix paths (C:/ -> /mnt/c)
+            # Then we prepend important environment variables - note that it seems we cannot
+            # use WSLENV for this due to its insistance on path mapping.
+            # Finally we append the command and its arguments
+            cmdpath = cmdpath.replace("\\", "/")
+            retcode = sp.call(["wsl", "test", "-x", cmdpath])
+            if retcode == 0:
+                args[0] = cmdpath
+                args = [wslpath(arg) for arg in args]
+                args = [
+                    "wsl",
+                    "PATH=$PATH:%s/bin" % fslplatform.fsldir,
+                    "FSLDIR=%s" % fslplatform.fsldir,
+                    "FSLOUTPUTTYPE=%s" % os.environ.get("FSLOUTPUTTYPE", "NIFTI_GZ")
+                ] + args
+                break
+        elif op.isfile(cmdpath):
             args[0] = cmdpath
             break
 
@@ -371,6 +393,25 @@ def runfsl(*args, **kwargs):
 
     return run(*args, **kwargs)
 
+def wslpath(patharg):
+    """ 
+    Convert a command line argument containing a Windows path to the equivalent WSL path (e.g. ``c:\\Users`` -> ``/mnt/c/Users``) 
+    
+    :param patharg: Command line argument which may (or may not) contain a Windows path. It is assumed to be 
+                    either of the form <windows path> or --arg=<windows path>
+    """
+    match = re.match("^(--[\w-]+=)?([a-zA-z]):(.+)$", path)
+    if match:
+        print(match)
+        print(match.group(1))
+        print(match.group(2))
+        print(match.group(3))
+        arg, drive, path = match.group(1, 2, 3)
+        if arg is None:
+            arg = ""
+        return arg + "/mnt/" + drive.lower() + path.replace("\\", "/") 
+    else:
+        return path
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """

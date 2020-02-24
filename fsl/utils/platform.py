@@ -291,6 +291,10 @@ class Platform(notifier.Notifier):
         """The FSL development directory location. """
         return os.environ.get('FSLDEVDIR', None)
 
+    @property
+    def fslwsl(self):
+        """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
+        return os.environ.get('FSLWSL', "0") == "1"
 
     @fsldir.setter
     def fsldir(self, value):
