@@ -402,10 +402,6 @@ def wslpath(patharg):
     """
     match = re.match("^(--[\w-]+=)?([a-zA-z]):(.+)$", path)
     if match:
-        print(match)
-        print(match.group(1))
-        print(match.group(2))
-        print(match.group(3))
         arg, drive, path = match.group(1, 2, 3)
         if arg is None:
             arg = ""
