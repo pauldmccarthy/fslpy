@@ -362,24 +362,9 @@ def runfsl(*args, **kwargs):
     for prefix in prefixes:
         cmdpath = op.join(prefix, args[0])
         if fslplatform.fslwsl:
-            # We want to run the command from FSL installed in the Windows Subsystem for Linux
-            # First we check it exists in WSL (translating Windows path separators to Unix)
-            # Then we convert any Windows paths in the arguments (e.g. temp files) to the
-            # corresponding WSL Unix paths (C:/ -> /mnt/c)
-            # Then we prepend important environment variables - note that it seems we cannot
-            # use WSLENV for this due to its insistance on path mapping.
-            # Finally we append the command and its arguments
-            cmdpath = cmdpath.replace("\\", "/")
-            retcode = sp.call(["wsl", "test", "-x", cmdpath])
-            if retcode == 0:
-                args[0] = cmdpath
-                args = [wslpath(arg) for arg in args]
-                args = [
-                    "wsl",
-                    "PATH=$PATH:%s/bin" % fslplatform.fsldir,
-                    "FSLDIR=%s" % fslplatform.fsldir,
-                    "FSLOUTPUTTYPE=%s" % os.environ.get("FSLOUTPUTTYPE", "NIFTI_GZ")
-                ] + args
+            wslargs = wslcmd(cmdpath, *args)
+            if wslargs is not None:
+                args = wslargs
                 break
         elif op.isfile(cmdpath):
             args[0] = cmdpath
@@ -392,6 +377,40 @@ def runfsl(*args, **kwargs):
             args[0], ', '.join(prefixes)))
 
     return run(*args, **kwargs)
+
+def wslcmd(cmdpath, *args):
+    """
+    Convert a command + arguments into an equivalent set of arguments that will run the command
+    under Windows Subsystem for Linux
+    
+    :param cmdpath: Fully qualified path to the command. This is essentially a WSL path not a Windows
+                    one since FSLDIR is specified as a WSL path, however it may have backslashes
+                    as path separators due to previous use of ``os.path.join``
+    :param args: Sequence of command arguments (the first of which is the unqualified command name)
+    
+    :return: If ``cmdpath`` exists and is executable in WSL, return a sequence of command arguments
+             which when executed will run the command in WSL. Windows paths in the argument list will
+             be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
+    """
+    # Check if command exists in WSL (translating Windows path separators to Unix as os.path.join 
+    # may have inserted some backslashes)
+    cmdpath = cmdpath.replace("\\", "/")
+    retcode = sp.call(["wsl", "test", "-x", cmdpath])
+    if retcode == 0:
+        # Form a new argument list and convert any Windows paths in it into WSL paths
+        wslargs = [wslpath(arg) for arg in args]
+        wslargs[0] = cmdpath
+        # Prepend important environment variables - note that it seems we cannot
+        # use WSLENV for this due to its insistance on path mapping.
+        return [
+            "wsl",
+            "PATH=$PATH:%s/bin" % fslplatform.fsldir,
+            "FSLDIR=%s" % fslplatform.fsldir,
+            "FSLOUTPUTTYPE=%s" % os.environ.get("FSLOUTPUTTYPE", "NIFTI_GZ")
+        ] + wslargs
+    else:
+        # Command was not found in WSL with this path
+        return None
 
 def wslpath(patharg):
     """ 
