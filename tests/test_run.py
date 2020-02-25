@@ -410,3 +410,7 @@ def test_run_logcmd():
 
         assert stdout                         == expstdout
         assert open('my_stdout', 'rt').read() == expcmd + expstdout
+
+def test_wslpath():
+    assert run.wslpath('c:\\Users\\Fishcake\\image.nii.gz') == '/mnt/c/Users/Fishcake/image.nii.gz'
+    assert run.wslpath('--input=x:\\transfers\\scratch\\image_2.nii') == '--input=/mnt/x/transfers/scratch/image_2.nii'

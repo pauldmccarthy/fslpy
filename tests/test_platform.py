@@ -212,3 +212,13 @@ def test_detect_ssh():
         p = fslplatform.Platform()
         assert not p.inSSHSession
         assert not p.inVNCSession
+
+def test_fslwsl():
+
+     with mock.patch.dict('os.environ', **{ 'FSLWSL' : '1'}):
+        p = fslplatform.Platform()
+        assert p.fslwsl
+
+     with mock.patch.dict('os.environ', **{ 'FSLWSL' : '0'}):
+        p = fslplatform.Platform()
+        assert not p.fslwsl
