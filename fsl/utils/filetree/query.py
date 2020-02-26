@@ -369,12 +369,12 @@ def scan(tree : FileTree) -> List[Match]:
     matches = []
     for template in tree.templates:
 
-        for filename in tree.get_all(template, glob_vars='all'):
+        for variables in tree.get_all_vars(template, glob_vars='all'):
 
-            if not op.isfile(filename):
+            filename = tree.update(**variables).get(template)
+
+            if not op.isfile(tree.update(**variables).get(template)):
                 continue
-
-            variables = dict(tree.extract_variables(template, filename))
 
             matches.append(Match(filename, template, tree, variables))
 

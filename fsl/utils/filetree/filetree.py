@@ -181,10 +181,10 @@ class FileTree(object):
         :param glob_vars: sequence of undefined variables that can take any possible values when looking for matches on the disk.
             Any defined variables in `glob_vars` will be ignored.
             If glob_vars is set to 'all', all undefined variables will be used to look up matches.
-        :return: sorted sequence of paths
+        :return: sequence of paths
         """
-        text, variables = self.get_template(short_name)
-        return tuple(str(Path(fn)) for fn in utils.get_all(text, variables, glob_vars=glob_vars))
+        return tuple([self.update(**vars).get(short_name)
+                      for vars in self.get_all_vars(short_name, glob_vars=glob_vars)])
 
     def get_all_vars(self, short_name: str, glob_vars=()) -> Tuple[Dict[str, str]]:
         """
@@ -196,7 +196,8 @@ class FileTree(object):
             If glob_vars is set to 'all', all undefined variables will be used to look up matches.
         :return: sequence of dictionaries with the variables settings used to generate each filename
         """
-        return tuple(self.extract_variables(short_name, fn) for fn in self.get_all(short_name, glob_vars=glob_vars))
+        text, variables = self.get_template(short_name)
+        return utils.get_all(text, variables, glob_vars=glob_vars)
 
     def get_all_trees(self, short_name: str, glob_vars=(), set_parent=True) -> Tuple["FileTree"]:
         """
