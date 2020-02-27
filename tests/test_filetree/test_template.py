@@ -25,3 +25,12 @@ def test_get_variables():
     assert {'subject': '01', 'session': 'A'} == utils.extract_variables('sub-{subject}/[ses-{session}]/T1w.nii.gz', 'sub-01/ses-A/T1w.nii.gz')
     with pytest.raises(ValueError):
         utils.extract_variables('sub-{subject}/[ses-{session}]/T1w.nii.gz', 'sub-01/other/T1w.nii.gz')
+
+
+def test_multiple_optionals():
+    with pytest.raises(KeyError):
+        utils.extract_variables('{var}[_{opt1}][_{opt2}]', 'test_foo')
+    assert {'var': 'test', 'opt1': None, 'opt2': None} == utils.extract_variables('{var}[_{opt1}][_{opt2}]', 'test')
+    assert {'var': 'test', 'opt1': 'oo', 'opt2': None} == utils.extract_variables('{var}[_f{opt1}][_{opt2}]', 'test_foo')
+
+
