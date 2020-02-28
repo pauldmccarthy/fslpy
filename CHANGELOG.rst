@@ -2,6 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.8.3 (Friday 28th February 2020)
+---------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug in the :meth:`.Image.save` method.
+
 
 2.8.2 (Thursday 27th February 2020)
 -----------------------------------

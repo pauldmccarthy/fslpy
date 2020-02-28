@@ -254,12 +254,17 @@ class Nifti(notifier.Notifier, meta.Meta):
                                                          shape,
                                                          pixdim)
 
-        self.header           = header
+        self.__header         = header
         self.__shape          = shape
         self.__origShape      = origShape
         self.__pixdim         = pixdim
         self.__affines        = affines
         self.__isNeurological = isneuro
+
+
+    def __del__(self):
+        """Clears the reference to the ``nibabel`` header object. """
+        self.__header = None
 
 
     @staticmethod
@@ -490,6 +495,24 @@ class Nifti(notifier.Notifier, meta.Meta):
         val = val.decode('ascii')
 
         return ''.join([c for c in val if c in string.printable]).strip()
+
+
+    @property
+    def header(self):
+        """Return a reference to the ``nibabel`` header object. """
+        return self.__header
+
+
+    @header.setter
+    def header(self, header):
+        """Replace the ``nibabel`` header object managed by this ``Nifti``
+        with a new header. The new header must have the same dimensions,
+        voxel size, and orientation as the old one.
+        """
+        new = Nifti(header)
+        if not (self.sameSpace(new) and self.ndim == new.ndim):
+            raise ValueError('Incompatible header')
+        self.__header = header
 
 
     @property
@@ -1180,8 +1203,7 @@ class Image(Nifti):
 
     def __del__(self):
         """Closes any open file handles, and clears some references. """
-
-        self.header         = None
+        Nifti.__del__(self)
         self.__nibImage     = None
         self.__imageWrapper = None
 
@@ -1410,12 +1432,6 @@ class Image(Nifti):
                 self.header     = self.__nibImage.header
 
             nib.save(self.__nibImage, tmpfname)
-
-            # nibabel should close any old
-            # file handles when the image/
-            # header refs are deleted
-            self.__nibImage = None
-            self.header     = None
 
             # Copy to final destination,
             # and reload from there

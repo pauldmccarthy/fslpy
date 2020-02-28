@@ -2,6 +2,13 @@
 
 set -e
 
+# Temporary: this should be done
+# in docker image definition
+apt install -y locales
+locale-gen en_US.UTF-8
+locale-gen en_GB.UTF-8
+update-locale
+
 # If running on a fork repository, we merge in the
 # upstream/master branch. This is done so that merge
 # requests from fork to the parent repository will
@@ -59,4 +66,4 @@ if [[ $CI_COMMIT_REF_NAME == v* ]]; then
     python setup.py test --addopts="$TEST_OPTS -m 'longtest'"
 fi
 
-python -m coverage report
+python -m coverage report -i
