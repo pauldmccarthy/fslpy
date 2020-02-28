@@ -262,6 +262,11 @@ class Nifti(notifier.Notifier, meta.Meta):
         self.__isNeurological = isneuro
 
 
+    def __del__(self):
+        """Clears the reference to the ``nibabel`` header object. """
+        self.__header = None
+
+
     @staticmethod
     def determineShape(header):
         """This method is called by :meth:`__init__`. It figures out the actual
@@ -507,7 +512,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         new = Nifti(header)
         if not (self.sameSpace(new) and self.ndim == new.ndim):
             raise ValueError('Incompatible header')
-        self.__header = new
+        self.__header = header
 
 
     @property
@@ -1198,8 +1203,7 @@ class Image(Nifti):
 
     def __del__(self):
         """Closes any open file handles, and clears some references. """
-
-        self.header         = None
+        Nifti.__del__(self)
         self.__nibImage     = None
         self.__imageWrapper = None
 
