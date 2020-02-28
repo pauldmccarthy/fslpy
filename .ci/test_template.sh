@@ -59,4 +59,4 @@ if [[ $CI_COMMIT_REF_NAME == v* ]]; then
     python setup.py test --addopts="$TEST_OPTS -m 'longtest'"
 fi
 
-python -m coverage report
+python -m coverage report -i
