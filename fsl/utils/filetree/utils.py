@@ -132,6 +132,9 @@ class Template:
     Splits a template into its constituent parts
     """
     def __init__(self, parts: Sequence[Part]):
+        if isinstance(parts, str):
+            raise ValueError("Input to Template should be a sequence of parts; " +
+                             "did you mean to call `Template.parse` instead?")
         self.parts = tuple(parts)
 
     @classmethod
