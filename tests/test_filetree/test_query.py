@@ -396,6 +396,104 @@ def test_query_subtree():
             op.join('subj-03', 'surf', 'R.white.gii')]
 
 
+def test_query_multi_subtree():
+    tree1 = tw.dedent("""
+    subj-{participant}
+        T1w.nii.gz (T1w)
+        native
+            ->surface space=native (surf_native)
+        mni
+            ->surface space=mni (surf_mni)
+    """)
+    tree2 = tw.dedent("""
+    {hemi}.{space}.gii (surface)
+    """)
+
+    files = [
+        op.join('subj-01', 'T1w.nii.gz'),
+        op.join('subj-01', 'native', 'L.native.gii'),
+        op.join('subj-01', 'native', 'R.native.gii'),
+        op.join('subj-01', 'mni',    'L.mni.gii'),
+        op.join('subj-01', 'mni',    'R.mni.gii'),
+        op.join('subj-02', 'T1w.nii.gz'),
+        op.join('subj-02', 'native', 'L.native.gii'),
+        op.join('subj-02', 'native', 'R.native.gii'),
+        op.join('subj-02', 'mni',    'L.mni.gii'),
+        op.join('subj-02', 'mni',    'R.mni.gii'),
+        op.join('subj-03', 'T1w.nii.gz'),
+        op.join('subj-03', 'native', 'L.native.gii'),
+        op.join('subj-03', 'native', 'R.native.gii'),
+        op.join('subj-03', 'mni',    'L.mni.gii'),
+        op.join('subj-03', 'mni',    'R.mni.gii')]
+
+    with testdir(files):
+        with open('tree1.tree',   'wt') as f: f.write(tree1)
+        with open('surface.tree', 'wt') as f: f.write(tree2)
+
+        tree = filetree.FileTree.read('tree1.tree', '.')
+        query = filetree.FileTreeQuery(tree)
+
+        assert sorted(query.templates) == ['T1w',
+                                           'surf_mni/surface',
+                                           'surf_native/surface']
+
+        qvars = query.variables()
+        assert sorted(qvars.keys()) == ['hemi', 'participant', 'space']
+        assert qvars['hemi']        == ['L', 'R']
+        assert qvars['participant'] == ['01', '02', '03']
+        assert qvars['space']       == ['mni', 'native']
+
+        qvars = query.variables('T1w')
+        assert sorted(qvars.keys()) == ['participant']
+        assert qvars['participant'] == ['01', '02', '03']
+
+        qvars = query.variables('surf_mni/surface')
+        assert sorted(qvars.keys()) == ['hemi', 'participant', 'space']
+        assert qvars['hemi']        == ['L', 'R']
+        assert qvars['participant'] == ['01', '02', '03']
+        assert qvars['space']       == ['mni', 'native']
+
+        qvars = query.variables('surf_native/surface')
+        assert sorted(qvars.keys()) == ['hemi', 'participant', 'space']
+        assert qvars['hemi']        == ['L', 'R']
+        assert qvars['participant'] == ['01', '02', '03']
+        assert qvars['space']       == ['mni', 'native']
+
+        got = query.query('T1w')
+        assert [m.filename for m in sorted(got)] == [
+            op.join('subj-01', 'T1w.nii.gz'),
+            op.join('subj-02', 'T1w.nii.gz'),
+            op.join('subj-03', 'T1w.nii.gz')]
+
+        got = query.query('T1w', participant='01')
+        assert [m.filename for m in sorted(got)] == [
+            op.join('subj-01', 'T1w.nii.gz')]
+
+        got = query.query('surf_mni/surface')
+        assert [m.filename for m in sorted(got)] == [
+            op.join('subj-01', 'mni', 'L.mni.gii'),
+            op.join('subj-01', 'mni', 'R.mni.gii'),
+            op.join('subj-02', 'mni', 'L.mni.gii'),
+            op.join('subj-02', 'mni', 'R.mni.gii'),
+            op.join('subj-03', 'mni', 'L.mni.gii'),
+            op.join('subj-03', 'mni', 'R.mni.gii')]
+
+        got = query.query('surf_native/surface', hemi='L')
+        assert [m.filename for m in sorted(got)] == [
+            op.join('subj-01', 'native', 'L.native.gii'),
+            op.join('subj-02', 'native', 'L.native.gii'),
+            op.join('subj-03', 'native', 'L.native.gii')]
+
+        got = query.query('surf_native/surface', space='mni')
+        assert [m.filename for m in sorted(got)] == []
+
+        got = query.query('surf_native/surface', space='native', hemi='R')
+        assert [m.filename for m in sorted(got)] == [
+            op.join('subj-01', 'native', 'R.native.gii'),
+            op.join('subj-02', 'native', 'R.native.gii'),
+            op.join('subj-03', 'native', 'R.native.gii')]
+
+
 def test_scan():
 
     with _test_data():
