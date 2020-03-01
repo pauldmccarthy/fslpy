@@ -13,17 +13,24 @@ def same_path(p1, p2):
 
 def test_simple_tree():
     tree = filetree.FileTree.read('eddy')
-    assert tree.variables['basename'] == 'eddy_output'
+    assert 'basename' not in tree.variables
+
     same_path(tree.get('basename'), './eddy_output')
     same_path(tree.get('image'), './eddy_output.nii.gz')
 
     tree = filetree.FileTree.read('eddy.tree', basename='out')
-    same_path(tree.get('basename'), './out')
-    same_path(tree.update(basename='test').get('basename'), './test')
+    assert 'basename' not in tree.variables
     same_path(tree.get('basename'), './out')
 
     with pytest.raises(ValueError):
         filetree.FileTree.read('non_existing')
+
+    # without partial_fill
+    tree_no_fill = filetree.FileTree.read('eddy', partial_fill=False)
+    tree_no_fill.variables['basename'] == 'eddy_output'
+    same_path(tree_no_fill.get('basename'), './eddy_output')
+    same_path(tree_no_fill.update(basename='test').get('basename'), './test')
+    same_path(tree_no_fill.get('basename'), './eddy_output')
 
 
 def test_complicated_tree():

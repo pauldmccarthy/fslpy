@@ -28,11 +28,11 @@ class FileTree(object):
     - ``name``: descriptive name of the tree
     """
     def __init__(self,
-                 templates: Dict[str, str],
-                 variables: Dict[str, Any],
-                 sub_trees: Dict[str, "FileTree"] = None,
-                 parent:    Optional["FileTree"] = None,
-                 name:      str = None):
+                 templates:    Dict[str, str],
+                 variables:    Dict[str, Any],
+                 sub_trees:    Dict[str, "FileTree"] = None,
+                 parent:       Optional["FileTree"] = None,
+                 name:         str = None):
         """
         Creates a new filename tree.
         """
@@ -51,14 +51,12 @@ class FileTree(object):
         """
         return self._parent
 
-
     @property
     def name(self, ):
         """
         Name of this ``FileTree``, or ``None`` if it has no name.
         """
         return self._name
-
 
     @property
     def all_variables(self, ):
@@ -328,8 +326,35 @@ class FileTree(object):
             return False
         return True
 
+    def partial_fill(self, ) -> "FileTree":
+        """
+        Fills in known variables into the templates
+
+        :return: The resulting tree will have empty `variables` dictionaries and updated templates
+        """
+        new_tree = deepcopy(self)
+        to_update = new_tree
+        while to_update.parent is not None:
+            to_update = to_update.parent
+        to_update._update_partial_fill()
+        return new_tree
+
+    def _update_partial_fill(self, ):
+        """
+        Helper function for `partial_fill` that updates the templates in place
+        """
+        new_templates = {}
+        for short_name in self.templates:
+            template, variables = self.get_template(short_name)
+            new_templates[short_name] = str(utils.Template.parse(template).fill_known(variables))
+        self.templates = new_templates
+
+        for tree in self.sub_trees.values():
+            tree._update_partial_fill()
+        self.variables = {}
+
     @classmethod
-    def read(cls, tree_name: str, directory='.', **variables) -> "FileTree":
+    def read(cls, tree_name: str, directory='.', partial_fill=True, **variables) -> "FileTree":
         """
         Reads a FileTree from a specific file
 
@@ -339,6 +364,7 @@ class FileTree(object):
         :param tree_name: file containing the filename tree.
             Can provide the filename of a tree file or the name for a tree in the ``filetree.tree_directories``.
         :param directory: parent directory of the full tree (defaults to current directory)
+        :param partial_fill: By default any known `variables` are filled into the `template` immediately
         :param variables: variable settings
         :return: dictionary from specifier to filename
         """
@@ -422,6 +448,8 @@ class FileTree(object):
         res = get_registered(tree_name, cls)(templates, variables=file_variables, sub_trees=sub_trees, name=tree_name)
         for tree in sub_trees.values():
             tree._parent = res
+        if partial_fill:
+            res = res.partial_fill()
         return res
 
 
