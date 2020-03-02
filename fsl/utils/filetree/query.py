@@ -373,7 +373,7 @@ def scan(tree : FileTree) -> List[Match]:
 
             filename = tree.update(**variables).get(template)
 
-            if not op.isfile(tree.update(**variables).get(template)):
+            if not op.isfile(filename):
                 continue
 
             matches.append(Match(filename, template, tree, variables))
