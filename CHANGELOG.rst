@@ -2,6 +2,21 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+2.8.4 (Monday 2nd March 2020)
+-----------------------------
+
+
+Added
+^^^^^
+
+
+* Added a new ``partial_fill`` option to :meth:`.FileTree.read`, which
+  effectively eliminates any variables which only have one value. This was
+  added to accommodate some behavioural changes that were introduced in 2.8.2.
+
+
+
 2.8.3 (Friday 28th February 2020)
 ---------------------------------
 
