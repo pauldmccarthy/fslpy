@@ -20,6 +20,7 @@
 
 
 import               sys
+import               shlex
 import               logging
 import               threading
 import               contextlib
@@ -81,7 +82,7 @@ def prepareArgs(args):
 
         # Argument was a command string
         if isinstance(args[0], six.string_types):
-            args = args[0].split()
+            args = shlex.split(args[0])
 
         # Argument was an unpacked sequence
         else:
