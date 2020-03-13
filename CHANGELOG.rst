@@ -10,6 +10,7 @@ Added
 ^^^^^
 
 
+* New wrapper function for the FSL :func:`.prelude` command.
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
@@ -24,6 +25,15 @@ Changed
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
+
+
+Fixed
+^^^^^
+
+
+* Updated the :func:`.prepareArgs` function to use ``shlex.split`` when
+  preparing shell command arguments, instead of performing a naive whitespace
+  split.
 
 
 2.8.4 (Monday 2nd March 2020)
