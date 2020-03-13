@@ -62,3 +62,24 @@ def sigloss(input, sigloss, **kwargs):
     cmd += wutils.applyArgStyle('--', valmap=valmap, **kwargs)
 
     return cmd
+
+
+@wutils.fileOrImage('complex', 'abs', 'phase', 'mask',
+                    'out', 'unwrap', 'savemask', 'rawphase', 'labels')
+@wutils.fslwrapper
+def prelude(**kwargs):
+    """Wrapper for the ``sigloss`` command."""
+
+    valmap = {
+        'labelslices' : wutils.SHOW_IF_TRUE,
+        'slices'      : wutils.SHOW_IF_TRUE,
+        'force3D'     : wutils.SHOW_IF_TRUE,
+        'removeramps' : wutils.SHOW_IF_TRUE,
+        'verbose'     : wutils.SHOW_IF_TRUE,
+    }
+
+    cmd = ['prelude'] + wutils.applyArgStyle('--=',
+                                             valmap=valmap,
+                                             **kwargs)
+
+    return cmd

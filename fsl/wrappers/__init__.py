@@ -95,6 +95,7 @@ from .fnirt        import (fnirt,           # noqa
                            convertwarp)
 from .fslmaths     import (fslmaths,)       # noqa
 from .fugue        import (fugue,           # noqa
+                           prelude,
                            sigloss)
 from .melodic      import (melodic,         # noqa
                            fsl_regfilt)
