@@ -195,6 +195,20 @@ def test_sigloss():
         assert checkResult(result.output[0], *expected)
 
 
+def test_prelude():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('prelude',)) as fsldir:
+        prelude  = op.join(fsldir, 'bin', 'prelude')
+        result   = fw.prelude(complex='complex',
+                              out='out',
+                              labelslices=True,
+                              start=5)
+        expected = (prelude, ('--complex=complex',
+                              '--out=out',
+                              '--labelslices',
+                              '--start=5'))
+        assert checkResult(result.output[0], *expected)
+
+
 def test_melodic():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('melodic',)) as fsldir:
         melodic  = op.join(fsldir, 'bin', 'melodic')
