@@ -36,6 +36,17 @@ def mkexec(path, contents):
     os.chmod(path, 0o755)
 
 
+def test_prepareArgs():
+    tests = [
+        ('a b c',              ['a', 'b', 'c']),
+        (['a', 'b', 'c'],      ['a', 'b', 'c']),
+        ('abc "woop woop"',    ['abc', 'woop woop']),
+        (['abc', 'woop woop'], ['abc', 'woop woop']),
+    ]
+
+    for args, expected in tests:
+        assert run.prepareArgs((args, )) == expected
+
 def test_run():
 
     test_script = textwrap.dedent("""
