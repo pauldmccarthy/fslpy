@@ -10,7 +10,8 @@ Added
 ^^^^^
 
 
-* New wrapper function for the FSL :func:`.prelude` command.
+* New wrapper functions for the FSL :func:`.prelude` and :func:`applyxfm4D`
+  commands.
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
@@ -25,6 +26,12 @@ Changed
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
+* Wrapper functions decorated with the :func:`.fileOrImage`,
+ :func:`.fileOrArray`, or :func:`.fileOrText` decorators will now pass all
+  arguments and return values through unchanged if an argument called ``submit``
+  is passed in, and is set to ``True`` (or any non-``False``
+  value). Furthermore, in such a scenario a :exc:`ValueError` will be raised if
+  any in-memory objects or ``LOAD`` symbols are passed.
 
 
 Fixed
