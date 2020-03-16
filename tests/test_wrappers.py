@@ -105,6 +105,17 @@ def test_applyxfm():
         assert checkResult(result.output[0], *expected)
 
 
+def test_applyxfm():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('applyxfm4D',)) as fsldir:
+        applyxfm = op.join(fsldir, 'bin', 'applyxfm4D')
+        result   = fw.applyxfm4D(
+            'src', 'ref', 'out', 'mat', fourdigit=True, userprefix='boo')
+        expected = (applyxfm + ' src ref out mat',
+                    ('-fourdigit',
+                     '-userprefix boo'))
+        assert checkResult(result.output[0], *expected)
+
+
 def test_invxfm():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convert_xfm',)) as fsldir:
         cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
