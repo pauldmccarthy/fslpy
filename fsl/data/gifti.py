@@ -102,8 +102,11 @@ class GiftiMesh(fslmesh.Mesh):
         # as the specfiied one.
         if loadAll:
 
+            # Only attempt to auto-load sensibly
+            # named gifti files (i.e. *.surf.gii,
+            # rather than *.gii).
+            surfFiles = relatedFiles(infile, [ALLOWED_EXTENSIONS[0]])
             nvertices = vertices[0].shape[0]
-            surfFiles = relatedFiles(infile, ALLOWED_EXTENSIONS)
 
             for sfile in surfFiles:
 
