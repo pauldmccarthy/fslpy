@@ -584,6 +584,37 @@ def test_fileOrThing_chained_outprefix():
         assert np.all(res['out_array'] == exparr)
 
 
+def test_fileOrThing_submit():
+
+    @wutils.fileOrImage('input', 'output')
+    def func(input, output, submit=False):
+
+        if submit:
+            return 'submitted!'
+
+        img = nib.load(input)
+        img = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 2, np.eye(4))
+
+        nib.save(img, output)
+
+    with tempdir.tempdir() as td:
+        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        exp = np.asanyarray(img.dataobj) * 2
+        nib.save(img, 'input.nii.gz')
+
+        result = func(img, wutils.LOAD)
+        assert np.all(np.asanyarray(result['output'].dataobj) == exp)
+
+        assert func('input.nii.gz', 'output.nii.gz', submit=True) == 'submitted!'
+
+        with pytest.raises(ValueError):
+            func(img, wutils.LOAD, submit=True)
+        with pytest.raises(ValueError):
+            func(img, 'output.nii.gz', submit=True)
+        with pytest.raises(ValueError):
+            func('input.nii.gz', wutils.LOAD, submit=True)
+
+
 def test_cmdwrapper():
     @wutils.cmdwrapper
     def func(a, b):
