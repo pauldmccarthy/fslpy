@@ -463,8 +463,9 @@ class _FileOrThing(object):
 
     This is because most functions that are decorated with the
     :func:`fileOrImage` or :func:`fileOrArray` decorators will invoke a call
-    to :func:`.run` or :func:`.runfsl`, where a value of ``submit=True`` will
-    cause the command to be executed asynchronously on a cluster platform.
+    to :func:`.run.run` or :func:`.runfsl`, where a value of ``submit=True``
+    will cause the command to be executed asynchronously on a cluster
+    platform.
 
 
     A :exc:`ValueError` will be raised if the decorated function is called
