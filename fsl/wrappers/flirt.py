@@ -14,6 +14,7 @@ tools.
 
    flirt
    applyxfm
+   applyxfm4D
    invxfm
    concatxfm
    mcflirt
@@ -68,6 +69,25 @@ def applyxfm(src, ref, mat, out, interp='spline', **kwargs):
                  init=mat,
                  interp=interp,
                  **kwargs)
+
+
+@wutils.fileOrArray('mat')
+@wutils.fileOrImage('src', 'ref', 'out')
+@wutils.fslwrapper
+def applyxfm4D(src, ref, out, mat, **kwargs):
+    """Wrapper for the ``applyxfm4D`` command. """
+
+    asrt.assertIsNifti(src, ref)
+
+    valmap = {
+        'singlematrix' : wutils.SHOW_IF_TRUE,
+        'fourdigit'    : wutils.SHOW_IF_TRUE,
+    }
+
+    cmd  = ['applyxfm4D', src, ref, out, mat]
+    cmd += wutils.applyArgStyle('-', valmap=valmap, **kwargs)
+
+    return cmd
 
 
 @wutils.fileOrArray()

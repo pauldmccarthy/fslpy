@@ -87,6 +87,7 @@ from .fsl_anat     import (fsl_anat,)       # noqa
 from .flirt        import (flirt,           # noqa
                            invxfm,
                            applyxfm,
+                           applyxfm4D,
                            concatxfm,
                            mcflirt)
 from .fnirt        import (fnirt,           # noqa
