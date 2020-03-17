@@ -545,20 +545,44 @@ class _FileOrThing(object):
         items, with the argument name as key, and the output object (the
         "thing") as value.
 
+        Where possible (i.e. for outputs named with a valid Python
+        identifier), the outputs are also made accessible as attributes of
+        this
+
         The decorated function's actual return value is accessible via the
-        :meth:`output` property.
+        :meth:`stdout` property.
         """
 
 
-        def __init__(self, output):
+        def __init__(self, stdout):
+            """Create a ``_Results`` dict.
+
+            :arg stdout: Return value of the ecorated function (typically the
+                         standard output of the underlying command).
+            """
             super().__init__()
-            self.__output = output
+            self.__stdout = stdout
+
+
+        def __setitem__(self, key, val):
+            """Add an item to the dict. The item is also added as an attribute
+            if possible.
+            """
+            super().__setitem__(key, val)
+
+            # try and add as an attribute too,
+            # but don't bother if the key cannot
+            # be used as a python identifier
+            try:
+                setattr(self, key, val)
+            except AttributeError:
+                pass
 
 
         @property
-        def output(self):
+        def stdout(self):
             """Access the return value of the decorated function. """
-            return self.__output
+            return self.__stdout
 
 
     def __init__(self,
