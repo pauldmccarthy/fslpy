@@ -564,7 +564,7 @@ class _FileOrThing(object):
         def __init__(self, stdout):
             """Create a ``_Results`` dict.
 
-            :arg stdout: Return value of the ecorated function (typically a
+            :arg stdout: Return value of the decorated function (typically a
                          tuple containing the standard output and error of the
                          underlying command).
             """
