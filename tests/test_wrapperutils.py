@@ -586,6 +586,44 @@ def test_fileOrThing_results():
         for i in range(3):
             assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
 
+        result = func(input, wutils.LOAD, wutils.LOAD)
+        assert len(result) == 4
+
+
+def test_FileOrThing_invalid_identifiers():
+    # unlikely to ever happen, but let's test arguments with
+    # names that are not valid python identifiers
+    @wutils.fileOrArray('in val', '2out')
+    def func(**kwargs):
+
+        infile  = kwargs['in val']
+        outfile = kwargs['2out']
+
+        input = np.loadtxt(infile)
+        np.savetxt(outfile, input * 2)
+
+        return ('return', 'value')
+
+    input  = np.random.randint(1, 10, (3, 3))
+    infile = 'input.txt'
+    exp    = input * 2
+
+    with tempdir.tempdir():
+
+        np.savetxt(infile, input)
+
+        res = func(**{'in val' : infile, '2out' : 'output.txt'})
+        assert res.stdout == ('return', 'value')
+        assert (np.loadtxt('output.txt') == exp).all()
+
+        res = func(**{'in val' : input, '2out' : 'output.txt'})
+        assert res.stdout == ('return', 'value')
+        assert (np.loadtxt('output.txt') == exp).all()
+
+        res = func(**{'in val' : input, '2out' : wutils.LOAD})
+        assert res.stdout == ('return', 'value')
+        assert (res['2out'] == exp).all()
+
 
 
 def test_chained_fileOrImageAndArray():
