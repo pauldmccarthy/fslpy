@@ -95,6 +95,7 @@ import                    sys
 import                    glob
 import                    random
 import                    string
+import                    pathlib
 import                    fnmatch
 import                    inspect
 import                    logging
@@ -557,8 +558,9 @@ class _FileOrThing(object):
         def __init__(self, stdout):
             """Create a ``_Results`` dict.
 
-            :arg stdout: Return value of the ecorated function (typically the
-                         standard output of the underlying command).
+            :arg stdout: Return value of the ecorated function (typically a
+                         tuple containing the standard output and error of the
+                         underlying command).
             """
             super().__init__()
             self.__stdout = stdout
@@ -1101,14 +1103,39 @@ def fileOrText(*args, **kwargs):
     """Decorator which can be used to ensure that any text output (e.g. log
     file) are saved to text files, and output files can be loaded and returned
     as strings.
+
+    To be able to distinguish between input values and input file paths, the
+    ``fileOrText`` decorator requires that input and output file paths are
+    passed in as ``pathlib.Path`` objects. For example, given a function
+    like this::
+
+        @fileOrText()
+        def myfunc(infile, outfile):
+            ...
+
+    if we want to pass file paths for both ``infile`` and ``outfile``, we would
+    do this::
+
+        from pathlib import Path
+        myfunc(Path('input.txt'), Path('output.txt'))
+
+    Input values may be passed in as normal strings, e.g.::
+
+        myfunc('input data', Path('output.txt'))
+
+    Output values can be loaded as normal via the :attr:`LOAD` symbol, e.g.::
+
+        myfunc(Path('input.txt'), LOAD)
     """
 
     def prepIn(workdir, name, val):
 
         infile = None
 
-        if isinstance(val, six.string_types):
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
+        if not isinstance(val, pathlib.Path):
+            with tempfile.NamedTemporaryFile(mode='w',
+                                             suffix='.txt',
+                                             delete=False) as f:
                 f.write(val)
                 infile = f.name
         return infile
