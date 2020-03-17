@@ -48,7 +48,7 @@ def test_bet():
         bet      = op.join(fsldir, 'bin', 'bet')
         result   = fw.bet('input', 'output', mask=True, c=(10, 20, 30))
         expected = (bet + ' input output', ('-m', '-c 10 20 30'))
-        assert checkResult(result.output[0], *expected, stripdir=[2])
+        assert checkResult(result.stdout[0], *expected, stripdir=[2])
 
 
 def test_robustfov():
@@ -56,7 +56,7 @@ def test_robustfov():
         rfov     = op.join(fsldir, 'bin', 'robustfov')
         result   = fw.robustfov('input', 'output', b=180)
         expected = (rfov + ' -i input', ('-r output', '-b 180'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_eddy_cuda():
@@ -73,7 +73,7 @@ def test_eddy_cuda():
                            '--out=out',
                            '--dont_mask_output'))
 
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_topup():
@@ -81,7 +81,7 @@ def test_topup():
         topup    = op.join(fsldir, 'bin', 'topup')
         result   = fw.topup('imain', 'datain', minmet=1)
         expected = topup + ' --imain=imain --datain=datain --minmet=1'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_flirt():
@@ -90,7 +90,7 @@ def test_flirt():
         result   = fw.flirt('src', 'ref', usesqform=True, anglerep='euler')
         expected = (flirt + ' -in src -ref ref',
                     ('-usesqform', '-anglerep euler'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_applyxfm():
@@ -102,7 +102,7 @@ def test_applyxfm():
                      '-out out',
                      '-init mat',
                      '-interp trilinear'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_applyxfm():
@@ -113,7 +113,7 @@ def test_applyxfm():
         expected = (applyxfm + ' src ref out mat',
                     ('-fourdigit',
                      '-userprefix boo'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_invxfm():
@@ -121,7 +121,7 @@ def test_invxfm():
         cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
         result   = fw.invxfm('mat', 'output')
         expected = cnvxfm + ' -omat output -inverse mat'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_concatxfm():
@@ -129,7 +129,7 @@ def test_concatxfm():
         cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
         result   = fw.concatxfm('mat1', 'mat2', 'output')
         expected = cnvxfm + ' -omat output -concat mat2 mat1'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_mcflirt():
@@ -140,7 +140,7 @@ def test_mcflirt():
                     ('-out output',
                      '-cost normcorr',
                      '-dof 12'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_fnirt():
@@ -153,7 +153,7 @@ def test_fnirt():
                      '--iout=iout',
                      '--fout=fout',
                      '--subsamp=8,6,4,2'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_applywarp():
@@ -162,7 +162,7 @@ def test_applywarp():
         result    = fw.applywarp('src', 'ref', 'out', warp='warp', abs=True, super=True)
         expected  = (applywarp + ' --in=src --ref=ref --out=out',
                      ('--warp=warp', '--abs', '--super'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_invwarp():
@@ -172,7 +172,7 @@ def test_invwarp():
                               rel=True, noconstraint=True)
         expected = (invwarp + ' --warp=warp --ref=ref --out=out',
                      ('--rel', '--noconstraint'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_convertwarp():
@@ -181,7 +181,7 @@ def test_convertwarp():
         result   = fw.convertwarp('out', 'ref', absout=True, jacobian='jacobian')
         expected = (cnvwarp + ' --ref=ref --out=out',
                      ('--absout', '--jacobian=jacobian'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_fugue():
@@ -193,7 +193,7 @@ def test_fugue():
                             '--warp=warp',
                             '--median',
                             '--dwell=10'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 
@@ -203,7 +203,7 @@ def test_sigloss():
         result   = fw.sigloss('input', 'sigloss', mask='mask', te=0.5)
         expected = (sigloss + ' --in input --sigloss sigloss',
                     ('--mask mask', '--te 0.5'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_prelude():
@@ -217,7 +217,7 @@ def test_prelude():
                               '--out=out',
                               '--labelslices',
                               '--start=5'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_melodic():
@@ -226,7 +226,7 @@ def test_melodic():
         result   = fw.melodic('input', dim=50, mask='mask', Oall=True)
         expected = (melodic + ' --in=input',
                     ('--dim=50', '--mask=mask', '--Oall'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_fsl_regfilt():
@@ -236,7 +236,7 @@ def test_fsl_regfilt():
                                   filter=(1, 2, 3, 4), vn=True)
         expected = (regfilt + ' --in=input --out=output --design=design',
                     ('--filter=1,2,3,4', '--vn'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 
@@ -245,7 +245,7 @@ def test_fslreorient2std():
         r2std    = op.join(fsldir, 'bin', 'fslreorient2std')
         result   = fw.fslreorient2std('input', 'output')
         expected = r2std + ' input output'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_fslroi():
@@ -254,15 +254,15 @@ def test_fslroi():
 
         result   = fw.fslroi('input', 'output', 1, 10)
         expected = fslroi + ' input output 1 10'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
         result   = fw.fslroi('input', 'output', 1, 10, 2, 20, 3, 30)
         expected = fslroi + ' input output 1 10 2 20 3 30'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
         result   = fw.fslroi('input', 'output', 1, 10, 2, 20, 3, 30, 4, 40)
         expected = fslroi + ' input output 1 10 2 20 3 30 4 40'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_slicer():
@@ -270,7 +270,7 @@ def test_slicer():
         slicer   = op.join(fsldir, 'bin', 'slicer')
         result   = fw.slicer('input1', 'input2', i=(20, 100), x=(20, 'x.png'))
         expected = slicer + ' input1 input2 -i 20 100 -x 20 x.png'
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
 
 def test_cluster():
@@ -280,7 +280,7 @@ def test_cluster():
                               fractional=True, osize='osize')
         expected = (cluster + ' --in=input --thresh=thresh',
                     ('--fractional', '--osize=osize'))
-        assert checkResult(result.output[0], *expected)
+        assert checkResult(result.stdout[0], *expected)
 
 
 def test_fslmaths():
@@ -300,7 +300,7 @@ def test_fslmaths():
                     '-inm inmim', '-bptf 1 10', 'output']
         expected = ' '.join(expected)
 
-        assert result.output[0] == expected
+        assert result.stdout[0] == expected
 
     # test LOAD output
     with tempdir() as td, mockFSLDIR(bin=('fslmaths',)) as fsldir:
@@ -328,12 +328,12 @@ def test_fast():
         result   = fw.fast('input', 'myseg', n_classes=3)
         expected = [cmd, '-v', '--out=myseg', '--class=3', 'input']
 
-        assert result.output[0] == ' '.join(expected)
+        assert result.stdout[0] == ' '.join(expected)
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3)
         expected = [cmd, '-v', '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
 
-        assert result.output[0] == ' '.join(expected)
+        assert result.stdout[0] == ' '.join(expected)
 
 
 
@@ -348,4 +348,4 @@ def test_fsl_anat():
         expected = [cmd, '-i', 't1', '-o', 'fsl_anat', '-t', 'T1',
                     '-s', '25']
 
-        assert result.output[0] == ' '.join(expected)
+        assert result.stdout[0] == ' '.join(expected)

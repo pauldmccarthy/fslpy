@@ -8,6 +8,7 @@
 import os.path as op
 import            os
 import            shlex
+import            pathlib
 import            textwrap
 
 try: from unittest import mock
@@ -353,6 +354,30 @@ def test_fileOrThing_sequence():
         assert np.all(func(infiles[0], wutils.LOAD)['out'] == inputs[0])
 
 
+def test_fileOrText():
+
+    @wutils.fileOrText('input', 'output')
+    def func(input, output):
+        data = open(input).read()
+        data = ''.join(['{}{}'.format(c, c) for c in data])
+        open(output, 'wt').write(data)
+
+    with tempdir.tempdir():
+
+        data = 'abcdefg'
+        exp  = 'aabbccddeeffgg'
+
+        open('input.txt', 'wt').write(data)
+
+        func(pathlib.Path('input.txt'), pathlib.Path('output.txt'))
+        assert open('output.txt').read() == exp
+
+        func('abcdefg', pathlib.Path('output.txt'))
+        assert open('output.txt').read() == exp
+
+        assert func('12345', wutils.LOAD).output == '1122334455'
+
+
 def test_fileOrThing_outprefix():
 
     @wutils.fileOrImage('img', outprefix='output_base')
@@ -494,6 +519,73 @@ def test_fileOrThing_outprefix_directory():
         assert len(res) == 2
         assert np.all(np.asanyarray(res[op.join('foo', 'myout_imgs', 'img2')].dataobj) == exp2)
         assert np.all(np.asanyarray(res[op.join('foo', 'myout_imgs', 'img4')].dataobj) == exp4)
+
+
+
+def test_fileOrThing_results():
+    @wutils.fileOrArray('input', 'regular_output', outprefix='outpref')
+    def func(input, regular_output, outpref):
+
+        input = np.loadtxt(input)
+
+        regout   = input * 2
+        prefouts = []
+        for i in range(3, 6):
+            prefouts.append(input * i)
+
+        np.savetxt(regular_output, regout)
+        for i, o in enumerate(prefouts):
+            np.savetxt('{}_{}.txt'.format(outpref, i), o)
+
+        return ('return', 'value')
+
+    input  = np.random.randint(1, 10, (3, 3))
+    infile = 'input.txt'
+    exp    = [input * i for i in range(2, 6)]
+
+    with tempdir.tempdir():
+
+        np.savetxt(infile, input)
+
+        result = func('input.txt', 'regout.txt', 'outpref')
+        assert len(result) == 0
+        assert result.stdout == ('return', 'value')
+        assert (np.loadtxt('regout.txt') == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        result = func(input, 'regout.txt', 'outpref')
+        assert len(result) == 0
+        assert result.stdout == ('return', 'value')
+        assert (np.loadtxt('regout.txt') == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        result = func(input, wutils.LOAD, 'outpref')
+        assert len(result) == 1
+        assert result.stdout == ('return', 'value')
+        assert (result .regular_output == exp[0]).all()
+        assert (result['regular_output'] == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        # todo outpref
+        result = func(input, wutils.LOAD, wutils.LOAD)
+        assert len(result) == 4
+        assert result.stdout == ('return', 'value')
+        assert (result .regular_output == exp[0]).all()
+        assert (result['regular_output'] == exp[0]).all()
+
+        assert (result .outpref_0   == exp[1]).all()
+        assert (result['outpref_0'] == exp[1]).all()
+        assert (result .outpref_1   == exp[2]).all()
+        assert (result['outpref_1'] == exp[2]).all()
+        assert (result .outpref_2   == exp[3]).all()
+        assert (result['outpref_2'] == exp[3]).all()
+
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
 
 
 def test_chained_fileOrImageAndArray():
