@@ -105,7 +105,7 @@ def test_applyxfm():
         assert checkResult(result.stdout[0], *expected)
 
 
-def test_applyxfm():
+def test_applyxfm4D():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('applyxfm4D',)) as fsldir:
         applyxfm = op.join(fsldir, 'bin', 'applyxfm4D')
         result   = fw.applyxfm4D(

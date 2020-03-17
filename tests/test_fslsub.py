@@ -19,8 +19,8 @@ from fsl.utils.tempdir import tempdir
 from . import mockFSLDIR
 
 
-mock_fsl_sub = f"""
-#!{sys.executable}
+mock_fsl_sub = """
+#!{}
 
 import random
 import os
@@ -56,7 +56,7 @@ with open(f'{{cmd}}.o{{jobid}}', 'w') as stdout, \
 
 print(str(jobid))
 sys.exit(0)
-""".strip()
+""".format(sys.executable).strip()
 
 
 @contextlib.contextmanager
