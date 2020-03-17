@@ -50,8 +50,8 @@ env['PYTHONPATH'] = op.join(op.dirname(fsl.__file__), '..')
 cmd   = op.basename(args[0])
 jobid = random.randint(1, 9999)
 
-with open(f'{{cmd}}.o{{jobid}}', 'w') as stdout, \
-     open(f'{{cmd}}.e{{jobid}}', 'w') as stderr:
+with open('{{}}.o{{}}'.format(cmd, jobid), 'w') as stdout, \
+     open('{{}}.e{{}}'.format(cmd, jobid), 'w') as stderr:
     result = sp.run(args, stdout=stdout, stderr=stderr, env=env)
 
 print(str(jobid))
