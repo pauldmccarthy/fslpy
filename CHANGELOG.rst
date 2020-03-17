@@ -26,12 +26,22 @@ Changed
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
+* The return value of a function decorated with :func:`.fileOrImage`,
+  :func:`.fileOrArray`, or :func:`.fileOrText` is now accessed via an attribute
+  called ``stdout``, instead of ``output``.
+* Output files of functions decorated with :func:`.fileOrImage`,
+  :func:`.fileOrArray`, or :func:`.fileOrText`, which have been loaded via the
+  :attr:`.LOAD` symbol, can now be accessed as attributes of the returned
+  results object, in addition to being accessed as dict items.
 * Wrapper functions decorated with the :func:`.fileOrImage`,
  :func:`.fileOrArray`, or :func:`.fileOrText` decorators will now pass all
   arguments and return values through unchanged if an argument called ``submit``
   is passed in, and is set to ``True`` (or any non-``False``
   value). Furthermore, in such a scenario a :exc:`ValueError` will be raised if
   any in-memory objects or ``LOAD`` symbols are passed.
+* The :func:`.fileOrText` decorator has been updated to work with input
+  values - file paths must be passed in as ``pathlib.Path`` objects, so they
+  can be differentiated from input values.
 
 
 Fixed
