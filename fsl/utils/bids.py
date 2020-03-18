@@ -83,7 +83,11 @@ def parseFilename(filename):
 
         sub-01_ses-01_task-stim_bold.nii.gz
 
-    has suffix ``bold``, and entities ``sub=01``, ``ses=01`` and ``task=stim``.
+    has suffix ``bold``, entities ``sub=01``, ``ses=01`` and ``task=stim``, and
+    extension ``.nii.gz``.
+
+    .. note:: This function assumes that no period (``.``) characters occur in
+              the body of a BIDS filename.
 
     :returns: A tuple containing:
                - A dict containing the entities
@@ -97,7 +101,7 @@ def parseFilename(filename):
     suffix   = None
     entities = []
     filename = op.basename(filename)
-    filename = fslpath.removeExt(filename, ['.nii', '.nii.gz', '.json'])
+    filename = fslpath.removeExt(filename, firstDot=True)
     parts    = filename.split('_')
 
     for part in parts[:-1]:
@@ -148,7 +152,7 @@ def isBIDSFile(filename, strict=True):
     """
 
     name    = op.basename(filename)
-    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
+    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(.+)'
     flags   = re.ASCII | re.IGNORECASE
     match   = re.fullmatch(pattern, name, flags) is not None
 
