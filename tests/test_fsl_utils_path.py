@@ -711,6 +711,16 @@ def test_splitExt():
         print(filename, '==', (outbase, outext))
         assert fslpath.splitExt(filename, allowed) == (outbase, outext)
 
+    # firstDot=True
+    tests = [
+        ('blah',               ('blah', '')),
+        ('blah.blah',          ('blah', '.blah')),
+        ('blah.one.two',       ('blah', '.one.two')),
+        ('blah.one.two.three', ('blah', '.one.two.three')),
+    ]
+
+    for f, exp in tests:
+        assert fslpath.splitExt(f, firstDot=True) == exp
 
 
 def test_getFileGroup_imageFiles_shouldPass():

@@ -9,6 +9,7 @@
 .. autosummary::
    :nosignatures:
 
+   BIDSFile
    isBIDSDir
    inBIDSDir
    isBIDSFile
@@ -57,20 +58,34 @@ class BIDSFile(object):
         self.suffix      = suffix
 
 
-    def match(self, other):
+    def __str__(self):
+        """Return a strimg representation of this ``BIDSFile``. """
+        return 'BIDSFile({})'.format(self.filename)
+
+
+    def __repr__(self):
+        """Return a strimg representation of this ``BIDSFile``. """
+        return str(self)
+
+
+    def match(self, other, suffix=True):
         """Compare this ``BIDSFile`` to ``other``.
 
-        :arg other: ``BIDSFile`` to compare
-        :returns:   ``True`` if ``self.suffix == other.suffix`` and if
-                    all of the entities in ``other`` are present in ``self``,
-                    ``False`` otherwise.
+        :arg other:  ``BIDSFile`` to compare
+
+        :arg suffix: Defaults to ``True``. If ``False``, the comparison
+                     is made solely on the entity values.
+
+        :returns:    ``True`` if ``self.suffix == other.suffix`` (unless
+                     ``suffix`` is ``False``) and if all of the entities in
+                     ``other`` are present in ``self``, ``False`` otherwise.
         """
 
-        suffix   = self.suffix == other.suffix
+        suffix   = (not suffix) or (self.suffix == other.suffix)
         entities = True
 
         for key, value in other.entities.items():
-            entities = entities and self.entities.get(key, None) == value
+            entities = entities and (self.entities.get(key, None) == value)
 
         return suffix and entities
 
@@ -83,7 +98,11 @@ def parseFilename(filename):
 
         sub-01_ses-01_task-stim_bold.nii.gz
 
-    has suffix ``bold``, and entities ``sub=01``, ``ses=01`` and ``task=stim``.
+    has suffix ``bold``, entities ``sub=01``, ``ses=01`` and ``task=stim``, and
+    extension ``.nii.gz``.
+
+    .. note:: This function assumes that no period (``.``) characters occur in
+              the body of a BIDS filename.
 
     :returns: A tuple containing:
                - A dict containing the entities
@@ -97,7 +116,7 @@ def parseFilename(filename):
     suffix   = None
     entities = []
     filename = op.basename(filename)
-    filename = fslpath.removeExt(filename, ['.nii', '.nii.gz', '.json'])
+    filename = fslpath.removeExt(filename, firstDot=True)
     parts    = filename.split('_')
 
     for part in parts[:-1]:
@@ -148,7 +167,7 @@ def isBIDSFile(filename, strict=True):
     """
 
     name    = op.basename(filename)
-    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(nii|nii\.gz|json)'
+    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(.+)'
     flags   = re.ASCII | re.IGNORECASE
     match   = re.fullmatch(pattern, name, flags) is not None
 

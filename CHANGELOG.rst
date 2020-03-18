@@ -2,6 +2,29 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.9.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New ``firstDot`` option to the :func:`.path.getExt`,
+  :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
+  rudimentary support for double-barrelled filenames.
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.gifti.relatedFiles` function now supports files with
+  BIDS-style naming conventions.
+* The :mod:`.bids` module has been updated to support files with any
+  extension, not just those in the core BIDS specification (``.nii``,
+  ``.nii.gz``, ``.json``, ``.tsv``).
+
 
 2.8.4 (Monday 2nd March 2020)
 -----------------------------

@@ -25,12 +25,14 @@ are available:
 
 
 import            glob
+import            re
 import os.path as op
 
 import numpy   as np
 import nibabel as nib
 
 import fsl.utils.path     as fslpath
+import fsl.utils.bids     as bids
 import fsl.data.constants as constants
 import fsl.data.mesh      as fslmesh
 
@@ -43,6 +45,15 @@ is expected to have.
 
 EXTENSION_DESCRIPTIONS = ['GIFTI surface file', 'GIFTI file']
 """A description for each of the :data:`ALLOWED_EXTENSIONS`. """
+
+
+VERTEX_DATA_EXTENSIONS = ['.func.gii',
+                          '.shape.gii',
+                          '.label.gii',
+                          '.time.gii']
+"""File suffixes which are interpreted as GIFTI vertex data files,
+containing data values for every vertex in the mesh.
+"""
 
 
 class GiftiMesh(fslmesh.Mesh):
@@ -102,8 +113,11 @@ class GiftiMesh(fslmesh.Mesh):
         # as the specfiied one.
         if loadAll:
 
+            # Only attempt to auto-load sensibly
+            # named gifti files (i.e. *.surf.gii,
+            # rather than *.gii).
+            surfFiles = relatedFiles(infile, [ALLOWED_EXTENSIONS[0]])
             nvertices = vertices[0].shape[0]
-            surfFiles = relatedFiles(infile, ALLOWED_EXTENSIONS)
 
             for sfile in surfFiles:
 
@@ -259,7 +273,7 @@ def prepareGiftiVertexData(darrays, filename=None):
     vertices.
     """
 
-    intents = set([d.intent for d in darrays])
+    intents = {d.intent for d in darrays}
 
     if len(intents) != 1:
         raise ValueError('{} contains multiple (or no) intents'
@@ -298,45 +312,109 @@ def relatedFiles(fname, ftypes=None):
     directory which appear to be related with the given one.  Files which
     share the same prefix are assumed to be related to the given file.
 
+    This function assumes that the GIFTI files are named according to a
+    standard convention - the following conventions are supported:
+     - HCP-style, i.e.: ``<subject>.<hemi>.<type>.<space>.<ftype>.gii``
+     - BIDS-style, i.e.:
+       ``<source_prefix>_hemi-<hemi>[_space-<space>]*_<suffix>.<ftype>.gii``
+
+    If the files are not named according to one of these conventions, this
+    function will return an empty list.
+
     :arg fname: Name of the file to search for related files for
 
     :arg ftype: If provided, only files with suffixes in this list are
-                searched for. Defaults to files which contain vertex data.
+                searched for. Defaults to :attr:`VERTEX_DATA_EXTENSIONS`.
     """
 
     if ftypes is None:
-        ftypes = ['.func.gii', '.shape.gii', '.label.gii', '.time.gii']
+        ftypes = VERTEX_DATA_EXTENSIONS
 
-    # We want to return all files in the same
-    # directory which have the following name:
+    path           = op.abspath(fname)
+    dirname, fname = op.split(path)
 
+    # We want to identify all files in the same
+    # directory which are associated with the
+    # given file. We assume that the files are
+    # named according to one of the following
+    # conventions:
     #
-    # [subj].[hemi].[type].*.[ftype]
+    #  - HCP style:
+    #      <subject>.<hemi>.<type>.<space>.<ftype>.gii
     #
+    #  - BIDS style:
+    #      <source_prefix>_hemi-<hemi>[_space-<space>]*.<ftype>.gii
+    #
+    # We cannot assume consistent ordering of
+    # the entities (key-value pairs) within a
+    # BIDS style filename, so we cannot simply
+    # use a regular expression or glob pattern.
+    # Instead, for each style we define:
+    #
+    #  - a "matcher" function, which tests
+    #    whether the file matches the style,
+    #    and returns the important elements
+    #    from the file name.
+    #
+    #  - a "searcher" function, which takes
+    #    the elements of the input file
+    #    that were extracted by the matcher,
+    #    and searches for other related files
 
-    #   where
-    #     - [subj] is the subject ID, and matches fname
-    #
-    #     - [hemi] is the hemisphere, and matches fname
-    #
-    #     - [type] defines the file contents
-    #
-    #     - suffix is func, shape, label, time, or `ftype`
+    # HCP style - extract "<subject>.<hemi>"
+    # and "<space>".
+    def matchhcp(f):
+        pat   = r'^(.*\.[LR])\..*\.(.*)\..*\.gii$'
+        match = re.match(pat, f)
+        if match:
+            return match.groups()
+        else:
+            return None
 
-    path            = op.abspath(fname)
-    dirname, fname  = op.split(path)
+    def searchhcp(match, ftype):
+        prefix, space = match
+        template      = '{}.*.{}{}'.format(prefix, space, ftype)
+        return glob.glob(op.join(dirname, template))
 
-    # get the [subj].[hemi] prefix
-    try:
-        subj, hemi, _ = fname.split('.', 2)
-        prefix        = '.'.join((subj, hemi))
-    except Exception:
+    # BIDS style - extract all entities (kv
+    # pairs), ignoring specific irrelevant
+    # ones.
+    def matchbids(f):
+        try:               match = bids.BIDSFile(f)
+        except ValueError: return None
+        match.entities.pop('desc', None)
+        return match
+
+    def searchbids(match, ftype):
+        allfiles = glob.glob(op.join(dirname, '*{}'.format(ftype)))
+        for f in allfiles:
+            try:               bf = bids.BIDSFile(f)
+            except ValueError: continue
+            if bf.match(match, False):
+                yield f
+
+    # find the first style that matches
+    matchers  = [matchhcp,  matchbids]
+    searchers = [searchhcp, searchbids]
+    for matcher, searcher in zip(matchers, searchers):
+        match = matcher(fname)
+        if match:
+            break
+
+    # Give up if the file does
+    # not match any known style.
+    else:
         return []
 
+    # Build a list of files in the same
+    # directory and matching the template
     related = []
-
     for ftype in ftypes:
-        hits = glob.glob(op.join(dirname, '{}*{}'.format(prefix, ftype)))
+
+        hits = searcher(match, ftype)
+
+        # eliminate dupes
         related.extend([h for h in hits if h not in related])
 
+    # exclude the file itself
     return [r for r in related if r != path]
