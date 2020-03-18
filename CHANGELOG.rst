@@ -15,6 +15,15 @@ Added
   rudimentary support for double-barrelled filenames.
 
 
+Changed
+^^^^^^^
+
+
+* The :mod:`.bids` module has been updated to support files with any
+  extension, not just those in the core BIDS specification (``.nii``,
+  ``.nii.gz``, ``.json``, ``.tsv``).
+
+
 2.8.4 (Monday 2nd March 2020)
 -----------------------------
 
