@@ -19,6 +19,8 @@ Changed
 ^^^^^^^
 
 
+* The :func:`.gifti.relatedFiles` function now supports files with
+  BIDS-style naming conventions.
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
