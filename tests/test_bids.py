@@ -19,7 +19,7 @@ import fsl.utils.bids  as     fslbids
 
 def test_parseFilename():
     with pytest.raises(ValueError):
-        fslbids.parseFilename('bad.txt')
+        fslbids.parseFilename('bad_file.txt')
 
     tests = [
         ('sub-01_ses-01_t1w.nii.gz',
@@ -62,12 +62,12 @@ def test_isBIDSFile():
         Path('sub-01_ses-01_t1w.nii'),
         Path('sub-01_ses-01_t1w.json'),
         Path('a-1_b-2_c-3_d-4_e.nii.gz'),
+        Path('sub-01_ses-01_t1w.txt'),
     ]
     badfiles = [
         Path('sub-01_ses-01.nii.gz'),
         Path('sub-01_ses-01_t1w'),
         Path('sub-01_ses-01_t1w.'),
-        Path('sub-01_ses-01_t1w.txt'),
         Path('sub_ses-01_t1w.nii.gz'),
         Path('sub-01_ses_t1w.nii.gz'),
     ]
