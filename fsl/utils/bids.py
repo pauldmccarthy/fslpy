@@ -9,6 +9,7 @@
 .. autosummary::
    :nosignatures:
 
+   BIDSFile
    isBIDSDir
    inBIDSDir
    isBIDSFile
@@ -57,20 +58,34 @@ class BIDSFile(object):
         self.suffix      = suffix
 
 
-    def match(self, other):
+    def __str__(self):
+        """Return a strimg representation of this ``BIDSFile``. """
+        return 'BIDSFile({})'.format(self.filename)
+
+
+    def __repr__(self):
+        """Return a strimg representation of this ``BIDSFile``. """
+        return str(self)
+
+
+    def match(self, other, suffix=True):
         """Compare this ``BIDSFile`` to ``other``.
 
-        :arg other: ``BIDSFile`` to compare
-        :returns:   ``True`` if ``self.suffix == other.suffix`` and if
-                    all of the entities in ``other`` are present in ``self``,
-                    ``False`` otherwise.
+        :arg other:  ``BIDSFile`` to compare
+
+        :arg suffix: Defaults to ``True``. If ``False``, the comparison
+                     is made solely on the entity values.
+
+        :returns:    ``True`` if ``self.suffix == other.suffix`` (unless
+                     ``suffix`` is ``False``) and if all of the entities in
+                     ``other`` are present in ``self``, ``False`` otherwise.
         """
 
-        suffix   = self.suffix == other.suffix
+        suffix   = (not suffix) or (self.suffix == other.suffix)
         entities = True
 
         for key, value in other.entities.items():
-            entities = entities and self.entities.get(key, None) == value
+            entities = entities and (self.entities.get(key, None) == value)
 
         return suffix and entities
 
