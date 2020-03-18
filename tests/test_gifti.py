@@ -47,9 +47,9 @@ def test_GiftiMesh_create_loadAll():
 
     with tempdir() as td:
 
-        vertSets = [op.join(td, 'prefix.L.1.surf.gii'),
-                    op.join(td, 'prefix.L.2.surf.gii'),
-                    op.join(td, 'prefix.L.3.surf.gii')]
+        vertSets = [op.join(td, 'prefix.L.1.space.surf.gii'),
+                    op.join(td, 'prefix.L.2.space.surf.gii'),
+                    op.join(td, 'prefix.L.3.space.surf.gii')]
 
         for vs in vertSets:
             shutil.copy(testfile, vs)
@@ -154,81 +154,121 @@ def test_loadGiftiVertexData():
     assert isinstance(gimg, nib.gifti.GiftiImage)
     assert tuple(data.shape) == (642, 10)
 
+hcp_listing = [
+    'subject.L.ArealDistortion_FS.32k_fs_LR.shape.gii',
+    'subject.L.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii',
+    'subject.L.BA.32k_fs_LR.label.gii',
+    'subject.L.MyelinMap.32k_fs_LR.func.gii',
+    'subject.L.MyelinMap_BC.32k_fs_LR.func.gii',
+    'subject.L.SmoothedMyelinMap.32k_fs_LR.func.gii',
+    'subject.L.SmoothedMyelinMap_BC.32k_fs_LR.func.gii',
+    'subject.L.aparc.32k_fs_LR.label.gii',
+    'subject.L.aparc.a2009s.32k_fs_LR.label.gii',
+    'subject.L.atlasroi.32k_fs_LR.shape.gii',
+    'subject.L.corrThickness.32k_fs_LR.shape.gii',
+    'subject.L.curvature.32k_fs_LR.shape.gii',
+    'subject.L.flat.32k_fs_LR.surf.gii',
+    'subject.L.inflated.32k_fs_LR.surf.gii',
+    'subject.L.midthickness.32k_fs_LR.surf.gii',
+    'subject.L.pial.32k_fs_LR.surf.gii',
+    'subject.L.sphere.32k_fs_LR.surf.gii',
+    'subject.L.sulc.32k_fs_LR.shape.gii',
+    'subject.L.thickness.32k_fs_LR.shape.gii',
+    'subject.L.very_inflated.32k_fs_LR.surf.gii',
+    'subject.L.white.32k_fs_LR.surf.gii',
+    'subject.R.ArealDistortion_FS.32k_fs_LR.shape.gii',
+    'subject.R.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii',
+    'subject.R.BA.32k_fs_LR.label.gii',
+    'subject.R.MyelinMap.32k_fs_LR.func.gii',
+    'subject.R.MyelinMap_BC.32k_fs_LR.func.gii',
+    'subject.R.SmoothedMyelinMap.32k_fs_LR.func.gii',
+    'subject.R.SmoothedMyelinMap_BC.32k_fs_LR.func.gii',
+    'subject.R.aparc.32k_fs_LR.label.gii',
+    'subject.R.aparc.a2009s.32k_fs_LR.label.gii',
+    'subject.R.atlasroi.32k_fs_LR.shape.gii',
+    'subject.R.corrThickness.32k_fs_LR.shape.gii',
+    'subject.R.curvature.32k_fs_LR.shape.gii',
+    'subject.R.flat.32k_fs_LR.surf.gii',
+    'subject.R.inflated.32k_fs_LR.surf.gii',
+    'subject.R.midthickness.32k_fs_LR.surf.gii',
+    'subject.R.pial.32k_fs_LR.surf.gii',
+    'subject.R.sphere.32k_fs_LR.surf.gii',
+    'subject.R.sulc.32k_fs_LR.shape.gii',
+    'subject.R.thickness.32k_fs_LR.shape.gii',
+    'subject.R.very_inflated.32k_fs_LR.surf.gii',
+    'subject.R.white.32k_fs_LR.surf.gii'
+]
 
-def test_relatedFiles():
+bids_listing = [
+    'sub-001_ses-001_hemi-L_desc-corr_space-T2w_thickness.shape.gii',
+    'sub-001_ses-001_hemi-L_desc-drawem_space-T2w_dparc.label.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_desc-medialwall_mask.shape.gii',
+    'sub-001_ses-001_hemi-L_desc-smoothed_space-T2w_myelinmap.shape.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_curv.shape.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_inflated.surf.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_midthickness.surf.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_myelinmap.shape.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_pial.surf.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_sphere.surf.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_sulc.shape.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_thickness.shape.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_veryinflated.surf.gii',
+    'sub-001_ses-001_hemi-L_space-T2w_wm.surf.gii',
+    'sub-001_ses-001_hemi-R_desc-corr_space-T2w_thickness.shape.gii',
+    'sub-001_ses-001_hemi-R_desc-drawem_space-T2w_dparc.label.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_desc-medialwall_mask.shape.gii',
+    'sub-001_ses-001_hemi-R_desc-smoothed_space-T2w_myelinmap.shape.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_curv.shape.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_inflated.surf.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_midthickness.surf.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_myelinmap.shape.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_pial.surf.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_sphere.surf.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_sulc.shape.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_thickness.shape.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_veryinflated.surf.gii',
+    'sub-001_ses-001_hemi-R_space-T2w_wm.surf.gii'
+]
 
-    listing = [
-        'subject.L.ArealDistortion_FS.32k_fs_LR.shape.gii',
-        'subject.L.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii',
-        'subject.L.BA.32k_fs_LR.label.gii',
-        'subject.L.MyelinMap.32k_fs_LR.func.gii',
-        'subject.L.MyelinMap_BC.32k_fs_LR.func.gii',
-        'subject.L.SmoothedMyelinMap.32k_fs_LR.func.gii',
-        'subject.L.SmoothedMyelinMap_BC.32k_fs_LR.func.gii',
-        'subject.L.aparc.32k_fs_LR.label.gii',
-        'subject.L.aparc.a2009s.32k_fs_LR.label.gii',
-        'subject.L.atlasroi.32k_fs_LR.shape.gii',
-        'subject.L.corrThickness.32k_fs_LR.shape.gii',
-        'subject.L.curvature.32k_fs_LR.shape.gii',
-        'subject.L.flat.32k_fs_LR.surf.gii',
-        'subject.L.inflated.32k_fs_LR.surf.gii',
-        'subject.L.midthickness.32k_fs_LR.surf.gii',
-        'subject.L.pial.32k_fs_LR.surf.gii',
-        'subject.L.sphere.32k_fs_LR.surf.gii',
-        'subject.L.sulc.32k_fs_LR.shape.gii',
-        'subject.L.thickness.32k_fs_LR.shape.gii',
-        'subject.L.very_inflated.32k_fs_LR.surf.gii',
-        'subject.L.white.32k_fs_LR.surf.gii',
-        'subject.R.ArealDistortion_FS.32k_fs_LR.shape.gii',
-        'subject.R.ArealDistortion_MSMSulc.32k_fs_LR.shape.gii',
-        'subject.R.BA.32k_fs_LR.label.gii',
-        'subject.R.MyelinMap.32k_fs_LR.func.gii',
-        'subject.R.MyelinMap_BC.32k_fs_LR.func.gii',
-        'subject.R.SmoothedMyelinMap.32k_fs_LR.func.gii',
-        'subject.R.SmoothedMyelinMap_BC.32k_fs_LR.func.gii',
-        'subject.R.aparc.32k_fs_LR.label.gii',
-        'subject.R.aparc.a2009s.32k_fs_LR.label.gii',
-        'subject.R.atlasroi.32k_fs_LR.shape.gii',
-        'subject.R.corrThickness.32k_fs_LR.shape.gii',
-        'subject.R.curvature.32k_fs_LR.shape.gii',
-        'subject.R.flat.32k_fs_LR.surf.gii',
-        'subject.R.inflated.32k_fs_LR.surf.gii',
-        'subject.R.midthickness.32k_fs_LR.surf.gii',
-        'subject.R.pial.32k_fs_LR.surf.gii',
-        'subject.R.sphere.32k_fs_LR.surf.gii',
-        'subject.R.sulc.32k_fs_LR.shape.gii',
-        'subject.R.thickness.32k_fs_LR.shape.gii',
-        'subject.R.very_inflated.32k_fs_LR.surf.gii',
-        'subject.R.white.32k_fs_LR.surf.gii',
-        'badly-formed-filename.surf.gii'
-    ]
 
-    lsurfaces = [l for l in listing if (l.startswith('subject.L') and
-                                        l.endswith('surf.gii'))]
-    lrelated  = [l for l in listing if (l.startswith('subject.L') and
-                                        not l.endswith('surf.gii'))]
+def  test_relatedFiles_hcp():  _test_relatedFiles(hcp_listing)
+def  test_relatedFiles_bids(): _test_relatedFiles(bids_listing)
+def _test_relatedFiles(listing):
 
-    rsurfaces = [l for l in listing if (l.startswith('subject.R') and
-                                        l.endswith('surf.gii'))]
-    rrelated  = [l for l in listing if (l.startswith('subject.R') and
-                                        not l.endswith('surf.gii'))]
+    listing = list(listing)
+    listing.append('badly-formed-filename.surf.gii')
+
+    def ishemi(f, hemi):
+        return ('hemi-{}'.format(hemi) in f) or \
+               ('.{}.'   .format(hemi) in f)
+
+    def issurf(f):
+        return f.endswith('surf.gii')
+
+    def isrelated(f):
+        return not issurf(f)
+
+    lsurfaces = [l for l in listing if issurf(   l) and ishemi(l, 'L')]
+    lrelated  = [l for l in listing if isrelated(l) and ishemi(l, 'L')]
+    rsurfaces = [l for l in listing if issurf(   l) and ishemi(l, 'R')]
+    rrelated  = [l for l in listing if isrelated(l) and ishemi(l, 'R')]
 
     with tempdir() as td:
 
-        for l in listing:
-            with open(op.join(td, l), 'wt') as f:
-                f.write(l)
-
-        badname = op.join(op.join(td, 'badly-formed-filename'))
-
-        assert len(gifti.relatedFiles(badname))       == 0
-        assert len(gifti.relatedFiles('nonexistent')) == 0
-
-        llisting  = [op.join(td, f) for f in listing]
+        listing   = [op.join(td, f) for f in listing]
         lsurfaces = [op.join(td, f) for f in lsurfaces]
         rsurfaces = [op.join(td, f) for f in rsurfaces]
         lrelated  = [op.join(td, f) for f in lrelated]
         rrelated  = [op.join(td, f) for f in rrelated]
+
+        for l in listing:
+            with open(l, 'wt') as f:
+                f.write(l)
+
+        badname = op.join(td, 'badly-formed-filename.surf.gii')
+
+        assert len(gifti.relatedFiles(badname))       == 0
+        assert len(gifti.relatedFiles('nonexistent')) == 0
 
         for s in lsurfaces:
             result = gifti.relatedFiles(s)
@@ -237,11 +277,12 @@ def test_relatedFiles():
             result = gifti.relatedFiles(s)
             assert sorted(rrelated) == sorted(result)
 
-        exp = lsurfaces + lrelated
+        exp = lsurfaces
         exp = [f for f in exp if f != lsurfaces[0]]
         result = gifti.relatedFiles(lsurfaces[0],
-                                    ftypes=gifti.ALLOWED_EXTENSIONS)
+                                    ftypes=[gifti.ALLOWED_EXTENSIONS[0]])
         assert sorted(exp) == sorted(result)
+
 
 TEST_VERTS = np.array([
     [0, 0, 0],
