@@ -218,37 +218,61 @@ def addExt(prefix,
     return allPaths[0]
 
 
-def removeExt(filename, allowedExts=None):
+def removeExt(filename, allowedExts=None, firstDot=False):
     """Returns the base name of the given file name.  See :func:`splitExt`. """
 
-    return splitExt(filename, allowedExts)[0]
+    return splitExt(filename, allowedExts, firstDot)[0]
 
 
-def getExt(filename, allowedExts=None):
+def getExt(filename, allowedExts=None, firstDot=False):
     """Returns the extension of the given file name.  See :func:`splitExt`. """
 
-    return splitExt(filename, allowedExts)[1]
+    return splitExt(filename, allowedExts, firstDot)[1]
 
 
-def splitExt(filename, allowedExts=None):
+def splitExt(filename, allowedExts=None, firstDot=False):
     """Returns the base name and the extension from the given file name.
 
-    If ``allowedExts`` is ``None``, this function is equivalent to using::
+    If ``allowedExts`` is ``None`` and ``firstDot`` is ``False``, this
+    function is equivalent to using::
 
         os.path.splitext(filename)
 
-    If ``allowedExts`` is provided, but the file does not end with an allowed
-    extension, a tuple containing ``(filename, '')`` is returned.
+    If ``allowedExts`` is ``None`` and ``firstDot`` is ``True``, the file
+    name is split on the first period that is found, rather than the last
+    period. For example::
+
+        splitExt('image.nii.gz')                # -> ('image.nii', '.gz')
+        splitExt('image.nii.gz', firstDot=True) # -> ('image', '.nii.gz')
+
+    If ``allowedExts`` is provided, ``firstDot`` is ignored. In this case, if
+    the file does not end with an allowed extension, a tuple containing
+    ``(filename, '')`` is returned.
 
     :arg filename:    The file name to split.
 
     :arg allowedExts: Allowed/recognised file extensions.
+
+    :arg firstDot:    Split the file name on the first period, rather than the
+                      last period. Ignored if ``allowedExts`` is specified.
     """
 
-    # If allowedExts is not specified,
-    # we just use op.splitext
+    # If allowedExts is not specified
+    # we split on a period character
     if allowedExts is None:
-        return op.splitext(filename)
+
+        # split on last period - equivalent
+        # to op.splitext
+        if not firstDot:
+            return op.splitext(filename)
+
+        # split on first period
+        else:
+            idx = filename.find('.')
+            if idx == -1:
+                return filename, ''
+            else:
+                return filename[:idx], filename[idx:]
 
     # Otherwise, try and find a suffix match
     extMatches = [filename.endswith(ext) for ext in allowedExts]
