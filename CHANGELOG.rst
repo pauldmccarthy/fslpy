@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+2.9.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New ``firstDot`` option to the :func:`.path.getExt`,
+  :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
+  rudimentary support for double-barrelled filenames.
+
 
 2.8.4 (Monday 2nd March 2020)
 -----------------------------
