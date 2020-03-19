@@ -25,6 +25,8 @@ Changed
   BIDS-style naming conventions.
 * The :func:`.run.run` and :func:`.run.runfsl` functions now pass through
   any additional keyword arguments to ``subprocess.Popen``.
+* The :func:`.run.runfsl` function now raises an error on attempts to
+  run a command which is not present in ``$FSLDIR/bin/`` (e.g. ``ls``).
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
