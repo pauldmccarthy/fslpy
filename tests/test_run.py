@@ -233,6 +233,10 @@ def test_runfsl():
             fslplatform.fsldir = fsldir
             assert run.runfsl('fslhd').strip() == 'fsldir'
 
+            # non-FSL command - should error
+            with pytest.raises(FileNotFoundError):
+                run.runfsl('ls')
+
             # FSLDEVDIR should take precedence
             fsldevdir = './fsldev'
             fslhd  = op.join(fsldevdir, 'bin', 'fslhd')
