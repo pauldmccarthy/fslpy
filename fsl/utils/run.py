@@ -3,6 +3,7 @@
 # run.py - Functions for running shell commands
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
+# Author: Michiel Cottaar <michiel.cottaar@ndcn.ox.ac.uk>
 #
 """This module provides some functions for running shell commands.
 
@@ -357,6 +358,12 @@ def runfsl(*args, **kwargs):
         if op.isfile(cmdpath):
             args[0] = cmdpath
             break
+
+    # error if the command cannot
+    # be found in a FSL directory
+    else:
+        raise FileNotFoundError('FSL tool {} not found (checked {})'.format(
+            args[0], ', '.join(prefixes)))
 
     return run(*args, **kwargs)
 
