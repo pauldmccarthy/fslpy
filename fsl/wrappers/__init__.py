@@ -87,6 +87,7 @@ from .fsl_anat     import (fsl_anat,)       # noqa
 from .flirt        import (flirt,           # noqa
                            invxfm,
                            applyxfm,
+                           applyxfm4D,
                            concatxfm,
                            mcflirt)
 from .fnirt        import (fnirt,           # noqa
@@ -95,6 +96,7 @@ from .fnirt        import (fnirt,           # noqa
                            convertwarp)
 from .fslmaths     import (fslmaths,)       # noqa
 from .fugue        import (fugue,           # noqa
+                           prelude,
                            sigloss)
 from .melodic      import (melodic,         # noqa
                            fsl_regfilt)

@@ -10,6 +10,8 @@ Added
 ^^^^^
 
 
+* New wrapper functions for the FSL :func:`.prelude` and :func:`applyxfm4D`
+  commands.
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
@@ -21,9 +23,38 @@ Changed
 
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
+* The :func:`.run.run` and :func:`.run.runfsl` functions now pass through
+  any additional keyword arguments to ``subprocess.Popen``.
+* The :func:`.run.runfsl` function now raises an error on attempts to
+  run a command which is not present in ``$FSLDIR/bin/`` (e.g. ``ls``).
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
+* The return value of a function decorated with :func:`.fileOrImage`,
+  :func:`.fileOrArray`, or :func:`.fileOrText` is now accessed via an attribute
+  called ``stdout``, instead of ``output``.
+* Output files of functions decorated with :func:`.fileOrImage`,
+  :func:`.fileOrArray`, or :func:`.fileOrText`, which have been loaded via the
+  :attr:`.LOAD` symbol, can now be accessed as attributes of the returned
+  results object, in addition to being accessed as dict items.
+* Wrapper functions decorated with the :func:`.fileOrImage`,
+ :func:`.fileOrArray`, or :func:`.fileOrText` decorators will now pass all
+  arguments and return values through unchanged if an argument called ``submit``
+  is passed in, and is set to ``True`` (or any non-``False``
+  value). Furthermore, in such a scenario a :exc:`ValueError` will be raised if
+  any in-memory objects or ``LOAD`` symbols are passed.
+* The :func:`.fileOrText` decorator has been updated to work with input
+  values - file paths must be passed in as ``pathlib.Path`` objects, so they
+  can be differentiated from input values.
+
+
+Fixed
+^^^^^
+
+
+* Updated the :func:`.prepareArgs` function to use ``shlex.split`` when
+  preparing shell command arguments, instead of performing a naive whitespace
+  split.
 
 
 2.8.4 (Monday 2nd March 2020)
@@ -213,8 +244,8 @@ Changed
 
 * The :class:`.Cache` class has a new ``lru`` option, allowing it to be used
   as a least-recently-used cache.
-* The :mod:`.filetree` module has been refactored to make it easier for the
-  :mod:`.query` module to work with file tree hierarchies.
+* The :mod:`fsl.utils.filetree` module has been refactored to make it easier
+  for the :mod:`.query` module to work with file tree hierarchies.
 * The :meth:`.LabelAtlas.get` method has a new ``binary`` flag, allowing
   either a binary mask, or a mask with the original label value, to be
   returned.

@@ -8,6 +8,7 @@
 import os.path as op
 import            os
 import            shlex
+import            pathlib
 import            textwrap
 
 try: from unittest import mock
@@ -353,6 +354,30 @@ def test_fileOrThing_sequence():
         assert np.all(func(infiles[0], wutils.LOAD)['out'] == inputs[0])
 
 
+def test_fileOrText():
+
+    @wutils.fileOrText('input', 'output')
+    def func(input, output):
+        data = open(input).read()
+        data = ''.join(['{}{}'.format(c, c) for c in data])
+        open(output, 'wt').write(data)
+
+    with tempdir.tempdir():
+
+        data = 'abcdefg'
+        exp  = 'aabbccddeeffgg'
+
+        open('input.txt', 'wt').write(data)
+
+        func(pathlib.Path('input.txt'), pathlib.Path('output.txt'))
+        assert open('output.txt').read() == exp
+
+        func('abcdefg', pathlib.Path('output.txt'))
+        assert open('output.txt').read() == exp
+
+        assert func('12345', wutils.LOAD).output == '1122334455'
+
+
 def test_fileOrThing_outprefix():
 
     @wutils.fileOrImage('img', outprefix='output_base')
@@ -496,6 +521,111 @@ def test_fileOrThing_outprefix_directory():
         assert np.all(np.asanyarray(res[op.join('foo', 'myout_imgs', 'img4')].dataobj) == exp4)
 
 
+
+def test_fileOrThing_results():
+    @wutils.fileOrArray('input', 'regular_output', outprefix='outpref')
+    def func(input, regular_output, outpref):
+
+        input = np.loadtxt(input)
+
+        regout   = input * 2
+        prefouts = []
+        for i in range(3, 6):
+            prefouts.append(input * i)
+
+        np.savetxt(regular_output, regout)
+        for i, o in enumerate(prefouts):
+            np.savetxt('{}_{}.txt'.format(outpref, i), o)
+
+        return ('return', 'value')
+
+    input  = np.random.randint(1, 10, (3, 3))
+    infile = 'input.txt'
+    exp    = [input * i for i in range(2, 6)]
+
+    with tempdir.tempdir():
+
+        np.savetxt(infile, input)
+
+        result = func('input.txt', 'regout.txt', 'outpref')
+        assert len(result) == 0
+        assert result.stdout == ('return', 'value')
+        assert (np.loadtxt('regout.txt') == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        result = func(input, 'regout.txt', 'outpref')
+        assert len(result) == 0
+        assert result.stdout == ('return', 'value')
+        assert (np.loadtxt('regout.txt') == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        result = func(input, wutils.LOAD, 'outpref')
+        assert len(result) == 1
+        assert result.stdout == ('return', 'value')
+        assert (result .regular_output == exp[0]).all()
+        assert (result['regular_output'] == exp[0]).all()
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        # todo outpref
+        result = func(input, wutils.LOAD, wutils.LOAD)
+        assert len(result) == 4
+        assert result.stdout == ('return', 'value')
+        assert (result .regular_output == exp[0]).all()
+        assert (result['regular_output'] == exp[0]).all()
+
+        assert (result .outpref_0   == exp[1]).all()
+        assert (result['outpref_0'] == exp[1]).all()
+        assert (result .outpref_1   == exp[2]).all()
+        assert (result['outpref_1'] == exp[2]).all()
+        assert (result .outpref_2   == exp[3]).all()
+        assert (result['outpref_2'] == exp[3]).all()
+
+        for i in range(3):
+            assert (np.loadtxt('outpref_{}.txt'.format(i)) == exp[i+1]).all()
+
+        result = func(input, wutils.LOAD, wutils.LOAD)
+        assert len(result) == 4
+
+
+def test_FileOrThing_invalid_identifiers():
+    # unlikely to ever happen, but let's test arguments with
+    # names that are not valid python identifiers
+    @wutils.fileOrArray('in val', '2out')
+    def func(**kwargs):
+
+        infile  = kwargs['in val']
+        outfile = kwargs['2out']
+
+        input = np.loadtxt(infile)
+        np.savetxt(outfile, input * 2)
+
+        return ('return', 'value')
+
+    input  = np.random.randint(1, 10, (3, 3))
+    infile = 'input.txt'
+    exp    = input * 2
+
+    with tempdir.tempdir():
+
+        np.savetxt(infile, input)
+
+        res = func(**{'in val' : infile, '2out' : 'output.txt'})
+        assert res.stdout == ('return', 'value')
+        assert (np.loadtxt('output.txt') == exp).all()
+
+        res = func(**{'in val' : input, '2out' : 'output.txt'})
+        assert res.stdout == ('return', 'value')
+        assert (np.loadtxt('output.txt') == exp).all()
+
+        res = func(**{'in val' : input, '2out' : wutils.LOAD})
+        assert res.stdout == ('return', 'value')
+        assert (res['2out'] == exp).all()
+
+
+
 def test_chained_fileOrImageAndArray():
     @wutils.fileOrImage('image', 'outimage')
     @wutils.fileOrArray('array', 'outarray')
@@ -582,6 +712,37 @@ def test_fileOrThing_chained_outprefix():
         res = func(image, array, wutils.LOAD)
         assert np.all(np.asanyarray(res['out_image'].dataobj) == np.asanyarray(expimg.dataobj))
         assert np.all(res['out_array'] == exparr)
+
+
+def test_fileOrThing_submit():
+
+    @wutils.fileOrImage('input', 'output')
+    def func(input, output, submit=False):
+
+        if submit:
+            return 'submitted!'
+
+        img = nib.load(input)
+        img = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 2, np.eye(4))
+
+        nib.save(img, output)
+
+    with tempdir.tempdir() as td:
+        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        exp = np.asanyarray(img.dataobj) * 2
+        nib.save(img, 'input.nii.gz')
+
+        result = func(img, wutils.LOAD)
+        assert np.all(np.asanyarray(result['output'].dataobj) == exp)
+
+        assert func('input.nii.gz', 'output.nii.gz', submit=True) == 'submitted!'
+
+        with pytest.raises(ValueError):
+            func(img, wutils.LOAD, submit=True)
+        with pytest.raises(ValueError):
+            func(img, 'output.nii.gz', submit=True)
+        with pytest.raises(ValueError):
+            func('input.nii.gz', wutils.LOAD, submit=True)
 
 
 def test_cmdwrapper():

@@ -36,6 +36,17 @@ def mkexec(path, contents):
     os.chmod(path, 0o755)
 
 
+def test_prepareArgs():
+    tests = [
+        ('a b c',              ['a', 'b', 'c']),
+        (['a', 'b', 'c'],      ['a', 'b', 'c']),
+        ('abc "woop woop"',    ['abc', 'woop woop']),
+        (['abc', 'woop woop'], ['abc', 'woop woop']),
+    ]
+
+    for args, expected in tests:
+        assert run.prepareArgs((args, )) == expected
+
 def test_run():
 
     test_script = textwrap.dedent("""
@@ -149,6 +160,25 @@ def test_run_tee():
         assert capture.stdout == expstdout
 
 
+def test_run_passthrough():
+
+    test_script = textwrap.dedent("""
+    #!/bin/bash
+
+    echo "env: $RUN_TEST_ENV_VAR"
+    """).strip()
+
+    with tempdir.tempdir():
+
+        # return code == 0
+        mkexec('script.sh', test_script.format(0))
+
+        env       = {'RUN_TEST_ENV_VAR' : 'howdy ho'}
+        expstdout = "env: howdy ho\n"
+
+        assert run.run('./script.sh', env=env) == expstdout
+
+
 def test_dryrun():
 
     test_script = textwrap.dedent("""
@@ -202,6 +232,10 @@ def test_runfsl():
 
             fslplatform.fsldir = fsldir
             assert run.runfsl('fslhd').strip() == 'fsldir'
+
+            # non-FSL command - should error
+            with pytest.raises(FileNotFoundError):
+                run.runfsl('ls')
 
             # FSLDEVDIR should take precedence
             fsldevdir = './fsldev'

@@ -10,8 +10,7 @@ manipulating and working with :class:`.Image` objects.
 The following modules are available:
 
 .. autosummary::
-   :nosignature
 
-   .image.resample
-   .image.roi
+   fsl.utils.image.resample
+   fsl.utils.image.roi
 """
