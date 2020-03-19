@@ -23,6 +23,8 @@ Changed
 
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
+* The :func:`.run.run` and :func:`.run.runfsl` functions now pass through
+  any additional keyword arguments to ``subprocess.Popen``.
 * The :mod:`.bids` module has been updated to support files with any
   extension, not just those in the core BIDS specification (``.nii``,
   ``.nii.gz``, ``.json``, ``.tsv``).
