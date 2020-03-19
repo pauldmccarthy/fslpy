@@ -165,17 +165,21 @@ def run(*args, **kwargs):
                      - cmd:    Optional file-like object to which the command
                                itself is logged.
 
+    All other keyword arguments are passed through to the ``subprocess.Popen``
+    object (via :func:`_realrun`), unless ``submit=True``, in which case they
+    are ignored.
+
     :returns:      If ``submit`` is provided, the return value of
                    :func:`.fslsub` is returned. Otherwise returns a single
                    value or a tuple, based on the based on the ``stdout``,
                    ``stderr``, and ``exitcode`` arguments.
     """
 
-    returnStdout   = kwargs.get('stdout',   True)
-    returnStderr   = kwargs.get('stderr',   False)
-    returnExitcode = kwargs.get('exitcode', False)
-    submit         = kwargs.get('submit',   {})
-    log            = kwargs.get('log',      {})
+    returnStdout   = kwargs.pop('stdout',   True)
+    returnStderr   = kwargs.pop('stderr',   False)
+    returnExitcode = kwargs.pop('exitcode', False)
+    submit         = kwargs.pop('submit',   {})
+    log            = kwargs.pop('log',      {})
     tee            = log   .get('tee',      False)
     logStdout      = log   .get('stdout',   None)
     logStderr      = log   .get('stderr',   None)
@@ -207,7 +211,7 @@ def run(*args, **kwargs):
 
     # Run directly - delegate to _realrun
     stdout, stderr, exitcode = _realrun(
-        tee, logStdout, logStderr, logCmd, *args)
+        tee, logStdout, logStderr, logCmd, *args, **kwargs)
 
     if not returnExitcode and (exitcode != 0):
         raise RuntimeError('{} returned non-zero exit code: {}'.format(
@@ -220,7 +224,6 @@ def run(*args, **kwargs):
 
     if len(results) == 1: return results[0]
     else:                 return tuple(results)
-
 
 
 def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
@@ -243,7 +246,7 @@ def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
     else:                 return tuple(results)
 
 
-def _realrun(tee, logStdout, logStderr, logCmd, *args):
+def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
     """Used by :func:`run`. Runs the given command and manages its standard
     output and error streams.
 
@@ -262,12 +265,14 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args):
 
     :arg args:      Command to run
 
+    :arg kwargs:    Passed through to the ``subprocess.Popen`` object.
+
     :returns:       A tuple containing:
                       - the command's standard output as a string.
                       - the command's standard error as a string.
                       - the command's exit code.
     """
-    proc = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
+    proc = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, **kwargs)
     with tempdir.tempdir(changeto=False) as td:
 
         # We always direct the command's stdout/
