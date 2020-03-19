@@ -160,6 +160,25 @@ def test_run_tee():
         assert capture.stdout == expstdout
 
 
+def test_run_passthrough():
+
+    test_script = textwrap.dedent("""
+    #!/bin/bash
+
+    echo "env: $RUN_TEST_ENV_VAR"
+    """).strip()
+
+    with tempdir.tempdir():
+
+        # return code == 0
+        mkexec('script.sh', test_script.format(0))
+
+        env       = {'RUN_TEST_ENV_VAR' : 'howdy ho'}
+        expstdout = "env: howdy ho\n"
+
+        assert run.run('./script.sh', env=env) == expstdout
+
+
 def test_dryrun():
 
     test_script = textwrap.dedent("""
