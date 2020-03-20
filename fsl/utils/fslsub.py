@@ -160,8 +160,9 @@ def info(job_id):
         return {}
     res = {}
     for line in result.splitlines()[1:]:
-        key, value = line.split(':', 1)
-        res[key.strip()] = value.strip()
+        kv = line.split(':', 1)
+        if len(kv) == 2:
+            res[kv[0].strip()] = kv[1].strip()
     return res
 
 
@@ -208,7 +209,7 @@ def wait(job_ids):
                   before continuing
     """
     start_time = time.time()
-    for job_id in _flatten_job_ids(job_ids):
+    for job_id in _flatten_job_ids(job_ids).split(','):
         log.debug('Waiting for job {}'.format(job_id))
         while len(info(job_id)) > 0:
             wait_time = min(max(1, (time.time() - start_time) / 3.), 20)
