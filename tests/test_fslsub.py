@@ -102,6 +102,29 @@ def test_submit():
         assert stderr.strip() == 'standard error'
 
 
+def test_info():
+    mock_qstat = tw.dedent("""
+    #!/usr/bin/env bash
+    echo "#####################"
+    echo "job_number:        1 "
+    echo "exec_file:         2 "
+    echo "submission_time:   3 "
+    echo "owner:             4 "
+    """).strip()
+
+    with mockFSLDIR() as fsldir:
+        qstatbin = op.join(fsldir, 'bin', 'qstat')
+        with open(qstatbin, 'wt') as f:
+            f.write(mock_qstat)
+        os.chmod(qstatbin, 0o755)
+
+        exp = {'job_number'      : '1',
+               'exec_file'       : '2',
+               'submission_time' : '3',
+               'owner'           : '4'}
+        assert fslsub.info('12345') == exp
+
+
 def myfunc():
     print('standard output')
     print('standard error', file=sys.stderr)
