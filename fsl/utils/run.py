@@ -168,7 +168,7 @@ def run(*args, **kwargs):
 
     All other keyword arguments are passed through to the ``subprocess.Popen``
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
-    are ignored.
+    are passed through to the :func:`.fslsub.submit` function.
 
     :returns:      If ``submit`` is provided, the return value of
                    :func:`.fslsub` is returned. Otherwise returns a single
@@ -208,7 +208,7 @@ def run(*args, **kwargs):
 
     # submit - delegate to fslsub
     if submit is not None:
-        return fslsub.submit(' '.join(args), **submit)
+        return fslsub.submit(' '.join(args), **submit, **kwargs)
 
     # Run directly - delegate to _realrun
     stdout, stderr, exitcode = _realrun(

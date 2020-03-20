@@ -23,8 +23,11 @@ Changed
 
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
-* The :func:`.run.run` and :func:`.run.runfsl` functions now pass through
-  any additional keyword arguments to ``subprocess.Popen``.
+* The :func:`.run.run` and :func:`.run.runfsl` functions now pass through any
+  additional keyword arguments to ``subprocess.Popen`` or, if ``submit=True``,
+  to :func:`fslsub.submit`.
+* The :func:`.fslsub.submit` function now accepts an ``env`` option, allowing
+  environment variables to be specified.
 * The :func:`.run.runfsl` function now raises an error on attempts to
   run a command which is not present in ``$FSLDIR/bin/`` (e.g. ``ls``).
 * The :mod:`.bids` module has been updated to support files with any

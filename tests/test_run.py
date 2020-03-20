@@ -306,27 +306,31 @@ def test_run_submit():
         mkexec(op.expandvars('$FSLDIR/bin/fsltest'), test_script)
 
         jid = run.run('fsltest', submit=True)
-
         assert jid == '12345'
-
         stdout, stderr = fslsub.output(jid)
-
         assert stdout == 'test_script running\n'
         assert stderr == ''
 
+        # or can pass submit opts as a dict
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
-
         jid = run.run('fsltest', submit=kwargs)
-
         assert jid == '12345'
-
         stdout, stderr = fslsub.output(jid)
-
         experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
                             for k in sorted(kwargs.keys())]) + '\n'
-
         assert stdout == 'test_script running\n'
         assert stderr == experr
+
+        # or can pass submit opts as kwargs
+        kwargs = {'name' : 'abcde', 'ram' : '4GB'}
+        jid = run.run('fsltest', submit=True, **kwargs)
+        assert jid == '12345'
+        stdout, stderr = fslsub.output(jid)
+        experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
+                            for k in sorted(kwargs.keys())]) + '\n'
+        assert stdout == 'test_script running\n'
+        assert stderr == experr
+
 
 
 def test_run_streams():
