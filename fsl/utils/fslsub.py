@@ -40,8 +40,7 @@ Example usage, building a short pipeline::
 """
 
 
-from six import string_types, BytesIO
-import subprocess as sp
+from six import BytesIO
 import os.path as op
 import glob
 import time
@@ -149,8 +148,9 @@ def info(job_id):
     :return:     dictionary with information on the submitted job (empty
                  if job does not exist)
     """
+    from fsl.utils.run import run
     try:
-        result = sp.call(['qstat', '-j', job_id]).decode('utf-8')
+        result = run(['qstat', '-j', job_id])
     except FileNotFoundError:
         log.debug("qstat not found; assuming not on cluster")
         return {}
@@ -158,7 +158,7 @@ def info(job_id):
         return {}
     res = {}
     for line in result.splitlines()[1:]:
-        key, value = line.split(':', nsplit=1)
+        key, value = line.split(':', 1)
         res[key.strip()] = value.strip()
     return res
 
