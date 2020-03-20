@@ -55,6 +55,7 @@ Fixed
 * Updated the :func:`.prepareArgs` function to use ``shlex.split`` when
   preparing shell command arguments, instead of performing a naive whitespace
   split.
+* Fixed some bugs in the :func:`.fslsub.info` function.
 
 
 2.8.4 (Monday 2nd March 2020)
