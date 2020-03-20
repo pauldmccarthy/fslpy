@@ -152,7 +152,7 @@ def info(job_id):
     """
     from fsl.utils.run import run
     try:
-        result = run(['qstat', '-j', job_id])
+        result = run(['qstat', '-j', job_id], exitcode=True)[0]
     except FileNotFoundError:
         log.debug("qstat not found; assuming not on cluster")
         return {}
