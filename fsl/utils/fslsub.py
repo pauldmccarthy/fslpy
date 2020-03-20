@@ -68,7 +68,8 @@ def submit(*command,
            output=None,
            flags=False,
            multi_threaded=None,
-           verbose=False):
+           verbose=False,
+           env=None):
     """
     Submits a given command to the cluster
 
@@ -99,6 +100,7 @@ def submit(*command,
                           - <threads>: number of threads to run
 
     :arg verbose:        If True, use verbose mode
+    :arg env:            Dict containing environment variables
 
     :return:             string of submitted job id
     """
@@ -136,7 +138,7 @@ def submit(*command,
 
     base_cmd.extend(prepareArgs(command))
 
-    return runfsl(*base_cmd).strip()
+    return runfsl(*base_cmd, env=env).strip()
 
 
 def info(job_id):
