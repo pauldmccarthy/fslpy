@@ -679,7 +679,13 @@ def convertDeformationSpace(field, from_, to):
         defType=field.deformationType)
 
 
-def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
+def applyDeformation(image,
+                     field,
+                     ref=None,
+                     order=1,
+                     mode=None,
+                     cval=None,
+                     premat=None):
     """Applies a :class:`DeformationField` to an :class:`.Image`.
 
     The image is transformed into the space of the field's reference image
@@ -691,25 +697,30 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
     the input image. It is therefore assumed that an alternate ``ref`` is
     aligned in world coordinates with the field's actual reference image.
 
-    :arg image: :class:`.Image` to be transformed
+    :arg image:  :class:`.Image` to be transformed
 
-    :arg field: :class:`DeformationField` to use
+    :arg field:  :class:`DeformationField` to use
 
-    :arg ref:   Alternate reference image - if not provided, ``field.ref``
-                is used
+    :arg ref:    Alternate reference image - if not provided, ``field.ref``
+                 is used
 
-    :arg order: Spline interpolation order, passed through to the
-                ``scipy.ndimage.affine_transform`` function - ``0``
-                corresponds to nearest neighbour interpolation, ``1``
-                (the default) to linear interpolation, and ``3`` to
-                cubic interpolation.
+    :arg order:  Spline interpolation order, passed through to the
+                 ``scipy.ndimage.affine_transform`` function - ``0``
+                 corresponds to nearest neighbour interpolation, ``1``
+                 (the default) to linear interpolation, and ``3`` to
+                 cubic interpolation.
 
-    :arg mode:  How to handle regions which are outside of the image FOV.
-                Defaults to `''nearest'``.
+    :arg mode:   How to handle regions which are outside of the image FOV.
+                 Defaults to `''nearest'``.
 
-    :arg cval:  Constant value to use when ``mode='constant'``.
+    :arg cval:   Constant value to use when ``mode='constant'``.
 
-    :return:    ``numpy.array`` containing the transformed image data.
+    :arg premat: Optional affine transform which can be used if ``image`` is
+                 not in the same space as ``field.src``. Assumed to transform
+                 from ``image`` **voxel** coordinates into ``field.src``
+                 **voxel** coordinates.
+
+    :return:     ``numpy.array`` containing the transformed image data.
     """
 
     if order is None: order = 1
@@ -763,12 +774,15 @@ def applyDeformation(image, field, ref=None, order=1, mode=None, cval=None):
     # We assume world-world alignment
     # between the original source
     # and the image to be resampled
-    if not image.sameSpace(src):
-        post  = affine.concat(image.getAffine('world', 'voxel'),
-                              src  .getAffine('voxel', 'world'))
+    if (premat is not None) or (not image.sameSpace(src)):
+        if premat is None:
+            premat = affine.concat(image.getAffine('world', 'voxel'),
+                                   src  .getAffine('voxel', 'world'))
+        else:
+            premat = affine.invert(premat)
         shape = field.shape
         field = field.reshape((-1, 3))
-        field = affine.transform(field, post)
+        field = affine.transform(field, premat)
         field = field.reshape(shape)
 
     field = field.transpose((3, 0, 1, 2))
