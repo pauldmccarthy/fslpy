@@ -62,6 +62,8 @@ Fixed
   split.
 * Fixed some bugs in the :func:`.fslsub.info` and :func:`.fslinfo.wait`
   functions.
+* Fixed the :func:`.DeformationField.transform` method so it works with
+  a single set of coordinates.
 
 
 2.8.4 (Monday 2nd March 2020)
