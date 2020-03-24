@@ -15,6 +15,8 @@ Added
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
+* The :func:`.nonlinear.applyDeformation` function now accepts a ``premat``
+  affine, which is applied to the input image before the deformation field.
 
 
 Changed
