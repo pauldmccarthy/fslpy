@@ -251,7 +251,9 @@ class DeformationField(NonLinearTransform):
         if from_ is None: from_ = self.refSpace
         if to    is None: to    = self.srcSpace
 
-        coords = np.asanyarray(coords)
+        coords   = np.asanyarray(coords)
+        outshape = coords.shape
+        coords   = coords.reshape((-1, 3))
 
         # We may need to pre-transform the
         # coordinates so they are in the
@@ -299,7 +301,7 @@ class DeformationField(NonLinearTransform):
         outcoords          = np.full(coords.shape, np.nan)
         outcoords[voxmask] = disps
 
-        return outcoords
+        return outcoords.reshape(outshape)
 
 
 class CoefficientField(NonLinearTransform):
