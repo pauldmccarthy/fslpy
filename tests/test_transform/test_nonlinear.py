@@ -205,6 +205,10 @@ def test_DeformationField_transform():
     got = absfield.transform(rcoords)
     assert np.all(np.isclose(got, scoords))
 
+    # test single set of coords
+    got = absfield.transform(rcoords[0])
+    assert np.all(np.isclose(got, scoords[0]))
+
     got = relfield.transform(rvoxels, from_='voxel', to='voxel')
     assert np.all(np.isclose(got, svoxels))
     got = absfield.transform(rvoxels, from_='voxel', to='voxel')
