@@ -411,6 +411,60 @@ def test_applyDeformation_altsrc():
     assert np.all(np.isclose(expect, result))
 
 
+def test_applyDeformation_premat():
+
+    src2ref = affine.compose(
+        np.random.randint(2, 5, 3),
+        np.random.randint(1, 10, 3),
+        [0, 0, 0])
+    ref2src = affine.invert(src2ref)
+
+    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+    refdata = np.random.randint(1, 65536, (10, 10, 10))
+
+    src   = fslimage.Image(srcdata)
+    ref   = fslimage.Image(refdata, xform=src2ref)
+    field = _affine_field(src, ref, ref2src, 'world', 'world')
+
+    # First try a down-sampled version
+    # of the original source image
+    altsrc, xf = resample.resample(src, (5, 5, 5), origin='corner')
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    premat = affine.concat(src   .getAffine('world', 'voxel'),
+                           altsrc.getAffine('voxel', 'world'))
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest', premat=premat)
+    assert np.all(np.isclose(expect, result))
+
+    # Now try a down-sampled ROI
+    # of the original source image
+    altsrc     = roi.roi(src, [(2, 9), (2, 9), (2, 9)])
+    altsrc, xf = resample.resample(altsrc, (4, 4, 4))
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    premat = affine.concat(src   .getAffine('world', 'voxel'),
+                           altsrc.getAffine('voxel', 'world'))
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest', premat=premat)
+    assert np.all(np.isclose(expect, result))
+
+    # down-sampled and offset ROI
+    # of the original source image
+    altsrc     = roi.roi(src, [(-5, 8), (-5, 8), (-5, 8)])
+    altsrc, xf = resample.resample(altsrc, (6, 6, 6))
+    altsrc     = fslimage.Image(altsrc, xform=xf, header=src.header)
+    expect, xf = resample.resampleToReference(
+        altsrc, ref, matrix=src2ref, order=1, mode='nearest')
+    premat = affine.concat(src   .getAffine('world', 'voxel'),
+                           altsrc.getAffine('voxel', 'world'))
+    result = nonlinear.applyDeformation(
+        altsrc, field, order=1, mode='nearest', premat=premat)
+    assert np.all(np.isclose(expect, result))
+
+
 def test_applyDeformation_altref():
     src2ref = affine.compose(
         np.random.randint(2, 5, 3),
