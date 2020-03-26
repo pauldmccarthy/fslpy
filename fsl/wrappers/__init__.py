@@ -37,8 +37,8 @@ instead. Aliases may also be used to provide a more readable interface (e.g.
 the :func:`.bet` function uses ``mask`` instead of ``m``).
 
 
-One exception to the above is :class:`.fslmaths`, which provides a more
-object-oriented interface::
+Two exceptions to the above are :class:`.fslmaths` and :class:`.fslstats`,
+which provide a more object-oriented interface::
 
     from fsl.wrappers import fslmaths
     fslmaths('image.nii').mas('mask.nii').bin().run('output.nii')
@@ -95,6 +95,7 @@ from .fnirt        import (fnirt,           # noqa
                            invwarp,
                            convertwarp)
 from .fslmaths     import (fslmaths,)       # noqa
+from .fslstats     import (fslstats,)       # noqa
 from .fugue        import (fugue,           # noqa
                            prelude,
                            sigloss)
