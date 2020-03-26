@@ -10,8 +10,8 @@ Added
 ^^^^^
 
 
-* New wrapper functions for the FSL :func:`.prelude` and :func:`applyxfm4D`
-  commands.
+* New wrapper functions for the FSL :class:`.fslstats`, :func:`.prelude` and
+  :func:`applyxfm4D` commands.
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
