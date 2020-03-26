@@ -12,6 +12,7 @@ import os.path as op
 import sys
 import textwrap as tw
 import contextlib
+import argparse
 
 from fsl.utils         import fslsub
 from fsl.utils.tempdir import tempdir
@@ -123,6 +124,46 @@ def test_info():
                'submission_time' : '3',
                'owner'           : '4'}
         assert fslsub.info('12345') == exp
+
+
+def test_add_to_parser():
+    test_flags = [
+        ('-T', '30.0'),
+        ('-q', 'short.q'),
+        ('-a', 'architecture'),
+        ('-p', '3'),
+        ('-M', 'test@something.com'),
+        ('-N', 'job_name'),
+        ('-R', '20'),
+        ('-l', 'logdir'),
+        ('-j', '12345,67890'),
+        ('-m', 'mail_options'),
+        ('-v', ),
+        ('-F', ),
+        ('-s', 'pename,thread')
+    ]
+    for flag in test_flags:
+        for include in (None, [flag[0]]):
+            parser = argparse.ArgumentParser("test parser")
+            fslsub.SubmitParams.add_to_parser(parser, include=include)
+            args = parser.parse_args(flag)
+            submitter = fslsub.SubmitParams.from_args(args)
+            assert submitter.as_flags() == flag
+
+    parser = argparse.ArgumentParser("test parser")
+    parser.add_argument('some_input')
+    fslsub.SubmitParams.add_to_parser(parser, include=None)
+    all_flags = tuple(part for flag in test_flags for part in flag)
+    args = parser.parse_args(('input', ) + all_flags)
+    assert args.some_input == 'input'
+    submitter = fslsub.SubmitParams.from_args(args)
+    assert len(all_flags) == len(submitter.as_flags())
+    for flag in test_flags:
+        res_flags = submitter.as_flags()
+        assert flag[0] in res_flags
+        start_index = res_flags.index(flag[0])
+        for idx, part in enumerate(flag):
+            assert res_flags[idx + start_index] == part
 
 
 def myfunc():
