@@ -375,7 +375,7 @@ else:
 
 res = func(*args, **kwargs)
 if res is not None:
-    with open(__file__ + '_out.pickle') as f:
+    with open(__file__ + '_out.pickle', 'w') as f:
         pickle.dump(f, res)
 """
 
