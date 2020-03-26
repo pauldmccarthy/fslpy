@@ -1002,7 +1002,7 @@ class Image(Nifti):
 
         :arg image:      A string containing the name of an image file to load,
                          or a :mod:`numpy` array, or a :mod:`nibabel` image
-                         object.
+                         object, or an ``Image``object.
 
         :arg name:       A name for the image.
 
