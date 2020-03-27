@@ -28,8 +28,9 @@ Changed
 
 * ``fslpy`` now requires a minimum Python version of 3.7.
 * The default value for the ``partial_fill`` option to :meth:`.FileTree.read`
-  is False. Accordingly, the :class:`.FileTreeQuery` calls the
-  :meth:`.FileTree.partial_fill` method on the ``FileTree`` it is given.
+  has been changed to ``False``. Accordingly, the :class:`.FileTreeQuery`
+  calls the :meth:`.FileTree.partial_fill` method on the ``FileTree`` it is
+  given.
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
 * The :func:`.run.run` and :func:`.run.runfsl` functions now pass through any
