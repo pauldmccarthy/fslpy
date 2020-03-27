@@ -394,7 +394,7 @@ class FileTree(object):
         self.variables = {}
 
     @classmethod
-    def read(cls, tree_name: str, directory='.', partial_fill=True, **variables) -> "FileTree":
+    def read(cls, tree_name: str, directory='.', partial_fill=False, **variables) -> "FileTree":
         """
         Reads a FileTree from a specific file
 

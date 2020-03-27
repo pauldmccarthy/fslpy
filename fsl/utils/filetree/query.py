@@ -89,6 +89,8 @@ class FileTreeQuery(object):
 
         :arg tree: The :class:`.FileTree` object
         """
+        # Hard-code into the templates any pre-defined variables
+        tree = tree.partial_fill()
 
         # Find all files present in the directory
         # (as Match objects), and find all variables,
