@@ -3,9 +3,9 @@ from typing import Tuple, Optional, Dict, Any, Set
 from copy import deepcopy
 from . import parse
 import pickle
+import json
 import os.path as op
 from . import utils
-from fsl.utils.deprecated import deprecated
 
 
 class MissingVariable(KeyError):
@@ -255,12 +255,28 @@ class FileTree(object):
         with open(filename, 'wb') as f:
             pickle.dump(self, f)
 
+    def save_json(self, filename):
+        """
+        Saves the Filetree to a JSON file
+
+        :param filename: filename to store the file tree in
+        """
+        def default(obj):
+            if isinstance(obj, FileTree):
+                res = dict(obj.__dict__)
+                del res['_parent']
+                return res
+            return obj
+
+        with open(filename, 'w') as f:
+            json.dump(self, f, default=default, indent=2)
+
     @classmethod
     def load_pickle(cls, filename):
         """
         Loads the Filetree from a pickle file
 
-        :param filename: filename produced from Filetree.save
+        :param filename: filename produced from Filetree.save_pickle
         :return: stored Filetree
         """
         with open(filename, 'rb') as f:
@@ -268,6 +284,30 @@ class FileTree(object):
         if not isinstance(res, cls):
             raise IOError("Pickle file did not contain %s object" % cls)
         return res
+
+    @classmethod
+    def load_json(cls, filename):
+        """
+        Loads the FileTree from a JSON file
+
+        :param filename: filename produced by FileTree.save_json
+        :return: stored FileTree
+        """
+        def from_dict(input_dict):
+            res_tree = FileTree(
+                templates=input_dict['templates'],
+                variables=input_dict['variables'],
+                sub_trees={name: from_dict(value) for name, value in input_dict['sub_trees'].items()},
+                name=input_dict['_name'],
+            )
+            for sub_tree in res_tree.sub_trees.values():
+                sub_tree._parent = res_tree
+            return res_tree
+
+        with open(filename, 'r') as f:
+            as_dict = json.load(f)
+        return from_dict(as_dict)
+
 
     def defines(self, short_names, error=False):
         """

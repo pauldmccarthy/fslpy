@@ -1,5 +1,6 @@
 # Sample Test passing with nose and pytest
 from fsl.utils import filetree
+from fsl.utils.tempdir import tempdir
 from pathlib import PurePath
 import os.path as op
 import pytest
@@ -180,3 +181,26 @@ def test_read_local_sub_children():
         # ensure current directory is not the test directory, which would cause the test to be too easy
         os.chdir('..')
     filetree.FileTree.read(op.join(directory, 'local_parent.tree'))
+
+
+def same_tree(t1, t2):
+    assert t1.all_variables == t2.all_variables
+    assert t1.templates == t2.templates
+    assert len(t1.sub_trees) == len(t2.sub_trees)
+    for name in t1.sub_trees:
+        same_tree(t1.sub_trees[name], t2.sub_trees[name])
+        assert t1.sub_trees[name].parent is t1
+        assert t2.sub_trees[name].parent is t2
+
+
+def test_io():
+    directory = op.split(__file__)[0]
+    tree = filetree.FileTree.read(op.join(directory, 'parent.tree'), partial_fill=True)
+    with tempdir():
+        tree.save_pickle('test.pck')
+        new_tree = filetree.FileTree.load_pickle('test.pck')
+        same_tree(tree, new_tree)
+
+        tree.save_json('test.json')
+        new_tree = filetree.FileTree.load_json('test.json')
+        same_tree(tree, new_tree)
