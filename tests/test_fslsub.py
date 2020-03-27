@@ -14,6 +14,7 @@ import textwrap as tw
 import contextlib
 import argparse
 
+import fsl
 from fsl.utils         import fslsub
 from fsl.utils.tempdir import tempdir
 
@@ -28,6 +29,13 @@ import os
 import os.path as op
 import sys
 import subprocess as sp
+
+fslpydir = op.join('{}', '..')
+env = dict(os.environ)
+
+env['PYTHONPATH'] = fslpydir
+sys.path.insert(0, fslpydir)
+
 import fsl
 
 args = sys.argv[1:]
@@ -45,9 +53,6 @@ for i in range(len(args)):
 
 args = args[i:]
 
-env  = dict(os.environ)
-env['PYTHONPATH'] = op.join(op.dirname(fsl.__file__), '..')
-
 cmd   = op.basename(args[0])
 jobid = random.randint(1, 9999)
 
@@ -57,7 +62,7 @@ with open('{{}}.o{{}}'.format(cmd, jobid), 'w') as stdout, \
 
 print(str(jobid))
 sys.exit(0)
-""".format(sys.executable).strip()
+""".format(sys.executable, op.dirname(fsl.__file__)).strip()
 
 
 @contextlib.contextmanager
