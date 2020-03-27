@@ -95,9 +95,9 @@ class fslstats(object):
 
 
     The ``fslstats`` command can be executed via the :meth:`run` method.
-    Normally, the results will be returned as a list of floating point
-    numbers. Pre-options will affect the structure of the return value - see
-    :meth:`__init__` for details.
+    Normally, the results will be returned as a scalar floating point number,
+    or a ``numpy`` array. Pre-options will affect the structure of the return
+    value - see :meth:`__init__` for details.
 
 
     Attribute and method calls can be chained together, so a complete
@@ -162,7 +162,7 @@ class fslstats(object):
 
 
     def __getattr__(self, name):
-        """Intercepts attribute accesses and stages ``fslstats`` command-line
+        """Intercepts attribute accesses and accumulates ``fslstats`` command-line
         flags accordingly.
         """
 
@@ -238,7 +238,7 @@ class fslstats(object):
             # reshape the result into
             # (nvals, nvols, nlbls)
             nlbls  = int(len(result) / nvols)
-            result = result.reshape((nvols, nlbls, -1))
+            result = result.reshape((nvols, nlbls, -1)).squeeze()
 
         # Scalar - use numpy indexing weirdness
         # to get our single value out.
