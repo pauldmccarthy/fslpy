@@ -269,7 +269,7 @@ class FileTree(object):
             return obj
 
         with open(filename, 'w') as f:
-            json.dump(self, f, default=default)
+            json.dump(self, f, default=default, indent=2)
 
     @classmethod
     def load_pickle(cls, filename):
