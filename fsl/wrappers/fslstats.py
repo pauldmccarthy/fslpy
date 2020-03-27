@@ -194,9 +194,12 @@ class fslstats(object):
         return self
 
 
-    def run(self):
+    def run(self, raw=False):
         """Run the ``fslstats`` command-line tool. See :meth:`__init__` for a
         description of the return value.
+
+        :arg raw: Defaults to ``False``. If ``True``, the raw standard output
+                  and error is returned, instead of a scalar/numpy array.
 
         :returns: Result of ``fslstats`` as a scalar or ``numpy`` array.
         """
@@ -210,7 +213,11 @@ class fslstats(object):
         # is to tee the command output streams
         # to the calling process streams. We
         # can disable this via log=None.
-        result  = self.__run('fslstats', *self.__options, log=None)
+        result = self.__run('fslstats', *self.__options, log=None)
+
+        if raw:
+            return result.stdout
+
         result  = np.genfromtxt(io.StringIO(result.stdout[0].strip()))
         sepvols = '-t' in self.__options
         lblmask = '-K' in self.__options
