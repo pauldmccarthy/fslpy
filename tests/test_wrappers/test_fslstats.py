@@ -6,6 +6,8 @@ import os.path as op
 import sys
 import contextlib
 
+import pytest
+
 import numpy as np
 
 import fsl.utils.run as run
@@ -65,6 +67,10 @@ def test_fslstats_cmdline():
         expected = cmd + ' -t image -H 10 1 99 -d diff'
         assert result[0] == expected
 
+        # unknown option
+        with pytest.raises(AttributeError):
+            fw.fslstats('image').Q
+
 
 def test_fslstats_result():
     with tempdir.tempdir():
@@ -92,3 +98,15 @@ def test_fslstats_result():
             make_random_image('image', (10, 10, 10, 5))
             result = fw.fslstats('image', K='mask', t=True).run()
             assert result.shape == (5, 3, 2)
+
+        # -t/-K with a 3D image
+        with mockFSLDIR('(4,)') as fsldir:
+            make_random_image('image', (10, 10, 10))
+            result = fw.fslstats('image', K='mask', t=True).run()
+            assert result.shape == (4,)
+
+            result = fw.fslstats('image', t=True).run()
+            assert result.shape == (4,)
+
+            result = fw.fslstats('image', K='mask').run()
+            assert result.shape == (4,)
