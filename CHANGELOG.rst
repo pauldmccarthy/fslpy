@@ -2,7 +2,7 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-2.9.0 (Under development)
+3.0.0 (Under development)
 -------------------------
 
 
@@ -17,12 +17,15 @@ Added
   rudimentary support for double-barrelled filenames.
 * The :func:`.nonlinear.applyDeformation` function now accepts a ``premat``
   affine, which is applied to the input image before the deformation field.
+* New :class:`.SubmitParams` class, providing a higer level interface for
+  cluster submission.
 
 
 Changed
 ^^^^^^^
 
 
+* ``fslpy`` now requires a minimum Python version of 3.7.
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
 * The :func:`.run.run` and :func:`.run.runfsl` functions now pass through any
