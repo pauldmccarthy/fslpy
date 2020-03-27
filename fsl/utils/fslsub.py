@@ -156,10 +156,10 @@ class SubmitParams(object):
             (set to None to include everything)
         :return: the group the arguments got added to
         """
-        from fsl.utils.run import runfsl
+        from fsl.utils.run import runfsl, FSLNotPresent
         try:
             fsl_sub_run, _ = runfsl('fsl_sub', exitcode=True)
-        except FileNotFoundError:
+        except (FileNotFoundError, FSLNotPresent):
             warnings.warn('fsl_sub was not found')
             return
         doc_lines = fsl_sub_run.splitlines()
@@ -183,7 +183,7 @@ class SubmitParams(object):
                     break
                 elif line.strip().startswith(flag):
                     explanation = [line[nspaces:].strip()]
-            if len(explanation) == 0:
+            if (explanation is None) or (len(explanation) == 0):
                 return 'documentation not found'
             return ' '.join(explanation)
 
