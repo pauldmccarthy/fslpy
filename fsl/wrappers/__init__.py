@@ -40,8 +40,11 @@ the :func:`.bet` function uses ``mask`` instead of ``m``).
 Two exceptions to the above are :class:`.fslmaths` and :class:`.fslstats`,
 which provide a more object-oriented interface::
 
-    from fsl.wrappers import fslmaths
+    from fsl.wrappers import fslmaths, fslstats
+
     fslmaths('image.nii').mas('mask.nii').bin().run('output.nii')
+
+    imean, imin, imax = fslstats('image.nii').k('mask.nii').m.R.run()
 
 
 Wrapper functions for commands which accept NIfTI image or numeric text files
