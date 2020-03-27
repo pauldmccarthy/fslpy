@@ -12,8 +12,9 @@ for the ``fslstats`` command-line tool.
 """
 
 
-import six
+import              io
 import functools as ft
+import numpy     as np
 
 import fsl.data.image      as fslimage
 from . import wrapperutils as wutils
@@ -122,23 +123,18 @@ class fslstats(object):
 
             fslstats('image_4d.nii.gz', K='mask.nii.gz')
 
-        then the value returned by :meth:`run` will contain a list-of-lists,
-        with each child list containing the results:
-
-         - for each 3D volume contained within the input image (if ``t``
-           is set), or
-         - for each sub-mask contained within the mask image (if ``K``
-           is set)
-
+        then :meth:`run` will return a 2D ``numpy`` array of shape ``(nvols,
+        nvals)`` if ``t`` is set, or ``(nlabels, nvals)`` if ``K`` is set.
 
         If both of the ``t`` and ``K`` pre-options are set, e.g.::
 
             fslstats('image_4d.nii.gz', t=True, K='mask.nii.gz')
 
-        then the result will be a list-of-lists-of-lists, where each child
-        list corresponds to each 3D volume (``t``), and each grand-child list
-        corresponds to each sub-mask (``K``).
+        then the result will be a 3D numpy array of shape ``(nvols, nlabels,
+        nvals)``.
 
+        If neither ``t`` or ``K`` are set, then the result will be a scalar,
+        or a 1D ``numpy`` array.
 
         :arg input:       Input image - either a file name, or an
                           :class:`.Image` object, or a ``nibabel.Nifti1Image``
@@ -166,7 +162,8 @@ class fslstats(object):
 
 
     def __getattr__(self, name):
-        """Intercepts attribute accesses,...
+        """Intercepts attribute accesses and stages ``fslstats`` command-line
+        flags accordingly.
         """
 
         # options which take no args
@@ -198,53 +195,48 @@ class fslstats(object):
 
 
     def run(self):
-        """Run the ``fslstats`` command-line tool. The results are returned as
-        floating point numbers.
+        """Run the ``fslstats`` command-line tool. See :meth:`__init__` for a
+        description of the return value.
+
+        :returns: Result of ``fslstats`` as a scalar or ``numpy`` array.
         """
 
-        result = self.__run('fslstats', *self.__options, log=None)
-        result = result.stdout[0].strip()
-        result = [line.split() for line in result.split('\n')]
+        # The parsing logic below will not work
+        # with versions of fslstats prior to fsl
+        # 6.0.2, due to a quirk in the output
+        # formatting of older versions.
 
+        # The default behaviour of run/runfsl
+        # is to tee the command output streams
+        # to the calling process streams. We
+        # can disable this via log=None.
+        result  = self.__run('fslstats', *self.__options, log=None)
+        result  = np.genfromtxt(io.StringIO(result.stdout[0].strip()))
         sepvols = '-t' in self.__options
         lblmask = '-K' in self.__options
 
-        # This parsing logic will not work with
-        # versions of fslstats prior to fsl 6.0.2,
-        # due to a quirk in the output formatting
-        # of older versions.
-
         # One line of output for each volume and
         # for each label (with volume the slowest
-        # changing).
+        # changing). Reshape to 3D.
         if sepvols and lblmask:
-
-            # One line of output for
-            # each volume and label
-            result = [[float(v) for v in line] for line in result]
 
             # We need know the number of volumes
             # (or the number of labels) in order
-            # to know how to nest the results.
+            # to know how to shape the results.
             img = fslimage.Image(self.__input, loadData=False)
 
             if img.ndim >= 4: nvols = img.shape[3]
             else:             nvols = 1
 
-            # split the result up into
-            # nlbls lines for each volume
-            nlbls   = len(result) / nvols
-            offsets = range(0, nvols * nlbls, nlbls)
-            result  = [result[off:off + nlbls] for off in offsets]
+            # reshape the result into
+            # (nvals, nvols, nlbls)
+            nlbls  = int(len(result) / nvols)
+            result = result.reshape((nvols, nlbls, -1))
 
-        # One line of output
-        # for each volume/label
-        elif sepvols or lblmask:
-            result = [[float(v) for v in line] for line in result]
-
-        # One line of output
-        else:
-            result = [float(v) for v in result[0]]
+        # Scalar - use numpy indexing weirdness
+        # to get our single value out.
+        elif result.size == 1:
+            result = result[()]
 
         return result
 
