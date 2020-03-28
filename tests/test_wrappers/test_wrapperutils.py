@@ -27,8 +27,8 @@ import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from . import mockFSLDIR, cleardir, checkdir, testdir
-from .test_run import mock_submit
+from .. import mockFSLDIR, cleardir, checkdir, testdir
+from ..test_run import mock_submit
 
 
 def test_applyArgStyle():

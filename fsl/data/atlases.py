@@ -58,7 +58,6 @@ import fsl.utils.image.resample as resample
 import fsl.transform.affine     as affine
 import fsl.utils.notifier       as notifier
 import fsl.utils.settings       as fslsettings
-import fsl.utils.deprecated     as deprecated
 
 
 log = logging.getLogger(__name__)
@@ -1083,24 +1082,6 @@ class StatisticAtlas(Atlas):
             avgvals.append(val)
 
         return avgvals
-
-
-    @deprecated.deprecated('2.6.0', '3.0.0', 'Use values instead')
-    def proportions(self, *args, **kwargs):
-        """Deprecated - use :meth:`values` instead. """
-        return self.values(*args, **kwargs)
-
-
-    @deprecated.deprecated('2.6.0', '3.0.0', 'Use coordValues instead')
-    def coordProportions(self, *args, **kwargs):
-        """Deprecated - use :meth:`coordValues` instead. """
-        return self.coordValues(*args, **kwargs)
-
-
-    @deprecated.deprecated('2.6.0', '3.0.0', 'Use maskValues instead')
-    def maskProportions(self, *args, **kwargs):
-        """Deprecated - use :meth:`maskValues` instead. """
-        return self.maskValues(*args, **kwargs)
 
 
 class ProbabilisticAtlas(StatisticAtlas):

@@ -85,8 +85,6 @@ from   collections import abc
 try:                import queue
 except ImportError: import Queue as queue
 
-from fsl.utils.deprecated import deprecated
-
 
 log = logging.getLogger(__name__)
 
@@ -595,36 +593,6 @@ def idleWhen(*args, **kwargs):
     singleton.
     """
     idleLoop.idleWhen(*args, **kwargs)
-
-
-@deprecated('2.7.0', '3.0.0', 'Use idleLoop.inIdle instead')
-def inIdle(taskName):
-    """Deprecated - use ``idleLoop.inIdle`` instead. """
-    return idleLoop.inIdle(taskName)
-
-
-@deprecated('2.7.0', '3.0.0', 'Use idleLoop.cancelIdle instead')
-def cancelIdle(taskName):
-    """Deprecated - use ``idleLoop.cancelIdle`` instead. """
-    return idleLoop.cancelIdle(taskName)
-
-
-@deprecated('2.7.0', '3.0.0', 'Use idleLoop.reset instead')
-def idleReset():
-    """Deprecated - use ``idleLoop.reset`` instead. """
-    return idleLoop.reset()
-
-
-@deprecated('2.7.0', '3.0.0', 'Use idleLoop.callRate instead')
-def getIdleTimeout():
-    """Deprecated - use ``idleLoop.callRate`` instead. """
-    return idleLoop.callRate
-
-
-@deprecated('2.7.0', '3.0.0', 'Use idleLoop.callRate instead')
-def setIdleTimeout(timeout=None):
-    """Deprecated - use ``idleLoop.callRate`` instead. """
-    idleLoop.callRate = timeout
 
 
 def block(secs, delta=0.01, until=None):

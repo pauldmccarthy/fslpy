@@ -8,7 +8,7 @@ import pytest
 import fsl.scripts.resample_image as resample_image
 
 
-import  fsl.utils.transform as transform
+import fsl.transform.affine as affine
 from fsl.utils.tempdir import tempdir
 from fsl.data.image    import Image
 
@@ -22,22 +22,22 @@ def test_resample_image_shape():
         resample_image.main('image resampled -s 20,20,20'.split())
         res = Image('resampled')
 
-        expv2w = transform.concat(
+        expv2w = affine.concat(
             img.voxToWorldMat,
-            transform.scaleOffsetXform([0.5, 0.5, 0.5], 0))
+            affine.scaleOffsetXform([0.5, 0.5, 0.5], 0))
 
         assert np.all(np.isclose(res.shape, (20, 20, 20)))
         assert np.all(np.isclose(res.pixdim, (0.5, 0.5, 0.5)))
         assert np.all(np.isclose(res.voxToWorldMat, expv2w))
         assert np.all(np.isclose(
-            np.array(transform.axisBounds(res.shape, res.voxToWorldMat)) - 0.25,
-                     transform.axisBounds(img.shape, img.voxToWorldMat)))
+            np.array(affine.axisBounds(res.shape, res.voxToWorldMat)) - 0.25,
+                     affine.axisBounds(img.shape, img.voxToWorldMat)))
 
         resample_image.main('image resampled -s 20,20,20 -o corner'.split())
         res = Image('resampled')
         assert np.all(np.isclose(
-            transform.axisBounds(res.shape, res.voxToWorldMat),
-            transform.axisBounds(img.shape, img.voxToWorldMat)))
+            affine.axisBounds(res.shape, res.voxToWorldMat),
+            affine.axisBounds(img.shape, img.voxToWorldMat)))
 
 
 def test_resample_image_shape_4D():
@@ -65,9 +65,9 @@ def test_resample_image_dim():
         resample_image.main('image resampled -d 0.5,0.5,0.5'.split())
 
         res = Image('resampled')
-        expv2w = transform.concat(
+        expv2w = affine.concat(
             img.voxToWorldMat,
-            transform.scaleOffsetXform([0.5, 0.5, 0.5], 0))
+            affine.scaleOffsetXform([0.5, 0.5, 0.5], 0))
 
         assert np.all(np.isclose(res.shape, (20, 20, 20)))
         assert np.all(np.isclose(res.pixdim, (0.5, 0.5, 0.5)))

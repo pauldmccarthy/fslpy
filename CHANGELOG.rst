@@ -2,16 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.0.0 (Under development)
--------------------------
+3.0.0 (Sunday 29th March 2020)
+------------------------------
 
 
 Added
 ^^^^^
 
 
-* New wrapper functions for the FSL :func:`.prelude` and :func:`applyxfm4D`
-  commands.
+* New wrapper functions for the FSL :class:`.fslstats`, :func:`.prelude` and
+  :func:`applyxfm4D` commands.
 * New ``firstDot`` option to the :func:`.path.getExt`,
   :func:`.path.removeExt`, and :func:`.path.splitExt`, functions, offering
   rudimentary support for double-barrelled filenames.
@@ -19,6 +19,7 @@ Added
   affine, which is applied to the input image before the deformation field.
 * New :class:`.SubmitParams` class, providing a higer level interface for
   cluster submission.
+* New :meth:`.FileTree.load_json` and  :meth:`.FileTree.save_json` methods.
 
 
 Changed
@@ -26,6 +27,10 @@ Changed
 
 
 * ``fslpy`` now requires a minimum Python version of 3.7.
+* The default value for the ``partial_fill`` option to :meth:`.FileTree.read`
+  has been changed to ``False``. Accordingly, the :class:`.FileTreeQuery`
+  calls the :meth:`.FileTree.partial_fill` method on the ``FileTree`` it is
+  given.
 * The :func:`.gifti.relatedFiles` function now supports files with
   BIDS-style naming conventions.
 * The :func:`.run.run` and :func:`.run.runfsl` functions now pass through any
@@ -54,6 +59,8 @@ Changed
 * The :func:`.fileOrText` decorator has been updated to work with input
   values - file paths must be passed in as ``pathlib.Path`` objects, so they
   can be differentiated from input values.
+* Loaded :class:`.Image` objects returned by :mod:`fsl.wrappers` functions
+  are now named according to the wrapper function argument name.
 
 
 Fixed
@@ -67,6 +74,24 @@ Fixed
   functions.
 * Fixed the :func:`.DeformationField.transform` method so it works with
   a single set of coordinates.
+
+
+Removed
+^^^^^^^
+
+
+* Removed the deprecated ``.StatisticAtlas.proportions``,
+  ``.StatisticAtlas.coordProportions``, and
+  ``.StatisticAtlas.maskProportions`` methods.
+* Removed the deprecated ``indexed`` option to :meth:`.Image.__init__`.
+* Removed the deprecated ``.Image.resample`` method.
+* Removed the deprecated ``.image.loadIndexedImageFile`` function.
+* Removed the deprecatd ``.FileTreeQuery.short_names`` and
+  ``.Match.short_name`` properties.
+* Removed the deprecated ``.idle.inIdle``, ``.idle.cancelIdle``,
+  ``.idle.idleReset``, ``.idle.getIdleTimeout``, and
+  ``.idle.setIdleTimeout`` functions.
+* Removed the deprecated ``resample.calculateMatrix`` function.
 
 
 2.8.4 (Monday 2nd March 2020)

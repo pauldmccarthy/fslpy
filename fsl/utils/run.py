@@ -180,12 +180,16 @@ def run(*args, **kwargs):
     returnStderr   = kwargs.pop('stderr',   False)
     returnExitcode = kwargs.pop('exitcode', False)
     submit         = kwargs.pop('submit',   {})
-    log            = kwargs.pop('log',      {})
-    tee            = log   .get('tee',      False)
-    logStdout      = log   .get('stdout',   None)
-    logStderr      = log   .get('stderr',   None)
-    logCmd         = log   .get('cmd',      None)
+    log            = kwargs.pop('log',      None)
     args           = prepareArgs(args)
+
+    if log is None:
+        log = {}
+
+    tee       = log.get('tee',    False)
+    logStdout = log.get('stdout', None)
+    logStderr = log.get('stderr', None)
+    logCmd    = log.get('cmd',    None)
 
     if not bool(submit):
         submit = None

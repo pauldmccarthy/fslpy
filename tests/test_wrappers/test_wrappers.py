@@ -17,7 +17,7 @@ import fsl.utils.assertions               as asrt
 import fsl.utils.run                      as run
 from fsl.utils.tempdir import tempdir
 
-from . import mockFSLDIR, make_random_image
+from .. import mockFSLDIR, make_random_image
 
 
 def checkResult(cmd, base, args, stripdir=None):
