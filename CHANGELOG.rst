@@ -76,6 +76,24 @@ Fixed
   a single set of coordinates.
 
 
+Removed
+^^^^^^^
+
+
+* Removed the deprecated ``.StatisticAtlas.proportions``,
+  ``.StatisticAtlas.coordProportions``, and
+  ``.StatisticAtlas.maskProportions`` methods.
+* Removed the deprecated ``indexed`` option to :meth:`.Image.__init__`.
+* Removed the deprecated ``.Image.resample`` method.
+* Removed the deprecated ``.image.loadIndexedImageFile`` function.
+* Removed the deprecatd ``.FileTreeQuery.short_names`` and
+  ``.Match.short_name`` properties.
+* Removed the deprecated ``.idle.inIdle``, ``.idle.cancelIdle``,
+  ``.idle.idleReset``, ``.idle.getIdleTimeout``, and
+  ``.idle.setIdleTimeout`` functions.
+* Removed the deprecated ``resample.calculateMatrix`` function.
+
+
 2.8.4 (Monday 2nd March 2020)
 -----------------------------
 
