@@ -18,7 +18,6 @@ import numpy                as np
 import scipy.ndimage        as ndimage
 
 import fsl.transform.affine as affine
-import fsl.utils.deprecated as deprecated
 
 
 def resampleToPixdims(image, newPixdims, **kwargs):
@@ -282,13 +281,3 @@ def applySmoothing(data, matrix, newShape):
     sigma[ratio >= 1.1] *= 0.425
 
     return ndimage.gaussian_filter(data, sigma)
-
-
-@deprecated.deprecated('2.8.0', '3.0.0',
-                       'Use fsl.transform.affine.rescale instead')
-def calculateMatrix(oldShape, newShape, origin):
-    """Deprecated - use :func:`.affine.rescale` instead. """
-    xform = affine.rescale(oldShape, newShape, origin)
-    if np.all(np.isclose(xform, np.eye(len(oldShape) + 1))):
-        return None
-    return xform[:-1, :]

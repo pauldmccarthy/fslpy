@@ -31,8 +31,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-from fsl.utils.deprecated import deprecated
-from .                    import FileTree
+from . import FileTree
 
 
 log = logging.getLogger(__name__)
@@ -207,15 +206,6 @@ class FileTreeQuery(object):
         return list(self.__templatevars.keys())
 
 
-    @property
-    @deprecated('2.6.0', '3.0.0', 'Use templates instead')
-    def short_names(self) -> List[str]:
-        """Returns a list containing all templates of the ``FileTree`` that
-        are present in the directory.
-        """
-        return self.templates
-
-
     def query(self, template, asarray=False, **variables):
         """Search for files of the given ``template``, which match
         the specified ``variables``. All hits are returned for variables
@@ -290,12 +280,6 @@ class Match(object):
     @property
     def filename(self):
         return self.__filename
-
-
-    @property
-    @deprecated('2.6.0', '3.0.0', 'Use template instead')
-    def short_name(self):
-        return self.template
 
 
     @property

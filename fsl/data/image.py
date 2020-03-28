@@ -52,7 +52,6 @@ import fsl.transform.affine  as affine
 import fsl.utils.notifier    as notifier
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
-import fsl.utils.deprecated  as deprecated
 import fsl.utils.bids        as fslbids
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
@@ -993,7 +992,6 @@ class Image(Nifti):
                  xform=None,
                  loadData=True,
                  calcRange=True,
-                 indexed=False,
                  threaded=False,
                  dataSource=None,
                  loadMeta=False,
@@ -1035,9 +1033,6 @@ class Image(Nifti):
                          incrementally updated as more data is read from memory
                          or disk.
 
-        :arg indexed:    Deprecated. Has no effect, and will be removed in
-                         ``fslpy`` 3.0.
-
         :arg threaded:   If ``True``, the :class:`.ImageWrapper` will use a
                          separate thread for data range calculation. Defaults
                          to ``False``. Ignored if ``loadData`` is ``True``.
@@ -1058,12 +1053,6 @@ class Image(Nifti):
 
         nibImage = None
         saved    = False
-
-        if indexed is not False:
-            warnings.warn('The indexed argument is deprecated '
-                          'and has no effect',
-                          category=DeprecationWarning,
-                          stacklevel=2)
 
         if loadData:
             threaded = False
@@ -1463,14 +1452,6 @@ class Image(Nifti):
         self.notify(topic='saveState')
 
 
-    @deprecated.deprecated('2.2.0', '3.0.0',
-                           'Use fsl.utils.image.resample instead.')
-    def resample(self, *args, **kwargs):
-        """Deprecated - use :func:`.image.resample` instead. """
-        from fsl.utils.image.resample import resample
-        return resample(self, *args, **kwargs)
-
-
     def __getitem__(self, sliceobj):
         """Access the image data with the specified ``sliceobj``.
 
@@ -1661,9 +1642,3 @@ def defaultExt():
     outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')
 
     return options.get(outputType, '.nii.gz')
-
-
-@deprecated.deprecated('2.0.0', '3.0.0', 'Use nibabel.load instead.')
-def loadIndexedImageFile(filename):
-    """Deprecated - this call is equivalent to calling ``nibabel.load``. """
-    return nib.load(filename)
