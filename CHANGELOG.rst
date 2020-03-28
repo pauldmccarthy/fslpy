@@ -59,6 +59,8 @@ Changed
 * The :func:`.fileOrText` decorator has been updated to work with input
   values - file paths must be passed in as ``pathlib.Path`` objects, so they
   can be differentiated from input values.
+* Loaded :class:`.Image` objects returned by :mod:`fsl.wrappers` functions
+  are now named according to the wrapper function argument name.
 
 
 Fixed
