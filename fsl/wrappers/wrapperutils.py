@@ -604,8 +604,10 @@ class FileOrThing(object):
                         arguments that were set to :data:`LOAD`.
 
         :arg load:      Function which is called to load items for arguments
-                        that were set to :data:`LOAD`. Must accept a file path
-                        as its sole argument.
+                        that were set to :data:`LOAD`. Must accept the
+                        following arguments:
+                         - the name of the argument
+                         - path to the file to be loaded
 
         :arg removeExt: Function which can remove a file extension from a file
                         path.
@@ -760,7 +762,7 @@ class FileOrThing(object):
                         - A dictionary of ``{ name : filename }`` mappings,
                           for all arguments with a value of ``LOAD``.
 
-                        - A dictionary   ``{ filepat : replstr }`` paths, for
+                        - A dictionary of ``{ filepat : replstr }`` paths, for
                           all output-prefix arguments with a value of ``LOAD``.
         """
 
@@ -925,7 +927,7 @@ class FileOrThing(object):
 
             log.debug('Loading output %s: %s', oname, ofile)
 
-            if op.exists(ofile): oval = self.__load(ofile)
+            if op.exists(ofile): oval = self.__load(oname, ofile)
             else:                oval = None
 
             result[oname] = oval
@@ -953,21 +955,23 @@ class FileOrThing(object):
                 log.debug('Loading prefixed output %s [%s]: %s',
                           prefPat, prefName, prefixed)
 
+                noext   = self.__removeExt(prefixed)
+                prefPat = prefPat.replace('\\', '\\\\')
+                noext   = re.sub('^' + prefPat, prefName, noext)
+                withext = re.sub('^' + prefPat, prefName, prefixed)
+
                 # if the load function returns
                 # None, this file is probably
                 # not of the correct type.
-                fval = self.__load(fullpath)
+                fval = self.__load(noext, fullpath)
                 if fval is not None:
-                    noext = self.__removeExt(prefixed)
-                    prefPat  = prefPat.replace('\\', '\\\\')
-                    noext = re.sub('^' + prefPat, prefName, noext)
+
                     # If there is already an item in result with the
                     # name (stripped of prefix), then instead store
                     # the result with the full prefixed name
                     if noext not in result:
                         result[noext] = fval
                     else:
-                        withext = re.sub('^' + prefPat, prefName, prefixed)
                         result[withext] = fval
                     break
 
@@ -1014,7 +1018,7 @@ def fileOrImage(*args, **kwargs):
     def prepOut(workdir, name, val):
         return op.join(workdir, '{}.nii.gz'.format(name))
 
-    def load(path):
+    def load(name, path):
 
         if not fslimage.looksLikeImage(path):
             return None
@@ -1027,7 +1031,8 @@ def fileOrImage(*args, **kwargs):
         # if any arguments were fsl images,
         # that takes precedence.
         if fslimage.Image in intypes:
-            return fslimage.Image(data, header=img.header)
+            return fslimage.Image(data, header=img.header, name=name)
+
         # but if all inputs were file names,
         # nibabel takes precedence
         elif nib.nifti1.Nifti1Image in intypes or len(intypes) == 0:
@@ -1076,7 +1081,7 @@ def fileOrArray(*args, **kwargs):
     def prepOut(workdir, name, val):
         return op.join(workdir, '{}.txt'.format(name))
 
-    def load(path):
+    def load(_, path):
         try:              return np.loadtxt(path)
         except Exception: return None
 
@@ -1141,7 +1146,7 @@ def fileOrText(*args, **kwargs):
     def prepOut(workdir, name, val):
         return op.join(workdir, '{}.txt'.format(name))
 
-    def load(path):
+    def load(_, path):
         try:
             with open(path, "r") as f:
                 return f.read()
