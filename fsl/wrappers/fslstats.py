@@ -20,53 +20,6 @@ import fsl.data.image      as fslimage
 from . import wrapperutils as wutils
 
 
-OPTIONS = {
-    'robust_minmax'   : 'r',
-    'minmax'          : 'R',
-    'mean_entropy'    : 'e',
-    'mean_entropy_nz' : 'E',
-    'volume'          : 'v',
-    'volume_nz'       : 'V',
-    'mean'            : 'm',
-    'mean_nz'         : 'M',
-    'stddev'          : 's',
-    'stddev_nz'       : 'S',
-    'smallest_roi'    : 'w',
-    'max_vox'         : 'x',
-    'min_vox'         : 'X',
-    'cog_mm'          : 'c',
-    'cog_vox'         : 'C',
-    'abs'             : 'a',
-    'zero_naninf'     : 'n',
-}
-"""This dict contains options which do not require any additional arguments.
-They are set via attribute access on the ``fslstats`` object.
-"""
-
-
-ARG_OPTIONS = {
-    'lower_threshold' : 'l',
-    'upper_threshold' : 'u',
-    'percentile'      : 'p',
-    'percentile_nz'   : 'P',
-    'mask'            : 'k',
-    'diff'            : 'd',
-    'hist'            : 'h',
-    'hist_bounded'    : 'H',
-}
-"""This dict contains options which require additional arguments.
-They are set via method calls on the ``fslstats`` object (with the
-additional arguments passed into the method call).
-"""
-
-
-# add {shortopt : shortopt} mappings
-# for all options to simplify code in
-# the  fslstats class
-OPTIONS    .update({v : v for v in OPTIONS    .values()})
-ARG_OPTIONS.update({v : v for v in ARG_OPTIONS.values()})
-
-
 class fslstats(object):
     """The ``fslstats`` class is a wrapper around the ``fslstats`` command-line
     tool. It provides an object-oriented interface - options are specified by
@@ -105,6 +58,53 @@ class fslstats(object):
 
         imgmin, imgmax = fslstats('image.nii.gz').k('mask.nii.gz').r.run()
     """
+
+    OPTIONS = {
+        'robust_minmax'   : 'r',
+        'minmax'          : 'R',
+        'mean_entropy'    : 'e',
+        'mean_entropy_nz' : 'E',
+        'volume'          : 'v',
+        'volume_nz'       : 'V',
+        'mean'            : 'm',
+        'mean_nz'         : 'M',
+        'stddev'          : 's',
+        'stddev_nz'       : 'S',
+        'smallest_roi'    : 'w',
+        'max_vox'         : 'x',
+        'min_vox'         : 'X',
+        'cog_mm'          : 'c',
+        'cog_vox'         : 'C',
+        'abs'             : 'a',
+        'zero_naninf'     : 'n',
+    }
+    """This dict contains options which do not require any additional
+    arguments. They are set via attribute access on the ``fslstats``
+    object.
+    """
+
+
+    ARG_OPTIONS = {
+        'lower_threshold' : 'l',
+        'upper_threshold' : 'u',
+        'percentile'      : 'p',
+        'percentile_nz'   : 'P',
+        'mask'            : 'k',
+        'diff'            : 'd',
+        'hist'            : 'h',
+        'hist_bounded'    : 'H',
+    }
+    """This dict contains options which require additional arguments.
+    They are set via method calls on the ``fslstats`` object (with the
+    additional arguments passed into the method call).
+    """
+
+
+    # add {shortopt : shortopt} mappings
+    # for all options to simplify code in
+    # the  fslstats class
+    OPTIONS    .update({v : v for v in OPTIONS    .values()})
+    ARG_OPTIONS.update({v : v for v in ARG_OPTIONS.values()})
 
 
     def __init__(self,
@@ -168,17 +168,17 @@ class fslstats(object):
 
         # options which take no args
         # are called as attributes
-        if name in OPTIONS:
-            flag = OPTIONS[name]
+        if name in fslstats.OPTIONS:
+            flag = fslstats.OPTIONS[name]
             args = False
 
         # options which take args
         # are called as methods
-        elif name in ARG_OPTIONS:
-            flag = ARG_OPTIONS[name]
+        elif name in fslstats.ARG_OPTIONS:
+            flag = fslstats.ARG_OPTIONS[name]
             args = True
         else:
-            raise AttributeError()
+            raise AttributeError(name)
 
         addFlag = ft.partial(self.__addFlag, flag)
 
