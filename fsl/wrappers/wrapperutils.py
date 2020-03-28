@@ -403,18 +403,18 @@ def namedPositionals(func, args):
 
 
 LOAD = object()
-"""Constant used by the :class:`_FileOrThing` class to indicate that an output
+"""Constant used by the :class:`FileOrThing` class to indicate that an output
 file should be loaded into memory and returned as a Python object.
 """
 
 
-class _FileOrThing(object):
+class FileOrThing(object):
     """Decorator which ensures that certain arguments which are passed into the
     decorated function are always passed as file names. Both positional and
     keyword arguments can be specified.
 
 
-    The ``_FileOrThing`` class is not intended to be used directly - see the
+    The ``FileOrThing`` class is not intended to be used directly - see the
     :func:`fileOrImage` and :func:`fileOrArray` decorator functions for more
     details.
 
@@ -445,7 +445,7 @@ class _FileOrThing(object):
     **Return value**
 
 
-    Functions decorated with a ``_FileOrThing`` decorator will always return a
+    Functions decorated with a ``FileOrThing`` decorator will always return a
     ``dict``-like object, where the function's actual return value is
     accessible via an attribute called ``stdout``. All output arguments with a
     value of ``LOAD`` will be present as dictionary entries, with the keyword
@@ -460,7 +460,7 @@ class _FileOrThing(object):
 
     The above description holds in all situations, except when an argument
     called ``submit`` is passed, and is set to a value which evaluates to
-    ``True``. In this case, the ``_FileOrThing`` decorator will pass all
+    ``True``. In this case, the ``FileOrThing`` decorator will pass all
     arguments straight through to the decorated function, and will return its
     return value unchanged.
 
@@ -534,27 +534,27 @@ class _FileOrThing(object):
     **Using with other decorators**
 
 
-    ``_FileOrThing`` decorators can be chained with other ``_FileOrThing``
-    decorators, and other decorators.  When multiple ``_FileOrThing``
+    ``FileOrThing`` decorators can be chained with other ``FileOrThing``
+    decorators, and other decorators.  When multiple ``FileOrThing``
     decorators are used on a single function, the outputs from each decorator
     are merged together into a single dict-like object.
 
 
-    ``_FileOrThing`` decorators can be used with any other decorators
+    ``FileOrThing`` decorators can be used with any other decorators
     **as long as** they do not manipulate the return value, and as long as
-    the ``_FileOrThing`` decorators are adjacent to each other.
+    the ``FileOrThing`` decorators are adjacent to each other.
     """
 
 
-    class _Results(dict):
+    class Results(dict):
         """A custom ``dict`` type used to return outputs from a function
-        decorated with ``_FileOrThing``. All outputs are stored as dictionary
+        decorated with ``FileOrThing``. All outputs are stored as dictionary
         items, with the argument name as key, and the output object (the
         "thing") as value.
 
         Where possible (i.e. for outputs named with a valid Python
         identifier), the outputs are also made accessible as attributes of
-        the ``_Results`` object.
+        the ``Results`` object.
 
         The decorated function's actual return value is accessible via the
         :meth:`stdout` property.
@@ -562,7 +562,7 @@ class _FileOrThing(object):
 
 
         def __init__(self, stdout):
-            """Create a ``_Results`` dict.
+            """Create a ``Results`` dict.
 
             :arg stdout: Return value of the decorated function (typically a
                          tuple containing the standard output and error of the
@@ -593,7 +593,7 @@ class _FileOrThing(object):
                  removeExt,
                  *args,
                  **kwargs):
-        """Initialise a ``_FileOrThing`` decorator.
+        """Initialise a ``FileOrThing`` decorator.
 
         :arg func:      The function to be decorated.
 
@@ -618,7 +618,7 @@ class _FileOrThing(object):
 
         All other positional arguments are interpreted as the names of the
         arguments to the function which will be handled by this
-        ``_FileOrThing`` decorator. If not provided, *all* arguments passed to
+        ``FileOrThing`` decorator. If not provided, *all* arguments passed to
         the function will be handled.
 
 
@@ -673,8 +673,8 @@ class _FileOrThing(object):
                                      'or LOAD with submit=True!')
             return func(*args, **kwargs)
 
-        # If this _FileOrThing is being called
-        # by another _FileOrThing don't create
+        # If this FileOrThing is being called
+        # by another FileOrThing don't create
         # another working directory. We do this
         # sneakily, by setting an attribute on
         # the wrapped function which stores the
@@ -734,8 +734,8 @@ class _FileOrThing(object):
         passed to the ``prepOut`` function specified at :meth:`__init__`.
         All other arguments are passed through the ``prepIn`` function.
 
-        :arg parent:  ``True`` if this ``_FileOrThing`` is the first in a
-                      chain of ``_FileOrThing`` decorators.
+        :arg parent:  ``True`` if this ``FileOrThing`` is the first in a
+                      chain of ``FileOrThing`` decorators.
 
         :arg workdir: Directory in which all temporary files should be stored.
 
@@ -779,7 +779,7 @@ class _FileOrThing(object):
 
         # Prefixed outputs are only
         # managed by the parent
-        # _FileOrthing in a chain of
+        # FileOrthing in a chain of
         # FoT decorators.
         if not parent:
             prefix = None
@@ -894,11 +894,11 @@ class _FileOrThing(object):
 
     def __generateResult(
             self, workdir, result, outprefix, outfiles, prefixes):
-        """Loads function outputs and returns a :class:`_Results` object.
+        """Loads function outputs and returns a :class:`Results` object.
 
         Called by :meth:`__call__` after the decorated function has been
         called. Figures out what files should be loaded, and loads them into
-        a ``_Results`` object.
+        a ``Results`` object.
 
         :arg workdir:   Directory which contains the function outputs.
         :arg result:    Function return value.
@@ -909,16 +909,16 @@ class _FileOrThing(object):
         :arg prefixes:  Dictionary containing output-prefix patterns to be
                         loaded (see :meth:`__prepareArgs`).
 
-        :returns:       A ``_Results`` object containing all loaded outputs.
+        :returns:       A ``Results`` object containing all loaded outputs.
         """
 
-        # make a _Results object to store
+        # make a Results object to store
         # the output. If we are decorating
-        # another _FileOrThing, the
+        # another FileOrThing, the
         # results will get merged together
-        # into a single _Results dict.
-        if not isinstance(result, _FileOrThing._Results):
-            result = _FileOrThing._Results(result)
+        # into a single Results dict.
+        if not isinstance(result, FileOrThing.Results):
+            result = FileOrThing.Results(result)
 
         # Load the LOADed outputs
         for oname, ofile in outfiles.items():
@@ -1039,13 +1039,13 @@ def fileOrImage(*args, **kwargs):
             raise RuntimeError('Cannot handle type: {}'.format(intypes))
 
     def decorator(func):
-        fot = _FileOrThing(func,
-                           prepIn,
-                           prepOut,
-                           load,
-                           fslimage.removeExt,
-                           *args,
-                           **kwargs)
+        fot = FileOrThing(func,
+                          prepIn,
+                          prepOut,
+                          load,
+                          fslimage.removeExt,
+                          *args,
+                          **kwargs)
 
         def wrapper(*args, **kwargs):
             result = fot(*args, **kwargs)
@@ -1081,13 +1081,13 @@ def fileOrArray(*args, **kwargs):
         except Exception: return None
 
     def decorator(func):
-        fot = _FileOrThing(func,
-                           prepIn,
-                           prepOut,
-                           load,
-                           fslpath.removeExt,
-                           *args,
-                           **kwargs)
+        fot = FileOrThing(func,
+                          prepIn,
+                          prepOut,
+                          load,
+                          fslpath.removeExt,
+                          *args,
+                          **kwargs)
 
         def wrapper(*args, **kwargs):
             return fot(*args, **kwargs)
@@ -1148,13 +1148,13 @@ def fileOrText(*args, **kwargs):
         except Exception: return None
 
     def decorator(func):
-        fot = _FileOrThing(func,
-                           prepIn,
-                           prepOut,
-                           load,
-                           fslpath.removeExt,
-                           *args,
-                           **kwargs)
+        fot = FileOrThing(func,
+                          prepIn,
+                          prepOut,
+                          load,
+                          fslpath.removeExt,
+                          *args,
+                          **kwargs)
 
         def wrapper(*args, **kwargs):
             return fot(*args, **kwargs)
