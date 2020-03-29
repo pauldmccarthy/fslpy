@@ -1162,11 +1162,19 @@ class Image(Nifti):
         self.register(self.name, self.__headerChanged, topic='transform')
         self.register(self.name, self.__headerChanged, topic='header')
 
+        # calculate min/max
+        # of image data
         if calcRange:
             self.calcRange()
 
+        # try and load metadata
+        # from JSON sidecar files
         if self.dataSource is not None and loadMeta:
-            self.updateMeta(loadMetadata(self))
+            try:
+                self.updateMeta(loadMetadata(self))
+            except Exception as e:
+                log.warning('Failed to load metadata for %s: %s',
+                            self.dataSource, e)
 
         self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
 
