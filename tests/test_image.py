@@ -1414,10 +1414,22 @@ def test_loadMeta_nonBids():
         with open(op.join('data', 'dataset_description.json'), 'wt') as f:
             pass
 
-
         img = fslimage.Image(imgfile, loadMeta=True)
         assert list(img.metaKeys()) == []
 
+
+def test_loadMeta_badJSON():
+    with tempdir():
+        make_image('image.nii.gz')
+
+        # spurious comma after b:2
+        with open('image.json', 'wt') as f:
+            f.write('{"a" : 1, "b" : 2,}')
+
+        # bad json should not cause failure
+        img = fslimage.Image('image.nii.gz', loadMeta=True)
+
+        assert list(img.metaKeys()) == []
 
 
 def test_loadMetadata():
