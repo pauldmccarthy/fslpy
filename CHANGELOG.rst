@@ -74,7 +74,8 @@ Fixed
   functions.
 * Fixed the :func:`.DeformationField.transform` method so it works with
   a single set of coordinates.
-
+* :class:`.Image` creation does not fail if ``loadMeta`` is set, and a
+  sidecar file containing invalid JSON is present.
 
 Removed
 ^^^^^^^
