@@ -18,9 +18,9 @@ from .. import mockFSLDIR as mockFSLDIR_base, make_random_image
 
 
 mock_fslstats = """
-#!{}
+#!/usr/bin/env python3
 
-shape = {{outshape}}
+shape = {outshape}
 
 import sys
 import numpy as np
@@ -31,7 +31,7 @@ if len(shape) == 1:
     data = data.reshape(1, -1)
 
 np.savetxt(sys.stdout, data, fmt='%i')
-""".format(sys.executable).strip()
+""".strip()
 
 
 @contextlib.contextmanager
