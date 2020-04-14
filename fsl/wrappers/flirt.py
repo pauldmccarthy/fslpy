@@ -98,19 +98,26 @@ def invxfm(inmat, omat):
     return ['convert_xfm', '-omat', omat, '-inverse', inmat]
 
 
-@wutils.fileOrArray('inmat1', 'inmat2', 'outmat')
+@wutils.fileOrArray('atob', 'atoc', 'btoc')
 @wutils.fslwrapper
-def concatxfm(inmat1, inmat2, outmat):
-    """Use ``convert_xfm`` to concatenate two affines."""
+def concatxfm(atob, btoc, atoc):
+    """Use ``convert_xfm`` to concatenate two affines. Note that the
+    order of the input matrices is the opposite of the order expected
+    by ``convert_xfm``.
 
-    asrt.assertFileExists(inmat1, inmat2)
+    :arg atob: Input matrix, transforming from "A" to "B".
+    :arg btoc: Input matrix, transforming from "B" to "C".
+    :arg atoc: Output matrix, transforming from "A" to "C".
+    """
+
+    asrt.assertFileExists(atob, btoc)
 
     cmd = ['convert_xfm',
            '-omat',
-           outmat,
+           atoc,
            '-concat',
-           inmat2,
-           inmat1]
+           btoc,
+           atob]
 
     return cmd
 
