@@ -33,7 +33,6 @@ import logging
 import os.path as op
 import numpy   as np
 
-import fsl.utils.path        as fslpath
 import fsl.data.image        as fslimage
 import fsl.data.featanalysis as featanalysis
 
@@ -63,10 +62,9 @@ def isMelodicImage(path):
 
 
 def isMelodicDir(path):
-    """Returns ``True`` if the given path looks like it is contained within
-    a MELODIC directory, ``False`` otherwise. A melodic directory:
+    """Returns ``True`` if the given path looks like it is a MELODIC directory,
+    ``False`` otherwise. A MELODIC directory:
 
-      - Must be named ``*.ica``.
       - Must contain a file called ``melodic_IC.nii.gz`` or
         ``melodic_oIC.nii.gz``.
       - Must contain a file called ``melodic_mix``.
@@ -75,12 +73,7 @@ def isMelodicDir(path):
 
     path = op.abspath(path)
 
-    if op.isdir(path): dirname = path
-    else:              dirname = op.dirname(path)
-
-    sufs = ['.ica']
-
-    if not any([dirname.endswith(suf) for suf in sufs]):
+    if not op.isdir(path):
         return False
 
     # Must contain an image file called
@@ -88,7 +81,7 @@ def isMelodicDir(path):
     prefixes = ['melodic_IC', 'melodic_oIC']
     for p in prefixes:
         try:
-            fslimage.addExt(op.join(dirname, p))
+            fslimage.addExt(op.join(path, p))
             break
         except fslimage.PathError:
             pass
@@ -97,8 +90,8 @@ def isMelodicDir(path):
 
     # Must contain files called
     # melodic_mix and melodic_FTmix
-    if not op.exists(op.join(dirname, 'melodic_mix')):   return False
-    if not op.exists(op.join(dirname, 'melodic_FTmix')): return False
+    if not op.exists(op.join(path, 'melodic_mix')):   return False
+    if not op.exists(op.join(path, 'melodic_FTmix')): return False
 
     return True
 
@@ -108,10 +101,13 @@ def getAnalysisDir(path):
     to that MELODIC directory is returned. Otherwise, ``None`` is returned.
     """
 
-    meldir = fslpath.deepest(path, ['.ica'])
+    if not op.isdir(path):
+        path = op.dirname(path)
 
-    if meldir is not None and isMelodicDir(meldir):
-        return meldir
+    while path not in (op.sep, ''):
+        if isMelodicDir(path):
+            return path
+        path = op.dirname(path)
 
     return None
 

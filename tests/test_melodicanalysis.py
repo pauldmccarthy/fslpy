@@ -55,10 +55,10 @@ def test_isMelodicDir():
         meldir = op.join(testdir, 'analysis.ica')
         assert mela.isMelodicDir(meldir)
 
-    # Directory must end in .ica
+    # non-.ica prefix is ok
     with tests.testdir([p.replace('.ica', '.blob') for p in paths]) as testdir:
         meldir = op.join(testdir, 'analysis.blob')
-        assert not mela.isMelodicDir(meldir)
+        assert mela.isMelodicDir(meldir)
 
     # Directory must exist!
     assert not mela.isMelodicDir('non-existent.ica')

@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.0.1 (Wednesday 15th April 2020)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.isMelodicDir` function now accepts directories that do not end
+  with ``.ica``, as long as all required files are present.
+
+
+
 3.0.0 (Sunday 29th March 2020)
 ------------------------------
 
