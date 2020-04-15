@@ -622,8 +622,9 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         if from_ not in ('voxel', 'fsl', 'world') or \
            to    not in ('voxel', 'fsl', 'world'):
-            raise ValueError('Invalid source/reference spaces: '
-                             '{} -> {}'.format(from_, to))
+            raise ValueError('Invalid source/reference spaces: "{}" -> "{}".'
+                             'Recognised spaces are "voxel", "fsl", and '
+                             '"world"'.format(from_, to))
 
         return np.copy(self.__affines[from_, to])
 

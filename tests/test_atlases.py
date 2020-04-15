@@ -13,7 +13,8 @@ import              os
 import os.path   as op
 import numpy     as np
 
-import mock
+
+from unittest import mock
 import pytest
 
 import tests

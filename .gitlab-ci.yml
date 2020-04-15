@@ -206,7 +206,7 @@ build-doc:
    - docker
 
   stage: doc
-  image: python:3.6
+  image: python:3.7
 
   script:
     - bash ./.ci/build_doc.sh
@@ -227,7 +227,7 @@ build-pypi-dist:
   <<: *check_version
 
   stage: build
-  image: python:3.6
+  image: python:3.7
 
   tags:
     - docker
@@ -251,7 +251,7 @@ deploy-doc:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.6
+  image: python:3.7
 
   tags:
     - docker
@@ -268,7 +268,7 @@ deploy-pypi:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.6
+  image: python:3.7
 
   tags:
     - docker
@@ -285,7 +285,7 @@ deploy-zenodo:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.6
+  image: python:3.7
 
   tags:
     - docker

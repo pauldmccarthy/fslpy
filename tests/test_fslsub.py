@@ -22,7 +22,7 @@ from . import mockFSLDIR
 
 
 mock_fsl_sub = """
-#!{}
+#!/usr/bin/env python3
 
 import random
 import os
@@ -62,8 +62,7 @@ with open('{{}}.o{{}}'.format(cmd, jobid), 'w') as stdout, \
 
 print(str(jobid))
 sys.exit(0)
-""".format(sys.executable, op.dirname(fsl.__file__)).strip()
-
+""".format(op.dirname(fsl.__file__)).strip()
 
 @contextlib.contextmanager
 def fslsub_mockFSLDIR():

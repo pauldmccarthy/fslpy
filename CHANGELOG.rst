@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.0.1 (Wednesday 15th April 2020)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.isMelodicDir` function now accepts directories that do not end
+  with ``.ica``, as long as all required files are present.
+
 
 3.0.0 (Sunday 29th March 2020)
 ------------------------------
@@ -52,7 +63,7 @@ Changed
   :attr:`.LOAD` symbol, can now be accessed as attributes of the returned
   results object, in addition to being accessed as dict items.
 * Wrapper functions decorated with the :func:`.fileOrImage`,
- :func:`.fileOrArray`, or :func:`.fileOrText` decorators will now pass all
+  :func:`.fileOrArray`, or :func:`.fileOrText` decorators will now pass all
   arguments and return values through unchanged if an argument called ``submit``
   is passed in, and is set to ``True`` (or any non-``False``
   value). Furthermore, in such a scenario a :exc:`ValueError` will be raised if
