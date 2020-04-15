@@ -160,14 +160,14 @@ def test_assertIsMelodicDir():
         ('analysis.ica', [                      'melodic_mix', 'melodic_FTmix'], False),
         ('analysis.ica', ['melodic_IC.nii.gz',                 'melodic_FTmix'], False),
         ('analysis.ica', ['melodic_IC.nii.gz',  'melodic_mix'],                  False),
-        ('analysis',     ['melodic_IC.nii.gz',  'melodic_mix', 'melodic_FTmix'], False),
-        ('analysis',     ['melodic_oIC.nii.gz', 'melodic_mix', 'melodic_FTmix'], False),
+        ('analysis',     ['melodic_IC.nii.gz',  'melodic_mix', 'melodic_FTmix'], True),
+        ('analysis',     [                      'melodic_mix', 'melodic_FTmix'], False),
     ]
 
     for dirname, paths, expected in tests:
         with testdir(paths, dirname):
             if expected:
-                assertions.assertIsMelodicDir(dirname)
+                assertions.assertIsMelodicDir('.')
             else:
                 with pytest.raises(AssertionError):
                     assertions.assertIsMelodicDir(dirname)
