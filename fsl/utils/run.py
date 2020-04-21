@@ -29,7 +29,6 @@ import               collections
 import subprocess as sp
 import os.path    as op
 import               os
-import               re
 
 import               six
 
@@ -392,43 +391,38 @@ def wslcmd(cmdpath, *args):
              which when executed will run the command in WSL. Windows paths in the argument list will
              be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
     """
-    # Check if command exists in WSL (translating Windows path separators to Unix as os.path.join 
-    # may have inserted some backslashes)
-    cmdpath = cmdpath.replace("\\", "/")
+    # Check if command exists in WSL (remembering that the command path may include FSLDIR which
+    # is a Windows path)
+    cmdpath = fslplatform.wslpath(cmdpath)
     retcode = sp.call(["wsl", "test", "-x", cmdpath])
     if retcode == 0:
         # Form a new argument list and convert any Windows paths in it into WSL paths
-        wslargs = [wslpath(arg) for arg in args]
+        wslargs = [fslplatform.wslpath(arg) for arg in args]
         wslargs[0] = cmdpath
+        local_fsldir = fslplatform.wslpath(fslplatform.fsldir)
+        if fslplatform.fsldevdir:
+            local_fsldevdir = fslplatform.wslpath(fslplatform.fsldevdir)
+        else:
+            local_fsldevdir = None
         # Prepend important environment variables - note that it seems we cannot
-        # use WSLENV for this due to its insistance on path mapping.
-        return [
+        # use WSLENV for this due to its insistance on path mapping. FIXME FSLDEVDIR?
+        local_path = "$PATH"
+        if local_fsldevdir:
+            local_path += ":%s/bin" % local_fsldevdir
+        local_path += ":%s/bin" % local_fsldir
+        prepargs = [
             "wsl",
-            "PATH=$PATH:%s/bin" % fslplatform.fsldir,
-            "FSLDIR=%s" % fslplatform.fsldir,
+            "PATH=%s" % local_path,
+            "FSLDIR=%s" % local_fsldir,
             "FSLOUTPUTTYPE=%s" % os.environ.get("FSLOUTPUTTYPE", "NIFTI_GZ")
-        ] + wslargs
+        ]
+        if local_fsldevdir:
+            prepargs.append("FSLDEVDIR=%s" % local_fsldevdir)
+
+        return prepargs + wslargs
     else:
         # Command was not found in WSL with this path
         return None
-
-def wslpath(patharg):
-    """ 
-    Convert a command line argument containing a Windows path to the equivalent WSL path (e.g. ``c:\\Users`` -> ``/mnt/c/Users``) 
-    
-    :param patharg: Command line argument which may (or may not) contain a Windows path. It is assumed to be 
-                    either of the form <windows path> or --<arg>=<windows path>
-    :return: If ``patharg`` matches a Windows path, the converted argument (including the --<arg>= portion). Otherwise
-             returns ``patharg`` unchanged.
-    """
-    match = re.match("^(--[\w-]+=)?([a-zA-z]):(.+)$", patharg)
-    if match:
-        arg, drive, path = match.group(1, 2, 3)
-        if arg is None:
-            arg = ""
-        return arg + "/mnt/" + drive.lower() + path.replace("\\", "/") 
-    else:
-        return patharg
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """

@@ -17,6 +17,7 @@ import os
 import os.path as op
 import sys
 import importlib
+import re
 
 import fsl.utils.notifier as notifier
 
@@ -285,7 +286,6 @@ class Platform(notifier.Notifier):
         """
         return os.environ.get('FSLDIR', None)
 
-
     @property
     def fsldevdir(self):
         """The FSL development directory location. """
@@ -294,7 +294,7 @@ class Platform(notifier.Notifier):
     @property
     def fslwsl(self):
         """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
-        return os.environ.get('FSLWSL', "0") == "1"
+        return self.fsldir is not None and self.fsldir.startswith("\\\\wsl$\\")
 
     @fsldir.setter
     def fsldir(self, value):
@@ -405,6 +405,58 @@ class Platform(notifier.Notifier):
         """
         return self.__glIsSoftware
 
+    def wslpath(self, winpath):
+        """ 
+        Convert Windows path (or a command line argument containing a Windows path) 
+        to the equivalent WSL path (e.g. ``c:\\Users`` -> ``/mnt/c/Users``). Also supports
+        paths in the form ``\\wsl$\\(distro)\\users\\...``
+        
+        :param winpath: Command line argument which may (or may not) contain a Windows path. It is assumed to be 
+                        either of the form <windows path> or --<arg>=<windows path>. Note that we don't need to 
+                        handle --arg <windows path> or -a <windows path> since in these cases the argument 
+                        and the path will be parsed as separate entities. 
+        :return: If ``winpath`` matches a Windows path, the converted argument (including the --<arg>= portion). 
+                 Otherwise returns ``winpath`` unchanged.
+        """
+        match = re.match(r"^(--[\w-]+=)?\\\\wsl\$\\[^\\]+(\\.*)$", winpath)
+        if match:
+            arg, path = match.group(1, 2)
+            if arg is None:
+                arg = ""
+            return arg + path.replace("\\", "/")
+
+        match = re.match(r"^(--[\w-]+=)?([a-zA-z]):(.+)$", winpath)
+        if match:
+            arg, drive, path = match.group(1, 2, 3)
+            if arg is None:
+                arg = ""
+            return arg + "/mnt/" + drive.lower() + path.replace("\\", "/") 
+
+        return winpath
+
+    def winpath(self, wslpath):
+        """
+        Convert a WSL-local filepath (for example ``/usr/local/fsl/``) into a path that can be used from
+        Windows.
+
+        If ``self.fslwsl`` is ``False``, simply returns ``wslpath`` unmodified
+        Otherwise, uses ``FSLDIR`` to deduce the WSL distro in use for FSL.
+        This requires WSL2 which supports the ``\\wsl$\`` network path.
+        wslpath is assumed to be an absolute path.
+        """
+        if not self.fslwsl:
+            return wslpath
+        else:
+            match = re.match(r"^\\\\wsl\$\\([^\\]+).*$", self.fsldir)
+            if match:
+                distro = match.group(1)
+            else:
+                distro = None
+
+            if distro is None:
+                raise RuntimeError("No WSL installations found at \\wsl$\ - a valid WSL 2.0 installation is required")
+            else:
+                return "\\\\wsl$\\" + distro + wslpath.replace("/", "\\")
 
 platform = Platform()
 """An instance of the :class:`Platform` class. Feel free to create your own
