@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.1.0 (Under development)
+-------------------------
+
+
+Fixed
+^^^^^
+
+
+* Updated the :func:`.fast` wrapper to support some single-character
+  command-line flags.
+
+
 3.0.1 (Wednesday 15th April 2020)
 ---------------------------------
 

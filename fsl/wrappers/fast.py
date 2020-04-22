@@ -34,10 +34,18 @@ def fast(imgs, out='fast', **kwargs):
     asrt.assertIsNifti(*imgs)
 
     valmap = {
-        'nobias' : wutils.SHOW_IF_TRUE,
-        'verbose' : wutils.SHOW_IF_TRUE,
-        'Prior' : wutils.SHOW_IF_TRUE,
+        'nobias'   : wutils.SHOW_IF_TRUE,
+        'N'        : wutils.SHOW_IF_TRUE,
+        'verbose'  : wutils.SHOW_IF_TRUE,
+        'v'        : wutils.SHOW_IF_TRUE,
+        'Prior'    : wutils.SHOW_IF_TRUE,
+        'P'        : wutils.SHOW_IF_TRUE,
         'segments' : wutils.SHOW_IF_TRUE,
+        'nopve'    : wutils.SHOW_IF_TRUE,
+        'g'        : wutils.SHOW_IF_TRUE,
+        'b'        : wutils.SHOW_IF_TRUE,
+        'B'        : wutils.SHOW_IF_TRUE,
+        'p'        : wutils.SHOW_IF_TRUE,
     }
 
     argmap = {
