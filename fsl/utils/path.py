@@ -23,6 +23,8 @@ paths.
    removeDuplicates
    uniquePrefix
    commonBase
+   wslpath
+   winpath
 """
 
 
@@ -30,9 +32,10 @@ import os.path as op
 import            os
 import            glob
 import            operator
-import re
+import            re
 
 from fsl.utils.platform import platform
+
 
 class PathError(Exception):
     """``Exception`` class raised by the functions defined in this module
@@ -527,17 +530,18 @@ def commonBase(paths):
 
     raise PathError('No common base')
 
+
 def wslpath(winpath):
     """
-    Convert Windows path (or a command line argument containing a Windows path) 
+    Convert Windows path (or a command line argument containing a Windows path)
     to the equivalent WSL path (e.g. ``c:\\Users`` -> ``/mnt/c/Users``). Also supports
     paths in the form ``\\wsl$\\(distro)\\users\\...``
 
-    :param winpath: Command line argument which may (or may not) contain a Windows path. It is assumed to be 
-                    either of the form <windows path> or --<arg>=<windows path>. Note that we don't need to 
-                    handle --arg <windows path> or -a <windows path> since in these cases the argument 
-                    and the path will be parsed as separate entities. 
-    :return: If ``winpath`` matches a Windows path, the converted argument (including the --<arg>= portion). 
+    :param winpath: Command line argument which may (or may not) contain a Windows path. It is assumed to be
+                    either of the form <windows path> or --<arg>=<windows path>. Note that we don't need to
+                    handle --arg <windows path> or -a <windows path> since in these cases the argument
+                    and the path will be parsed as separate entities.
+    :return: If ``winpath`` matches a Windows path, the converted argument (including the --<arg>= portion).
                 Otherwise returns ``winpath`` unchanged.
     """
     match = re.match(r"^(--[\w-]+=)?\\\\wsl\$[\\\/][^\\^\/]+(.*)$", winpath)
@@ -552,9 +556,10 @@ def wslpath(winpath):
         arg, drive, path = match.group(1, 2, 3)
         if arg is None:
             arg = ""
-        return arg + "/mnt/" + drive.lower() + path.replace("\\", "/") 
+        return arg + "/mnt/" + drive.lower() + path.replace("\\", "/")
 
     return winpath
+
 
 def winpath(wslpath):
     """

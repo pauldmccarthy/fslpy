@@ -285,15 +285,18 @@ class Platform(notifier.Notifier):
         """
         return os.environ.get('FSLDIR', None)
 
+
     @property
     def fsldevdir(self):
         """The FSL development directory location. """
         return os.environ.get('FSLDEVDIR', None)
 
+
     @property
     def fslwsl(self):
         """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
         return self.fsldir is not None and self.fsldir.startswith("\\\\wsl$")
+
 
     @fsldir.setter
     def fsldir(self, value):
@@ -403,6 +406,7 @@ class Platform(notifier.Notifier):
                   be correct.
         """
         return self.__glIsSoftware
+
 
 platform = Platform()
 """An instance of the :class:`Platform` class. Feel free to create your own

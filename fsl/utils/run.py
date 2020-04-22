@@ -20,17 +20,17 @@
 """
 
 
-import               sys
-import               shlex
-import               logging
-import               threading
-import               contextlib
-import               collections
-import subprocess as sp
-import os.path    as op
-import               os
+import                    sys
+import                    shlex
+import                    logging
+import                    threading
+import                    contextlib
+import collections.abc as abc
+import subprocess      as sp
+import os.path         as op
+import                    os
 
-import               six
+import                    six
 
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.fslsub                   as fslsub
@@ -203,7 +203,7 @@ def run(*args, **kwargs):
         if submit is True:
             submit = dict()
 
-    if submit is not None and not isinstance(submit, collections.Mapping):
+    if submit is not None and not isinstance(submit, abc.Mapping):
         raise ValueError('submit must be a mapping containing '
                          'options for fsl.utils.fslsub.submit')
 
@@ -377,16 +377,17 @@ def runfsl(*args, **kwargs):
 
     return run(*args, **kwargs)
 
+
 def wslcmd(cmdpath, *args):
     """
     Convert a command + arguments into an equivalent set of arguments that will run the command
     under Windows Subsystem for Linux
-    
+
     :param cmdpath: Fully qualified path to the command. This is essentially a WSL path not a Windows
                     one since FSLDIR is specified as a WSL path, however it may have backslashes
                     as path separators due to previous use of ``os.path.join``
     :param args: Sequence of command arguments (the first of which is the unqualified command name)
-    
+
     :return: If ``cmdpath`` exists and is executable in WSL, return a sequence of command arguments
              which when executed will run the command in WSL. Windows paths in the argument list will
              be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
@@ -422,6 +423,7 @@ def wslcmd(cmdpath, *args):
     else:
         # Command was not found in WSL with this path
         return None
+
 
 def wait(job_ids):
     """Proxy for :func:`.fslsub.wait`. """
