@@ -453,10 +453,10 @@ class Platform(notifier.Notifier):
             else:
                 distro = None
 
-            if distro is None:
-                raise RuntimeError("No WSL installations found at \\wsl$\ - a valid WSL 2.0 installation is required")
-            else:
-                return "\\\\wsl$\\" + distro + wslpath.replace("/", "\\")
+            if not distro:
+                raise RuntimeError("Could not identify WSL installation from FSLDIR (%s)" % self.fsldir)
+
+            return "\\\\wsl$\\" + distro + wslpath.replace("/", "\\")
 
 platform = Platform()
 """An instance of the :class:`Platform` class. Feel free to create your own
