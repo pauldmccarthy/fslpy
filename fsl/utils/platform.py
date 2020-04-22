@@ -292,6 +292,12 @@ class Platform(notifier.Notifier):
         return os.environ.get('FSLDEVDIR', None)
 
 
+    @property
+    def fslwsl(self):
+        """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
+        return self.fsldir is not None and self.fsldir.startswith("\\\\wsl$")
+
+
     @fsldir.setter
     def fsldir(self, value):
         """Changes the value of the :attr:`fsldir` property, and notifies any

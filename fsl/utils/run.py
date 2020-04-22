@@ -20,21 +20,22 @@
 """
 
 
-import               sys
-import               shlex
-import               logging
-import               threading
-import               contextlib
-import               collections
-import subprocess as sp
-import os.path    as op
+import                    sys
+import                    shlex
+import                    logging
+import                    threading
+import                    contextlib
+import collections.abc as abc
+import subprocess      as sp
+import os.path         as op
+import                    os
 
-import               six
+import                    six
 
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.fslsub                   as fslsub
 import fsl.utils.tempdir                  as tempdir
-
+import fsl.utils.path                     as fslpath
 
 log = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ def run(*args, **kwargs):
         if submit is True:
             submit = dict()
 
-    if submit is not None and not isinstance(submit, collections.Mapping):
+    if submit is not None and not isinstance(submit, abc.Mapping):
         raise ValueError('submit must be a mapping containing '
                          'options for fsl.utils.fslsub.submit')
 
@@ -359,7 +360,12 @@ def runfsl(*args, **kwargs):
     args = prepareArgs(args)
     for prefix in prefixes:
         cmdpath = op.join(prefix, args[0])
-        if op.isfile(cmdpath):
+        if fslplatform.fslwsl:
+            wslargs = wslcmd(cmdpath, *args)
+            if wslargs is not None:
+                args = wslargs
+                break
+        elif op.isfile(cmdpath):
             args[0] = cmdpath
             break
 
@@ -370,6 +376,53 @@ def runfsl(*args, **kwargs):
             args[0], ', '.join(prefixes)))
 
     return run(*args, **kwargs)
+
+
+def wslcmd(cmdpath, *args):
+    """
+    Convert a command + arguments into an equivalent set of arguments that will run the command
+    under Windows Subsystem for Linux
+
+    :param cmdpath: Fully qualified path to the command. This is essentially a WSL path not a Windows
+                    one since FSLDIR is specified as a WSL path, however it may have backslashes
+                    as path separators due to previous use of ``os.path.join``
+    :param args: Sequence of command arguments (the first of which is the unqualified command name)
+
+    :return: If ``cmdpath`` exists and is executable in WSL, return a sequence of command arguments
+             which when executed will run the command in WSL. Windows paths in the argument list will
+             be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
+    """
+    # Check if command exists in WSL (remembering that the command path may include FSLDIR which
+    # is a Windows path)
+    cmdpath = fslpath.wslpath(cmdpath)
+    retcode = sp.call(["wsl", "test", "-x", cmdpath])
+    if retcode == 0:
+        # Form a new argument list and convert any Windows paths in it into WSL paths
+        wslargs = [fslpath.wslpath(arg) for arg in args]
+        wslargs[0] = cmdpath
+        local_fsldir = fslpath.wslpath(fslplatform.fsldir)
+        if fslplatform.fsldevdir:
+            local_fsldevdir = fslpath.wslpath(fslplatform.fsldevdir)
+        else:
+            local_fsldevdir = None
+        # Prepend important environment variables - note that it seems we cannot
+        # use WSLENV for this due to its insistance on path mapping. FIXME FSLDEVDIR?
+        local_path = "$PATH"
+        if local_fsldevdir:
+            local_path += ":%s/bin" % local_fsldevdir
+        local_path += ":%s/bin" % local_fsldir
+        prepargs = [
+            "wsl",
+            "PATH=%s" % local_path,
+            "FSLDIR=%s" % local_fsldir,
+            "FSLOUTPUTTYPE=%s" % os.environ.get("FSLOUTPUTTYPE", "NIFTI_GZ")
+        ]
+        if local_fsldevdir:
+            prepargs.append("FSLDEVDIR=%s" % local_fsldevdir)
+        return prepargs + wslargs
+    else:
+        # Command was not found in WSL with this path
+        return None
 
 
 def wait(job_ids):

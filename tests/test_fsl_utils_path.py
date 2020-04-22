@@ -13,6 +13,7 @@ import            shutil
 import            tempfile
 
 import pytest
+import mock
 
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
@@ -1395,3 +1396,19 @@ def test_commonBase():
     for ft in failtests:
         with pytest.raises(fslpath.PathError):
             fslpath.commonBase(ft)
+
+def test_wslpath():
+    assert fslpath.wslpath('c:\\Users\\Fishcake\\image.nii.gz') == '/mnt/c/Users/Fishcake/image.nii.gz'
+    assert fslpath.wslpath('--input=x:\\transfers\\scratch\\image_2.nii') == '--input=/mnt/x/transfers/scratch/image_2.nii'
+    assert fslpath.wslpath('\\\\wsl$\\centos 7\\users\\fsl\\file.nii') == '/users/fsl/file.nii'
+    assert fslpath.wslpath('--file=\\\\wsl$\\centos 7\\home\\fsl\\img.nii.gz') == '--file=/home/fsl/img.nii.gz'
+    assert fslpath.wslpath('\\\\wsl$/centos 7/users\\fsl\\file.nii') == '/users/fsl/file.nii'
+
+def test_winpath():
+    """
+    See comment for ``test_fslwsl`` for why we are overwriting FSLDIR
+    """
+    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '\\\\wsl$\\my cool linux distro v2.0\\usr\\local\\fsl'}):
+        assert fslpath.winpath("/home/fsl/myfile.dat") == '\\\\wsl$\\my cool linux distro v2.0\\home\\fsl\\myfile.dat'
+    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '/opt/fsl'}):
+        assert fslpath.winpath("/home/fsl/myfile.dat") == '/home/fsl/myfile.dat'

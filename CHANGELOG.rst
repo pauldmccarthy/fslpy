@@ -6,6 +6,18 @@ order.
 -------------------------
 
 
+Added
+^^^^^
+
+
+* New :func:`.winpath` and :func:`wslpath` functions for working with paths
+  when using FSL in a Windows Subsystem for Linux (WSL) environment.
+* New :func:`.wslcmd` function for generating a path to a FSL command installed
+  in a WSL environment.
+* New :meth:`.Platform.fslwsl` attribute for detecting whether FSL is installed
+  in a WSL environment.
+
+
 Fixed
 ^^^^^
 

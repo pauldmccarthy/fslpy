@@ -212,3 +212,17 @@ def test_detect_ssh():
         p = fslplatform.Platform()
         assert not p.inSSHSession
         assert not p.inVNCSession
+
+def test_fslwsl():
+    """
+    Note that ``Platform.fsldir`` requires the directory in ``FSLDIR`` to exist and
+    sets ``FSLDIR`` to ``None`` if it doesn't. So we create a ``Platform`` first 
+    and then overwrite ``FSLDIR``. This is a bit of a hack but the logic we are testing
+    here is whether ``Platform.fslwsl`` recognizes a WSL ``FSLDIR`` string
+    """
+    p = fslplatform.Platform()
+    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '\\\\wsl$\\my cool linux distro v1.0\\usr\\local\\fsl'}):
+        assert p.fslwsl
+
+    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '/usr/local/fsl'}):
+        assert not p.fslwsl
