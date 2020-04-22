@@ -226,20 +226,3 @@ def test_fslwsl():
 
     with mock.patch.dict('os.environ', **{ 'FSLDIR' : '/usr/local/fsl'}):
         assert not p.fslwsl
-
-def test_wslpath():
-    p = fslplatform.Platform()
-    assert p.wslpath('c:\\Users\\Fishcake\\image.nii.gz') == '/mnt/c/Users/Fishcake/image.nii.gz'
-    assert p.wslpath('--input=x:\\transfers\\scratch\\image_2.nii') == '--input=/mnt/x/transfers/scratch/image_2.nii'
-    assert p.wslpath('\\\\wsl$\\centos 7\\users\\fsl\\file.nii') == '/users/fsl/file.nii'
-    assert p.wslpath('--file=\\\\wsl$\\centos 7\\home\\fsl\\img.nii.gz') == '--file=/home/fsl/img.nii.gz'
-
-def test_winpath():
-    """
-    See comment for ``test_fslwsl``
-    """
-    p = fslplatform.Platform()
-    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '\\\\wsl$\\my cool linux distro v2.0\\usr\\local\\fsl'}):
-        assert p.winpath("/home/fsl/myfile.dat") == '\\\\wsl$\\my cool linux distro v2.0\\home\\fsl\\myfile.dat'
-    with mock.patch.dict('os.environ', **{ 'FSLDIR' : '/opt/fsl'}):
-        assert p.winpath("/home/fsl/myfile.dat") == '/home/fsl/myfile.dat'

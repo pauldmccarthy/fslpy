@@ -35,7 +35,7 @@ import               six
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.fslsub                   as fslsub
 import fsl.utils.tempdir                  as tempdir
-
+import fsl.utils.path                     as fslpath
 
 log = logging.getLogger(__name__)
 
@@ -393,15 +393,15 @@ def wslcmd(cmdpath, *args):
     """
     # Check if command exists in WSL (remembering that the command path may include FSLDIR which
     # is a Windows path)
-    cmdpath = fslplatform.wslpath(cmdpath)
+    cmdpath = fslpath.wslpath(cmdpath)
     retcode = sp.call(["wsl", "test", "-x", cmdpath])
     if retcode == 0:
         # Form a new argument list and convert any Windows paths in it into WSL paths
-        wslargs = [fslplatform.wslpath(arg) for arg in args]
+        wslargs = [fslpath.wslpath(arg) for arg in args]
         wslargs[0] = cmdpath
-        local_fsldir = fslplatform.wslpath(fslplatform.fsldir)
+        local_fsldir = fslpath.wslpath(fslplatform.fsldir)
         if fslplatform.fsldevdir:
-            local_fsldevdir = fslplatform.wslpath(fslplatform.fsldevdir)
+            local_fsldevdir = fslpath.wslpath(fslplatform.fsldevdir)
         else:
             local_fsldevdir = None
         # Prepend important environment variables - note that it seems we cannot
@@ -418,7 +418,6 @@ def wslcmd(cmdpath, *args):
         ]
         if local_fsldevdir:
             prepargs.append("FSLDEVDIR=%s" % local_fsldevdir)
-
         return prepargs + wslargs
     else:
         # Command was not found in WSL with this path
