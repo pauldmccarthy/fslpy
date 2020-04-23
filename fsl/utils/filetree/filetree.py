@@ -1,6 +1,5 @@
 from pathlib import Path, PurePath
 from typing import Tuple, Optional, Dict, Any, Set
-from copy import deepcopy
 from . import parse
 import pickle
 import json
@@ -224,7 +223,7 @@ class FileTree(object):
             Setting a variable to None will cause the variable to be unset
         :return: New FileTree with same templates for directory names and filenames, but updated variables
         """
-        new_tree = deepcopy(self)
+        new_tree = self.copy()
         set_tree = new_tree
         while set_parent and set_tree.parent is not None:
             set_tree = set_tree.parent
@@ -308,7 +307,6 @@ class FileTree(object):
             as_dict = json.load(f)
         return from_dict(as_dict)
 
-
     def defines(self, short_names, error=False):
         """
         Checks whether templates are defined for all the `short_names`
@@ -372,7 +370,7 @@ class FileTree(object):
 
         :return: The resulting tree will have empty `variables` dictionaries and updated templates
         """
-        new_tree = deepcopy(self)
+        new_tree = self.copy()
         to_update = new_tree
         while to_update.parent is not None:
             to_update = to_update.parent
@@ -392,6 +390,39 @@ class FileTree(object):
         for tree in self.sub_trees.values():
             tree._update_partial_fill()
         self.variables = {}
+
+    def copy(self, ):
+        """
+        Copies the FileTree
+
+        Copies the templates, variables, sub_trees, and parent
+
+        :return: a copy of the FileTree
+        """
+        return self._copy()
+
+    def _copy(self, new_parent=None, new_sub_tree=None):
+        """
+        Helper function for copying a FileTree
+        """
+        if new_sub_tree is None:
+            new_sub_tree = (None, None)
+        new_copy = type(self)(
+            templates=self.templates.copy(),
+            variables=self.variables.copy(),
+            name=self.name,
+            parent=new_parent
+        )
+        new_copy.sub_trees = {name: new_sub_tree[1] if new_sub_tree[0] == name else tree._copy(new_parent=new_copy)
+                              for name, tree in self.sub_trees.items()}
+        if self.parent is not None and new_parent is None:
+            for my_key, ref_tree in self.parent.sub_trees.items():
+                if self is ref_tree:
+                    break
+            else:
+                raise ValueError(f"Sub-tree {self} not found in parent tree")
+            new_copy._parent = self.parent._copy(new_sub_tree=(my_key, new_copy))
+        return new_copy
 
     @classmethod
     def read(cls, tree_name: str, directory='.', partial_fill=False, **variables) -> "FileTree":
