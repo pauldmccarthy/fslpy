@@ -7,9 +7,9 @@ The data can be read from NIFTI, GIFTI, or CIFTI files.
 Non-sparse volumetric or surface representations can be extracte.
 """
 from nibabel.cifti2 import cifti2_axes
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Union
 import numpy as np
-from fsl.data.image import Image
+from fsl.data import image
 import nibabel as nib
 from fsl.utils.path import addExt
 
@@ -40,7 +40,7 @@ class Cifti:
     - :py:class:`BrainModelAxis <cifti2_axes.BrainModelAxis>`
     - :py:class:`ParcelsAxis <cifti2_axes.ParcelsAxis>`
     """
-    def __init__(self, arr: np.ndarray, axes: Sequence[Optional[cifti2_axes.Axis], ...]):
+    def __init__(self, arr: np.ndarray, axes: Sequence[Optional[cifti2_axes.Axis]]):
         """
         Defines a new dataset in greyordinate space
 
@@ -139,41 +139,6 @@ class Cifti:
         self.to_cifti(default_axis).to_filename(addExt(cifti_filename, defaultExt=self.extension))
 
     @classmethod
-    def load(cls, filename, mask_values=(0, np.nan), writable=False):
-        """
-        Reads greyordinate data from the given file
-
-        File can be:
-
-            - NIFTI mask
-            - GIFTI mask
-            - CIFTI file
-
-        :param filename: input filename
-        :param mask_values: which values are outside of the mask for NIFTI or GIFTI input
-        :param writable: allow to write to disk
-        :return: greyordinates object
-        """
-        if isinstance(filename, str):
-            img = nib.load(filename)
-        else:
-            img = filename
-
-        if isinstance(img, nib.Cifti2Image):
-            return cls.from_cifti(img, writable=writable)
-        if isinstance(img, nib.GiftiImage):
-            if writable:
-                raise ValueError("Can not open GIFTI file in writable mode")
-            return cls.from_gifti(img, mask_values)
-        try:
-            vol_img = Image(img)
-        except ValueError:
-            raise ValueError(f"I do not know how to convert {type(img)} into greyordinates (from {filename})")
-        if writable:
-            raise ValueError("Can not open NIFTI file in writable mode")
-        return cls.from_image(vol_img, mask_values)
-
-    @classmethod
     def from_gifti(cls, filename, mask_values=(0, np.nan)):
         """
         Creates a new greyordinate object from a GIFTI file
@@ -208,15 +173,15 @@ class Cifti:
         return DenseCifti(data[..., mask], [bm_axes])
 
     @classmethod
-    def from_image(cls, image, mask_values=(np.nan, 0)):
+    def from_image(cls, input, mask_values=(np.nan, 0)):
         """
         Creates a new greyordinate object from a NIFTI file
 
-        :param image: FSL :class:`image.Image` object
+        :param input: FSL :class:`image.Image` object
         :param mask_values: which values to mask out
         :return: greyordinate object representing the unmasked voxels
         """
-        img = Image(image)
+        img = image.Image(input)
 
         mask = np.ones(img.data.shape, dtype='bool')
         for value in mask_values:
@@ -226,10 +191,12 @@ class Cifti:
                 mask &= ~(img.data == value)
         while mask.ndim > 3:
             mask = mask.any(-1)
+        if np.sum(mask) == 0:
+            raise ValueError("No unmasked voxels found in NIFTI image")
 
         inverted_data = np.transpose(img.data[mask], tuple(range(1, img.data.ndim - 2)) + (0, ))
-        bm_axes = cifti2_axes.BrainModelAxis.from_mask(mask, affine=img.affine)
-        return cifti2_axes.GreyOrdinates(inverted_data, [bm_axes])
+        bm_axes = cifti2_axes.BrainModelAxis.from_mask(mask, affine=img.nibImage.affine)
+        return DenseCifti(inverted_data, [bm_axes])
 
 
 class DenseCifti(Cifti):
@@ -237,7 +204,7 @@ class DenseCifti(Cifti):
     Represents sparse data defined for a subset of voxels and vertices (i.e., greyordinates)
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         if not isinstance(self.brain_model_axis, cifti2_axes.BrainModelAxis):
             raise ValueError(f"DenseCifti expects a BrainModelAxis as last axes object, not {type(self.brain_model_axis)}")
 
@@ -249,9 +216,9 @@ class DenseCifti(Cifti):
     def extension(self, ):
         return dense_extensions[type(self.axes[-2])]
 
-    def to_image(self, fill=0) -> Image:
+    def to_image(self, fill=0) -> image.Image:
         """
-        Get the volumetric data as an :class:`Image`
+        Get the volumetric data as an :class:`image.Image`
         """
         if self.brain_model_axis.volume_mask.sum() == 0:
             raise ValueError(f"Can not create volume without voxels in {self}")
@@ -260,7 +227,7 @@ class DenseCifti(Cifti):
         voxels = self.brain_model_axis.voxel[self.brain_model_axis.volume_mask]
         data[tuple(voxels.T)] = np.transpose(self.data, (-1,) + tuple(range(self.data.ndim - 1)))[
             self.brain_model_axis.volume_mask]
-        return Image(data, xform=self.brain_model_axis.affine)
+        return image.Image(data, xform=self.brain_model_axis.affine)
 
     def surface(self, anatomy, fill=np.nan, partial=False):
         """
@@ -326,7 +293,7 @@ class ParcelCifti(Cifti):
             written[write_to] = True
         if not written.any():
             raise ValueError("Parcellation does not contain any volumetric data")
-        return Image(data, xform=self.brain_model_axis.affine)
+        return image.Image(data, xform=self.brain_model_axis.affine)
 
     def surface(self, anatomy, fill=np.nan, partial=False):
         """
@@ -467,7 +434,7 @@ class BrainStructure(object):
         """
         primary_str = 'AnatomicalStructurePrimary'
         secondary_str = 'AnatomicalStructureSecondary'
-        primary = "unknown"
+        primary = "other"
         secondary = None
         for meta in [gifti_obj] + gifti_obj.darrays:
             if primary_str in meta.meta.metadata:
@@ -477,3 +444,46 @@ class BrainStructure(object):
         anatomy = cls.from_string(primary, issurface=True)
         anatomy.secondary = None if secondary is None else secondary.lower()
         return anatomy
+
+
+def load(filename, mask_values=(0, np.nan), writable=False) -> Union[DenseCifti, ParcelCifti]:
+    """
+    Reads CIFTI data from the given file
+
+    File can be:
+
+        - NIFTI file
+        - GIFTI file
+        - CIFTI file
+
+    :param filename: input filename
+    :param mask_values: which values are outside of the mask for NIFTI or GIFTI input
+    :param writable: allow to write to disk
+    :return: appropriate CIFTI sub-class (parcellated or dense)
+    """
+    possible_extensions = (
+        tuple(dense_extensions.values()) +
+        tuple(parcel_extensions.values()) +
+        tuple(image.ALLOWED_EXTENSIONS) +
+        ('.shape.gii', '.gii')
+    )
+    if isinstance(filename, str):
+        filename = addExt(filename, possible_extensions, fileGroups=image.FILE_GROUPS)
+        img = nib.load(filename)
+    else:
+        img = filename
+
+    if isinstance(img, nib.Cifti2Image):
+        return Cifti.from_cifti(img, writable=writable)
+    if isinstance(img, nib.GiftiImage):
+        if writable:
+            raise ValueError("Can not open GIFTI file in writable mode")
+        return Cifti.from_gifti(img, mask_values)
+    try:
+        vol_img = image.Image(img)
+    except ValueError:
+        raise ValueError(f"I do not know how to convert {type(img)} into greyordinates (from {filename})")
+    if writable:
+        raise ValueError("Can not open NIFTI file in writable mode")
+    return Cifti.from_image(vol_img, mask_values)
+
