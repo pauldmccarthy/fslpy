@@ -237,3 +237,28 @@ def test_extract_parcel():
                 for idx in range(1, 5):
                     testing.assert_equal(surf_data_full.T[surf_mask == idx, idx2], data.arr[idx2, idx + 3])
 
+
+def test_brainstructure():
+    for primary in ['cortex', 'cerebellum']:
+        for secondary in [None, 'white', 'pial']:
+            for gtype in [None, 'volume', 'surface']:
+                for orientation in ['left', 'right', 'both']:
+                    bst = cifti.BrainStructure(primary, secondary, orientation, gtype)
+                    print(bst.cifti)
+                    assert bst.cifti == 'CIFTI_STRUCTURE_%s%s' % (primary.upper(), '' if orientation == 'both' else '_' + orientation.upper())
+                    assert bst.gifti['AnatomicalStructurePrimary'][:len(primary)] == primary.capitalize()
+                    assert len(bst.gifti) == (1 if secondary is None else 2)
+                    if secondary is not None:
+                        assert bst.gifti['AnatomicalStructureSecondary'] == secondary.capitalize()
+                    assert bst == cifti.BrainStructure(primary, secondary, orientation, gtype)
+                    assert bst == bst
+                    assert bst != cifti.BrainStructure('Thalamus', secondary, orientation, gtype)
+                    if secondary is None:
+                        assert bst == cifti.BrainStructure(primary, 'midplane', orientation, gtype)
+                    else:
+                        assert bst != cifti.BrainStructure(primary, 'midplane', orientation, gtype)
+                    if (gtype == 'volume' and primary == 'cortex') or (gtype == 'surface' and primary != 'cortex'):
+                        assert cifti.BrainStructure.from_string(bst.cifti) != bst
+                    else:
+                        assert cifti.BrainStructure.from_string(bst.cifti) == bst
+                    assert cifti.BrainStructure.from_string(bst.cifti).secondary is None
