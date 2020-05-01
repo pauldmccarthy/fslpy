@@ -224,10 +224,10 @@ class DenseCifti(Cifti):
         """
         if self.brain_model_axis.volume_mask.sum() == 0:
             raise ValueError(f"Can not create volume without voxels in {self}")
-        data = np.full(self.brain_model_axis.volume_shape + self.data.shape[:-1], fill,
-                       dtype=self.data.dtype)
+        data = np.full(self.brain_model_axis.volume_shape + self.arr.shape[:-1], fill,
+                       dtype=self.arr.dtype)
         voxels = self.brain_model_axis.voxel[self.brain_model_axis.volume_mask]
-        data[tuple(voxels.T)] = np.transpose(self.data, (-1,) + tuple(range(self.data.ndim - 1)))[
+        data[tuple(voxels.T)] = np.transpose(self.arr, (-1,) + tuple(range(self.arr.ndim - 1)))[
             self.brain_model_axis.volume_mask]
         return image.Image(data, xform=self.brain_model_axis.affine)
 
@@ -249,8 +249,8 @@ class DenseCifti(Cifti):
         if anatomy.cifti not in self.brain_model_axis.name:
             raise ValueError(f"No surface data for {anatomy.cifti} found")
         slc, bm = None, None
-        arr = np.full(self.data.shape[:-1] + (self.brain_model_axis.nvertices[anatomy.cifti],), fill,
-                      dtype=self.data.dtype)
+        arr = np.full(self.arr.shape[:-1] + (self.brain_model_axis.nvertices[anatomy.cifti],), fill,
+                      dtype=self.arr.dtype)
         for name, slc_try, bm_try in self.brain_model_axis.iter_structures():
             if name == anatomy.cifti:
                 if partial:
@@ -258,11 +258,11 @@ class DenseCifti(Cifti):
                         raise ValueError(f"Surface {anatomy} does not form a contiguous block")
                     slc, bm = slc_try, bm_try
                 else:
-                    arr[..., bm_try.vertex] = self.data[..., slc_try]
+                    arr[..., bm_try.vertex] = self.arr[..., slc_try]
         if not partial:
             return arr
         else:
-            return bm.vertex, self.data[..., slc]
+            return bm.vertex, self.arr[..., slc]
 
 
 class ParcelCifti(Cifti):
@@ -290,14 +290,14 @@ class ParcelCifti(Cifti):
         """
         data = np.full(self.parcel_axis.volume_shape + self.arr.shape[:-1], fill, dtype=self.arr.dtype)
         written = np.zeros(self.parcel_axis.volume_shape, dtype='bool')
-        for idx, write_to in enumerate(self.parcel_axis).voxels:
-            if written[write_to].any():
+        for idx, write_to in enumerate(self.parcel_axis.voxels):
+            if written[tuple(write_to.T)].any():
                 raise ValueError("Duplicate voxels in different parcels")
-            data[write_to] = self.arr[np.newaxis, ..., idx]
-            written[write_to] = True
+            data[tuple(write_to.T)] = self.arr[np.newaxis, ..., idx]
+            written[tuple(write_to.T)] = True
         if not written.any():
             raise ValueError("Parcellation does not contain any volumetric data")
-        return image.Image(data, xform=self.brain_model_axis.affine)
+        return image.Image(data, xform=self.parcel_axis.affine)
 
     def surface(self, anatomy, fill=np.nan, partial=False):
         """
@@ -315,9 +315,9 @@ class ParcelCifti(Cifti):
         if anatomy.cifti not in self.parcel_axis.nvertices:
             raise ValueError(f"No surface data for {anatomy.cifti} found")
 
-        arr = np.full(self.data.shape[:-1] + (self.parcel_axis.nvertices[anatomy.cifti],), fill,
-                      dtype=self.data.dtype)
-        written = np.zeros(self.parcel_axis.nvertices[anatomy.cifti])
+        arr = np.full(self.arr.shape[:-1] + (self.parcel_axis.nvertices[anatomy.cifti],), fill,
+                      dtype=self.arr.dtype)
+        written = np.zeros(self.parcel_axis.nvertices[anatomy.cifti], dtype='bool')
         for idx, vertices in enumerate(self.parcel_axis.vertices):
             if anatomy.cifti not in vertices:
                 continue

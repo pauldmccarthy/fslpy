@@ -17,23 +17,33 @@ def surface_brain_model():
     return cifti2_axes.BrainModelAxis.from_mask(mask, name='cortex')
 
 
-def volumetric_parcels():
+def volumetric_parcels(return_mask=False):
     mask = np.random.randint(5, size=(10, 10, 10))
-    return cifti2_axes.ParcelsAxis(
+    axis = cifti2_axes.ParcelsAxis(
         [f'vol_{idx}' for idx in range(1, 5)],
         voxels=[np.stack(np.where(mask == idx), axis=-1) for idx in range(1, 5)],
         vertices=[{} for _ in range(1, 5)],
+        volume_shape=mask.shape,
+        affine=np.eye(4),
     )
+    if return_mask:
+        return axis, mask
+    else:
+        return axis
 
 
-def surface_parcels():
+def surface_parcels(return_mask=False):
     mask = np.random.randint(5, size=100)
-    return cifti2_axes.ParcelsAxis(
+    axis = cifti2_axes.ParcelsAxis(
         [f'surf_{idx}' for idx in range(1, 5)],
         voxels=[np.zeros((0, 3), dtype=int) for _ in range(1, 5)],
         vertices=[{'CIFTI_STRUCTURE_CORTEX': np.where(mask == idx)[0]} for idx in range(1, 5)],
         nvertices={'CIFTI_STRUCTURE_CORTEX': 100},
     )
+    if return_mask:
+        return axis, mask
+    else:
+        return axis
 
 
 def gen_data(axes):
@@ -128,3 +138,102 @@ def test_io_cifti():
                     dense_axis = surface_brain_model()
                     pdconn = cifti_class(gen_data([dense_axis, main_axis]), (dense_axis, main_axis))
                     check_io(pdconn, 'pdconn')
+
+
+def test_extract_dense():
+    vol_bm = volumetric_brain_model()
+    surf_bm = surface_brain_model()
+    for bm in (vol_bm + surf_bm, surf_bm + vol_bm):
+        for ndim, no_other_axis in ((1, True), (2, False), (2, True)):
+            if ndim == 1:
+                data = cifti.DenseCifti(gen_data([bm]), [bm])
+            else:
+                scl = cifti2_axes.ScalarAxis(['A', 'B', 'C'])
+                data = cifti.DenseCifti(gen_data([scl, bm]),
+                                        [None if no_other_axis else scl, bm])
+
+            # extract volume
+            ref_arr = data.arr[..., data.brain_model_axis.volume_mask]
+            vol_image = data.to_image(fill=np.nan)
+            if ndim == 1:
+                assert vol_image.shape == data.brain_model_axis.volume_shape
+            else:
+                assert vol_image.shape == data.brain_model_axis.volume_shape + (3, )
+            assert np.isfinite(vol_image.data).sum() == len(vol_bm) * (3 if ndim == 2 else 1)
+            testing.assert_equal(vol_image.data[tuple(vol_bm.voxel.T)], ref_arr.T)
+
+            from_image = cifti.DenseCifti.from_image(vol_image)
+            assert from_image.brain_model_axis == vol_bm
+            testing.assert_equal(from_image.arr, ref_arr)
+
+            # extract surface
+            ref_arr = data.arr[..., data.brain_model_axis.surface_mask]
+            mask, surf_data = data.surface('cortex', partial=True)
+            assert surf_data.shape[-1] < 100
+            testing.assert_equal(ref_arr, surf_data)
+            testing.assert_equal(surf_bm.vertex, mask)
+
+            surf_data_full = data.surface('cortex', fill=np.nan)
+            assert surf_data_full.shape[-1] == 100
+            mask_full = np.isfinite(surf_data_full)
+            if ndim == 2:
+                assert (mask_full.any(0) == mask_full.all(0)).all()
+                mask_full = mask_full[0]
+            assert mask_full.sum() == len(surf_bm)
+            assert mask_full[..., mask].sum() == len(surf_bm)
+            testing.assert_equal(surf_data_full[..., mask_full], ref_arr)
+
+
+def test_extract_parcel():
+    vol_parcel, vol_mask = volumetric_parcels(return_mask=True)
+    surf_parcel, surf_mask = surface_parcels(return_mask=True)
+    parcel = vol_parcel + surf_parcel
+    for ndim, no_other_axis in ((1, True), (2, False), (2, True)):
+        if ndim == 1:
+            data = cifti.ParcelCifti(gen_data([parcel]), [parcel])
+        else:
+            scl = cifti2_axes.ScalarAxis(['A', 'B', 'C'])
+            data = cifti.ParcelCifti(gen_data([scl, parcel]),
+                                     [None if no_other_axis else scl, parcel])
+
+        # extract volume
+        vol_image = data.to_image(fill=np.nan)
+        if ndim == 1:
+            assert vol_image.shape == data.parcel_axis.volume_shape
+        else:
+            assert vol_image.shape == data.parcel_axis.volume_shape + (3, )
+        assert np.isfinite(vol_image.data).sum() == np.sum(vol_mask != 0) * (3 if ndim == 2 else 1)
+        if ndim == 1:
+            testing.assert_equal(vol_mask != 0, np.isfinite(vol_image.data))
+            for idx in range(1, 5):
+                testing.assert_allclose(vol_image.data[vol_mask == idx], data.arr[..., idx - 1])
+        else:
+            for idx in range(3):
+                testing.assert_equal(vol_mask != 0, np.isfinite(vol_image.data[..., idx]))
+                for idx2 in range(1, 5):
+                    testing.assert_allclose(vol_image.data[vol_mask == idx2, idx], data.arr[idx, idx2 - 1])
+
+        # extract surface
+        mask, surf_data = data.surface('cortex', partial=True)
+        assert surf_data.shape[-1] == (surf_mask != 0).sum()
+        assert (surf_mask[mask] != 0).all()
+        print(data.arr)
+        for idx in range(1, 5):
+            if ndim == 1:
+                testing.assert_equal(surf_data.T[surf_mask[mask] == idx], data.arr[idx + 3])
+            else:
+                for idx2 in range(3):
+                    testing.assert_equal(surf_data.T[surf_mask[mask] == idx, idx2], data.arr[idx2, idx + 3])
+
+        surf_data_full = data.surface('cortex', partial=False)
+        assert surf_data_full.shape[-1] == 100
+        if ndim == 1:
+            testing.assert_equal(np.isfinite(surf_data_full), surf_mask != 0)
+            for idx in range(1, 5):
+                testing.assert_equal(surf_data_full.T[surf_mask == idx], data.arr[idx + 3])
+        else:
+            for idx2 in range(3):
+                testing.assert_equal(np.isfinite(surf_data_full)[idx2], (surf_mask != 0))
+                for idx in range(1, 5):
+                    testing.assert_equal(surf_data_full.T[surf_mask == idx, idx2], data.arr[idx2, idx + 3])
+
