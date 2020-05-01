@@ -86,13 +86,13 @@ class Cifti:
         else:
             new_axes = list(self.axes)
 
-        data = self.data
+        data = self.arr
         if data.ndim == 1:
             # CIFTI axes are always at least 2D
             data = data[None, :]
             new_axes.insert(0, cifti2_axes.ScalarAxis(['default']))
 
-        return cifti2_axes.Cifti2Image(data, header=new_axes)
+        return nib.Cifti2Image(data, header=new_axes)
 
     @classmethod
     def from_cifti(cls, filename, writable=False):
@@ -136,7 +136,7 @@ class Cifti:
             - if set to "series" a SeriesAxis is used
         :return:
         """
-        self.to_cifti(default_axis).to_filename(addExt(cifti_filename, defaultExt=self.extension))
+        self.to_cifti(default_axis).to_filename(addExt(cifti_filename, defaultExt=self.extension, mustExist=False))
 
     @classmethod
     def from_gifti(cls, filename, mask_values=(0, np.nan)):
@@ -214,6 +214,8 @@ class DenseCifti(Cifti):
 
     @property
     def extension(self, ):
+        if self.arr.ndim == 1:
+            return dense_extensions[cifti2_axes.ScalarAxis]
         return dense_extensions[type(self.axes[-2])]
 
     def to_image(self, fill=0) -> image.Image:
@@ -268,12 +270,14 @@ class ParcelCifti(Cifti):
     Represents sparse data defined at specific parcels
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-        if not isinstance(self.parcel_axis, cifti2_axes.BrainModelAxis):
+        super().__init__(*args, **kwargs)
+        if not isinstance(self.parcel_axis, cifti2_axes.ParcelsAxis):
             raise ValueError(f"ParcelCifti expects a ParcelsAxis as last axes object, not {type(self.parcel_axis)}")
 
     @property
     def extension(self, ):
+        if self.arr.ndim == 1:
+            return parcel_extensions[cifti2_axes.ScalarAxis]
         return parcel_extensions[type(self.axes[-2])]
 
     @property
