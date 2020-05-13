@@ -12,3 +12,10 @@ basename = dti
 {basename}_L3.nii.gz (L3)
 
 {basename}_kurt.nii.gz (kurt)
+{basename}_kurt1.nii.gz (kurt1)
+{basename}_kurt2.nii.gz (kurt2)
+{basename}_kurt3.nii.gz (kurt3)
+
+{basename}_sse.nii.gz (sse)
+{basename}_cnicope.nii.gz (cnicope)
+{basename}_tensor.nii.gz (tensor)
