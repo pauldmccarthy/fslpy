@@ -560,6 +560,11 @@ class Nifti(notifier.Notifier, meta.Meta):
         """Returns the NIFTI intent code of this image. """
         return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
 
+    @property
+    def niftiDataType(self):
+        """Returns the NIFTI data type code of this image. """
+        return self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
+
 
     @intent.setter
     def intent(self, val):
