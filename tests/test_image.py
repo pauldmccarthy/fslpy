@@ -246,6 +246,11 @@ def _test_Image_atts(imgtype):
 
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     fileGroups  = fslimage.FILE_GROUPS
+    typeMap     = {np.uint8   : constants.NIFTI_DT_UINT8,
+                   np.int16   : constants.NIFTI_DT_INT16,
+                   np.int32   : constants.NIFTI_DT_INT32,
+                   np.float32 : constants.NIFTI_DT_FLOAT32,
+                   np.float64 : constants.NIFTI_DT_FLOAT64}
 
     # (file, dims, pixdims, dtype)
     dtypes = [np.uint8, np.int16, np.int32, np.float32, np.double]
@@ -307,14 +312,15 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
-            assert i.nvals      == 1
-            assert i.ndim       == expndims
-            assert i.dtype      == dtype
-            assert i.name       == op.basename(path)
-            assert i.dataSource == fslpath.addExt(path,
-                                                  allowedExts=allowedExts,
-                                                  mustExist=True,
-                                                  fileGroups=fileGroups)
+            assert i.nvals         == 1
+            assert i.ndim          == expndims
+            assert i.dtype         == dtype
+            assert i.niftiDataType == typeMap[dtype]
+            assert i.name          == op.basename(path)
+            assert i.dataSource    == fslpath.addExt(path,
+                                                     allowedExts=allowedExts,
+                                                     mustExist=True,
+                                                     fileGroups=fileGroups)
             i = None
 
 
