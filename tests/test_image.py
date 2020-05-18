@@ -246,6 +246,11 @@ def _test_Image_atts(imgtype):
 
     allowedExts = fslimage.ALLOWED_EXTENSIONS
     fileGroups  = fslimage.FILE_GROUPS
+    typeMap     = {np.uint8   : constants.NIFTI_DT_UINT8,
+                   np.int16   : constants.NIFTI_DT_INT16,
+                   np.int32   : constants.NIFTI_DT_INT32,
+                   np.float32 : constants.NIFTI_DT_FLOAT32,
+                   np.float64 : constants.NIFTI_DT_FLOAT64}
 
     # (file, dims, pixdims, dtype)
     dtypes = [np.uint8, np.int16, np.int32, np.float32, np.double]
@@ -307,14 +312,15 @@ def _test_Image_atts(imgtype):
             assert tuple(i.nibImage.shape)              == tuple(dims)
             assert tuple(i.nibImage.header.get_zooms()) == tuple(pixdims)
 
-            assert i.nvals      == 1
-            assert i.ndim       == expndims
-            assert i.dtype      == dtype
-            assert i.name       == op.basename(path)
-            assert i.dataSource == fslpath.addExt(path,
-                                                  allowedExts=allowedExts,
-                                                  mustExist=True,
-                                                  fileGroups=fileGroups)
+            assert i.nvals         == 1
+            assert i.ndim          == expndims
+            assert i.dtype         == dtype
+            assert i.niftiDataType == typeMap[dtype]
+            assert i.name          == op.basename(path)
+            assert i.dataSource    == fslpath.addExt(path,
+                                                     allowedExts=allowedExts,
+                                                     mustExist=True,
+                                                     fileGroups=fileGroups)
             i = None
 
 
@@ -493,8 +499,9 @@ def test_splitExt():
 
 def test_defaultExt():
 
-    fslOutputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ']
-    exts           = ['.nii', '.img', '.nii.gz']
+    fslOutputTypes = ['NIFTI',  'NIFTI_PAIR',  'NIFTI_GZ',  'NIFTI_PAIR_GZ',
+                      'NIFTI2', 'NIFTI2_PAIR', 'NIFTI2_GZ', 'NIFTI2_PAIR_GZ']
+    exts           = ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
 
     os.environ.pop('FSLOUTPUTTYPE', None)
     assert fslimage.defaultExt() == '.nii.gz'
@@ -504,6 +511,35 @@ def test_defaultExt():
         os.environ['FSLOUTPUTTYPE'] = o
 
         assert fslimage.defaultExt() == e
+
+
+def test_defaultImageType():
+
+    fslOutputTypes = [None,
+                      'NIFTI',  'NIFTI_PAIR',  'NIFTI_GZ',  'NIFTI_PAIR_GZ',
+                      'NIFTI2', 'NIFTI2_PAIR', 'NIFTI2_GZ', 'NIFTI2_PAIR_GZ']
+    exts           = ['.nii.gz'] + \
+                     ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
+
+    with tempdir():
+        for o, e in zip(fslOutputTypes, exts):
+
+            if o is None:
+                os.environ.pop('FSLOUTPUTTYPE', None)
+            else:
+                os.environ['FSLOUTPUTTYPE'] = o
+
+            if o is None or 'NIFTI2' not in o:
+                exptype = nib.Nifti1Image
+            else:
+                exptype = nib.Nifti2Image
+
+            img = fslimage.Image(np.random.randint(1, 10, (30, 30, 30)))
+
+            assert type(img.nibImage) == exptype
+
+            img.save('image')
+            assert op.exists('image' + e)
 
 
 def test_fixExt():

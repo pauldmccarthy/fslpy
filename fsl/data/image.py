@@ -39,7 +39,6 @@ import                      json
 import                      string
 import                      logging
 import                      tempfile
-import                      warnings
 
 import                      six
 import numpy             as np
@@ -559,6 +558,11 @@ class Nifti(notifier.Notifier, meta.Meta):
     def intent(self):
         """Returns the NIFTI intent code of this image. """
         return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
+
+    @property
+    def niftiDataType(self):
+        """Returns the NIFTI data type code of this image. """
+        return self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
 
 
     @intent.setter
@@ -1094,11 +1098,12 @@ class Image(Nifti):
                 if header is not None: xform = header.get_best_affine()
                 else:                  xform = np.identity(4)
 
-            # We default to NIFTI1 and not
-            # NIFTI2, because the rest of
-            # FSL is not yet NIFTI2 compatible.
+            # default to NIFTI1 if FSLOUTPUTTYPE
+            # is not set, just to be safe.
             if header is None:
-                ctr = nib.nifti1.Nifti1Image
+                outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')
+                if 'NIFTI2' in outputType: ctr = nib.Nifti2Image
+                else:                      ctr = nib.Nifti1Image
 
             # make sure that the data type is correct,
             # in case this header was passed in from
@@ -1643,9 +1648,14 @@ def defaultExt():
 
     # TODO: Add analyze support.
     options = {
-        'NIFTI'      : '.nii',
-        'NIFTI_PAIR' : '.img',
-        'NIFTI_GZ'   : '.nii.gz',
+        'NIFTI'          : '.nii',
+        'NIFTI2'         : '.nii',
+        'NIFTI_GZ'       : '.nii.gz',
+        'NIFTI2_GZ'      : '.nii.gz',
+        'NIFTI_PAIR'     : '.img',
+        'NIFTI2_PAIR'    : '.img',
+        'NIFTI_PAIR_GZ'  : '.img.gz',
+        'NIFTI2_PAIR_GZ' : '.img.gz',
     }
 
     outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')

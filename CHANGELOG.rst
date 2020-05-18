@@ -10,12 +10,26 @@ Added
 ^^^^^
 
 
+* New :func:`.cifti` module, providing classes and functions for working with
+  `CIFTI <https://www.nitrc.org/projects/cifti/>`_ data.
 * New :func:`.winpath` and :func:`wslpath` functions for working with paths
   when using FSL in a Windows Subsystem for Linux (WSL) environment.
 * New :func:`.wslcmd` function for generating a path to a FSL command installed
   in a WSL environment.
 * New :meth:`.Platform.fslwsl` attribute for detecting whether FSL is installed
   in a WSL environment.
+* New :meth:`.Image.niftiDataType` property.
+* The :class:`.FileTree` class has been updated to allow creation of
+  deep copies via the new :meth:`.FileTree.copy` method.
+
+
+Changed
+^^^^^^^
+
+
+* :func:`.Image` objects created from ``numpy`` arrays will be NIFTI1 or
+  NIFTI2, depending on the value of the ``$FSLOUTPUTTYPE`` environment
+  variable.
 
 
 Fixed
