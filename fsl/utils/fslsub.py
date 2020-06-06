@@ -50,7 +50,7 @@ import tempfile
 import logging
 import importlib
 from dataclasses import dataclass, asdict
-from typing import Optional, Collection, Union, Tuple
+from typing import Optional, Collection, Union, Tuple, Dict
 import argparse
 import warnings
 
@@ -252,28 +252,55 @@ def submit(*command, **kwargs):
     return SubmitParams(**kwargs)(*command)
 
 
-def info(job_id):
+def info(job_ids) -> Dict[str, Optional[Dict[str, str]]]:
     """Gets information on a given job id
 
-    Uses `qstat -j <job_id>`
+    Uses `qstat -j <job_ids>`
 
-    :arg job_id: string with job id
-    :return:     dictionary with information on the submitted job (empty
-                 if job does not exist)
+    :arg job_ids: string with job id or (nested) sequence with jobs
+    :return: dictionary of jobid -> another dictionary with job information
+             (or None if job does not exist)
     """
     from fsl.utils.run import run
+    job_ids_string = _flatten_job_ids(job_ids)
     try:
-        result = run(['qstat', '-j', job_id], exitcode=True)[0]
+        result = run(['qstat', '-j', job_ids_string], exitcode=True)[0]
     except FileNotFoundError:
         log.debug("qstat not found; assuming not on cluster")
         return {}
-    if 'Following jobs do not exist:' in result:
-        return {}
-    res = {}
-    for line in result.splitlines()[1:]:
-        kv = line.split(':', 1)
-        if len(kv) == 2:
-            res[kv[0].strip()] = kv[1].strip()
+    return _parse_qstat(job_ids_string, result)
+
+
+def _parse_qstat(job_ids_string, qstat_stdout):
+    """
+    Parses the qstat output into a dictionary of dictionaries
+
+    :param job_ids_string: input job ids
+    :param qstat_stdout: qstat output
+    :return: dictionary of jobid -> another dictionary with job information
+             (or None if job does not exist)
+    """
+    res = {job_id: None for job_id in job_ids_string.split(',')}
+    current_job_id = None
+    for line in qstat_stdout.splitlines()[1:]:
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        if line == '=' * len(line):
+            current_job_id = None
+        elif ':' in line:
+            current_key, value = [part.strip() for part in line.split(':', 1)]
+            if current_key == 'job_number':
+                current_job_id = value
+                if current_job_id not in job_ids_string:
+                    raise ValueError(f"Unexpected job ID in qstat output:\n{line}")
+                res[current_job_id] = {}
+            else:
+                if current_job_id is None:
+                    raise ValueError(f"Found job information before job ID in qstat output:\n{line}")
+                res[current_job_id][current_key] = value
+        else:
+            res[current_job_id][current_key] += '\n' + line
     return res
 
 
