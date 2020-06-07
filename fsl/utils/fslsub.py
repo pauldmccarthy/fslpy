@@ -62,6 +62,38 @@ log = logging.getLogger(__name__)
 class SubmitParams(object):
     """
     Represents the fsl_sub parameters
+
+    Any command line script can be submitted by the parameters by calling the `SubmitParams` object:
+
+    .. codeblock:: python
+
+        submit = SubmitParams(minutes=1, logdir='log', wait_for=['108023', '108019'])
+        submit('echo finished')
+
+    This will run "echo finished" with a maximum runtime of 1 minute after the jobs with IDs 108023 and 108019 are finished.
+    It is the equivalent of
+
+    .. codeblock:: bash
+
+        fsl_sub -T 1 -l log -j 108023,108019 "echo finished"
+
+    For python scripts that submit themselves to the cluster, it might be useful to give the user some control
+    over at least some of the submission parameters. This can be done using:
+
+    .. codeblock:: python
+
+        import argparse
+        parser = argparse.ArgumentParser("my script doing awesome stuff")
+        parser.add_argument("input_file")
+        parser.add_argument("output_file")
+        SubmitParams.add_to_parser(parser, include=('wait_for', 'logdir'))
+        args = parser.parse_args()
+
+        submitter = SubmitParams.from_args(args).update(minutes=10)
+        from fsl import wrappers
+        wrappers.bet(input_file, output_file, fslsub=submitter)
+
+    This submits a BET job using the -j and -l flags set by the user and a maximum time of 10 minutes.
     """
     minutes: Optional[float] = None
     queue: Optional[str] = None
@@ -91,6 +123,9 @@ class SubmitParams(object):
     }
 
     def __post_init__(self):
+        """
+        If not set explicitly by the user don't alter the environment in which the script will be submitted
+        """
         if self.env is None:
             self.env = {}
 
@@ -205,6 +240,9 @@ class SubmitParams(object):
 
     @classmethod
     def from_args(cls, args):
+        """
+        Create a SubmitParams from the command line arguments
+        """
         as_dict = {value: getattr(args, '_sub_' + value, None) for value in cls.cmd_line_flags.values()}
         if args._sub_wait_for is not None:
             as_dict['wait_for'] = args._sub_wait_for.split(',')
