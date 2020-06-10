@@ -15,7 +15,6 @@
 
    run
    runfsl
-   wait
    dryrun
 """
 
@@ -423,8 +422,3 @@ def wslcmd(cmdpath, *args):
     else:
         # Command was not found in WSL with this path
         return None
-
-
-def wait(job_ids):
-    """Proxy for :func:`.fslsub.wait`. """
-    return fslsub.wait(job_ids)

@@ -13,6 +13,7 @@ import sys
 import textwrap as tw
 import contextlib
 import argparse
+import pytest
 
 import fsl
 from fsl.utils         import fslsub
@@ -100,7 +101,6 @@ def test_submit():
         os.chmod(cmd, 0o755)
 
         jid = fslsub.submit(cmd)
-        fslsub.wait(jid)
         stdout, stderr = fslsub.output(jid)
 
         assert stdout.strip() == 'standard output'
@@ -183,9 +183,76 @@ def test_func_to_cmd():
         cmd = fslsub.func_to_cmd(myfunc, (), {})
         jid = fslsub.submit(cmd)
 
-        fslsub.wait(jid)
-
         stdout, stderr = fslsub.output(jid)
 
         assert stdout.strip() == 'standard output'
         assert stderr.strip() == 'standard error'
+
+
+example_qstat_reply = """==============================================================
+job_number:                 9985061
+exec_file:                  job_scripts/9985061
+owner:                      user
+sge_o_home:                 /home/fs0/user
+sge_o_log_name:             user
+sge_o_shell:                /bin/bash
+sge_o_workdir:              /home/fs0/user
+account:                    sge
+cwd:                        /home/fs0/user
+mail_options:               a
+notify:                     FALSE
+job_name:                   echo
+jobshare:                   0
+hard_queue_list:            long.q
+restart:                    y
+job_args:                   test
+script_file:                echo
+binding:                    set linear:slots
+job_type:                   binary,noshell
+scheduling info:            queue instance "<some queue>" dropped because it is temporarily not available
+                            queue instance "<some queue>" dropped because it is disabled
+==============================================================
+job_number:                 9985062
+exec_file:                  job_scripts/9985062
+owner:                      user
+sge_o_home:                 /home/fs0/user
+sge_o_log_name:             user
+sge_o_shell:                /bin/bash
+sge_o_workdir:              /home/fs0/user
+account:                    sge
+cwd:                        /home/fs0/user
+mail_options:               a
+notify:                     FALSE
+job_name:                   echo
+jobshare:                   0
+hard_queue_list:            long.q
+restart:                    y
+job_args:                   test
+script_file:                echo
+binding:                    set linear:slots
+job_type:                   binary,noshell
+scheduling info:            queue instance "<some queue>" dropped because it is temporarily not available
+                            queue instance "<some queue>" dropped because it is disabled
+"""
+
+
+def test_info():
+    valid_job_ids = ['9985061', '9985062']
+    res = fslsub._parse_qstat(','.join(valid_job_ids), example_qstat_reply)
+    assert len(res) == 2
+    for job_id in valid_job_ids:
+        assert res[job_id] is not None
+        assert res[job_id]['account'] == 'sge'
+        assert res[job_id]['job_type'] == 'binary,noshell'
+        assert len(res[job_id]['scheduling info'].splitlines()) == 2
+        for line in res[job_id]['scheduling info'].splitlines():
+            assert line.startswith('queue instance ')
+
+    res2 = fslsub._parse_qstat(','.join(valid_job_ids + ['1']), example_qstat_reply)
+    assert len(res2) == 3
+    for job_id in valid_job_ids:
+        assert res[job_id] == res2[job_id]
+    assert res2['1'] is None
+
+    with pytest.raises(ValueError):
+        fslsub._parse_qstat(valid_job_ids[0], example_qstat_reply)
