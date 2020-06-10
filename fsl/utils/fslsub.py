@@ -378,22 +378,6 @@ def output(job_id, logdir='.', command=None, name=None):
     return stdout, stderr
 
 
-def wait(job_ids):
-    """Wait for one or more jobs to finish
-
-    :arg job_ids: string or tuple of strings with jobs that should finish
-                  before continuing
-    """
-    start_time = time.time()
-    for job_id in _flatten_job_ids(job_ids).split(','):
-        log.debug('Waiting for job {}'.format(job_id))
-        while len(info(job_id)) > 0:
-            wait_time = min(max(1, (time.time() - start_time) / 3.), 20)
-            time.sleep(wait_time)
-        log.debug('Job {} finished, continuing to next'.format(job_id))
-    log.debug('All jobs have finished')
-
-
 def _flatten_job_ids(job_ids):
     """
     Returns a potentially nested sequence of job ids as a single comma-separated string
