@@ -10,7 +10,7 @@ Added
 ^^^^^
 
 
-* New :func:`.cifti` module, providing classes and functions for working with
+* New :mod:`.cifti` module, providing classes and functions for working with
   `CIFTI <https://www.nitrc.org/projects/cifti/>`_ data.
 * New :func:`.winpath` and :func:`wslpath` functions for working with paths
   when using FSL in a Windows Subsystem for Linux (WSL) environment.
