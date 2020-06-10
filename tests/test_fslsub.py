@@ -101,7 +101,6 @@ def test_submit():
         os.chmod(cmd, 0o755)
 
         jid = fslsub.submit(cmd)
-        fslsub.wait(jid)
         stdout, stderr = fslsub.output(jid)
 
         assert stdout.strip() == 'standard output'
@@ -183,8 +182,6 @@ def test_func_to_cmd():
     with fslsub_mockFSLDIR(), tempdir():
         cmd = fslsub.func_to_cmd(myfunc, (), {})
         jid = fslsub.submit(cmd)
-
-        fslsub.wait(jid)
 
         stdout, stderr = fslsub.output(jid)
 
