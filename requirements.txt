@@ -1,5 +1,6 @@
 h5py>=2.9
 nibabel>=2.4
-numpy==1.*
+numpy>=1
 scipy>=0.18
-six==1.*
+six>=1
+dataclasses
