@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.2.0 (Under deveolopment)
+--------------------------
+
+
+Removed
+^^^^^^^
+
+
+* The :func:`.fslsub.wait` (and :func:`.run.wait`) function has been removed, as
+  repeated calls to ``qstat`` can adversely affect the cluster job submission
+  system.
+
+
 3.1.0 (Thursday 21st May 2020)
 ------------------------------
 
@@ -50,7 +63,8 @@ Changed
 
 * The :func:`.isMelodicDir` function now accepts directories that do not end
   with ``.ica``, as long as all required files are present.
-
+* Added the ``dataclasses`` backport, so ``fslpy`` is now compatible with
+  Python 3.6 again.
 
 
 3.0.0 (Sunday 29th March 2020)
