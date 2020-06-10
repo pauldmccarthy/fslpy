@@ -299,6 +299,12 @@ def info(job_ids) -> Dict[str, Optional[Dict[str, str]]]:
     :return: dictionary of jobid -> another dictionary with job information
              (or None if job does not exist)
     """
+    if not hasattr(info, '_ncall'):
+        info._ncall = 0
+    info._ncall += 1
+    if info._ncall == 3:
+        warnings.warn("Please do not call `fslsub.info` repeatably, because it slows down the cluster. You can avoid this message by simply passing all the job IDs you are interested in to a single `fslsub.info` call.")
+
     from fsl.utils.run import run
     job_ids_string = _flatten_job_ids(job_ids)
     try:
