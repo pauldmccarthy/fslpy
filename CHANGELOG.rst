@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.2.0 (Under deveolopment)
+--------------------------
+
+
+Removed
+^^^^^^^
+
+
+* The :func:`.fslsub.wait` (and :func:`.run.wait`) function has been removed, as
+  repeated calls to ``qstat`` can adversely affect the cluster job submission
+  system.
+
+
 3.1.0 (Thursday 21st May 2020)
 ------------------------------
 
@@ -10,7 +23,7 @@ Added
 ^^^^^
 
 
-* New :func:`.cifti` module, providing classes and functions for working with
+* New :mod:`.cifti` module, providing classes and functions for working with
   `CIFTI <https://www.nitrc.org/projects/cifti/>`_ data.
 * New :func:`.winpath` and :func:`wslpath` functions for working with paths
   when using FSL in a Windows Subsystem for Linux (WSL) environment.
@@ -50,7 +63,8 @@ Changed
 
 * The :func:`.isMelodicDir` function now accepts directories that do not end
   with ``.ica``, as long as all required files are present.
-
+* Added the ``dataclasses`` backport, so ``fslpy`` is now compatible with
+  Python 3.6 again.
 
 
 3.0.0 (Sunday 29th March 2020)
