@@ -49,6 +49,7 @@ from dataclasses import dataclass, asdict
 from typing import Optional, Collection, Union, Tuple, Dict
 import argparse
 import warnings
+import os
 
 
 log = logging.getLogger(__name__)
@@ -400,6 +401,37 @@ def _flatten_job_ids(job_ids):
             return res
 
     return ','.join(sorted(unpack(job_ids)))
+
+
+def hold(job_ids, hold_filename=None):
+    """
+    Waits until all jobs have finished
+
+    Internally works by submitting a new job, which creates a file named `hold_filename`,
+    which will only run after all jobs in `job_ids` finished.
+
+    This function will only return once `hold_filename` has been created
+
+    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
+    :param hold_filename: filename to use as a hold file.
+        The containing directory should exist, but the file itself should not.
+        Defaults to a ./.<random characters>.hold in the current directory.
+    :return: only returns when all the jobs have finished
+    """
+    if hold_filename is None:
+        with tempfile.NamedTemporaryFile(prefix='.', suffix='.hold', dir='.') as f:
+            hold_filename = f.name
+    if op.exists(hold_filename):
+        raise IOError(f"Hold file ({hold_filename}) already exists")
+    elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
+        raise IOError(f"Hold file ({hold_filename}) can not be created in non-existent directory")
+
+    submit(f'touch {hold_filename}', wait_for=job_ids, minutes=1, job_name='.hold')
+
+    while not op.exists(hold_filename):
+        time.sleep(10)
+
+    os.remove(hold_filename)
 
 
 _external_job = """#!{}
