@@ -2,8 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.2.0 (Under deveolopment)
---------------------------
+3.2.0 (Thursday 11th June 2020)
+-------------------------------
+
+
+Added
+^^^^^
+
+
+* A new :func:`.fslsub.hold` function to wait on previously submitted jobs, to
+  be used in place of the ``wait`` function.
 
 
 Removed
