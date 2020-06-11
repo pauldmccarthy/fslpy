@@ -16,6 +16,7 @@
    run
    runfsl
    dryrun
+   hold
 """
 
 
@@ -422,3 +423,16 @@ def wslcmd(cmdpath, *args):
     else:
         # Command was not found in WSL with this path
         return None
+
+
+def hold(job_ids, hold_filename=None):
+    """
+    Waits until all jobs have finished
+
+    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
+    :param hold_filename: filename to use as a hold file.
+        The containing directory should exist, but the file itself should not.
+        Defaults to a ./.<random characters>.hold in the current directory.
+    :return: only returns when all the jobs have finished
+    """
+    fslsub.hold(job_ids, hold_filename)
