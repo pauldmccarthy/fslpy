@@ -124,7 +124,7 @@ class SubmitParams(object):
         If not set explicitly by the user don't alter the environment in which the script will be submitted
         """
         if self.env is None:
-            self.env = {}
+            self.env = dict(os.environ)
 
     def as_flags(self, ):
         """
