@@ -33,6 +33,7 @@ Example usage, building a short pipeline::
    info
    output
    func_to_cmd
+   hold
 """
 
 
@@ -426,7 +427,7 @@ def hold(job_ids, hold_filename=None):
     elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
         raise IOError(f"Hold file ({hold_filename}) can not be created in non-existent directory")
 
-    submit(f'touch {hold_filename}', wait_for=job_ids, minutes=1, job_name='.hold')
+    submit(('touch', hold_filename), wait_for=job_ids, minutes=1, job_name='.hold')
 
     while not op.exists(hold_filename):
         time.sleep(10)
