@@ -361,26 +361,12 @@ epub_exclude_files = ['search.html']
 # special-members flag)
 autoclass_content = 'class'
 
-# Document private members and special members (e.g. __init__)
-autodoc_default_flags = ['private-members', 'special-members']
 
-# Documentation for python modules is in the same order
-# as the source code.
-autodoc_member_order = 'bysource'
-
-def autodoc_skip_member(app, what, name, obj, skip, options):
-
-    # Do not document the _sync_* properties
-    # that are added by the props package to
-    # all SyncableHasProperties classes.
-    if what == 'class':
-        attName = name.split('.')[-1]
-        return skip or attName.startswith('_sync_')
-
-    return skip or False
-
-
-def setup(app):
-    app.connect('autodoc-skip-member', autodoc_skip_member)
+autodoc_default_options = {
+    'special-members' : True,
+    'private-members' : True,
+    'undoc-members'   : True,
+    'member-order'    : 'bysource',
+}
 
 graphviz_output_format = 'svg'
