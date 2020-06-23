@@ -82,6 +82,12 @@ the reference image, and may contain:
    the source image coordinates which correspond to those reference image
    coordinates.
 
+.. note:: FNIRT deformation field files give no indication as to whether they
+          contain relative displacements or absolute coordinates, so heuristics
+          must be used to infer what is stored in a a particular file. The
+          :func:`.nonlinear.detectDeformationType` function can be used to
+          determine whether a file contains relative displacements or absolute
+          coordinates.
 
 If an initial linear registration was used as the starting point for FNIRT,
 this is encoded into the displacements/coordinates themselves, so they can be
