@@ -63,7 +63,7 @@ class SubmitParams(object):
 
     Any command line script can be submitted by the parameters by calling the `SubmitParams` object:
 
-    .. codeblock:: python
+    .. code-block:: python
 
         submit = SubmitParams(minutes=1, logdir='log', wait_for=['108023', '108019'])
         submit('echo finished')
@@ -71,14 +71,14 @@ class SubmitParams(object):
     This will run "echo finished" with a maximum runtime of 1 minute after the jobs with IDs 108023 and 108019 are finished.
     It is the equivalent of
 
-    .. codeblock:: bash
+    .. code-block:: bash
 
         fsl_sub -T 1 -l log -j 108023,108019 "echo finished"
 
     For python scripts that submit themselves to the cluster, it might be useful to give the user some control
     over at least some of the submission parameters. This can be done using:
 
-    .. codeblock:: python
+    .. code-block:: python
 
         import argparse
         parser = argparse.ArgumentParser("my script doing awesome stuff")
