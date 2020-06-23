@@ -606,6 +606,7 @@ class FileOrThing(object):
         :arg load:      Function which is called to load items for arguments
                         that were set to :data:`LOAD`. Must accept the
                         following arguments:
+
                          - the name of the argument
                          - path to the file to be loaded
 
