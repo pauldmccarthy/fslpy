@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.2.1 (Tuesday 23rd June 2020)
+------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Minor updates to documentation.
+
+
 3.2.0 (Thursday 11th June 2020)
 -------------------------------
 
