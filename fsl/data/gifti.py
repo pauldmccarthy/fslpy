@@ -314,6 +314,7 @@ def relatedFiles(fname, ftypes=None):
 
     This function assumes that the GIFTI files are named according to a
     standard convention - the following conventions are supported:
+
      - HCP-style, i.e.: ``<subject>.<hemi>.<type>.<space>.<ftype>.gii``
      - BIDS-style, i.e.:
        ``<source_prefix>_hemi-<hemi>[_space-<space>]*_<suffix>.<ftype>.gii``
