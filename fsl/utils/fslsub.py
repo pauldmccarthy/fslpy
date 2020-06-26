@@ -474,7 +474,7 @@ def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbo
     :arg tmp_dir: directory where to store the temporary file
     :arg clean:   Whether the script should be removed after running. There are three options:
 
-        - "never" (defualt): Script is kept
+        - "never" (default): Script is kept
         - "on_success": only remove if script successfully finished (i.e., no error is raised)
         - "always": always remove the script, even if it raises an error
 
