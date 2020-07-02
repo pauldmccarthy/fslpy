@@ -267,6 +267,7 @@ def _bad_func():
 
 
 def test_func_to_cmd():
+    cwd = os.getcwd()
     with tempdir():
         for tmp_dir in (None, '.'):
             for clean in ('never', 'on_success', 'always'):
@@ -274,7 +275,8 @@ def test_func_to_cmd():
                     cmd = fslsub.func_to_cmd(_good_func, clean=clean, tmp_dir=tmp_dir, verbose=verbose)
                     fn = cmd.split()[-1]
                     assert op.exists(fn)
-                    stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True)
+                    stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
+                                                       env={"PYTHONPATH": cwd})
                     assert exitcode == 0
                     if clean == 'never':
                         assert op.exists(fn), "Successful job got removed, even though this was not requested"
@@ -288,7 +290,8 @@ def test_func_to_cmd():
                 cmd = fslsub.func_to_cmd(_bad_func, clean=clean, tmp_dir=tmp_dir)
                 fn = cmd.split()[-1]
                 assert op.exists(fn)
-                stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True)
+                stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
+                                                   env={'PYTHONPATH': cwd})
                 assert exitcode != 0
                 if clean == 'always':
                     assert not op.exists(fn), "Failing job should always be removed if requested"
