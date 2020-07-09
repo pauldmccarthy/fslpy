@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.2.2 (Thursday 9th July 2020)
+------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.fslsub.func_to_cmd` function allows more fine-grained control
+  over whether the script file is removed after the job has finished running.
+
 
 3.2.1 (Tuesday 23rd June 2020)
 ------------------------------
