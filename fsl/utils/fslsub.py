@@ -435,14 +435,13 @@ def hold(job_ids, hold_filename=None):
     os.remove(hold_filename)
 
 
-_external_job = """#!{}
+_external_job = ("""#!{}
 # This is a temporary file designed to run the python function {},
 # so that it can be submitted to the cluster
-
 import pickle
 from six import BytesIO
 from importlib import import_module
-
+{} 
 pickle_bytes = BytesIO({})
 name_type, name, func_name, args, kwargs = pickle.load(pickle_bytes)
 
@@ -456,15 +455,13 @@ elif name_type == 'script':
     func = local_execute[func_name]
 else:
     raise ValueError('Unknown name_type: %r' % name_type)
+    
+{}
 
-res = func(*args, **kwargs)
-if res is not None:
-    with open(__file__ + '_out.pickle', 'w') as f:
-        pickle.dump(f, res)
-"""
+""")
 
 
-def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
+def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbose=False):
     """Defines the command needed to run the function from the command line
 
     WARNING: if submitting a function defined in the __main__ script,
@@ -475,9 +472,21 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     :arg args:    positional arguments
     :arg kwargs:  keyword arguments
     :arg tmp_dir: directory where to store the temporary file
-    :arg clean:   if True removes the submitted script after running it
+    :arg clean:   Whether the script should be removed after running. There are three options:
+
+        - "never" (default): Script is kept
+        - "on_success": only remove if script successfully finished (i.e., no error is raised)
+        - "always": always remove the script, even if it raises an error
+
+    :arg verbose: If set to True, the script will print its own filename before running
     :return:      string which will run the function
     """
+    if clean not in ('never', 'always', 'on_success'):
+        raise ValueError(f"Clean should be one of 'never', 'always', or 'on_success', not {clean}")
+    if args is None:
+        args = ()
+    if kwargs is None:
+        kwargs = {}
     pickle_bytes = BytesIO()
     if func.__module__ == '__main__':
         pickle.dump(('script', importlib.import_module('__main__').__file__, func.__name__,
@@ -485,15 +494,29 @@ def func_to_cmd(func, args, kwargs, tmp_dir=None, clean=False):
     else:
         pickle.dump(('module', func.__module__, func.__name__,
                      args, kwargs), pickle_bytes)
-    python_cmd = _external_job.format(sys.executable,
-                                      func.__name__,
-                                      pickle_bytes.getvalue())
 
     _, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
                                    suffix='.py',
                                    dir=tmp_dir)
 
+    verbose_script = f'\nprint("running {filename}")\n' if verbose else ''
+    if clean == 'never':
+        run_script = "res = func(*args, **kwargs)"
+    elif clean == 'always':
+        run_script = f"""try:
+    res = func(*args, **kwargs)
+finally:
+    import os; os.remove("{filename}")"""
+    elif clean == 'on_success':
+        run_script = f"""res = func(*args, **kwargs)
+import os; os.remove("{filename}")"""
+    python_cmd = _external_job.format(sys.executable,
+                                      func.__name__,
+                                      verbose_script,
+                                      pickle_bytes.getvalue(),
+                                      run_script)
+
     with open(filename, 'w') as python_file:
         python_file.write(python_cmd)
 
-    return sys.executable + " " + filename + ('; rm ' + filename if clean else '')
+    return sys.executable + " " + filename
