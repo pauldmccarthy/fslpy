@@ -230,17 +230,21 @@ altering this behaviour is again as simple as altering the FileTree to something
 ::
 
     raw_data
-        {subject}
-            [ses-{session}]
+        {subject} (input_subject_dir)
+            [ses-{session}] (input_session_dir)
                 T1w.nii.gz
     processed_data
-        {subject}
-            [ses-{session}]
+        {subject} (output_subject_dir)
+            [ses-{session}] (output_session_dir)
                 bet
                     {subject}[_{session}]_T1w_brain.nii.gz (bet_output)
                     {subject}[_{session}]_T1w_brain_mask.nii.gz (bet_mask)
 
 Note that we also encoded the subject and session ID in the output filename.
+We also have to explicitly assign short names to the subject and session directories,
+even though we don't explicitly reference these in the script.
+The reason for this is that each directory and filename template must have a unique short name and
+in this case the default short names (respectively, "{subject}" and "[ses-{session}]") would not have been unique.
 
 Some tools like FSL's FAST produce many output files. Rather than entering all
 of these files in our FileTree by hand you can include them all at once by including `Sub-trees`_:
@@ -248,12 +252,12 @@ of these files in our FileTree by hand you can include them all at once by inclu
 ::
 
     raw_data
-        {subject}
-            [ses-{session}]
+        {subject} (input_subject_dir)
+            [ses-{session}] (input_session_dir)
                 T1w.nii.gz
     processed_data
-        {subject}
-            [ses-{session}]
+        {subject} (output_subject_dir)
+            [ses-{session}] (output_session_dir)
                 bet
                     {subject}[_{session}]_T1w_brain.nii.gz (bet_output)
                     {subject}[_{session}]_T1w_brain_mask.nii.gz (bet_mask)
