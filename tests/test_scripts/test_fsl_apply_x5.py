@@ -81,7 +81,7 @@ def test_nonlinear(seed):
         fsl_apply_x5.main('src xform.x5 out'.split())
 
         result = fslimage.Image('out')
-        expect = resample.resampleToReference(src, ref, matrix=src2ref)[0]
+        expect = resample.resampleToReference(src, ref, matrix=src2ref, smooth=False)[0]
 
         assert result.sameSpace(ref)
 
@@ -89,7 +89,8 @@ def test_nonlinear(seed):
         result = result.data[1:-1, 1:-1, 1:-1]
         expect = expect[     1:-1, 1:-1, 1:-1]
 
-        assert np.all(np.isclose(result, expect))
+        tol = dict(atol=1e-3, rtol=1e-3)
+        assert np.all(np.isclose(result, expect, **tol))
 
 
 def test_linear_altref(seed):
@@ -213,9 +214,13 @@ def test_nonlinear_altsrc(seed):
         src.save('src')
         ref.save('ref')
 
-        srclo, xf = resample.resample(src, (10, 10, 10), origin='corner')
+        # use origin=corner so that the
+        # resampled variants are exactly
+        # aligned in the world coordinate
+        # system
+        srclo, xf = resample.resample(src, (10, 10, 10), origin='corner', smooth=False)
         srclo = fslimage.Image(srclo, xform=xf)
-        srchi, xf = resample.resample(src, (40, 40, 40), origin='corner')
+        srchi, xf = resample.resample(src, (40, 40, 40), origin='corner', smooth=False)
         srchi = fslimage.Image(srchi, xform=xf)
 
         srcoff = roi.roi(src, [(-10, 10), (-10, 10), (-10, 10)])
@@ -224,28 +229,20 @@ def test_nonlinear_altsrc(seed):
         srchi .save('srchi')
         srcoff.save('srcoff')
 
-        # The up-sampled source image is subject to
-        # an unavoidable interpolation, as the
-        # deformation field coordinates are affine-
-        # transformed to the space of the alternate
-        # source image. So in this test case we use
-        # nearest-neighbour interp, so that we can
-        # get the same output as a standard linear
-        # resample
-        fsl_apply_x5.main('src    xform.x5 out'             .split())
-        fsl_apply_x5.main('srclo  xform.x5 outlo'           .split())
-        fsl_apply_x5.main('srchi  xform.x5 outhi -i nearest'.split())
-        fsl_apply_x5.main('srcoff xform.x5 outoff'          .split())
+        fsl_apply_x5.main('src    xform.x5 out'   .split())
+        fsl_apply_x5.main('srclo  xform.x5 outlo' .split())
+        fsl_apply_x5.main('srchi  xform.x5 outhi' .split())
+        fsl_apply_x5.main('srcoff xform.x5 outoff'.split())
 
         out    = fslimage.Image('out')
         outlo  = fslimage.Image('outlo')
         outhi  = fslimage.Image('outhi')
         outoff = fslimage.Image('outoff')
 
-        exp,    x1 = resample.resampleToReference(src,    ref, matrix=src2ref, mode='constant')
-        explo,  x2 = resample.resampleToReference(srclo,  ref, matrix=src2ref, mode='constant')
-        exphi,  x3 = resample.resampleToReference(srchi,  ref, matrix=src2ref, mode='constant', order=0)
-        expoff, x4 = resample.resampleToReference(srcoff, ref, matrix=src2ref, mode='constant')
+        exp,    x1 = resample.resampleToReference(src,    ref, matrix=src2ref, mode='constant', smooth=False)
+        explo,  x2 = resample.resampleToReference(srclo,  ref, matrix=src2ref, mode='constant', smooth=False)
+        exphi,  x3 = resample.resampleToReference(srchi,  ref, matrix=src2ref, mode='constant', smooth=False)
+        expoff, x4 = resample.resampleToReference(srcoff, ref, matrix=src2ref, mode='constant', smooth=False)
 
         assert out   .sameSpace(ref)
         assert outlo .sameSpace(ref)
@@ -257,11 +254,11 @@ def test_nonlinear_altsrc(seed):
         out    = out   .data[1:-1, 1:-1, 1:-1]
         outlo  = outlo .data[1:-1, 1:-1, 1:-1]
         outhi  = outhi .data[1:-1, 1:-1, 1:-1]
-        outoff = outoff.data[1:-1, 1:-1, 1:-1]
+        outoff = outoff.data[ :9,   :9,   :9]
         exp    = exp[        1:-1, 1:-1, 1:-1]
         explo  = explo[      1:-1, 1:-1, 1:-1]
         exphi  = exphi[      1:-1, 1:-1, 1:-1]
-        expoff = expoff[     1:-1, 1:-1, 1:-1]
+        expoff = expoff[      :9,   :9,   :9]
 
         tol = dict(atol=1e-3, rtol=1e-3)
 
