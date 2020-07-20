@@ -13,7 +13,7 @@ import fsl.scripts.imrm as imrm
 from tests import touch
 
 def test_imrm_usage():
-    assert imrm.main(['imrm']) != 0
+    assert imrm.main([]) != 0
 
 
 def test_imrm():
@@ -45,6 +45,7 @@ def test_imrm():
             print('command',  command)
             print('expected', expected)
 
-            imrm.main(('imrm ' + command).split())
+            ret = imrm.main(('imrm ' + command).split())
 
+            assert ret == 0
             assert sorted(os.listdir()) == sorted(expected.split())
