@@ -1625,18 +1625,20 @@ def removeExt(filename):
     return fslpath.removeExt(filename, ALLOWED_EXTENSIONS)
 
 
-def fixExt(filename):
+def fixExt(filename, **kwargs):
     """Fix the extension of ``filename``.
 
     For example, if a file name is passed in as ``file.nii.gz``, but the
     file is actually ``file.nii``, this function will fix the file name.
 
     If ``filename`` already exists, it is returned unchanged.
+
+    All other arguments are passed through to :func:`addExt`.
     """
     if op.exists(filename):
         return filename
     else:
-        return addExt(removeExt(filename))
+        return addExt(removeExt(filename), **kwargs)
 
 
 def defaultExt():
