@@ -9,14 +9,11 @@ files.
 """
 
 
-from __future__ import print_function
-
 import itertools      as it
 import os.path        as op
 import                   os
 import                   sys
 import                   warnings
-import                   contextlib
 
 import fsl.utils.path as fslpath
 

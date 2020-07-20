@@ -12,8 +12,6 @@ The :func:`main` function is essentially a wrapper around the
 """
 
 
-from __future__ import print_function
-
 import os.path        as op
 import                   sys
 import                   warnings
