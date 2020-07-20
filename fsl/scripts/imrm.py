@@ -23,7 +23,7 @@ with warnings.catch_warnings():
     import fsl.data.image as fslimage
 
 
-usage = """Usage: {} <list of image names to remove>
+usage = """Usage: imrm <list of image names to remove>
 NB: filenames can be basenames or not
 """.strip()
 
@@ -36,14 +36,13 @@ def main(argv=None):
     """Removes all images which are specified on the command line. """
 
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
 
-    if len(argv) < 2:
-        exe = op.abspath(argv[0])
-        print(usage.format(exe))
+    if len(argv) < 1:
+        print(usage)
         return 1
 
-    prefixes = [fslpath.removeExt(p, ALLOWED_EXTENSIONS) for p in argv[1:]]
+    prefixes = [fslpath.removeExt(p, ALLOWED_EXTENSIONS) for p in argv]
 
     for prefix, ext in it.product(prefixes, ALLOWED_EXTENSIONS):
 
