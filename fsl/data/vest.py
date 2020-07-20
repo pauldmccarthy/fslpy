@@ -11,8 +11,13 @@
 
    looksLikeVestLutFile
    loadVestLutFile
+   loadVestFile
+   generateVest
 """
 
+
+import textwrap as tw
+import             io
 
 import numpy as np
 
@@ -76,3 +81,66 @@ def loadVestLutFile(path, normalise=True):
 
     else:
         return colours
+
+
+def loadVestFile(path, ignoreHeader=True):
+    """Loads numeric data from a VEST file, returning it as a ``numpy`` array.
+
+    :arg ignoreHeader: if ``True`` (the default), the matrix shape specified
+                       in the VEST header information is ignored. Otherwise,
+                       if the number of rows/columns specified in the VEST
+                       header information does not match the matrix shape,
+                       a ``ValueError`` is raised.
+    :returns:          a ``numpy`` array containing the matrix data in the
+                       VEST file.
+    """
+
+    data = np.loadtxt(path, comments=['#', '/'])
+
+    if not ignoreHeader:
+        nrows, ncols = None, None
+        with open(path, 'rt') as f:
+            for line in f:
+                if   'NumWaves'  in line: ncols = int(line.split()[1])
+                elif 'NumPoints' in line: nrows = int(line.split()[1])
+                else: continue
+
+                if (ncols is not None) and (nrows is not None):
+                    break
+
+
+
+
+    return data
+
+
+def generateVest(data):
+    """Generates VEST-formatted text for the given ``numpy`` array.
+
+    :arg data: A 1D or 2D numpy array.
+    :returns:  A string containing a VEST header, and the ``data``.
+    """
+
+    data = np.asanyarray(data)
+
+    if len(data.shape) not in (1, 2):
+        raise ValueError(f'unsupported number of dimensions: {data.shape}')
+
+    data = np.atleast_2d(data)
+
+    if np.issubdtype(data.dtype, np.integer): fmt = '%d'
+    else:                                     fmt = '%0.12f'
+
+    sdata = io.StringIO()
+    np.savetxt(sdata, data, fmt=fmt)
+    sdata = sdata.getvalue()
+
+    nrows, ncols = data.shape
+
+    vest = tw.dedent(f"""
+    /NumWaves {ncols}
+    /NumPoints {nrows}
+    /Matrix
+    """).strip() + '\n' + sdata
+
+    return vest.strip()
