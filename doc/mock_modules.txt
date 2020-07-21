@@ -1,6 +1,7 @@
 deprecation
 h5py
 nibabel
+nibabel.cifti2
 nibabel.fileslice
 nibabel.freesurfer
 numpy

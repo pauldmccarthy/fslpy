@@ -6,6 +6,7 @@
 
    fsl.data.atlases
    fsl.data.bitmap
+   fsl.data.cifti
    fsl.data.constants
    fsl.data.dicom
    fsl.data.dtifit
