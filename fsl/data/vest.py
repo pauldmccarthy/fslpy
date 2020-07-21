@@ -87,10 +87,12 @@ def loadVestFile(path, ignoreHeader=True):
     """Loads numeric data from a VEST file, returning it as a ``numpy`` array.
 
     :arg ignoreHeader: if ``True`` (the default), the matrix shape specified
-                       in the VEST header information is ignored. Otherwise,
-                       if the number of rows/columns specified in the VEST
-                       header information does not match the matrix shape,
-                       a ``ValueError`` is raised.
+                       in the VEST header information is ignored, and the shape
+                       inferred from the data. Otherwise, if the number of
+                       rows/columns specified in the VEST header information
+                       does not match the matrix shape, a ``ValueError`` is
+                       raised.
+
     :returns:          a ``numpy`` array containing the matrix data in the
                        VEST file.
     """
@@ -108,8 +110,10 @@ def loadVestFile(path, ignoreHeader=True):
                 if (ncols is not None) and (nrows is not None):
                     break
 
-
-
+        if tuple(data.shape) != (nrows, ncols):
+            raise ValueError(f'Invalid VEST file ({path}) - data shape '
+                             f'({data.shape}) does not match header '
+                             f'({nrows}, {ncols})')
 
     return data
 
