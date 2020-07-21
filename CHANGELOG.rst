@@ -2,6 +2,25 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.3.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+* New ported versions of various core FSL tools, including ``imrm``, ``imln``,
+  ``imtest``, ``fsl_abspath``, ``remove_ext``, ``Text2Vest``, and
+  ``Vest2Text``.
+
+
+Changed
+^^^^^^^
+
+
+* Adjustments to tests and documentation
+
+
 3.2.2 (Thursday 9th July 2020)
 ------------------------------
 
