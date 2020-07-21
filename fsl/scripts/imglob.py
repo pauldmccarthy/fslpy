@@ -9,8 +9,6 @@ NIFTI/ANALYZE image files.
 """
 
 
-from __future__ import print_function
-
 import                   sys
 import                   warnings
 import fsl.utils.path as fslpath

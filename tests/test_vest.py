@@ -6,15 +6,19 @@
 #
 
 
-import os.path as op
-import            shutil
-import            tempfile
-import            warnings
+import os.path  as op
+import textwrap as tw
+import             io
+import             shutil
+import             tempfile
+import             warnings
 
-import numpy   as np
-import            pytest
+import numpy    as np
+import             pytest
 
 import fsl.data.vest as vest
+
+from tests import tempdir
 
 
 testfile1 = """%!VEST-LUT
@@ -214,3 +218,75 @@ def test_loadVestLutFile():
 
     finally:
         shutil.rmtree(testdir)
+
+
+def test_generateVest():
+    def readvest(vstr):
+        lines = vstr.split('\n')
+        nrows = [l for l in lines if 'NumPoints' in l][0]
+        ncols = [l for l in lines if 'NumWaves'  in l][0]
+        nrows = int(nrows.split()[1])
+        ncols = int(ncols.split()[1])
+        data  = '\n'.join(lines[3:])
+        data  = np.loadtxt(io.StringIO(data)).reshape((nrows, ncols))
+
+        return ((nrows, ncols), data)
+
+    # shape, expectedshape
+    tests = [
+        ((10,   ), ( 1, 10)),
+        ((10,  1), (10,  1)),
+        (( 1, 10), ( 1, 10)),
+        (( 3,  5), ( 3,  5)),
+        (( 5,  3), ( 5,  3))
+    ]
+
+    for shape, expshape in tests:
+        data = np.random.random(shape)
+        vstr = vest.generateVest(data)
+
+        gotshape, gotdata = readvest(vstr)
+
+        data = data.reshape(expshape)
+
+        assert expshape == gotshape
+        assert np.all(np.isclose(data, gotdata))
+
+
+def test_loadVestFile():
+    def genvest(data, path, shapeOverride=None):
+        if shapeOverride is None:
+            nrows, ncols = data.shape
+        else:
+            nrows, ncols = shapeOverride
+
+        with open(path, 'wt') as f:
+            f.write(f'/NumWaves {ncols}\n')
+            f.write(f'/NumPoints {nrows}\n')
+            f.write( '/Matrix\n')
+
+            if np.issubdtype(data.dtype, np.integer): fmt = '%d'
+            else:                                     fmt = '%0.12f'
+
+            np.savetxt(f, data, fmt=fmt)
+
+    with tempdir():
+        data = np.random.randint(1, 100, (10, 20))
+        genvest(data, 'data.vest')
+        assert np.all(data == vest.loadVestFile('data.vest'))
+
+        data = np.random.random((20, 10))
+        genvest(data, 'data.vest')
+        assert np.all(np.isclose(data, vest.loadVestFile('data.vest')))
+
+        # should pass
+        vest.loadVestFile('data.vest', ignoreHeader=False)
+
+        # invalid VEST header
+        genvest(data, 'data.vest', (10, 20))
+
+        # default behaviour - ignore header
+        assert np.all(np.isclose(data, vest.loadVestFile('data.vest')))
+
+        with pytest.raises(ValueError):
+            vest.loadVestFile('data.vest', ignoreHeader=False)

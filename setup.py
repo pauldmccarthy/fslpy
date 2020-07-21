@@ -118,9 +118,16 @@ setup(
 
     entry_points={
         'console_scripts' : [
-            'immv           = fsl.scripts.immv:main',
             'imcp           = fsl.scripts.imcp:main',
+            'imln           = fsl.scripts.imln:main',
+            'immv           = fsl.scripts.immv:main',
+            'imrm           = fsl.scripts.imrm:main',
             'imglob         = fsl.scripts.imglob:main',
+            'imtest         = fsl.scripts.imtest:main',
+            'remove_ext     = fsl.scripts.remove_ext:main',
+            'fsl_abspath    = fsl.scripts.fsl_abspath:main',
+            'Text2Vest      = fsl.scripts.Text2Vest:main',
+            'Vest2Text      = fsl.scripts.Vest2Text:main',
             'atlasq         = fsl.scripts.atlasq:main',
             'atlasquery     = fsl.scripts.atlasq:atlasquery_emulation',
             'fsl_ents       = fsl.scripts.fsl_ents:main',
