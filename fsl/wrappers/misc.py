@@ -85,3 +85,22 @@ def cluster(input, thresh, **kwargs):
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
+
+@wutils.fileOrArray('out', 'init')
+@wutils.fslwrapper
+def gps(out, ndir, **kwargs):
+    """Wrapper of the ``gps`` command
+
+    Usage example to get 128 gradient orientations on the whole sphere::
+
+        from fsl.wrappers import gps, LOAD
+        bvecs = gps(LOAD, 128, optws=True)['out']
+    """
+    valmap = {name: wutils.SHOW_IF_TRUE for name in [
+        'optws', 'report', 'verbose'
+    ]}
+
+    cmd = ['gps', f'--ndir={ndir}', f'--out={out}']
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+
+    return cmd
