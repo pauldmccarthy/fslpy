@@ -336,7 +336,6 @@ def test_fast():
         assert result.stdout[0] == ' '.join(expected)
 
 
-
 def test_fsl_anat():
     with asrt.disabled(), \
          run.dryrun(), \
@@ -349,3 +348,12 @@ def test_fsl_anat():
                     '-s', '25']
 
         assert result.stdout[0] == ' '.join(expected)
+
+
+def test_gps():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('gps',)) as fsldir:
+        gps = op.join(fsldir, 'bin', 'gps')
+        result = fw.gps('bvecs', 128, optws=True, ranseed=123)
+        expected = (gps + ' --ndir=128 --out=bvecs',
+                    ('--optws', '--ranseed=123'))
+        assert checkResult(result.stdout[0], *expected)

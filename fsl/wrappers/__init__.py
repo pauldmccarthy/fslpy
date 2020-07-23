@@ -107,4 +107,5 @@ from .melodic      import (melodic,         # noqa
 from .misc         import (fslreorient2std, # noqa
                            fslroi,
                            slicer,
-                           cluster)
+                           cluster,
+                           gps)
