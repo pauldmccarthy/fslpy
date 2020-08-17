@@ -2,19 +2,22 @@ ext=.nii.gz
 
 dataset_description.json
 participants.tsv
-README
-CHANGES
+README (readme)
+CHANGES (changes)
+LICENSE (license)
+genetic_info.json
 sub-{participant}
     [ses-{session}]
         sub-{participant}_sessions.tsv (sessions_tsv)
         anat (anat_dir)
-            sub-{participant}[_ses-{session}][_acq-{acq}][_rec-{rec}][_run-{run_index}]_{modality}{ext} (anat_image)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_ce-{ce}][_rec-{rec}][_run-{run_index}]_{modality}{ext} (anat_image)
+            sub-{participant}[_ses-{session}][_acq-{acq}][_ce-{ce}][_rec-{rec}][_run-{run_index}][_mod-{modality}]_defacemask{ext} (anat_deface)
         func (func_dir)
-            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_bold{ext}  (task_image)
-            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_sbref{ext} (task_sbref)
-            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}]_events.tsv  (task_events)
-            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}][_recording-{recording}]_physio{ext} (task_physio)
-            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_rec-{rec}][_run-{run_index}][_recording-{recording}]_stim{ext} (task_stim)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_ce-{ce}][_dir-{dir}][_rec-{rec}][_run-{run_index}][_echo-<index>]_bold{ext}  (task_image)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_ce-{ce}][_dir-{dir}][_rec-{rec}][_run-{run_index}][_echo-<index>]_sbref{ext} (task_sbref)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_ce-{ce}][_dir-{dir}][_rec-{rec}][_run-{run_index}][_echo-<index>]_events.tsv  (task_events)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_ce-{ce}][_dir-{dir}][_rec-{rec}][_run-{run_index}][_echo-<index>][_recording-{recording}]_physio.tsv.gz (task_physio)
+            sub-{participant}[_ses-{session}]_task-{task}[_acq-{acq}][_ce-{ce}][_dir-{dir}][_rec-{rec}][_run-{run_index}][_echo-<index>][_recording-{recording}]_stim.tsv.gz (task_stim)
         dwi (dwi_dir)
             sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_dwi{ext} (dwi_image)
             sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_dwi.bval (bval)
@@ -28,3 +31,15 @@ sub-{participant}
             sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_phase2{ext} (fmap_phase2)
             sub-{participant}[_ses-{session}][_acq-{acq}][_run-{run_index}]_fieldmap{ext} (fmap)
             sub-{participant}[_ses-{session}][_acq-{acq}]_dir-{dir}[_run-{run_index}]_epi{ext} (fmap_epi)
+        meg (meg_dir)
+            sub-{participant}[_ses-{session}]_task-{task}[_run-{run}][_proc-{proc}]_meg.{meg_ext} (meg)
+        eeg (eeg_dir)
+            sub-{participant}[_ses-{session}]_task-{task}[_run-{run}][_proc-{proc}]_eeg.{eeg_ext} (eeg)
+        ieeg (ieeg_dir)
+            sub-{participant}[_ses-{session}]_task-{task}[_run-{run}][_proc-{proc}]_ieeg.{ieeg_ext} (ieeg)
+        beh (behavioral_dir)
+            sub-{participant}[_ses-{session}]_task-{task}_events.tsv (behavioural_events)
+            sub-{participant}[_ses-{session}]_task-{task}_beh.tsv (behavioural)
+            sub-{participant}[_ses-{session}]_task-{task}_physio.tsv.gz (behavioural_physio)
+            sub-{participant}[_ses-{session}]_task-{task}_stim.tsv.gz (behavioral_stim)
+
