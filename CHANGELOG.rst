@@ -12,6 +12,14 @@ Added
 * New ported versions of various core FSL tools, including ``imrm``, ``imln``,
   ``imtest``, ``fsl_abspath``, ``remove_ext``, ``Text2Vest``, and
   ``Vest2Text``.
+* New :func:`.gps` function, wrapping the FSL ``gps`` command.
+
+
+Changed
+^^^^^^^
+
+
+* Updates to the BIDS filetree specification.
 
 
 Changed
