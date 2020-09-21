@@ -225,6 +225,27 @@ def _readFnirtCoefficientField(fname, img, src, ref):
     # image voxel coordinates.
     fieldToRefMat = affine.scaleOffsetXform(knotSpacing, 0)
 
+    # But if the provided reference has
+    # different resolution to the
+    # reference that was originally
+    # used to generate the warp field,
+    # we need to adjust the field
+    # accordingly. We assume that the
+    # references are aligned in the FSL
+    # coordinate system, so simply apply
+    # a scaling factor calculated by
+    # dividing the original reference
+    # pixdims by the provided reference
+    # pixdims.
+    refPixdims = np.array([img.header['intent_p1'],
+                           img.header['intent_p2'],
+                           img.header['intent_p3']])
+
+    if not np.all(np.isclose(ref.pixdim[:3], refPixdims)):
+        fieldToRefMat = affine.concat(
+            affine.scaleOffsetXform(refPixdims / ref.pixdim[:3], 0),
+            fieldToRefMat)
+
     return nonlinear.CoefficientField(fname,
                                       src,
                                       ref,
