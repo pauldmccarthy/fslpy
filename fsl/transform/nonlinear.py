@@ -496,13 +496,11 @@ class CoefficientField(NonLinearTransform):
 
         fdata      = self.data
         nx, ny, nz = self.shape[:3]
-        ix, iy, iz = self.ref.shape[:3]
 
         # Convert the given voxel coordinates
         # into the corresponding coefficient
         # field voxel coordinates
-        x, y, z    = coords.T
-        i, j, k    = affine.transform(coords, self.refToFieldMat).T
+        i, j, k = affine.transform(coords, self.refToFieldMat).T
 
         # i, j, k: coefficient field indices
         # u, v, w: position of the ref voxel
@@ -582,6 +580,10 @@ def convertDeformationType(field, defType=None):
         if field.deformationType == 'absolute': defType = 'relative'
         else:                                   defType = 'absolute'
 
+    if defType not in ('absolute', 'relative'):
+        raise ValueError('defType must be "absolute" or "relative" '
+                         '("{}" passed)'.format(defType))
+
     # Regardless of the conversion direction,
     # we need the coordinates of every voxel
     # in the reference coordinate system.
@@ -601,8 +603,8 @@ def convertDeformationType(field, defType=None):
     # assumed to be) the relative shift. Or,
     # to convert from absolute to relative,
     # we subtract the reference image voxels.
-    if   defType == 'absolute': return field.data + coords
-    elif defType == 'relative': return field.data - coords
+    if defType == 'absolute': return field.data + coords
+    else:                     return field.data - coords
 
 
 def convertDeformationSpace(field, from_, to):
