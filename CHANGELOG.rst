@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.3.0 (Under development)
--------------------------
+3.3.0 (Tuesday 22nd September 2020)
+-----------------------------------
 
 
 Added
@@ -13,6 +13,7 @@ Added
   ``imtest``, ``fsl_abspath``, ``remove_ext``, ``Text2Vest``, and
   ``Vest2Text``.
 * New :func:`.gps` function, wrapping the FSL ``gps`` command.
+* New :func:`.vest.loadVestFile` and :func:`.vest.generateVest` functions.
 
 
 Changed
@@ -22,11 +23,13 @@ Changed
 * Updates to the BIDS filetree specification.
 
 
-Changed
-^^^^^^^
+Fixed
+^^^^^
 
 
-* Adjustments to tests and documentation
+* The :class:`.CoefficientField` class now works with alternate reference
+  images (i.e. a reference image with different dimensions to that which
+  was originally used when the non-linear transformation was calculated).
 
 
 3.2.2 (Thursday 9th July 2020)

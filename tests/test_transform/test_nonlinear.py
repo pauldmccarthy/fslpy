@@ -311,6 +311,38 @@ def test_CoefficientField_transform():
         assert np.all(np.isclose(gotnp, srccoordsnp[srcspace], **tol))
 
 
+def test_coefficientField_transform_altref():
+
+    # test coordinates (manually determined).
+    # original ref image is 2mm isotropic,
+    # resampled is 1mm. Each tuple contains:
+    #
+    # (src, ref2mm, ref1mm)
+    coords = [
+        ((18.414, 26.579, 25.599), (11, 19, 11), (22, 38, 22)),
+        ((14.727, 22.480, 20.340), ( 8, 17,  8), (16, 34, 16)),
+        ((19.932, 75.616, 27.747), (11, 45,  5), (22, 90, 10))
+    ]
+
+    nldir  = op.join(datadir, 'nonlinear')
+    src    = op.join(nldir, 'src.nii.gz')
+    ref    = op.join(nldir, 'ref.nii.gz')
+    cf     = op.join(nldir, 'coefficientfield.nii.gz')
+
+    src      = fslimage.Image(src)
+    ref2mm   = fslimage.Image(ref)
+    ref1mm   = ref2mm.adjust((1, 1, 1))
+    cfref2mm = fnirt.readFnirt(cf, src, ref2mm)
+    cfref1mm = fnirt.readFnirt(cf, src, ref1mm)
+
+    for srcc, ref2mmc, ref1mmc in coords:
+        ref2mmc = cfref2mm.transform(ref2mmc, 'voxel', 'voxel')
+        ref1mmc = cfref1mm.transform(ref1mmc, 'voxel', 'voxel')
+
+        assert np.all(np.isclose(ref2mmc, srcc, 1e-4))
+        assert np.all(np.isclose(ref1mmc, srcc, 1e-4))
+
+
 def test_coefficientFieldToDeformationField():
 
     nldir = op.join(datadir, 'nonlinear')

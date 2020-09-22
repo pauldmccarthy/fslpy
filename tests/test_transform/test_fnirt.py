@@ -9,10 +9,13 @@ import os.path as op
 import itertools as it
 
 import numpy as np
+import nibabel as nib
 
 import pytest
 
 import fsl.data.image          as fslimage
+import fsl.utils.tempdir       as tempdir
+import fsl.data.constants      as constants
 import fsl.transform.affine    as affine
 import fsl.transform.nonlinear as nonlinear
 import fsl.transform.fnirt     as fnirt
@@ -49,6 +52,39 @@ def test_readFnirt():
     assert coef.refSpace == 'fsl'
     assert disp.srcSpace == 'fsl'
     assert disp.refSpace == 'fsl'
+
+
+def test_readFnirt_defType_intent():
+    src  = op.join(datadir, 'src.nii.gz')
+    ref  = op.join(datadir, 'ref.nii.gz')
+    coef = op.join(datadir, 'coefficientfield.nii.gz')
+    disp = op.join(datadir, 'displacementfield.nii.gz')
+
+    src  = fslimage.Image(src)
+    ref  = fslimage.Image(ref)
+
+    field = fnirt.readFnirt(disp, src, ref, defType='absolute')
+    assert field.deformationType == 'absolute'
+    field = fnirt.readFnirt(disp, src, ref, defType='relative')
+    assert field.deformationType == 'relative'
+
+    img = nib.load(coef)
+    img.header['intent_code'] = 0
+    with tempdir.tempdir():
+        img.to_filename('field.nii.gz')
+
+        with pytest.raises(ValueError):
+            fnirt.readFnirt('field', src, ref)
+
+        field = fnirt.readFnirt(
+            'field', src, ref,
+            intent=constants.FSL_CUBIC_SPLINE_COEFFICIENTS)
+        assert isinstance(field, nonlinear.CoefficientField)
+
+        field = fnirt.readFnirt(
+            'field', src, ref,
+            intent=constants.FSL_FNIRT_DISPLACEMENT_FIELD)
+        assert isinstance(field, nonlinear.DeformationField)
 
 
 def test_toFnirt():

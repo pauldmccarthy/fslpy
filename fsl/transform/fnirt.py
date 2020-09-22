@@ -225,6 +225,27 @@ def _readFnirtCoefficientField(fname, img, src, ref):
     # image voxel coordinates.
     fieldToRefMat = affine.scaleOffsetXform(knotSpacing, 0)
 
+    # But if the provided reference has
+    # different resolution to the
+    # reference that was originally
+    # used to generate the warp field,
+    # we need to adjust the field
+    # accordingly. We assume that the
+    # references are aligned in the FSL
+    # coordinate system, so simply apply
+    # a scaling factor calculated by
+    # dividing the original reference
+    # pixdims by the provided reference
+    # pixdims.
+    refPixdims = np.array([img.header['intent_p1'],
+                           img.header['intent_p2'],
+                           img.header['intent_p3']])
+
+    if not np.all(np.isclose(ref.pixdim[:3], refPixdims)):
+        fieldToRefMat = affine.concat(
+            affine.scaleOffsetXform(refPixdims / ref.pixdim[:3], 0),
+            fieldToRefMat)
+
     return nonlinear.CoefficientField(fname,
                                       src,
                                       ref,
@@ -236,7 +257,7 @@ def _readFnirtCoefficientField(fname, img, src, ref):
                                       fieldToRefMat=fieldToRefMat)
 
 
-def readFnirt(fname, src, ref, defType=None):
+def readFnirt(fname, src, ref, defType=None, intent=None):
     """Reads a non-linear FNIRT transformation image, returning
     a :class:`.DeformationField` or :class:`.CoefficientField` depending
     on the file type.
@@ -247,28 +268,38 @@ def readFnirt(fname, src, ref, defType=None):
     :arg defType:  Deformation type - either ``'absolute'`` or ``'relative'``.
                    Only used if the file is a deformation field. If not
                    provided, is automatically inferred from the data.
+    :arg intent:   NIFTI intent code of ``fname``. e.g.
+                   :attr:`.constants.FSL_FNIRT_DISPLACEMENT_FIELD`. If not
+                   provided, the intent is read from the image header.
     """
 
-    # Figure out whether the file
-    # is a deformation field or
-    # a coefficient field
+    if defType not in (None, 'absolute', 'relative'):
+        raise ValueError('defType must be None, "absolute" or "relative" '
+                         '(passed in as {})'.format(defType))
 
-    img   = fslimage.Image(fname, loadData=False)
-    disps = (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
-             constants.FSL_TOPUP_FIELD)
-    coefs = (constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
-             constants.FSL_DCT_COEFFICIENTS,
-             constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS,
-             constants.FSL_TOPUP_CUBIC_SPLINE_COEFFICIENTS,
-             constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
+    # Figure out whether the file is a
+    # deformation field or a coefficient
+    # field by checking the intent code.
+    # If the intent is provided, assume
+    # that the caller knows the type of
+    # the field.
+    img    = fslimage.Image(fname, loadData=False)
+    intent = intent or img.intent
+    disps  = (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
+              constants.FSL_TOPUP_FIELD)
+    coefs  = (constants.FSL_CUBIC_SPLINE_COEFFICIENTS,
+              constants.FSL_DCT_COEFFICIENTS,
+              constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS,
+              constants.FSL_TOPUP_CUBIC_SPLINE_COEFFICIENTS,
+              constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
 
-    if img.intent in disps:
+    if intent in disps:
         return _readFnirtDeformationField(fname, img, src, ref, defType)
-    elif img.intent in coefs:
+    elif intent in coefs:
         return _readFnirtCoefficientField(fname, img, src, ref)
     else:
-        raise ValueError('Cannot determine type of nonlinear '
-                         'file {}'.format(fname))
+        raise ValueError('Cannot determine type of nonlinear warp field '
+                         '{} (intent code: {})'.format(fname, intent))
 
 
 def toFnirt(field):
