@@ -13,6 +13,7 @@ Added
   ``imtest``, ``fsl_abspath``, ``remove_ext``, ``Text2Vest``, and
   ``Vest2Text``.
 * New :func:`.gps` function, wrapping the FSL ``gps`` command.
+* New :func:`.vest.loadVestFile` and :func:`.vest.generateVest` functions.
 
 
 Changed
