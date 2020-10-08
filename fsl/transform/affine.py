@@ -120,7 +120,7 @@ def scaleOffsetXform(scales, offsets):
     return xform
 
 
-def compose(scales, offsets, rotations, origin=None):
+def compose(scales, offsets, rotations, origin=None, shears=None):
     """Compose a transformation matrix out of the given scales, offsets
     and axis rotations.
 
@@ -133,6 +133,8 @@ def compose(scales, offsets, rotations, origin=None):
 
     :arg origin:    Origin of rotation - must be scaled by the ``scales``.
                     If not provided, the rotation origin is ``(0, 0, 0)``.
+
+    :arg shears:    Sequence of three shear values
     """
 
     preRotate  = np.eye(4)
@@ -154,6 +156,7 @@ def compose(scales, offsets, rotations, origin=None):
     scale  = np.eye(4, dtype=np.float64)
     offset = np.eye(4, dtype=np.float64)
     rotate = np.eye(4, dtype=np.float64)
+    shear  = np.eye(4, dtype=np.float64)
 
     scale[  0,  0] = scales[ 0]
     scale[  1,  1] = scales[ 1]
@@ -164,10 +167,15 @@ def compose(scales, offsets, rotations, origin=None):
 
     rotate[:3, :3] = rotations
 
-    return concat(offset, postRotate, rotate, preRotate, scale)
+    if shears is not None:
+        shear[0, 1] = shears[0]
+        shear[0, 2] = shears[1]
+        shear[1, 2] = shears[2]
+
+    return concat(offset, postRotate, rotate, preRotate, scale, shear)
 
 
-def decompose(xform, angles=True):
+def decompose(xform, angles=True, shears=False):
     """Decomposes the given transformation matrix into separate offsets,
     scales, and rotations, according to the algorithm described in:
 
@@ -175,14 +183,15 @@ def decompose(xform, angles=True):
     320-323 in *Graphics Gems II*, James Arvo (editor), Academic Press, 1991,
     ISBN: 0120644819.
 
-    It is assumed that the given transform has no perspective components. Any
-    shears in the affine are discarded.
+    It is assumed that the given transform has no perspective components.
 
     :arg xform:  A ``(3, 3)`` or ``(4, 4)`` affine transformation matrix.
 
     :arg angles: If ``True`` (the default), the rotations are returned
                  as axis-angles, in radians. Otherwise, the rotation matrix
                  is returned.
+
+    :arg shears: Defaults to ``False``. If ``True``, shears are returned.
 
     :returns: The following:
 
@@ -191,6 +200,7 @@ def decompose(xform, angles=True):
                  was a ``(3, 3)`` matrix)
                - A sequence of three rotations, in radians. Or, if
                  ``angles is False``, a rotation matrix.
+               - If ``shears is True``, a sequence of three shears.
     """
 
     # The inline comments in the code below are taken verbatim from
@@ -199,7 +209,7 @@ def decompose(xform, angles=True):
     # The next step is to extract the translations. This is trivial;
     # we find t_x = M_{4,1}, t_y = M_{4,2}, and t_z = M_{4,3}. At this
     # point we are left with a 3*3 matrix M' = M_{1..3,1..3}.
-    xform = xform.T
+    xform = np.array(xform).T
 
     if xform.shape == (4, 4):
         translations = xform[ 3, :3]
@@ -214,7 +224,7 @@ def decompose(xform, angles=True):
     # The process of finding the scaling factors and shear parameters
     # is interleaved. First, find s_x = |M'_1|.
     sx = np.sqrt(np.dot(M1, M1))
-    M1 /= sx
+    M1 = M1 / sx
 
     # Then, compute an initial value for the xy shear factor,
     # s_xy = M'_1 * M'_2. (this is too large by the y scaling factor).
@@ -231,7 +241,7 @@ def decompose(xform, angles=True):
     # The second row is normalized, and s_xy is divided by s_y to
     # get its final value.
     M2  = M2  / sy
-    sxy = sxy / sy
+    sxy = sxy / sx
 
     # The xz and yz shear factors are computed as in the preceding,
     sxz = np.dot(M1, M3)
@@ -246,8 +256,8 @@ def decompose(xform, angles=True):
     # the third row is normalized, and the xz and yz shear factors are
     # rescaled.
     M3  = M3  / sz
-    sxz = sxz / sz
-    syz = sxz / sz
+    sxz = sxz / sx
+    syz = syz / sy
 
     # The resulting matrix now is a pure rotation matrix, except that it
     # might still include a scale factor of -1. If the determinant of the
@@ -267,7 +277,13 @@ def decompose(xform, angles=True):
     if angles: rotations = rotMatToAxisAngles(R.T)
     else:      rotations = R.T
 
-    return np.array([sx, sy, sz]), translations, rotations
+    retval = [np.array([sx, sy, sz]), translations, rotations]
+
+    if shears:
+        retval.append(np.array((sxy, sxz, syz)))
+
+    return tuple(retval)
+
 
 
 def rotMatToAffine(rotmat, origin=None):
