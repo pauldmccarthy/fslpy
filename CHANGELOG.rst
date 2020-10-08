@@ -1,6 +1,25 @@
 This document contains the ``fslpy`` release history in reverse chronological
 order.
 
+3.3.1 (Thursday 8th October 2020)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.affine.decompose` and :func:`.affine.compose` functions now
+  have the ability to return/accept shear components.
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug in the :func:`.affine.decompose` function which was corrupting
+  the scale estimates when given an affine containing shears.
+
 
 3.3.0 (Tuesday 22nd September 2020)
 -----------------------------------
