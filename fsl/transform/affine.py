@@ -214,6 +214,7 @@ def decompose(xform, angles=True):
     # The process of finding the scaling factors and shear parameters
     # is interleaved. First, find s_x = |M'_1|.
     sx = np.sqrt(np.dot(M1, M1))
+    M1 /= sx
 
     # Then, compute an initial value for the xy shear factor,
     # s_xy = M'_1 * M'_2. (this is too large by the y scaling factor).
