@@ -226,8 +226,9 @@ def test_compose_and_decompose():
         xform                      = lines[i * 4: i * 4 + 4]
         xform                      = np.genfromtxt(xform)
 
-        scales, offsets, rotations = affine.decompose(xform)
-        result = affine.compose(scales, offsets, rotations)
+        scales, offsets, rotations, shears = affine.decompose(
+            xform, shears=True)
+        result = affine.compose(scales, offsets, rotations, shears=shears)
 
         assert np.all(np.isclose(xform, result, atol=1e-5))
 
