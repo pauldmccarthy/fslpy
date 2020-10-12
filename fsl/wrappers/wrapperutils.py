@@ -172,9 +172,7 @@ def genxwrapper(func, runner):
       - ``exitcode``: Passed to ``runner``. Defaults to ``False``.
       - ``submit``:   Passed to ``runner``. Defaults to ``None``.
       - ``log``:      Passed to ``runner``. Defaults to ``{'tee':True}``.
-      - ``cmdonly``:  Defaults to ``False``. If ``True``, the return
-        value of ``func`` is returned directly, instead of it being passed
-        to ``runner``,
+      - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
 
     :arg func:   A function which generates a command line.
     :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
@@ -184,20 +182,19 @@ def genxwrapper(func, runner):
         stdout   = kwargs.pop('stdout',   True)
         stderr   = kwargs.pop('stderr',   True)
         exitcode = kwargs.pop('exitcode', False)
-        cmdonly  = kwargs.pop('cmdonly',  False)
         submit   = kwargs.pop('submit',   None)
+        cmdonly  = kwargs.pop('cmdonly',  False)
         log      = kwargs.pop('log',      {'tee' : True})
         cmd      = func(*args, **kwargs)
 
-        if cmdonly:
-            return cmd
-        else:
-            return runner(cmd,
-                          stderr=stderr,
-                          log=log,
-                          submit=submit,
-                          stdout=stdout,
-                          exitcode=exitcode)
+        return runner(cmd,
+                      stderr=stderr,
+                      log=log,
+                      submit=submit,
+                      cmdonly=cmdonly,
+                      stdout=stdout,
+                      exitcode=exitcode)
+
     return _update_wrapper(wrapper, func)
 
 
