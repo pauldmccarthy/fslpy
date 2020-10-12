@@ -179,6 +179,13 @@ def test_run_passthrough():
         assert run.run('./script.sh', env=env) == expstdout
 
 
+def test_cmdonly():
+    assert run.run('script.sh',        cmdonly=True) == ['script.sh']
+    assert run.run('script.sh 1 2 3',  cmdonly=True) == ['script.sh', '1', '2', '3']
+    assert run.run(['script.sh'],      cmdonly=True) == ['script.sh']
+    assert run.run(['script.sh', '1'], cmdonly=True) == ['script.sh', '1']
+
+
 def test_dryrun():
 
     test_script = textwrap.dedent("""
