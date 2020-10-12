@@ -149,46 +149,73 @@ def _unwrap(func):
     return func
 
 
-def cmdwrapper(func):
-    """This decorator can be used on functions which generate a command line.
-    It will pass the return value of the function to the
-    :func:`fsl.utils.run.run` function in a standardised manner.
+def genxwrapper(func, runner):
+    """This function is used by :func:`cmdwrapper` and :func:`fslwrapper`.
+    It is not intended to be used in any other circumstances.
+
+    This function generates a wrapper function which calls ``func`` to
+    generate a command-line call, and then uses ``runner`` to invoke that
+    command.
+
+    ``func`` is assumed to be a wrapper function which generates a command-
+    line. ``runner`` is assumed to be Either :func:`.run.run` or
+    :func:`.run.runfsl`.
+
+    The generated wrapper function will pass all of its arguments to ``func``,
+    and will then pass the generated command-line to ``runner``, returning
+    whatever is returned.
+
+    The following keyword arguments will be intercepted by the wrapper
+    function, and will *not* be passed to ``func``:
+      - ``stdout``:   Passed to ``runner``. Defaults to ``True``.
+      - ``stderr``:   Passed to ``runner``. Defaults to ``True``.
+      - ``exitcode``: Passed to ``runner``. Defaults to ``False``.
+      - ``submit``:   Passed to ``runner``. Defaults to ``None``.
+      - ``log``:      Passed to ``runner``. Defaults to ``{'tee':True}``.
+      - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
+
+    :arg func:   A function which generates a command line.
+    :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
     """
+
     def wrapper(*args, **kwargs):
         stdout   = kwargs.pop('stdout',   True)
         stderr   = kwargs.pop('stderr',   True)
         exitcode = kwargs.pop('exitcode', False)
         submit   = kwargs.pop('submit',   None)
+        cmdonly  = kwargs.pop('cmdonly',  False)
         log      = kwargs.pop('log',      {'tee' : True})
         cmd      = func(*args, **kwargs)
-        return run.run(cmd,
-                       stderr=stderr,
-                       log=log,
-                       submit=submit,
-                       stdout=stdout,
-                       exitcode=exitcode)
+
+        return runner(cmd,
+                      stderr=stderr,
+                      log=log,
+                      submit=submit,
+                      cmdonly=cmdonly,
+                      stdout=stdout,
+                      exitcode=exitcode)
+
     return _update_wrapper(wrapper, func)
+
+
+def cmdwrapper(func):
+    """This decorator can be used on functions which generate a command line.
+    It will pass the return value of the function to the
+    :func:`fsl.utils.run.run` function in a standardised manner.
+
+    See the :func:`genxwrapper` function for details.
+    """
+    return genxwrapper(func, run.run)
 
 
 def fslwrapper(func):
     """This decorator can be used on functions which generate a FSL command
     line. It will pass the return value of the function to the
     :func:`fsl.utils.run.runfsl` function in a standardised manner.
+
+    See the :func:`genxwrapper` function for details.
     """
-    def wrapper(*args, **kwargs):
-        stdout   = kwargs.pop('stdout',   True)
-        stderr   = kwargs.pop('stderr',   True)
-        exitcode = kwargs.pop('exitcode', False)
-        submit   = kwargs.pop('submit',   None)
-        log      = kwargs.pop('log',      {'tee' : True})
-        cmd      = func(*args, **kwargs)
-        return run.runfsl(cmd,
-                          stderr=stderr,
-                          log=log,
-                          submit=submit,
-                          stdout=stdout,
-                          exitcode=exitcode)
-    return _update_wrapper(wrapper, func)
+    return genxwrapper(func, run.runfsl)
 
 
 SHOW_IF_TRUE = object()
