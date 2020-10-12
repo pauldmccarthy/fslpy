@@ -753,15 +753,20 @@ def test_cmdwrapper():
     with run.dryrun():
         assert func(1, 2)[0] == 'func 1 2'
 
+    assert func(1, 2, cmdonly=True) == ['func', '1', '2']
+
 
 def test_fslwrapper():
     @wutils.fslwrapper
     def func(a, b):
         return ['func', str(a), str(b)]
 
-    with run.dryrun(), mockFSLDIR(bin=('func',)) as fsldir:
+    with mockFSLDIR(bin=('func',)) as fsldir:
         expected = '{} 1 2'.format(op.join(fsldir, 'bin', 'func'))
-        assert func(1, 2)[0] == expected
+        with run.dryrun():
+            assert func(1, 2)[0] == expected
+
+        func(1, 2, cmdonly=True)[0] == list(shlex.split(expected))
 
 
 _test_script = textwrap.dedent("""

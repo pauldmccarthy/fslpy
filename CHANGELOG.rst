@@ -1,6 +1,20 @@
 This document contains the ``fslpy`` release history in reverse chronological
 order.
 
+
+3.3.2 (Tuesday 12th October 2020)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Most :func:`.wrapper` functions now accept an argument called ``cmdonly``
+  which, if ``True``, will cause the generated command-line call to be
+  returned, instead of executed.
+
+
 3.3.1 (Thursday 8th October 2020)
 ---------------------------------
 
