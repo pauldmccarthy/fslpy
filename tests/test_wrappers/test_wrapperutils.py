@@ -714,13 +714,15 @@ def test_fileOrThing_chained_outprefix():
         assert np.all(res['out_array'] == exparr)
 
 
-def test_fileOrThing_submit():
+def test_fileOrThing_submit_cmdonly():
 
     @wutils.fileOrImage('input', 'output')
-    def func(input, output, submit=False):
+    def func(input, output, submit=False, cmdonly=False):
 
         if submit:
             return 'submitted!'
+        if cmdonly:
+            return 'cmdonly!'
 
         img = nib.load(input)
         img = nib.nifti1.Nifti1Image(np.asanyarray(img.dataobj) * 2, np.eye(4))
@@ -735,7 +737,8 @@ def test_fileOrThing_submit():
         result = func(img, wutils.LOAD)
         assert np.all(np.asanyarray(result['output'].dataobj) == exp)
 
-        assert func('input.nii.gz', 'output.nii.gz', submit=True) == 'submitted!'
+        assert func('input.nii.gz', 'output.nii.gz', submit=True)  == 'submitted!'
+        assert func('input.nii.gz', 'output.nii.gz', cmdonly=True) == 'cmdonly!'
 
         with pytest.raises(ValueError):
             func(img, wutils.LOAD, submit=True)
@@ -766,7 +769,7 @@ def test_fslwrapper():
         with run.dryrun():
             assert func(1, 2)[0] == expected
 
-        func(1, 2, cmdonly=True)[0] == list(shlex.split(expected))
+        assert func(1, 2, cmdonly=True) == list(shlex.split(expected))
 
 
 _test_script = textwrap.dedent("""
@@ -840,3 +843,21 @@ def test_fslwrapper_submit():
 
         assert stdout.strip() == 'test_script running: 1 2'
         assert stderr.strip() == experr
+
+
+@pytest.mark.unixtest
+def test_cmdwrapper_fileorthing_cmdonly():
+
+    test_func = wutils.fileOrImage('a')(wutils.cmdwrapper(_test_script_func))
+    newpath   = op.pathsep.join(('.', os.environ['PATH']))
+    with tempdir.tempdir(), \
+         mock.patch.dict(os.environ, {'PATH' : newpath}):
+
+        with open('test_script', 'wt') as f:
+            f.write(_test_script)
+        os.chmod('test_script', 0o755)
+
+        ran = test_func('1', '2')
+        cmd = test_func('1', '2', cmdonly=True)
+        assert ran.stdout[0].strip() == 'test_script running: 1 2'
+        assert cmd                   == ['test_script', '1', '2']
