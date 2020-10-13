@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.3.3 (Wednesday 13th October 2020)
+-----------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.fileOrImage` (and related) decorators will not manipulate the
+  return value of a decorated function if an argument ``cmdonly=True`` is
+  passed. This is so that wrapper functions will directly return the command
+  that would be executed when ``cmdonly=True``.
+
+
 3.3.2 (Tuesday 12th October 2020)
 ---------------------------------
 
