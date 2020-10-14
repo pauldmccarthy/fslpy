@@ -482,25 +482,27 @@ class FileOrThing(object):
     the dictionary.
 
 
-    **Cluster submission**
+    **Exceptions**
 
 
-    The above description holds in all situations, except when an argument
-    called ``submit`` is passed, and is set to a value which evaluates to
-    ``True``. In this case, the ``FileOrThing`` decorator will pass all
-    arguments straight through to the decorated function, and will return its
-    return value unchanged.
-
+    The above description holds in all situations, except when arguments called
+    ``submit`` and/or ``cmdonly`` are passed, and are set to values which
+    evaluate to ``True``. In this case, the ``FileOrThing`` decorator will pass
+    all arguments straight through to the decorated function, and will return
+    its return value unchanged.
 
     This is because most functions that are decorated with the
     :func:`fileOrImage` or :func:`fileOrArray` decorators will invoke a call
-    to :func:`.run.run` or :func:`.runfsl`, where a value of ``submit=True``
-    will cause the command to be executed asynchronously on a cluster
-    platform.
+    to :func:`.run.run` or :func:`.runfsl`, where:
 
+      - a value of ``submit=True`` will cause the command to be executed
+        asynchronously on a cluster platform.
+      - a value of ``cmdonly=True`` will cause the command to *not* be executed,
+        but instead the command that would have been executed is returned.
 
     A :exc:`ValueError` will be raised if the decorated function is called
-    with ``submit=True``, and with any in-memory objects or ``LOAD`` symbols.
+    with ``submit=True`` and/or ``cmdonly=True``, and with any in-memory
+    objects or ``LOAD`` symbols.
 
 
     **Example**
@@ -684,9 +686,11 @@ class FileOrThing(object):
 
         # Special case - if fsl.utils.run[fsl] is
         # being decorated (e.g. via cmdwrapper/
-        # fslwrapper), and submit=True, this call
-        # will ultimately submit the job to the
-        # cluster, and will return immediately.
+        # fslwrapper), and submit=True or
+        # cmdonly=True, this call will ultimately
+        # submit the job to the cluster, or will
+        # return the command that would have been
+        # executed, and will return immediately.
         #
         # We error if we are given any in-memory
         # things, or LOAD symbols.
@@ -694,7 +698,8 @@ class FileOrThing(object):
         # n.b. testing values to be strings could
         # interfere with the fileOrText decorator.
         # Possible solution is to use pathlib?
-        if kwargs.get('submit', False):
+        if kwargs.get('submit',  False) or \
+           kwargs.get('cmdonly', False):
             allargs = {**dict(zip(argnames, args)), **kwargs}
             for name, val in allargs.items():
                 if (name in self.__things) and \
