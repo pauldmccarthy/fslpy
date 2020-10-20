@@ -22,12 +22,13 @@ import nibabel as nib
 
 import fsl.utils.tempdir         as tempdir
 import fsl.utils.run             as run
+import fsl.utils.assertions      as asrt
 import fsl.utils.fslsub          as fslsub
 import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from .. import mockFSLDIR, cleardir, checkdir, testdir
+from .. import mockFSLDIR, cleardir, checkdir, testdir, touch
 from ..test_run import mock_submit
 
 
@@ -861,3 +862,19 @@ def test_cmdwrapper_fileorthing_cmdonly():
         cmd = test_func('1', '2', cmdonly=True)
         assert ran.stdout[0].strip() == 'test_script running: 1 2'
         assert cmd                   == ['test_script', '1', '2']
+
+
+def test_cmdwrapper_cmdonly_assert():
+
+    @wutils.cmdwrapper
+    def func():
+        asrt.assertFileExists('file')
+        return ['echo', 'hello']
+
+    with tempdir.tempdir():
+        with pytest.raises(AssertionError):
+            func()
+        touch('file')
+        assert func()[0].strip() == 'hello'
+        os.remove('file')
+        assert func(cmdonly=True) == ['echo', 'hello']

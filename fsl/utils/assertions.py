@@ -33,25 +33,32 @@ import fsl.utils.ensure         as ensure
 import fsl.data.melodicanalysis as fslma
 
 
-_DISABLE_ASSERTIONS = False
-"""
-"""
+_DISABLE_ASSERTIONS = 0
+"""Semaphore used by the :func:`disabled` context manager. """
 
 
 @contextlib.contextmanager
-def disabled():
+def disabled(disable=True):
     """Context manager which allows assertion checks to be temporarily
     disabled.
+
+    If calls to this function are nested, only one of the calls need to be made
+    with ``disable=True`` for assertions to be disabled; any other calls which
+    are part of the call stack which set ``disable=False`` will have no effect.
+
+    :arg disable: Set to ``True`` (the default) to disable assertions,
+                  or ``False`` to enable them.
     """
     global _DISABLE_ASSERTIONS
 
-    oldval              = _DISABLE_ASSERTIONS
-    _DISABLE_ASSERTIONS = True
+    if disable:
+        _DISABLE_ASSERTIONS += 1
 
     try:
         yield
     finally:
-        _DISABLE_ASSERTIONS = oldval
+        if disable:
+            _DISABLE_ASSERTIONS -= 1
 
 
 def _canDisable(func):
@@ -59,7 +66,7 @@ def _canDisable(func):
     via the :func:`disabled` context manager.
     """
     def wrapper(*args, **kwargs):
-        if not _DISABLE_ASSERTIONS:
+        if _DISABLE_ASSERTIONS == 0:
             return func(*args, **kwargs)
     return wrapper
 

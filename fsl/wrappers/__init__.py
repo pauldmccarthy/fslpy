@@ -109,3 +109,4 @@ from .misc         import (fslreorient2std, # noqa
                            slicer,
                            cluster,
                            gps)
+from .             import  tbss             # noqa

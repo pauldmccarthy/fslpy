@@ -357,3 +357,31 @@ def test_gps():
         expected = (gps + ' --ndir=128 --out=bvecs',
                     ('--optws', '--ranseed=123'))
         assert checkResult(result.stdout[0], *expected)
+
+
+def test_tbss():
+    exes = {
+        'preproc'  : 'tbss_1_preproc',
+        'reg'      : 'tbss_2_reg',
+        'postreg'  : 'tbss_3_postreg',
+        'prestats' : 'tbss_4_prestats',
+        'non_FA'   : 'tbss_non_FA',
+        'fill'     : 'tbss_fill'
+    }
+
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=exes.values()) as fsldir:
+        for k in exes:
+            exes[k] = op.join(fsldir, 'bin', exes[k])
+
+        assert fw.tbss.preproc('1', '2')[0] == ' '.join([exes['preproc'], '1', '2'])
+        assert fw.tbss.reg(T=True)[0]       == ' '.join([exes['reg'], '-T'])
+        assert fw.tbss.reg(n=True)[0]       == ' '.join([exes['reg'], '-n'])
+        assert fw.tbss.reg(t='target')[0]   == ' '.join([exes['reg'], '-t', 'target'])
+        assert fw.tbss.postreg(S=True)[0]   == ' '.join([exes['postreg'], '-S'])
+        assert fw.tbss.postreg(T=True)[0]   == ' '.join([exes['postreg'], '-T'])
+        assert fw.tbss.prestats(0.3)[0]     == ' '.join([exes['prestats'], '0.3'])
+        assert fw.tbss.non_FA('alt')[0]     == ' '.join([exes['non_FA'], 'alt'])
+        assert fw.tbss.fill('stat', 0.4, 'mean_fa', 'output', n=True).stdout[0] == \
+            ' '.join([exes['fill'], 'stat', '0.4', 'mean_fa', 'output', '-n'])

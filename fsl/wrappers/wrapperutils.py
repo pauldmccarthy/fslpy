@@ -108,10 +108,11 @@ import            six
 import nibabel as nib
 import numpy   as np
 
-import fsl.utils.run     as run
-import fsl.utils.path    as fslpath
-import fsl.utils.tempdir as tempdir
-import fsl.data.image    as fslimage
+import fsl.utils.run        as run
+import fsl.utils.assertions as asrt
+import fsl.utils.path       as fslpath
+import fsl.utils.tempdir    as tempdir
+import fsl.data.image       as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -185,7 +186,14 @@ def genxwrapper(func, runner):
         submit   = kwargs.pop('submit',   None)
         cmdonly  = kwargs.pop('cmdonly',  False)
         log      = kwargs.pop('log',      {'tee' : True})
-        cmd      = func(*args, **kwargs)
+
+        # many wrapper functions use fsl.utils.assertions
+        # statements to check that input arguments are
+        # valid. Disable these if the cmdonly argument is
+        # being used to generate a command without running
+        # it.
+        with asrt.disabled(cmdonly):
+            cmd = func(*args, **kwargs)
 
         return runner(cmd,
                       stderr=stderr,

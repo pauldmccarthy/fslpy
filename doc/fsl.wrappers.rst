@@ -15,6 +15,7 @@
    fsl.wrappers.fugue
    fsl.wrappers.melodic
    fsl.wrappers.misc
+   fsl.wrappers.tbss
    fsl.wrappers.wrapperutils
 
 .. automodule:: fsl.wrappers
