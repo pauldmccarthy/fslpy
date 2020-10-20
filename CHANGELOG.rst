@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.4.0 (Tuesday 20th October 2020)
+---------------------------------
+
+
+Added
+^^^^^
+
+
+* New :mod:`.tbss` wrapper functions for `TBSS
+  <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/TBSS>`_ commands.
+
+
+Changed
+^^^^^^^
+
+
+* Calls to functions in the :mod:`.assertions` module are disabled when a
+  wrapper function is called with ``cmdonly=True``.
+
+
 3.3.3 (Wednesday 13th October 2020)
 -----------------------------------
 
