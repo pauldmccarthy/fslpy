@@ -151,6 +151,10 @@ def run(*args, **kwargs):
                    the :func:`.fslsub.submit` function.  May also be a
                    dictionary containing arguments to that function.
 
+    :arg cmdonly:  Defaults to ``False``. If ``True``, the command is not
+                   executed, but rather is returned directly, as a list of
+                   arguments.
+
     :arg log:      Must be passed as a keyword argument.  An optional ``dict``
                    which may be used to redirect the command's standard output
                    and error. The following keys are recognised:
@@ -181,6 +185,7 @@ def run(*args, **kwargs):
     returnStderr   = kwargs.pop('stderr',   False)
     returnExitcode = kwargs.pop('exitcode', False)
     submit         = kwargs.pop('submit',   {})
+    cmdonly        = kwargs.pop('cmdonly',  False)
     log            = kwargs.pop('log',      None)
     args           = prepareArgs(args)
 
@@ -206,6 +211,9 @@ def run(*args, **kwargs):
     if submit is not None and not isinstance(submit, abc.Mapping):
         raise ValueError('submit must be a mapping containing '
                          'options for fsl.utils.fslsub.submit')
+
+    if cmdonly:
+        return args
 
     if DRY_RUN:
         return _dryrun(
