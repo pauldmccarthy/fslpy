@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 #
-# tbss.py - Wrappers for FSL command-line tools for tract based spatial statistics (TBSS).
+# tbss.py - Wrappers for FSL command-line tools for tract based spatial
+# statistics (TBSS).
 #
 # Author: Evan Edmond <eedmond@gmail.com>
 #
-"""This module contains wrapper functions for various `FSL
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_ command-line tools.
+
+"""This module contains wrapper functions for various `TBSS
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/TBSS/>`_ command-line tools.
 """
 
-import os
+
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
 @wutils.fslwrapper
-def preproc(*images, **kwargs):
+def preproc(*images):
     """Wrapper for the ``tbss_1_preproc`` command.
-    Usage: tbss_1_preproc(<image1>, <image2>, ...)
+    Usage: ``tbss_1_preproc(<image1>, <image2>, ...)``
     """
     for img in images:
         asrt.assertIsNifti(img)
-    
-    return ["tbss_1_preproc"] + images
-     
+
+    return ["tbss_1_preproc"] + list(images)
+
 
 @wutils.fslwrapper
 def reg(**kwargs):
@@ -32,7 +34,6 @@ def reg(**kwargs):
 
     valmap = {
         'T' : wutils.SHOW_IF_TRUE,
-        't' : wutils.SHOW_IF_TRUE,
         'n' : wutils.SHOW_IF_TRUE,
     }
 
@@ -40,13 +41,14 @@ def reg(**kwargs):
     cmd += wutils.applyArgStyle("-", valmap=valmap, valsep=" ", **kwargs)
 
     return cmd
-    
+
 @wutils.fslwrapper
 def postreg(**kwargs):
     """Wrapper for the ``tbss_3_postreg`` command.
-    Refer to the ``tbss_3_postreg`` command-line help for details on all arguments.
+    Refer to the ``tbss_3_postreg`` command-line help for details on all
+    arguments.
     """
-    
+
     valmap = {
         'T' : wutils.SHOW_IF_TRUE,
         'S' : wutils.SHOW_IF_TRUE,
@@ -56,22 +58,25 @@ def postreg(**kwargs):
     cmd += wutils.applyArgStyle("-", valmap=valmap, **kwargs)
 
     return cmd
-    
+
+
 @wutils.fslwrapper
-def prestats(threshold, **kwargs):
+def prestats(threshold):
     """Wrapper for the ``tbss_4_prestats`` command.
     The normal recommendation for <threshold> is 0.2
     """
-    
-    return ["tbss_4_prestats", threshold]
+
+    return ["tbss_4_prestats", f'{threshold}']
+
 
 @wutils.fslwrapper
-def non_FA(alt_img_root, **kwargs):
+def non_FA(alt_img_root):
     """Wrapper for the ``tbss_non_FA`` command.
-    e.g.: tbss_non_FA("L2")
+    e.g.: ``tbss_non_FA("L2")``
     """
-    
+
     return ["tbss_non_FA", alt_img_root]
+
 
 @wutils.fileOrImage("stats_image", "mean_FA", "output")
 @wutils.fslwrapper
@@ -82,9 +87,8 @@ def fill(stats_image, threshold, mean_FA, output, **kwargs):
     valmap = {
         'n' : wutils.SHOW_IF_TRUE,
     }
-    
-    cmd = ["tbss_fill", stats_image, threshold, mean_FA, output]
-    cmd += wutils.applyArgStyle("-", valmap=valmap, **kwargs)
-    
-    return cmd
 
+    cmd = ["tbss_fill", stats_image, f'{threshold}', mean_FA, output]
+    cmd += wutils.applyArgStyle("-", valmap=valmap, **kwargs)
+
+    return cmd
