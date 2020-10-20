@@ -149,46 +149,73 @@ def _unwrap(func):
     return func
 
 
-def cmdwrapper(func):
-    """This decorator can be used on functions which generate a command line.
-    It will pass the return value of the function to the
-    :func:`fsl.utils.run.run` function in a standardised manner.
+def genxwrapper(func, runner):
+    """This function is used by :func:`cmdwrapper` and :func:`fslwrapper`.
+    It is not intended to be used in any other circumstances.
+
+    This function generates a wrapper function which calls ``func`` to
+    generate a command-line call, and then uses ``runner`` to invoke that
+    command.
+
+    ``func`` is assumed to be a wrapper function which generates a command-
+    line. ``runner`` is assumed to be Either :func:`.run.run` or
+    :func:`.run.runfsl`.
+
+    The generated wrapper function will pass all of its arguments to ``func``,
+    and will then pass the generated command-line to ``runner``, returning
+    whatever is returned.
+
+    The following keyword arguments will be intercepted by the wrapper
+    function, and will *not* be passed to ``func``:
+      - ``stdout``:   Passed to ``runner``. Defaults to ``True``.
+      - ``stderr``:   Passed to ``runner``. Defaults to ``True``.
+      - ``exitcode``: Passed to ``runner``. Defaults to ``False``.
+      - ``submit``:   Passed to ``runner``. Defaults to ``None``.
+      - ``log``:      Passed to ``runner``. Defaults to ``{'tee':True}``.
+      - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
+
+    :arg func:   A function which generates a command line.
+    :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
     """
+
     def wrapper(*args, **kwargs):
         stdout   = kwargs.pop('stdout',   True)
         stderr   = kwargs.pop('stderr',   True)
         exitcode = kwargs.pop('exitcode', False)
         submit   = kwargs.pop('submit',   None)
+        cmdonly  = kwargs.pop('cmdonly',  False)
         log      = kwargs.pop('log',      {'tee' : True})
         cmd      = func(*args, **kwargs)
-        return run.run(cmd,
-                       stderr=stderr,
-                       log=log,
-                       submit=submit,
-                       stdout=stdout,
-                       exitcode=exitcode)
+
+        return runner(cmd,
+                      stderr=stderr,
+                      log=log,
+                      submit=submit,
+                      cmdonly=cmdonly,
+                      stdout=stdout,
+                      exitcode=exitcode)
+
     return _update_wrapper(wrapper, func)
+
+
+def cmdwrapper(func):
+    """This decorator can be used on functions which generate a command line.
+    It will pass the return value of the function to the
+    :func:`fsl.utils.run.run` function in a standardised manner.
+
+    See the :func:`genxwrapper` function for details.
+    """
+    return genxwrapper(func, run.run)
 
 
 def fslwrapper(func):
     """This decorator can be used on functions which generate a FSL command
     line. It will pass the return value of the function to the
     :func:`fsl.utils.run.runfsl` function in a standardised manner.
+
+    See the :func:`genxwrapper` function for details.
     """
-    def wrapper(*args, **kwargs):
-        stdout   = kwargs.pop('stdout',   True)
-        stderr   = kwargs.pop('stderr',   True)
-        exitcode = kwargs.pop('exitcode', False)
-        submit   = kwargs.pop('submit',   None)
-        log      = kwargs.pop('log',      {'tee' : True})
-        cmd      = func(*args, **kwargs)
-        return run.runfsl(cmd,
-                          stderr=stderr,
-                          log=log,
-                          submit=submit,
-                          stdout=stdout,
-                          exitcode=exitcode)
-    return _update_wrapper(wrapper, func)
+    return genxwrapper(func, run.runfsl)
 
 
 SHOW_IF_TRUE = object()
@@ -455,25 +482,27 @@ class FileOrThing(object):
     the dictionary.
 
 
-    **Cluster submission**
+    **Exceptions**
 
 
-    The above description holds in all situations, except when an argument
-    called ``submit`` is passed, and is set to a value which evaluates to
-    ``True``. In this case, the ``FileOrThing`` decorator will pass all
-    arguments straight through to the decorated function, and will return its
-    return value unchanged.
-
+    The above description holds in all situations, except when arguments called
+    ``submit`` and/or ``cmdonly`` are passed, and are set to values which
+    evaluate to ``True``. In this case, the ``FileOrThing`` decorator will pass
+    all arguments straight through to the decorated function, and will return
+    its return value unchanged.
 
     This is because most functions that are decorated with the
     :func:`fileOrImage` or :func:`fileOrArray` decorators will invoke a call
-    to :func:`.run.run` or :func:`.runfsl`, where a value of ``submit=True``
-    will cause the command to be executed asynchronously on a cluster
-    platform.
+    to :func:`.run.run` or :func:`.runfsl`, where:
 
+      - a value of ``submit=True`` will cause the command to be executed
+        asynchronously on a cluster platform.
+      - a value of ``cmdonly=True`` will cause the command to *not* be executed,
+        but instead the command that would have been executed is returned.
 
     A :exc:`ValueError` will be raised if the decorated function is called
-    with ``submit=True``, and with any in-memory objects or ``LOAD`` symbols.
+    with ``submit=True`` and/or ``cmdonly=True``, and with any in-memory
+    objects or ``LOAD`` symbols.
 
 
     **Example**
@@ -657,9 +686,11 @@ class FileOrThing(object):
 
         # Special case - if fsl.utils.run[fsl] is
         # being decorated (e.g. via cmdwrapper/
-        # fslwrapper), and submit=True, this call
-        # will ultimately submit the job to the
-        # cluster, and will return immediately.
+        # fslwrapper), and submit=True or
+        # cmdonly=True, this call will ultimately
+        # submit the job to the cluster, or will
+        # return the command that would have been
+        # executed, and will return immediately.
         #
         # We error if we are given any in-memory
         # things, or LOAD symbols.
@@ -667,7 +698,8 @@ class FileOrThing(object):
         # n.b. testing values to be strings could
         # interfere with the fileOrText decorator.
         # Possible solution is to use pathlib?
-        if kwargs.get('submit', False):
+        if kwargs.get('submit',  False) or \
+           kwargs.get('cmdonly', False):
             allargs = {**dict(zip(argnames, args)), **kwargs}
             for name, val in allargs.items():
                 if (name in self.__things) and \
