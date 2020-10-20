@@ -39,14 +39,17 @@ _DISABLE_ASSERTIONS = False
 
 
 @contextlib.contextmanager
-def disabled():
+def disabled(disable=True):
     """Context manager which allows assertion checks to be temporarily
     disabled.
+
+    :arg disable: Set to ``True`` (the default) to disable assertions,
+                  or ``False`` to enable them.
     """
     global _DISABLE_ASSERTIONS
 
     oldval              = _DISABLE_ASSERTIONS
-    _DISABLE_ASSERTIONS = True
+    _DISABLE_ASSERTIONS = disable
 
     try:
         yield
