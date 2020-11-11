@@ -207,8 +207,8 @@ and simply update the FileTree:
     {subject}
         [ses-{session}]
             T1w.nii.gz
-            T1w_brain.nii.gz (bed_output)
-            T1w_brain_mask.nii.gz (bed_mask)
+            T1w_brain.nii.gz (bet_output)
+            T1w_brain_mask.nii.gz (bet_mask)
 
 Note the square brackets around the session sub-directory. This indicates that this sub-directory is optional and
 will only be present if the "session" variable is defined (see `Optional variables`_).
