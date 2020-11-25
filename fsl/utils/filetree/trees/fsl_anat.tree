@@ -1,0 +1,38 @@
+{basename} (basename)
+{basename}.anat (fsl_anat_dir)
+    lesionmaskinv.nii.gz
+    lesionmask.nii.gz
+    log.txt
+    MNI152_T1_2mm_brain_mask_dil1.nii.gz
+    MNI_to_T1_nonlin_field.nii.gz
+    T1_biascorr.nii.gz
+    T1_fast_bias_idxmask.nii.gz
+    T1_fast_bias_init.nii.gz
+    T1_fast_bias.nii.gz
+    T1_fast_bias_vol2.nii.gz
+    T1_fast_bias_vol32.nii.gz
+    T1_fast_restore.nii.gz
+    T1_fast_seg.nii.gz
+    T1_fast_totbias.nii.gz
+    T1_fullfov.nii.gz
+    T1_initfast2_brain_mask2.nii.gz
+    T1_initfast2_brain_mask.nii.gz
+    T1_initfast2_brain.nii.gz
+    T1_initfast2_maskedrestore.nii.gz
+    T1_initfast2_restore.nii.gz
+    T1.nii.gz
+    T1_nonroi2roi.mat
+    T1_orig2roi.mat
+    T1_orig2std.mat
+    T1_orig.nii.gz
+    T1_roi2nonroi.mat
+    T1_roi2orig.mat
+    T1_roi.log
+    T1_std2orig.mat
+    T1_to_MNI_lin.mat (T1_to_MNI_lin_mat)
+    T1_to_MNI_lin.nii.gz (T1_to_MNI_lin_nii)
+    T1_to_MNI_nonlin_coeff.nii.gz
+    T1_to_MNI_nonlin_field.nii.gz
+    T1_to_MNI_nonlin_jac.nii.gz
+    T1_to_MNI_nonlin.nii.gz (T1_to_MNI_nonlin_nii)
+    T1_to_MNI_nonlin.txt (T1_to_MNI_nonlin_txt)
