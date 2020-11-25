@@ -1,3 +1,4 @@
+basename = fsl_anat
 {basename} (basename)
 {basename}.anat (fsl_anat_dir)
     lesionmaskinv.nii.gz
