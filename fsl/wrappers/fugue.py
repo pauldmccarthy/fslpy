@@ -86,9 +86,11 @@ def prelude(**kwargs):
 
 @wutils.fileOrImage('phase_image', 'magnitude_image', 'out_image')
 @wutils.fslwrapper
-def fsl_prepare_fieldmap(scanner, phase_image, magnitude_image, out_image, deltaTE, **kwargs):
-    """Wrapper for the ``fsl_prepare_fieldmap`` command."""
-        
+def fsl_prepare_fieldmap(phase_image, magnitude_image, out_image, deltaTE, scanner=None, **kwargs):
+    """Wrapper for the ``fsl_prepare_fieldmap`` command. <scanner> defaults to 'SIEMENS'"""
+    if scanner is None:
+        scanner = 'SIEMENS'
+    
     valmap = {
         'nocheck' : wutils.SHOW_IF_TRUE,
     }

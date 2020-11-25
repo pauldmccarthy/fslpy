@@ -389,8 +389,7 @@ def test_tbss():
 def test_fsl_prepare_fieldmap():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_prepare_fieldmap',)) as fsldir:
         fpf = op.join(fsldir, 'bin', 'fsl_prepare_fieldmap')
-        result   = fw.fsl_prepare_fieldmap(scanner='SIEMENS', 
-                                                 phase_image='ph', 
+        result   = fw.fsl_prepare_fieldmap(phase_image='ph', 
                                                  magnitude_image='mag', 
                                                  out_image='out', 
                                                  deltaTE=2.46, 
