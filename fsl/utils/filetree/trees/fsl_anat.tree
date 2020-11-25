@@ -1,0 +1,48 @@
+struct = T1
+basename = fsl_anat
+{basename} (basename)
+{basename}.anat (fsl_anat_dir)
+    lesionmaskinv.nii.gz
+    lesionmask.nii.gz
+    log.txt
+    MNI152_{struct}_2mm_brain_mask_dil1.nii.gz
+    MNI_to_{struct}_nonlin_field.nii.gz
+    {struct}2std_skullcon.mat
+    {struct}_biascorr_bet_skull.nii.gz (biascorr_bet_skull)
+    {struct}_biascorr_brain_mask.nii.gz (biascorr_brain_mask)
+    {struct}_biascorr_brain.nii.gz (biascorr_brain)
+    {struct}_biascorr.nii.gz (biascorr)
+    {struct}_fast_bias_idxmask.nii.gz
+    {struct}_fast_bias_init.nii.gz
+    {struct}_fast_bias.nii.gz
+    {struct}_fast_bias_vol2.nii.gz
+    {struct}_fast_bias_vol32.nii.gz
+    {struct}_fast_restore.nii.gz
+    {struct}_fast_seg.nii.gz (fast_seg)
+    {struct}_fast_pve_0.nii.gz
+    {struct}_fast_pve_1.nii.gz
+    {struct}_fast_pve_2.nii.gz
+    {struct}_fast_pveseg.nii.gz (fast_pveseg)
+    {struct}_fast_totbias.nii.gz
+    {struct}_fullfov.nii.gz
+    {struct}_initfast2_brain_mask2.nii.gz
+    {struct}_initfast2_brain_mask.nii.gz
+    {struct}_initfast2_brain.nii.gz
+    {struct}_initfast2_maskedrestore.nii.gz
+    {struct}_initfast2_restore.nii.gz
+    {struct}.nii.gz
+    {struct}_nonroi2roi.mat
+    {struct}_orig2roi.mat
+    {struct}_orig2std.mat
+    {struct}_orig.nii.gz
+    {struct}_roi2nonroi.mat
+    {struct}_roi2orig.mat
+    {struct}_roi.log
+    {struct}_std2orig.mat
+    {struct}_to_MNI_lin.mat (MNI_lin_mat)
+    {struct}_to_MNI_lin.nii.gz (MNI_lin_nii)
+    {struct}_to_MNI_nonlin_coeff.nii.gz
+    {struct}_to_MNI_nonlin_field.nii.gz
+    {struct}_to_MNI_nonlin_jac.nii.gz
+    {struct}_to_MNI_nonlin.nii.gz (MNI_nonlin_nii)
+    {struct}_to_MNI_nonlin.txt (MNI_nonlin_txt)
