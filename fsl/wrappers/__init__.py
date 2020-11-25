@@ -101,7 +101,8 @@ from .fslmaths     import (fslmaths,)       # noqa
 from .fslstats     import (fslstats,)       # noqa
 from .fugue        import (fugue,           # noqa
                            prelude,
-                           sigloss)
+                           sigloss,
+                           fsl_prepare_fieldmap)
 from .melodic      import (melodic,         # noqa
                            fsl_regfilt)
 from .misc         import (fslreorient2std, # noqa

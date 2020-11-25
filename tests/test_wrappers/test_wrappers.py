@@ -385,3 +385,15 @@ def test_tbss():
         assert fw.tbss.non_FA('alt')[0]     == ' '.join([exes['non_FA'], 'alt'])
         assert fw.tbss.fill('stat', 0.4, 'mean_fa', 'output', n=True).stdout[0] == \
             ' '.join([exes['fill'], 'stat', '0.4', 'mean_fa', 'output', '-n'])
+
+def test_fsl_prepare_fieldmap():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_prepare_fieldmap',)) as fsldir:
+        fpf = op.join(fsldir, 'bin', 'fsl_prepare_fieldmap')
+        result   = fw.fsl_prepare_fieldmap(scanner='SIEMENS', 
+                                                 phase_image='ph', 
+                                                 magnitude_image='mag', 
+                                                 out_image='out', 
+                                                 deltaTE=2.46, 
+                                                 nocheck=True)
+        expected = (fpf, ('SIEMENS', 'ph', 'mag', 'out', '2.46', '--nocheck'))
+        assert checkResult(result.stdout[0], *expected)

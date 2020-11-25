@@ -83,3 +83,17 @@ def prelude(**kwargs):
                                              **kwargs)
 
     return cmd
+
+@wutils.fileOrImage('phase_image', 'magnitude_image', 'out_image')
+@wutils.fslwrapper
+def fsl_prepare_fieldmap(scanner, phase_image, magnitude_image, out_image, deltaTE, **kwargs):
+    """Wrapper for the ``fsl_prepare_fieldmap`` command."""
+        
+    valmap = {
+        'nocheck' : wutils.SHOW_IF_TRUE,
+    }
+    
+    cmd = ['fsl_prepare_fieldmap', scanner, phase_image, magnitude_image, out_image, str(deltaTE)]
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+
+    return cmd
