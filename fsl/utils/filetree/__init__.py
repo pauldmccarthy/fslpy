@@ -177,7 +177,7 @@ which amongst others refers to
 
 Example pipeline
 ----------------
-A very simple pipeline to run BET on every subject can start with a simply FileTree like
+A very simple pipeline to run BET on every subject can start with a FileTree like
 ::
 
     {subject}
@@ -199,6 +199,12 @@ Assuming that the input T1w's already exist, we can then simply run BET for ever
         # get retrieves the filenames based on the current set of variables
         # make_dir=True ensures that the output directory containing the "bet_output" actually exists
         bet(input=T1w_tree.get('T1w'), output=T1w_tree.get('bet_output', make_dir=True), mask=True)
+
+Useful tips
+-----------
+
+Changing directory structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If later on in our input files change, because for some subjects we added a second session, we could keep our script
 and simply update the FileTree:
@@ -246,6 +252,9 @@ even though we don't explicitly reference these in the script.
 The reason for this is that each directory and filename template must have a unique short name and
 in this case the default short names (respectively, "{subject}" and "[ses-{session}]") would not have been unique.
 
+Output "basenames"
+^^^^^^^^^^^^^^^^^^
+
 Some tools like FSL's FAST produce many output files. Rather than entering all
 of these files in our FileTree by hand you can include them all at once by including `Sub-trees`_:
 
@@ -276,6 +285,35 @@ Within the script we can generate the fast output by running
 The output files will be available as `T1w_tree.get('segment/<variable name>')`, where `<variable name>` is one
 of the short variable names defined in the
 `FAST FileTree <https://git.fmrib.ox.ac.uk/fsl/fslpy/blob/master/fsl/utils/filetree/trees/fast.tree>`_.
+
+Running a pipeline on a subset of participants/sessions/runs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Suppose you want to run your pipeline on a subset of your data while testing. 
+You may want to do this if your data has a a hierarchy of variables (e.g. participant, session, run) as in the example below.
+
+::
+
+    sub-001
+        ses-01
+            sub-001_ses-01_run-1.feat
+            sub-001_ses-01_run-2.feat
+        ses-02
+            sub-{participant}_ses-{session}_run-{run}.feat (feat_dir)
+            ...
+    sub-002
+    sub-003
+    ...
+
+You can update the FileTree with one or more variables before calling `get_all_trees` as follows:
+
+.. code-block:: python
+
+    for participant in ("001", "002"):
+        for t in tree.update(participant=participant, run="1").get_all_trees("feat_dir", glob_vars="all"):
+            my_pipeline(t)
+
+This code will iterate over all sessions that have a run="1" for participants "001" and "002".
 """
 
 __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'
