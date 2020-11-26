@@ -309,7 +309,7 @@ You can update the FileTree with one or more variables before calling `get_all_t
 
 .. code-block:: python
 
-    for t in tree.update(participant=('001', '002'), run=("1")).get_all_trees("feat_dir"):
+    for t in tree.update(participant=("001", "002"), run=("1")).get_all_trees("feat_dir"):
         my_pipeline(t)
 
 """
