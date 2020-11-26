@@ -309,9 +309,11 @@ You can update the FileTree with one or more variables before calling `get_all_t
 
 .. code-block:: python
 
-    for t in tree.update(participant=("001", "002"), run=("1")).get_all_trees("feat_dir"):
-        my_pipeline(t)
+    for participant in ("001", "002"):
+        for t in tree.update(participant=participant, run="1").get_all_trees("feat_dir", glob_vars="all"):
+            my_pipeline(t)
 
+This code will iterate over all sessions that have a run="1" for participants "001" and "002".
 """
 
 __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'
