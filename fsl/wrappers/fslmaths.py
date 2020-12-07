@@ -105,6 +105,11 @@ class fslmaths(object):
             self.__args.append("-dilF")
         return self
 
+    def smooth(self, sigma):
+        """Spatial smoothing - mean filtering using a gauss kernel of sigma mm"""
+        self.__args.extend(("-s", sigma))
+        return self
+
     def add(self, image):
         """Add input to current image."""
         self.__args.extend(("-add", image))

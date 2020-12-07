@@ -290,14 +290,15 @@ def test_fslmaths():
             .abs().bin().binv().recip().Tmean().Tstd().Tmin().Tmax() \
             .fillh().ero().dilM().dilF().add('addim').sub('subim') \
             .mul('mulim').div('divim').mas('masim').rem('remim')   \
-            .thr('thrim').uthr('uthrim').inm('inmim').bptf(1, 10).run('output')
+            .thr('thrim').uthr('uthrim').inm('inmim').bptf(1, 10) \
+            .smooth(sigma=6).run('output')
 
         expected = [cmd, 'input',
                     '-abs', '-bin', '-binv', '-recip', '-Tmean', '-Tstd',
                     '-Tmin', '-Tmax', '-fillh', '-ero', '-dilM', '-dilF',
                     '-add addim', '-sub subim', '-mul mulim', '-div divim',
                     '-mas masim', '-rem remim', '-thr thrim', '-uthr uthrim',
-                    '-inm inmim', '-bptf 1 10', 'output']
+                    '-inm inmim', '-bptf 1 10', '-s 6', 'output']
         expected = ' '.join(expected)
 
         assert result.stdout[0] == expected
