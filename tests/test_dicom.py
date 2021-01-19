@@ -29,10 +29,10 @@ pytestmark = pytest.mark.dicomtest
 
 
 @contextlib.contextmanager
-def install_dcm2niix(version='1.0.20190902'):
+def install_dcm2niix(version='1.0.20201102'):
     filenames = {
+        '1.0.20201102' : 'v1.0.20201102/dcm2niix_lnx.zip',
         '1.0.20190902' : 'v1.0.20190902/dcm2niix_lnx.zip',
-        '1.0.20190410' : 'v1.0.20190410/dcm2niix_11-Apr-2019_lnx.zip',
         '1.0.20181125' : 'v1.0.20181125/dcm2niix_25-Nov-2018_lnx.zip',
         '1.0.20171017' : 'v1.0.20171017/dcm2niix_18-Oct-2017_lnx.zip',
     }
@@ -128,8 +128,9 @@ def test_scanDir():
         assert len(series) == 2
 
         for s in series:
-            assert (s['PatientName'] == 'MCCARTHY_PAUL' or
-                    s['PatientName'] == 'MCCARTHY_PAUL_2')
+            assert s['PatientName'] in ('MCCARTHY_PAUL',
+                                        'MCCARTHY^PAUL',
+                                        'MCCARTHY_PAUL_2')
 
 
 def test_sersiesCRC():
@@ -158,7 +159,7 @@ def test_sersiesCRC():
 def test_loadSeries():
 
     # test a pre-CRC and a post-CRC version
-    for version in ('1.0.20190410', '1.0.20190902'):
+    for version in ('1.0.20181125', '1.0.20201102'):
 
         with install_dcm2niix(version):
 
@@ -170,23 +171,23 @@ def test_loadSeries():
             dcmdir   = os.getcwd()
             series   = fsldcm.scanDir(dcmdir)
             expShape = (512, 512, 1)
-            explens  = [1, 1]
 
-            for s, explen in zip(series, explens):
+            for s in series:
 
                 imgs = fsldcm.loadSeries(s)
-
-                assert len(imgs) == explen
 
                 for img in imgs:
 
                     assert img.dicomDir               == dcmdir
                     assert img.shape                  == expShape
                     assert img[:].shape               == expShape
-                    assert img.getMeta('PatientName') == 'MCCARTHY_PAUL' or \
-                           img.getMeta('PatientName') == 'MCCARTHY_PAUL_2'
+                    assert img.getMeta('PatientName') in ('MCCARTHY_PAUL',
+                                                          'MCCARTHY^PAUL',
+                                                          'MCCARTHY_PAUL_2')
                     assert 'PatientName'                      in img.metaKeys()
                     assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
+                           'MCCARTHY^PAUL'                    in img.metaValues() or \
                            'MCCARTHY_PAUL_2'                  in img.metaValues()
                     assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
+                           ('PatientName', 'MCCARTHY^PAUL')   in img.metaItems() or \
                            ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems()

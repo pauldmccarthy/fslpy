@@ -2,6 +2,29 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.5.0 (Tuesday 19th January 2021)
+---------------------------------
+
+
+Added
+^^^^^
+
+
+* New ``fsl_anat.tree``, for use with the :mod:`.filetree` package (!264).
+* New :func:`.fsl_prepare_fieldmap` wrapper function (!265).
+* The :class:`.fslmaths` wrapper now supports the ``fslmaths -s`` option
+  via the :meth:`.fslmaths.smooth` method (!271).
+
+
+Fixed
+^^^^^
+
+
+* Windows/WSL-specific workaround to the :func:`fsl.utils.run.run` function to
+  avoid console windows from popping up, when used from a graphical program
+  (!272).
+
+
 3.4.0 (Tuesday 20th October 2020)
 ---------------------------------
 

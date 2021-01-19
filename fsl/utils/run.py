@@ -286,6 +286,12 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
                       - the command's standard error as a string.
                       - the command's exit code.
     """
+    if fslplatform.fslwsl:
+        # On Windows this prevents opening of a popup window
+        startupinfo = sp.STARTUPINFO()
+        startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+        kwargs["startupinfo"] = startupinfo
+
     proc = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, **kwargs)
     with tempdir.tempdir(changeto=False) as td:
 
@@ -403,7 +409,7 @@ def wslcmd(cmdpath, *args):
     # Check if command exists in WSL (remembering that the command path may include FSLDIR which
     # is a Windows path)
     cmdpath = fslpath.wslpath(cmdpath)
-    retcode = sp.call(["wsl", "test", "-x", cmdpath])
+    _stdout, _stderr, retcode = _realrun(False, None, None, None, "wsl", "test", "-x", cmdpath)
     if retcode == 0:
         # Form a new argument list and convert any Windows paths in it into WSL paths
         wslargs = [fslpath.wslpath(arg) for arg in args]
