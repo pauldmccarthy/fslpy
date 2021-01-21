@@ -240,9 +240,10 @@ def test_loadSettings():
 
     with tests.testdir() as testdir:
         featdir = op.join(testdir, 'analysis.feat')
-        tests.make_dummy_file(op.join(featdir, 'design.fsf'), contents)
-        result = featanalysis.loadSettings(featdir)
-        assert result == expected
+        designfsf = op.join(featdir, 'design.fsf')
+        tests.make_dummy_file(designfsf, contents)
+        assert featanalysis.loadSettings(featdir) == expected
+        assert featanalysis.loadFsf(designfsf) == expected
 
 
 def test_loadDesign():
