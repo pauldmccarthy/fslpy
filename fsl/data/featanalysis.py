@@ -215,19 +215,16 @@ def loadContrasts(featdir):
 
     return names, contrasts
 
+def loadFsf(designfsf):
+    """Loads the analysis settings from a text file (.fsf) used to configure FEAT.
 
-def loadSettings(featdir):
-    """Loads the analysis settings from a FEAT directory.
+    Returns a dict containing the settings specified in the file
 
-    Returns a dict containing the settings specified in the ``design.fsf``
-    file within the directory
-
-    :arg featdir: A FEAT directory.
+    :arg designfsf: A .fsf file.
     """
-
+    
     settings  = collections.OrderedDict()
-    designfsf = op.join(featdir, 'design.fsf')
-
+    
     log.debug('Loading FEAT settings from {}'.format(designfsf))
 
     with open(designfsf, 'rt') as f:
@@ -249,6 +246,19 @@ def loadSettings(featdir):
             settings[key] = val
 
     return settings
+
+def loadSettings(featdir):
+    """Loads the analysis settings from a FEAT directory.
+
+    Returns a dict containing the settings specified in the ``design.fsf``
+    file within the directory
+
+    :arg featdir: A FEAT directory.
+    """
+    
+    designfsf = op.join(featdir, 'design.fsf')
+    
+    return loadFsf(designfsf)
 
 
 def loadDesign(featdir, settings):
