@@ -130,7 +130,8 @@ def test_scanDir():
         for s in series:
             assert s['PatientName'] in ('MCCARTHY_PAUL',
                                         'MCCARTHY^PAUL',
-                                        'MCCARTHY_PAUL_2')
+                                        'MCCARTHY_PAUL_2',
+                                        'MCCARTHY^PAUL^2')
 
 
 def test_sersiesCRC():
@@ -183,11 +184,13 @@ def test_loadSeries():
                     assert img[:].shape               == expShape
                     assert img.getMeta('PatientName') in ('MCCARTHY_PAUL',
                                                           'MCCARTHY^PAUL',
-                                                          'MCCARTHY_PAUL_2')
+                                                          'MCCARTHY_PAUL_2',
+                                                          'MCCARTHY^PAUL^2')
                     assert 'PatientName'                      in img.metaKeys()
                     assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
                            'MCCARTHY^PAUL'                    in img.metaValues() or \
                            'MCCARTHY_PAUL_2'                  in img.metaValues()
                     assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
                            ('PatientName', 'MCCARTHY^PAUL')   in img.metaItems() or \
-                           ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems()
+                           ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems() or \
+                           ('PatientName', 'MCCARTHY^PAUL^2') in img.metaItems()
