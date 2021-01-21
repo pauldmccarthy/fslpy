@@ -22,6 +22,7 @@ following functions are provided:
    isFirstLevelAnalysis
    loadDesign
    loadContrasts
+   loadFsf
    loadSettings
    getThresholds
    loadClusterResults
@@ -215,16 +216,18 @@ def loadContrasts(featdir):
 
     return names, contrasts
 
+
 def loadFsf(designfsf):
-    """Loads the analysis settings from a text file (.fsf) used to configure FEAT.
+    """Loads the analysis settings from a text file (.fsf) used to configure
+    FEAT.
 
     Returns a dict containing the settings specified in the file
 
     :arg designfsf: A .fsf file.
     """
-    
+
     settings  = collections.OrderedDict()
-    
+
     log.debug('Loading FEAT settings from {}'.format(designfsf))
 
     with open(designfsf, 'rt') as f:
@@ -247,6 +250,7 @@ def loadFsf(designfsf):
 
     return settings
 
+
 def loadSettings(featdir):
     """Loads the analysis settings from a FEAT directory.
 
@@ -255,9 +259,9 @@ def loadSettings(featdir):
 
     :arg featdir: A FEAT directory.
     """
-    
+
     designfsf = op.join(featdir, 'design.fsf')
-    
+
     return loadFsf(designfsf)
 
 

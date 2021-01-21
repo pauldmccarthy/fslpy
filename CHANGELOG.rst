@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.5.1 (Thursday 21st January 2021)
+----------------------------------
+
+
+Added
+^^^^^
+
+
+* New :func:`.featanalysis.loadFsf` function, for loading arbitrary ``.fsf``
+  files (!276).
+
+
+Fixed
+^^^^^
+
+
+* Adjustments to :mod:`.dicom` tests to work with different versions of
+  ``dcm2niix`` (!277).
+
+
 3.5.0 (Wednesday 20th January 2021)
 -----------------------------------
 
