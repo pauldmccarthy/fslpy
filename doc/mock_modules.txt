@@ -9,3 +9,4 @@ numpy.linalg
 scipy
 scipy.ndimage
 scipy.ndimage.interpolation
+six
