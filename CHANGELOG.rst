@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.5.2 (Friday 29th January 2021)
+---------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Adjusted the :func:`.dicom.scanDir` function so that it will set a
+  default value for ``SeriesDescription`` if it is not present in the
+  ``dcm2niix`` ``json`` output.
+* Fixed some issues with API documentation generation.
+
+
 3.5.1 (Thursday 21st January 2021)
 ----------------------------------
 

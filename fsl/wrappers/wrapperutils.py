@@ -168,6 +168,7 @@ def genxwrapper(func, runner):
 
     The following keyword arguments will be intercepted by the wrapper
     function, and will *not* be passed to ``func``:
+
       - ``stdout``:   Passed to ``runner``. Defaults to ``True``.
       - ``stderr``:   Passed to ``runner``. Defaults to ``True``.
       - ``exitcode``: Passed to ``runner``. Defaults to ``False``.
