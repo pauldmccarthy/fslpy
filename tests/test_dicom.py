@@ -189,7 +189,8 @@ def test_loadSeries():
                     assert 'PatientName'                      in img.metaKeys()
                     assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
                            'MCCARTHY^PAUL'                    in img.metaValues() or \
-                           'MCCARTHY_PAUL_2'                  in img.metaValues()
+                           'MCCARTHY_PAUL_2'                  in img.metaValues() or \
+                           'MCCARTHY^PAUL^2'                  in img.metaValues()
                     assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
                            ('PatientName', 'MCCARTHY^PAUL')   in img.metaItems() or \
                            ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems() or \

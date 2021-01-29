@@ -194,6 +194,10 @@ def scanDir(dcmdir):
             with open(fn, 'rt') as f:
                 meta             = json.load(f)
                 meta['DicomDir'] = dcmdir
+                # SeriesDescription is not
+                # guaranteed to be present
+                if 'SeriesDescription' not in meta:
+                    meta['SeriesDescription'] = meta['SeriesNumber']
                 series.append(meta)
 
     # sort by series number
