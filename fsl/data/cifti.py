@@ -343,7 +343,7 @@ class BrainStructure(object):
 
         :param primary: Name of the brain structure (e.g. cortex, thalamus)
         :param secondary: Further specification of which part of the brain structure is described (e.g. 'white' or
-        'pial' for the cortex)
+                          'pial' for the cortex)
         :param hemisphere: which hemisphere is the brain structure in ('left', 'right', or 'both')
         :param geometry: does the parent object describe the 'volume' or the 'surface'
         """
@@ -490,4 +490,3 @@ def load(filename, mask_values=(0, np.nan), writable=False) -> Union[DenseCifti,
     if writable:
         raise ValueError("Can not open NIFTI file in writable mode")
     return Cifti.from_image(vol_img, mask_values)
-
