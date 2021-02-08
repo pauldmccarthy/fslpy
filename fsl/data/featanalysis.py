@@ -484,9 +484,9 @@ def loadClusterResults(featdir, settings, contrast):
         zcog    = affine.transform([zcog],    coordXform)[0].round()
         copemax = affine.transform([copemax], coordXform)[0].round()
 
-        c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
-        c.zcogx,   c.zcogy,    c.zcogz    = zcog
-        c.copemax, c.copemaxy, c.copemaxz = copemax
+        c.zmaxx,    c.zmaxy,    c.zmaxz    = zmax
+        c.zcogx,    c.zcogy,    c.zcogz    = zcog
+        c.copemaxx, c.copemaxy, c.copemaxz = copemax
 
     return clusters
 
