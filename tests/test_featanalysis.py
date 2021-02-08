@@ -301,14 +301,15 @@ def test_loadClusterResults():
 
         with tests.testdir() as testdir:
 
-            # For higher level analyses, the
-            # loadClusterResults function peeks
-            # at the FEAT input data file
-            # header, so we have to generate it.
+            # work from a copy of the test data directory
             newfeatdir = op.join(testdir, 'analysis.feat')
             shutil.copytree(op.join(datadir, featdir), newfeatdir)
             featdir = newfeatdir
 
+            # For higher level analyses, the
+            # loadClusterResults function peeks
+            # at the FEAT input data file
+            # header, so we have to generate it.
             if not firstlevel:
                 datafile = op.join(featdir, 'filtered_func_data.nii.gz')
                 data  = np.random.randint(1, 10, (91, 109, 91))
@@ -332,6 +333,35 @@ def test_loadClusterResults():
                     os.remove(clustfile)
                 assert featanalysis.loadClusterResults(
                     featdir, settings, 0) is None
+
+    # The above loop just checks that the number of
+    # clusters loaded for each analysis was correct.
+    # Below we check that the cluster data was loaded
+    # correctly, just for one analysis
+    featdir  = op.join(datadir, '1stlevel_1.feat')
+    settings = featanalysis.loadSettings(featdir)
+    cluster  = featanalysis.loadClusterResults(featdir, settings, 0)[0]
+    expected = {
+        'index'    : 1,
+        'nvoxels'  : 296,
+        'p'        : 1.79e-27,
+        'logp'     : 26.7,
+        'zmax'     : 6.03,
+        'zmaxx'    : 34,
+        'zmaxy'    : 10,
+        'zmaxz'    : 1,
+        'zcogx'    : 31.4,
+        'zcogy'    : 12.3,
+        'zcogz'    : 1.72,
+        'copemax'  : 612,
+        'copemaxx' : 34,
+        'copemaxy' : 10,
+        'copemaxz' : 1,
+        'copemean' : 143
+    }
+
+    for k, v in expected.items():
+        assert np.isclose(v, getattr(cluster, k))
 
 
 def test_getDataFile():
