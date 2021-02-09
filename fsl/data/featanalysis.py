@@ -373,7 +373,7 @@ def loadClusterResults(featdir, settings, contrast):
         if not op.exists(clusterFile):
             return None
 
-        # In higher levle analysis run in some standard
+        # In higher level analysis run in some standard
         # space, the cluster coordinates are in standard
         # space. We transform them to voxel coordinates.
         # later on.
@@ -480,13 +480,13 @@ def loadClusterResults(featdir, settings, contrast):
         zcog    = [c.zcogx,    c.zcogy,    c.zcogz]
         copemax = [c.copemaxx, c.copemaxy, c.copemaxz]
 
-        zmax    = affine.transform([zmax],    coordXform)[0].round()
-        zcog    = affine.transform([zcog],    coordXform)[0].round()
-        copemax = affine.transform([copemax], coordXform)[0].round()
+        zmax    = affine.transform([zmax],    coordXform)[0]
+        zcog    = affine.transform([zcog],    coordXform)[0]
+        copemax = affine.transform([copemax], coordXform)[0]
 
-        c.zmaxx,   c.zmaxy,    c.zmaxz    = zmax
-        c.zcogx,   c.zcogy,    c.zcogz    = zcog
-        c.copemax, c.copemaxy, c.copemaxz = copemax
+        c.zmaxx,    c.zmaxy,    c.zmaxz    = zmax
+        c.zcogx,    c.zcogy,    c.zcogz    = zcog
+        c.copemaxx, c.copemaxy, c.copemaxz = copemax
 
     return clusters
 

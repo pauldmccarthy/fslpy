@@ -59,7 +59,7 @@ def test_isFEATDir():
     # it's not a feat directory
     assert not featanalysis.isFEATDir('nonexistent.feat')
 
-    # If any of the above files are not 
+    # If any of the above files are not
     # present, it is not a FEAT directory
     perms = it.chain(it.combinations(paths, 1),
                      it.combinations(paths, 2),
@@ -69,7 +69,7 @@ def test_isFEATDir():
             assert not featanalysis.isFEATDir(
                 op.join(testdir, 'analysis.feat'))
 
-    
+
 def test_hasStats():
 
     with tests.testdir(['analysis.feat/stats/zstat1.nii.gz']) as testdir:
@@ -78,7 +78,7 @@ def test_hasStats():
 
     with tests.testdir(['analysis.feat/stats/zstat1.txt']) as testdir:
         featdir = op.join(testdir, 'analysis.feat')
-        assert not featanalysis.hasStats(featdir) 
+        assert not featanalysis.hasStats(featdir)
 
 
 def test_hasMelodicDir():
@@ -94,7 +94,7 @@ def test_getAnalysisDir():
              'analysis.feat/design.fsf',
              'analysis.feat/design.mat',
              'analysis.feat/design.con']
-    
+
     testpaths = ['analysis.feat/filtered_func_data.nii.gz',
                  'analysis.feat/stats/zstat1.nii.gz',
                  'analysis.feat/logs/feat4_post',
@@ -106,7 +106,7 @@ def test_getAnalysisDir():
             t = op.join(testdir, t)
             assert featanalysis.getAnalysisDir(t) == expected
 
-    
+
 def test_getTopLevelAnalysisDir():
     testcases = [
         ('analysis.feat/filtered_func_data.ica/melodic_IC.nii.gz', 'analysis.feat'),
@@ -127,7 +127,7 @@ def test_getReportFile():
 
     for paths, expected in testcases:
         with tests.testdir(paths) as testdir:
-        
+
             featdir = op.join(testdir, 'analysis.feat')
 
             if expected:
@@ -145,7 +145,7 @@ def test_loadContrasts():
          /ContrastName1 c1
          /ContrastName2 c2
          /ContrastName3 c3
-         /NumContrasts 3 
+         /NumContrasts 3
          /Matrix
          1 0 0
          0 1 0
@@ -188,9 +188,9 @@ def test_loadContrasts():
         0 1 1
         """,
     ]
-    
+
     with pytest.raises(Exception):
-        featanalysis.loadContrasts('no file') 
+        featanalysis.loadContrasts('no file')
 
     with tests.testdir() as testdir:
         featdir = op.join(testdir, 'analysis.feat')
@@ -275,7 +275,7 @@ def test_isFirstLevelAnalysis():
                 '2ndlevel_1.gfeat', '2ndlevel_2.gfeat']
 
     for featdir in featdirs:
-        
+
         expected = featdir.startswith('1')
         featdir  = op.join(datadir, featdir)
         settings = featanalysis.loadSettings(featdir)
@@ -301,14 +301,15 @@ def test_loadClusterResults():
 
         with tests.testdir() as testdir:
 
-            # For higher level analyses, the
-            # loadClusterResults function peeks
-            # at the FEAT input data file
-            # header, so we have to generate it.
+            # work from a copy of the test data directory
             newfeatdir = op.join(testdir, 'analysis.feat')
             shutil.copytree(op.join(datadir, featdir), newfeatdir)
             featdir = newfeatdir
 
+            # For higher level analyses, the
+            # loadClusterResults function peeks
+            # at the FEAT input data file
+            # header, so we have to generate it.
             if not firstlevel:
                 datafile = op.join(featdir, 'filtered_func_data.nii.gz')
                 data  = np.random.randint(1, 10, (91, 109, 91))
@@ -332,6 +333,35 @@ def test_loadClusterResults():
                     os.remove(clustfile)
                 assert featanalysis.loadClusterResults(
                     featdir, settings, 0) is None
+
+    # The above loop just checks that the number of
+    # clusters loaded for each analysis was correct.
+    # Below we check that the cluster data was loaded
+    # correctly, just for one analysis
+    featdir  = op.join(datadir, '1stlevel_1.feat')
+    settings = featanalysis.loadSettings(featdir)
+    cluster  = featanalysis.loadClusterResults(featdir, settings, 0)[0]
+    expected = {
+        'index'    : 1,
+        'nvoxels'  : 296,
+        'p'        : 1.79e-27,
+        'logp'     : 26.7,
+        'zmax'     : 6.03,
+        'zmaxx'    : 34,
+        'zmaxy'    : 10,
+        'zmaxz'    : 1,
+        'zcogx'    : 31.4,
+        'zcogy'    : 12.3,
+        'zcogz'    : 1.72,
+        'copemax'  : 612,
+        'copemaxx' : 34,
+        'copemaxy' : 10,
+        'copemaxz' : 1,
+        'copemean' : 143
+    }
+
+    for k, v in expected.items():
+        assert np.isclose(v, getattr(cluster, k))
 
 
 def test_getDataFile():
@@ -393,9 +423,9 @@ def test_getResidualFile():
                 assert featanalysis.getResidualFile(featdir) == expect
             else:
                 with pytest.raises(fslpath.PathError):
-                    featanalysis.getResidualFile(featdir) 
+                    featanalysis.getResidualFile(featdir)
 
-    
+
 def test_getPEFile():
     testcases = [
         (['analysis.feat/stats/pe1.nii.gz',
@@ -417,7 +447,7 @@ def test_getPEFile():
                     assert featanalysis.getPEFile(featdir, pei) == expect
                 else:
                     with pytest.raises(fslpath.PathError):
-                        featanalysis.getPEFile(featdir, pei) 
+                        featanalysis.getPEFile(featdir, pei)
 
 
 def test_getCOPEFile():
@@ -441,8 +471,8 @@ def test_getCOPEFile():
                     assert featanalysis.getCOPEFile(featdir, ci) == expect
                 else:
                     with pytest.raises(fslpath.PathError):
-                        featanalysis.getCOPEFile(featdir, ci) 
- 
+                        featanalysis.getCOPEFile(featdir, ci)
+
 
 def test_getZStatFile():
     testcases = [
@@ -465,8 +495,8 @@ def test_getZStatFile():
                     assert featanalysis.getZStatFile(featdir, zi) == expect
                 else:
                     with pytest.raises(fslpath.PathError):
-                        featanalysis.getZStatFile(featdir, zi) 
- 
+                        featanalysis.getZStatFile(featdir, zi)
+
 
 def test_getClusterMaskFile():
     testcases = [
@@ -489,4 +519,4 @@ def test_getClusterMaskFile():
                     assert featanalysis.getClusterMaskFile(featdir, ci) == expect
                 else:
                     with pytest.raises(fslpath.PathError):
-                        featanalysis.getClusterMaskFile(featdir, ci) 
+                        featanalysis.getClusterMaskFile(featdir, ci)
