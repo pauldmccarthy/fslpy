@@ -600,6 +600,37 @@ def test_TaskThread_onFinish():
     assert onFinishCalled[0]
 
 
+def test_TaskThread_onError():
+
+    taskCalled     = [False]
+    onFinishCalled = [False]
+    onErrorCalled  = [False]
+
+    def task():
+        taskCalled[0] = True
+        raise Exception('Task error')
+
+    def onFinish():
+        onFinishCalled[0] = True
+
+    def onError(e):
+        onErrorCalled[0] = str(e)
+
+    tt = idle.TaskThread()
+    tt.start()
+
+    tt.enqueue(task, onFinish=onFinish, onError=onError)
+
+    time.sleep(0.5)
+
+    tt.stop()
+    tt.join()
+
+    assert     taskCalled[0]
+    assert     onErrorCalled[0] == 'Task error'
+    assert not onFinishCalled[0]
+
+
 def test_TaskThread_isQueued():
 
     called = [False]
