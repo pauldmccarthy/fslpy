@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.6.0 (Under development)
+-------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :class:`.TaskThread` now allows an error handler function to be
+  specified, which is run on the :mod:`.idle` loop.
+
+
 3.5.3 (Tuesday 9th February 2021)
 ---------------------------------
 
