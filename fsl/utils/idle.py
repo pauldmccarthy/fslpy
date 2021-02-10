@@ -759,10 +759,11 @@ class Task(object):
     """Container object which encapsulates a task that is run by a
     :class:`TaskThread`.
     """
-    def __init__(self, name, func, onFinish, args, kwargs):
+    def __init__(self, name, func, onFinish, onError, args, kwargs):
         self.name     = name
         self.func     = func
         self.onFinish = onFinish
+        self.onError  = onError
         self.args     = args
         self.kwargs   = kwargs
         self.enabled  = True
@@ -808,9 +809,16 @@ class TaskThread(threading.Thread):
 
         :arg onFinish: An optional function to be called (via :func:`idle`)
                        when the task funtion has finished. Must be provided as
-                       a keyword argument. If the ``func`` raises a
-                       :class`TaskThreadVeto` error, this function will not
-                       be called.
+                       a keyword argument, and must itself accept no arguments.
+                       If the ``func`` raises a :class`TaskThreadVeto` error,
+                       this function will not be called.
+
+        :arg onError:  An optional function to be called (via :func:`idle`)
+                       if the task funtion raises an ``Exception``. Must be
+                       provided as a keyword argument, and must itself accept
+                       the raised ``Exception`` object as a single argument.
+                       If the ``func`` raises a :class`TaskThreadVeto` error,
+                       this function will not be called.
 
         All other arguments are passed through to the task function when it is
         executed.
@@ -821,16 +829,18 @@ class TaskThread(threading.Thread):
                   results.
 
         .. warning:: Make sure that your task function is not expecting keyword
-                     arguments called ``taskName`` or ``onFinish``!
+                     arguments called ``taskName``, ``onFinish``, or
+                     ``onError``!
         """
 
         name     = kwargs.pop('taskName', None)
         onFinish = kwargs.pop('onFinish', None)
+        onError  = kwargs.pop('onError',  None)
 
         log.debug('Enqueueing task: {} [{}]'.format(
             name, getattr(func, '__name__', '<unknown>')))
 
-        t = Task(name, func, onFinish, args, kwargs)
+        t = Task(name, func, onFinish, onError, args, kwargs)
         self.__enqueued[name] = t
         self.__q.put(t)
 
@@ -951,6 +961,9 @@ class TaskThread(threading.Thread):
                     type(e).__name__,
                     str(e)),
                     exc_info=True)
+                if task.onError is not None:
+                    idle(task.onError, e)
+
             finally:
                 self.__q.task_done()
 
