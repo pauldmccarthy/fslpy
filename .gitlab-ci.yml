@@ -156,10 +156,6 @@ variables:
   script:
     - bash ./.ci/test_template.sh
 
-test:3.6:
-  stage: test
-  image: pauldmccarthy/fsleyes-py36-wxpy4-gtk3
-  <<: *test_template
 
 test:3.7:
   stage: test
