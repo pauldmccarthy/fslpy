@@ -1206,7 +1206,8 @@ class Image(Nifti):
 
     def __del__(self):
         """Closes any open file handles, and clears some references. """
-        Nifti.__del__(self)
+        if Nifti is not None:
+            Nifti.__del__(self)
         self.__nibImage     = None
         self.__imageWrapper = None
 

@@ -421,7 +421,7 @@ class Settings(object):
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f, protocol=2)
-        except (IOError, pickle.PicklingError, EOFError):
+        except (IOError, pickle.PicklingError, EOFError, FileNotFoundError):
             log.warning('Unable to save {} configuration file '
                         '{}'.format(self.__configID, configFile),
                         exc_info=True)
