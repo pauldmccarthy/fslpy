@@ -15,6 +15,18 @@ Changed
   specified, which is run on the :mod:`.idle` loop.
 
 
+Deprecated
+^^^^^^^^^^
+
+
+* Deprecated a number of GUI-specific properties in the
+  :mod:`fsl.utils.platform` module, including ``frozen``, ``haveGui``,
+  ``canHaveGui``, ``inSSHSession``, ``inVNCSession``, ``wxPlatform``,
+  ``wxFlavour``, ``glVersion``, ``glRenderer``, and ``glIsSoftwareRenderer``.
+  Equivalent functions are being added to the ``fsleyes-widgets`` library.
+
+
+
 3.5.3 (Tuesday 9th February 2021)
 ---------------------------------
 
