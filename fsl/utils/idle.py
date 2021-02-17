@@ -89,7 +89,6 @@ except ImportError: import Queue as queue
 log = logging.getLogger(__name__)
 
 
-class IdleTask(object):
 @functools.lru_cache()
 def _canHaveGui():
     """Return ``True`` if wxPython is installed, and a display is available,
@@ -118,6 +117,7 @@ def _haveGui():
         return False
 
 
+class IdleTask:
     """Container object used by the :class:`IdleLoop` class.
     Used to encapsulate information about a queued task.
     """
@@ -139,7 +139,7 @@ def _haveGui():
         self.kwargs    = kwargs
 
 
-class IdleLoop(object):
+class IdleLoop:
     """This class contains logic for running tasks via ``wx.EVT_IDLE`` events.
 
     A single ``IdleLoop`` instance is created when this module is first
@@ -775,7 +775,7 @@ def wait(threads, task, *args, **kwargs):
         return None
 
 
-class Task(object):
+class Task:
     """Container object which encapsulates a task that is run by a
     :class:`TaskThread`.
     """
@@ -795,7 +795,6 @@ class TaskThreadVeto(Exception):
     handler (if one has been specified). See the :meth:`TaskThread.enqueue`
     method for more details.
     """
-    pass
 
 
 class TaskThread(threading.Thread):
@@ -1025,7 +1024,7 @@ def mutex(*args, **kwargs):
     return MutexFactory(*args, **kwargs)
 
 
-class MutexFactory(object):
+class MutexFactory:
     """The ``MutexFactory`` is a placeholder for methods which have been
     decorated with the :func:`mutex` decorator. When the method of a class
     is decorated with ``@mutex``, a ``MutexFactory`` is created.
