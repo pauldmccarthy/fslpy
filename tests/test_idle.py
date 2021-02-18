@@ -38,6 +38,11 @@ def _run_with_wx(func, *args, **kwargs):
     if callAfterApp is not None:
         callAfterApp()
 
+    # canHaveGui caches its return val,
+    # so clear it otherwise we may
+    # affect subsequent tests
+    idle._canHaveGui.cache_clear()
+
     def wrap():
 
         try:
@@ -63,6 +68,8 @@ def _run_with_wx(func, *args, **kwargs):
     time.sleep(1)
 
     idle.idleLoop.reset()
+
+    idle._canHaveGui.cache_clear()
 
     if raised[0] and propagateRaise:
         raise raised[0]
@@ -413,10 +420,9 @@ def test_idle_alwaysQueue4():
     import fsl.utils.platform
     with mock.patch.dict('sys.modules', {'wx' : None}):
 
-        # idle uses the platform module to
-        # determine whether a GUI is available,
-        # so we have to reload it
-        reload_module(fsl.utils.platform)
+        # The idle._canHaveGui caches its result,
+        # so we need to invalidate it
+        idle._canHaveGui.cache_clear()
         idle.idle(task, alwaysQueue=True)
 
         with pytest.raises(ImportError):

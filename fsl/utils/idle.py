@@ -89,7 +89,35 @@ except ImportError: import Queue as queue
 log = logging.getLogger(__name__)
 
 
-class IdleTask(object):
+@functools.lru_cache()
+def _canHaveGui():
+    """Return ``True`` if wxPython is installed, and a display is available,
+    ``False`` otherwise.
+    """
+    # Determine if a display is available. We do
+    # this once at init (instead of on-demand in
+    # the canHaveGui method) because calling the
+    # IsDisplayAvailable function will cause the
+    # application to steal focus under OSX!
+    try:
+        import wx
+        return wx.App.IsDisplayAvailable()
+    except ImportError:
+        return False
+
+
+def _haveGui():
+    """Return ``True`` if wxPython is installed, a display is available, and
+    a ``wx.App`` exists, ``False`` otherwise.
+    """
+    try:
+        import wx
+        return _canHaveGui() and (wx.GetApp() is not None)
+    except ImportError:
+        return False
+
+
+class IdleTask:
     """Container object used by the :class:`IdleLoop` class.
     Used to encapsulate information about a queued task.
     """
@@ -111,7 +139,7 @@ class IdleTask(object):
         self.kwargs    = kwargs
 
 
-class IdleLoop(object):
+class IdleLoop:
     """This class contains logic for running tasks via ``wx.EVT_IDLE`` events.
 
     A single ``IdleLoop`` instance is created when this module is first
@@ -370,8 +398,6 @@ class IdleLoop(object):
                   ``timeout``, or ``alwaysQueue``.
         """
 
-        from fsl.utils.platform import platform as fslplatform
-
         schedtime    = time.time()
         timeout      = kwargs.pop('timeout',      0)
         after        = kwargs.pop('after',        0)
@@ -380,18 +406,15 @@ class IdleLoop(object):
         skipIfQueued = kwargs.pop('skipIfQueued', False)
         alwaysQueue  = kwargs.pop('alwaysQueue',  False)
 
-        canHaveGui   = fslplatform.canHaveGui
-        haveGui      = fslplatform.haveGui
-
         # If there is no possibility of a
         # gui being available in the future
-        # (determined by canHaveGui), then
+        # (determined by _canHaveGui), then
         # alwaysQueue is ignored.
-        alwaysQueue = alwaysQueue and canHaveGui
+        alwaysQueue = alwaysQueue and _canHaveGui()
 
         # We don't have wx - run the task
         # directly/synchronously.
-        if self.__neverQueue or not (haveGui or alwaysQueue):
+        if self.__neverQueue or not (_haveGui() or alwaysQueue):
             time.sleep(after)
             log.debug('Running idle task directly')
             task(*args, **kwargs)
@@ -611,19 +634,19 @@ def block(secs, delta=0.01, until=None):
                 determins when calls to ``block`` will return.
     """
 
+    havewx = _haveGui()
+
     def defaultUntil():
         return False
 
     def tick():
-        if fslplatform.haveGui:
+        if havewx:
             import wx
             wx.YieldIfNeeded()
         time.sleep(delta)
 
     if until is None:
         until = defaultUntil
-
-    from fsl.utils.platform import platform as fslplatform
 
     start = time.time()
     while (time.time() - start) < secs:
@@ -653,12 +676,11 @@ def run(task, onFinish=None, onError=None, name=None):
               the return value will be ``None``.
     """
 
-    from fsl.utils.platform import platform as fslplatform
 
     if name is None:
         name = getattr(task, '__name__', '<unknown>')
 
-    haveWX = fslplatform.haveGui
+    haveWX = _haveGui()
 
     # Calls the onFinish or onError handler
     def callback(cb, *args, **kwargs):
@@ -727,14 +749,12 @@ def wait(threads, task, *args, **kwargs):
               a keyword argument called ``wait_direct``.
     """
 
-    from fsl.utils.platform import platform as fslplatform
-
     direct = kwargs.pop('wait_direct', False)
 
     if not isinstance(threads, abc.Sequence):
         threads = [threads]
 
-    haveWX = fslplatform.haveGui
+    haveWX = _haveGui()
 
     def joinAll():
         log.debug('Wait thread joining on all targets')
@@ -755,7 +775,7 @@ def wait(threads, task, *args, **kwargs):
         return None
 
 
-class Task(object):
+class Task:
     """Container object which encapsulates a task that is run by a
     :class:`TaskThread`.
     """
@@ -775,7 +795,6 @@ class TaskThreadVeto(Exception):
     handler (if one has been specified). See the :meth:`TaskThread.enqueue`
     method for more details.
     """
-    pass
 
 
 class TaskThread(threading.Thread):
@@ -1005,7 +1024,7 @@ def mutex(*args, **kwargs):
     return MutexFactory(*args, **kwargs)
 
 
-class MutexFactory(object):
+class MutexFactory:
     """The ``MutexFactory`` is a placeholder for methods which have been
     decorated with the :func:`mutex` decorator. When the method of a class
     is decorated with ``@mutex``, a ``MutexFactory`` is created.

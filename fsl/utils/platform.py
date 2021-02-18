@@ -18,7 +18,8 @@ import os.path as op
 import sys
 import importlib
 
-import fsl.utils.notifier as notifier
+import fsl.utils.notifier   as notifier
+import fsl.utils.deprecated as deprecated
 
 # An annoying consequence of using
 # a system-module name for our own
@@ -150,6 +151,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def frozen(self):
         """``True`` if we are running in a compiled/frozen application,
         ``False`` otherwise.
@@ -158,6 +163,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def haveGui(self):
         """``True`` if we are running with a GUI, ``False`` otherwise.
 
@@ -201,12 +210,20 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def canHaveGui(self):
         """``True`` if it is possible to create a GUI, ``False`` otherwise. """
         return self.__canHaveGui
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def inSSHSession(self):
         """``True`` if this application is running over an SSH session,
         ``False`` otherwise.
@@ -215,6 +232,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def inVNCSession(self):
         """``True`` if this application is running over a VNC (or similar)
         session, ``False`` otherwise. Currently, the following remote desktop
@@ -228,6 +249,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def wxPlatform(self):
         """One of :data:`WX_UNKNOWN`, :data:`WX_MAC_COCOA`,
         :data:`WX_MAC_CARBON`, or :data:`WX_GTK`, indicating the wx platform.
@@ -253,6 +278,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def wxFlavour(self):
         """One of :data:`WX_UNKNOWN`, :data:`WX_PYTHON` or :data:`WX_PHOENIX`,
         indicating the wx flavour.
@@ -359,6 +388,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def glVersion(self):
         """Returns the available OpenGL version, or ``None`` if it has not
         been set.
@@ -367,12 +400,20 @@ class Platform(notifier.Notifier):
 
 
     @glVersion.setter
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def glVersion(self, value):
         """Set the available OpenGL version. """
         self.__glVersion = value
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def glRenderer(self):
         """Returns the available OpenGL renderer, or ``None`` if it has not
         been set.
@@ -381,6 +422,10 @@ class Platform(notifier.Notifier):
 
 
     @glRenderer.setter
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def glRenderer(self, value):
         """Set the available OpenGL renderer. """
         self.__glRenderer = value
@@ -398,6 +443,10 @@ class Platform(notifier.Notifier):
 
 
     @property
+    @deprecated.deprecated(
+        '3.6.0',
+        '4.0.0',
+        'Equivalent functionality is available in fsleyes-widgets.')
     def glIsSoftwareRenderer(self):
         """Returns ``True`` if the OpenGL renderer is software based,
         ``False`` otherwise, or ``None`` if the renderer has not yet been set.
