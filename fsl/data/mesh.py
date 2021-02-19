@@ -701,7 +701,7 @@ def calcVertexNormals(vertices, indices, fnormals):
                    the mesh.
     """
 
-    vnormals = np.zeros((vertices.shape[0], 3), dtype=np.float)
+    vnormals = np.zeros((vertices.shape[0], 3), dtype=float)
 
     # TODO make fast. I can't figure
     # out how to use np.add.at to

@@ -209,7 +209,7 @@ def resample(image,
        np.all(np.isclose(matrix, np.eye(len(newShape) + 1))):
         return data, image.voxToWorldMat
 
-    newShape = np.array(np.round(newShape), dtype=np.int)
+    newShape = np.array(np.round(newShape), dtype=int)
 
     # Apply smoothing if requested,
     # and if not using nn interp

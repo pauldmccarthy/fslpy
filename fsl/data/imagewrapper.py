@@ -733,7 +733,7 @@ def isValidFancySliceObj(sliceobj, shape):
     # We only support boolean numpy arrays
     # which have the same shape as the image
     return (isinstance(sliceobj, np.ndarray) and
-            sliceobj.dtype == np.bool        and
+            sliceobj.dtype == bool           and
             np.prod(sliceobj.shape) == np.prod(shape))
 
 
