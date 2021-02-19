@@ -627,8 +627,8 @@ def rescale(oldShape, newShape, origin=None):
     if origin is None:
         origin = 'centre'
 
-    oldShape = np.array(oldShape, dtype=np.float)
-    newShape = np.array(newShape, dtype=np.float)
+    oldShape = np.array(oldShape, dtype=float)
+    newShape = np.array(newShape, dtype=float)
     ndim     = len(oldShape)
 
     if len(oldShape) != len(newShape):

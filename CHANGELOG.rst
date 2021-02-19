@@ -24,6 +24,9 @@ Deprecated
   ``canHaveGui``, ``inSSHSession``, ``inVNCSession``, ``wxPlatform``,
   ``wxFlavour``, ``glVersion``, ``glRenderer``, and ``glIsSoftwareRenderer``.
   Equivalent functions are being added to the ``fsleyes-widgets`` library.
+* The :mod:`fsl.utils.filetree` package has been deprecated, and will be
+  removed in a future version of ``fslpy`` - it is now published as a separate
+  library on [PyPI](https://pypi.org/project/file-tree/).
 
 
 
