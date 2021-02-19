@@ -289,7 +289,7 @@ of the short variable names defined in the
 Running a pipeline on a subset of participants/sessions/runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Suppose you want to run your pipeline on a subset of your data while testing. 
+Suppose you want to run your pipeline on a subset of your data while testing.
 You may want to do this if your data has a a hierarchy of variables (e.g. participant, session, run) as in the example below.
 
 ::
@@ -321,3 +321,12 @@ __author__ = 'Michiel Cottaar <Michiel.Cottaar@ndcn.ox.ac.uk>'
 from .filetree import FileTree, register_tree, MissingVariable
 from .parse import tree_directories, list_all_trees
 from .query import FileTreeQuery
+
+import fsl.utils.deprecated as deprecated
+
+deprecated.warn('fsl.utils.filetree',
+                vin='3.6.0',
+                rin='4.0.0',
+                msg='The filetree package is now released as a separate '
+                    'Python library ("file-tree" on PyPi), and will be '
+                    'removed in a future version of fslpy.')
