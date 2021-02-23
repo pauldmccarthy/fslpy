@@ -234,6 +234,13 @@ def test_normals():
         -fnormals, fslmesh.calcFaceNormals(verts, triangles_cw)))
     assert np.all(np.isclose(
         fnormals, fslmesh.calcFaceNormals(verts, triangles_ccw)))
+
+    # Make sure result is (1, 3) for input of (1, 3)
+    onetri = np.atleast_2d(triangles_ccw[0, :])
+    result = fslmesh.calcFaceNormals(verts, onetri)
+    assert result.shape == (1, 3)
+    assert np.all(np.isclose(fnormals[0, :], result))
+
     assert np.all(np.isclose(
         -vnormals, fslmesh.calcVertexNormals(verts, triangles_cw, -fnormals)))
     assert np.all(np.isclose(
