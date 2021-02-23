@@ -31,6 +31,13 @@ Deprecated
   library on [PyPI](https://pypi.org/project/file-tree/).
 
 
+Fixed
+^^^^^
+
+* Fixed an edge-case in the :mod:`.gifti` module, where a surface with a
+  single triangle was being loaded incorrectly.
+
+
 
 3.5.3 (Tuesday 9th February 2021)
 ---------------------------------
