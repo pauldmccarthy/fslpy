@@ -13,6 +13,8 @@ Changed
 
 * The :class:`.TaskThread` now allows an error handler function to be
   specified, which is run on the :mod:`.idle` loop.
+* The :func:`.bids.loadMetadata` function no long resolves sym-links when
+  determining whether a file is contained within a BIDS data set.
 
 
 Deprecated
