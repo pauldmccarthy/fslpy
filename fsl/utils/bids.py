@@ -156,7 +156,7 @@ def inBIDSDir(filename):
 def isBIDSFile(filename, strict=True):
     """Returns ``True`` if ``filename`` looks like a BIDS image or JSON file.
 
-    A BIDS file name must consist of one or more "entities" (alpha-numeric
+    A BIDS file name must consist of zero or more "entities" (alpha-numeric
     ``name-value`` pairs), a "suffix", all separated by underscores, and a
     regular file extension. For example, the following file::
 
@@ -170,8 +170,12 @@ def isBIDSFile(filename, strict=True):
                    dataset directory, as defined by :func:`inBIDSDir`.
     """
 
+    # Zero or more entities because sidecar files
+    # do not necessarily need to contain any
+    # entities (e.g. ``T1w.json`` is valid)
+
     name    = op.basename(filename)
-    pattern = r'([a-z0-9]+-[a-z0-9]+_)+([a-z0-9])+\.(.+)'
+    pattern = r'([a-z0-9]+-[a-z0-9]+_)*([a-z0-9])+\.(.+)'
     flags   = re.ASCII | re.IGNORECASE
     match   = re.fullmatch(pattern, name, flags) is not None
 
