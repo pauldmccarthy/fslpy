@@ -85,7 +85,7 @@ def _get_zero_mask(aimg):
         elif isinstance(aimg, fslatlases.ProbabilisticAtlas):
 
             # Keep memory usage down
-            zmask = np.ones(aimg.shape[:3], dtype=np.bool)
+            zmask = np.ones(aimg.shape[:3], dtype=bool)
             for vol in range(aimg.shape[-1]):
                 zmask = np.logical_and(zmask, aimg[..., vol] == 0)
 

@@ -1195,7 +1195,7 @@ def test_3D_indexing(shape=None, img=None):
 
     assert type(img[0, 0, 0]) == np.float64
 
-    mask1 = np.zeros(shape, dtype=np.bool)
+    mask1 = np.zeros(shape, dtype=bool)
 
     mask1[0, 0, 0] = True
     mask1[1, 0, 0] = True
@@ -1252,7 +1252,7 @@ def test_3D_4D_indexing():
     assert type(img[0, 0, 0, 0]) == np.float64
     assert type(img[0, 0, 0, :]) == np.float64
 
-    mask = np.zeros(padShape, dtype=np.bool)
+    mask = np.zeros(padShape, dtype=bool)
     mask[0, 0, 0, 0] = True
 
     assert type(img[mask])      == np.ndarray
@@ -1282,13 +1282,13 @@ def test_3D_len_one_indexing(shape=None, img=None):
     assert type(img[0, 0])    == np.ndarray
     assert type(img[0, 0, 0]) == np.float64
 
-    mask = np.zeros(shape[:2], dtype=np.bool)
+    mask = np.zeros(shape[:2], dtype=bool)
     mask[0, 0] = True
 
     assert type(img[mask])      == np.ndarray
     assert      img[mask].shape == (1, )
 
-    mask = np.zeros(shape, dtype=np.bool)
+    mask = np.zeros(shape, dtype=bool)
     mask[0, 0, 0] = True
 
     assert type(img[mask])      == np.ndarray
@@ -1352,7 +1352,7 @@ def test_4D_indexing(shape=None, img=None):
 
     assert type(img[0, 0, 0, 0]) == np.float64
 
-    mask1 = np.zeros(shape, dtype=np.bool)
+    mask1 = np.zeros(shape, dtype=bool)
 
     mask1[0, 0, 0, 0] = True
     mask1[1, 0, 0, 0] = True

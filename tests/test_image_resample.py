@@ -75,7 +75,7 @@ def test_resample(seed):
                    (np.isclose(np.modf(origtestcoords)[0], 0.5)))
             out = np.any(out, axis=1) | (resvals == 0)
 
-            origtestcoords = np.array(origtestcoords.round(), dtype=np.int)
+            origtestcoords = np.array(origtestcoords.round(), dtype=int)
 
             origtestcoords = origtestcoords[~out, :]
             restestcoords  = restestcoords[ ~out, :]
@@ -166,8 +166,8 @@ def test_resampleToPixdims():
 
     img          = fslimage.Image(make_random_image(dims=(10, 10, 10)))
     imglo, imghi = affine.axisBounds(img.shape, img.voxToWorldMat)
-    oldpix       = np.array(img.pixdim, dtype=np.float)
-    oldshape     = np.array(img.shape,  dtype=np.float)
+    oldpix       = np.array(img.pixdim, dtype=float)
+    oldshape     = np.array(img.shape,  dtype=float)
 
     for i, origin in it.product(range(25), ('centre', 'corner')):
 
@@ -215,16 +215,16 @@ def test_resampleToReference2():
     # More specific test - output
     # data gets transformed correctly
     # into reference space
-    img          = np.zeros((5, 5, 5), dtype=np.float)
+    img          = np.zeros((5, 5, 5), dtype=float)
     img[1, 1, 1] = 1
     img          = fslimage.Image(img)
 
     refv2w = affine.scaleOffsetXform([1, 1, 1], [-1, -1, -1])
-    ref    = np.zeros((5, 5, 5), dtype=np.float)
+    ref    = np.zeros((5, 5, 5), dtype=float)
     ref    = fslimage.Image(ref, xform=refv2w)
     res    = resample.resampleToReference(img, ref, order=0)
 
-    exp          = np.zeros((5, 5, 5), dtype=np.float)
+    exp          = np.zeros((5, 5, 5), dtype=float)
     exp[2, 2, 2] = 1
 
     assert np.all(np.isclose(res[0], exp))
