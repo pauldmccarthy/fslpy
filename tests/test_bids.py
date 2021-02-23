@@ -18,8 +18,7 @@ import fsl.utils.bids  as     fslbids
 
 
 def test_parseFilename():
-    badtests = ['bad_file.txt',
-                'badfile.txt']
+    badtests = ['bad_file.txt']
 
     for test in badtests:
         with pytest.raises(ValueError):
