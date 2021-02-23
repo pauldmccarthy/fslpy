@@ -687,7 +687,7 @@ def calcFaceNormals(vertices, indices):
     fnormals = np.cross((v1 - v0), (v2 - v0))
     fnormals = affine.normalise(fnormals)
 
-    return fnormals
+    return np.atleast_2d(fnormals)
 
 
 def calcVertexNormals(vertices, indices, fnormals):
