@@ -573,7 +573,7 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         # sort by ray. I'm Not sure if this is
         # needed - does trimesh do it for us?
-        rayIdxs = np.asarray(np.argsort(rays), np.int)
+        rayIdxs = np.asarray(np.argsort(rays))
         locs    = locs[rayIdxs]
         tris    = tris[rayIdxs]
 

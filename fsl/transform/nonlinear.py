@@ -280,7 +280,7 @@ class DeformationField(NonLinearTransform):
         # Mask out the coordinates
         # that are out of bounds of
         # the deformation field
-        voxels  = np.round(voxels).astype(np.int)
+        voxels  = np.round(voxels).astype(np.int32)
         voxmask = (voxels >= [0, 0, 0]) & (voxels < self.shape[:3])
         voxmask = voxmask.all(axis=1)
         voxels  = voxels[voxmask]
@@ -508,9 +508,9 @@ class CoefficientField(NonLinearTransform):
         u = np.remainder(i, 1)
         v = np.remainder(j, 1)
         w = np.remainder(k, 1)
-        i = np.floor(i).astype(np.int)
-        j = np.floor(j).astype(np.int)
-        k = np.floor(k).astype(np.int)
+        i = np.floor(i).astype(np.int32)
+        j = np.floor(j).astype(np.int32)
+        k = np.floor(k).astype(np.int32)
 
         disps = np.zeros(coords.shape)
 
