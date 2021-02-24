@@ -381,3 +381,21 @@ def test_GiftiMesh_needsFixing():
         surf = gifti.GiftiMesh(fname, fixWinding=True)
 
         assert np.all(np.isclose(surf.indices, idxs_fixed))
+
+
+def test_loadGiftiMesh_onetriangle():
+    verts = np.array([[0, 0, 0], [1, 1, 1], [0, 1, 0]])
+    idxs  = np.array([[0, 1, 2]])
+    verts = nib.gifti.GiftiDataArray(verts, intent='NIFTI_INTENT_POINTSET')
+    idxs  = nib.gifti.GiftiDataArray(idxs,  intent='NIFTI_INTENT_TRIANGLE')
+    gimg  = nib.gifti.GiftiImage(darrays=[verts, idxs])
+
+    with tempdir():
+        fname = op.abspath('test.gii')
+        gimg.to_filename(fname)
+
+        gimg, tris, verts, _ = gifti.loadGiftiMesh('test.gii')
+        verts = verts[0]
+
+        assert verts.shape == (3, 3)
+        assert tris.shape  == (1, 3)

@@ -161,7 +161,7 @@ def test_convertDeformationSpace():
         refcoords = [np.random.randint(0, basefield.shape[0], 5),
                      np.random.randint(0, basefield.shape[1], 5),
                      np.random.randint(0, basefield.shape[2], 5)]
-        refcoords = np.array(refcoords, dtype=np.int).T
+        refcoords = np.array(refcoords, dtype=int).T
         refcoords = affine.transform(refcoords, ref.voxToScaledVoxMat)
         srccoords = basefield.transform(refcoords)
 

@@ -229,7 +229,7 @@ def loadGiftiMesh(filename):
                          'at least one pointset array'.format(filename))
 
     vertices = [ps.data for ps in pointsets]
-    indices  = triangles[0].data
+    indices  = np.atleast_2d(triangles[0].data)
 
     if len(vdata) == 0: vdata = None
     else:               vdata = prepareGiftiVertexData(vdata, filename)

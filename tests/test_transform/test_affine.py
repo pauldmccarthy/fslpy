@@ -395,7 +395,7 @@ def test_transform():
         mask = np.array([[1, 0, 0, 1],
                          [0, 1, 0, 1],
                          [0, 0, 1, 1],
-                         [0, 0, 0, 1]], dtype=np.bool)
+                         [0, 0, 0, 1]], dtype=bool)
 
         return np.all((xform != 0) == mask)
 
