@@ -325,6 +325,7 @@ from .query import FileTreeQuery
 import fsl.utils.deprecated as deprecated
 
 deprecated.warn('fsl.utils.filetree',
+                stacklevel=2,
                 vin='3.6.0',
                 rin='4.0.0',
                 msg='The filetree package is now released as a separate '
