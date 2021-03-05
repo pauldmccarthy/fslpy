@@ -10,7 +10,11 @@ order.
 Changed
 ^^^^^^^
 
-
+* The :mod:`fsl` package has been changed from being a `pkgutil-style
+  <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
+  namespace package to now being a `native
+  <https://packaging.python.org/guides/packaging-namespace-packages/#native-namespace-packages>`_
+  namespace package.
 * The :class:`.TaskThread` now allows an error handler function to be
   specified, which is run on the :mod:`.idle` loop.
 * The :func:`.bids.loadMetadata` function no long resolves sym-links when
