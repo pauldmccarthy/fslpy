@@ -10,7 +10,14 @@ order.
 Changed
 ^^^^^^^
 
-
+* The ``fslpy`` API ocumentation is now hosted at
+  https://open.win.ox.ac.uk/fsl/fslpy
+* The :mod:`fsl` and :mod:`fsl.scripts` packages have been changed from being
+  `pkgutil-style
+  <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
+  namespace packages to now being `native
+  <https://packaging.python.org/guides/packaging-namespace-packages/#native-namespace-packages>`_
+  namespace packages.
 * The :class:`.TaskThread` now allows an error handler function to be
   specified, which is run on the :mod:`.idle` loop.
 * The :func:`.bids.loadMetadata` function no long resolves sym-links when

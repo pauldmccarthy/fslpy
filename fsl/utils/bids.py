@@ -18,7 +18,8 @@
 All of the other functions in this module should not be considered part of the
 public API.
 
-.. see:: https://bids-specification.readthedocs.io/en/stable/
+See https://bids-specification.readthedocs.io/en/stable/ for more information
+about BIDS.
 
 .. note::  The `pybids <https://bids-standard.github.io/pybids/>`_ library is
            a more suitable choice if you are after a more robust and featured
