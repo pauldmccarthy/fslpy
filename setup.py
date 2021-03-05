@@ -12,7 +12,7 @@ import os.path as op
 import            shutil
 
 from setuptools import setup
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import Command
 
 
@@ -27,7 +27,7 @@ with open(op.join(basedir, 'requirements.txt'), 'rt') as f:
 with open(op.join(basedir, 'requirements-extra.txt'), 'rt') as f:
     extra_requires = {'extras' : [l.strip() for l in f.readlines()]}
 
-packages = find_packages(include=('fsl', 'fsl.*'))
+packages = find_namespace_packages(include=('fsl', 'fsl.*'))
 
 # Figure out the current fslpy version, as defined in fsl/version.py. We
 # don't want to import the fsl package,  as this may cause build problems.
