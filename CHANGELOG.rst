@@ -10,6 +10,8 @@ order.
 Changed
 ^^^^^^^
 
+* The ``fslpy`` API ocumentation is now hosted at
+  https://open.win.ox.ac.uk/fsl/fslpy
 * The :mod:`fsl` and :mod:`fsl.scripts` packages have been changed from being
   `pkgutil-style
   <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
