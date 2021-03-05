@@ -253,23 +253,6 @@ build-pypi-dist:
 ##############
 
 
-deploy-doc:
-  <<: *only_upstream
-  <<: *setup_ssh
-  stage: deploy
-  when:  manual
-  image: python:3.7
-
-  tags:
-    - docker
-
-  dependencies:
-    - build-doc
-
-  script:
-    - bash ./.ci/deploy_doc.sh
-
-
 deploy-pypi:
   <<: *only_releases
   <<: *setup_ssh
