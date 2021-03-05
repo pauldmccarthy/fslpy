@@ -15,7 +15,7 @@ import contextlib
 import argparse
 import pytest
 
-import fsl
+import fsl.version as fv
 from fsl.utils         import fslsub, run
 from fsl.utils.tempdir import tempdir
 
@@ -63,7 +63,7 @@ with open('{{}}.o{{}}'.format(cmd, jobid), 'w') as stdout, \
 
 print(str(jobid))
 sys.exit(0)
-""".format(op.dirname(fsl.__file__)).strip()
+""".format(op.dirname(op.join(fv.__file__, '..'))).strip()
 
 @contextlib.contextmanager
 def fslsub_mockFSLDIR():
