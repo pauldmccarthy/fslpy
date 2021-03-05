@@ -9,12 +9,12 @@
 #
 #    2. style:  Check coding style
 #
-#    3. doc:    Building API documentation
+#    3. doc:    Building and upload API documentation using GitLab Pages.
 #
 #    4. build:  Building source and wheel distributions
 #
-#    5. deploy: Uploading the build outputs to pypi/hosting servers, and the
-#               documentation to a hosting server.
+#    5. deploy: Uploading the build outputs to pypi/hosting servers.
+#
 #
 # Custom docker images are used for several jobs - these images are
 # available at:
@@ -24,13 +24,10 @@
 # The test and style stages are executed on all branches of upstream and fork
 # repositories.
 #
-# The doc stage, and the deploy-doc job, is executed on all branches of the
-# upstream repository.
+# The doc stage is executed on release branches of the upstream repository.
 #
-# The build stage, and the remaining jobs in the deploy stage, are only
-# executed on the upstream repository, and only for release tags.
-#
-# The deploy stages are manually instantiated.
+# The build and deploy stages are executed on tags on the upstream
+# repository, and the deploy stage must be manually instantiated.
 #
 # Most of the logic for each job is defined in shell scripts in the .ci
 # sub-directory.
@@ -61,16 +58,10 @@ stages:
 #   - SSH_PRIVATE_KEY_FSL_DOWNLOAD   - private key for downloading some FSL
 #                                      files from a remote server (FSL_HOST)
 #
-#   - SSH_PRIVATE_KEY_DOC_DEPLOY     - private key for rsyncing documentation
-#                                      to remote host (DOC_HOST)
-#
 #   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
 #
-#   - DOC_HOST:                      - Username@host to upload documentation to
-#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
-#
 #   - FSL_HOST:                      - Username@host to download FSL data from
-#                                      (e.g. "paulmc@jalapeno.fmrib.ox.ac.uk")
+#                                      (most likely "paulmc@localhost")
 #
 #   - FSL_ATLAS_DIR:                 - Location of the FSL atlas data on
 #                                      FSL_HOST.
@@ -108,6 +99,11 @@ variables:
 .only_master: &only_master
   only:
     - master@fsl/fslpy
+
+
+.only_release_branches: &only_release_branches
+  only:
+    - /^v.+$/@fsl/fslpy
 
 
 .only_releases: &only_releases
@@ -201,12 +197,18 @@ style:
     TEST_STYLE:  "true"
 
 
-###########
-# Doc stage
-###########
+#############
+# Pages stage
+#############
 
-build-doc:
-  <<: *only_upstream
+# I would like to have separate doc deploys for
+# both the master and latest release branches,
+# but this is awkward with gitlab pages. So
+# currently the most recently executed pages
+# job is the one that gets deployed.
+
+pages:
+  <<: *only_release_branches
 
   tags:
    - docker
@@ -218,9 +220,8 @@ build-doc:
     - bash ./.ci/build_doc.sh
 
   artifacts:
-    expire_in: 1 day
     paths:
-      - doc/$CI_COMMIT_REF_NAME
+      - public
 
 
 #############
