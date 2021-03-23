@@ -495,9 +495,10 @@ def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbo
         pickle.dump(('module', func.__module__, func.__name__,
                      args, kwargs), pickle_bytes)
 
-    _, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
-                                   suffix='.py',
-                                   dir=tmp_dir)
+    handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
+                                        suffix='.py',
+                                        dir=tmp_dir)
+    os.close(handle)
 
     verbose_script = f'\nprint("running {filename}")\n' if verbose else ''
     if clean == 'never':
