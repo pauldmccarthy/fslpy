@@ -46,6 +46,8 @@ import numpy             as np
 import nibabel           as nib
 import nibabel.fileslice as fileslice
 
+from pathlib import Path
+
 import fsl.utils.meta        as meta
 import fsl.transform.affine  as affine
 import fsl.utils.notifier    as notifier
@@ -1088,6 +1090,11 @@ class Image(Nifti):
             nibImage   = nib.load(image, **kwargs)
             dataSource = image
             saved      = True
+        # The image parameter may be the name of an image file
+        if isinstance(image, Path):
+            nibImage   = nib.load(image, **kwargs)
+            dataSource = str(image)
+            saved      = True
 
         # Or a numpy array - we wrap it in a nibabel image,
         # with an identity transformation (each voxel maps
@@ -1140,6 +1147,8 @@ class Image(Nifti):
             # from disk, use the file name.
             if isinstance(image, six.string_types):
                 name = removeExt(op.basename(image))
+            if isinstance(image, Path):
+                name = image.name
 
             # Or the image was created from a numpy array
             elif isinstance(image, np.ndarray):
