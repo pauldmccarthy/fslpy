@@ -1006,8 +1006,9 @@ class Image(Nifti):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:      A string containing the name of an image file to load,
-                         or a :mod:`numpy` array, or a :mod:`nibabel` image
-                         object, or an ``Image`` object.
+                         or a Path object pointing to an image file, or a 
+                         :mod:`numpy` array, or a :mod:`nibabel` image object, 
+                         or an ``Image`` object.
 
         :arg name:       A name for the image.
 
