@@ -1091,8 +1091,8 @@ class Image(Nifti):
             nibImage   = nib.load(image, **kwargs)
             dataSource = image
             saved      = True
-        # The image parameter may be the name of an image file
-        if isinstance(image, Path):
+        # The image parameter may be a Path object pointing to an image file
+        elif isinstance(image, Path):
             nibImage   = nib.load(image, **kwargs)
             dataSource = str(image)
             saved      = True
@@ -1148,7 +1148,7 @@ class Image(Nifti):
             # from disk, use the file name.
             if isinstance(image, six.string_types):
                 name = removeExt(op.basename(image))
-            if isinstance(image, Path):
+            elif isinstance(image, Path):
                 name = image.name
 
             # Or the image was created from a numpy array
