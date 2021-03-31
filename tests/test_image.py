@@ -150,8 +150,7 @@ def test_load():
         # Not raising an error means the test passes
         for fname in shouldPass:
             fslimage.Image(op.join(testdir, fname))
-            testpath = Path(testdir) / fname
-            fslimage.Image(testpath)
+            fslimage.Image(Path(testdir) / fname)
 
         # These should raise an error
         for fname, exc in shouldRaise:
