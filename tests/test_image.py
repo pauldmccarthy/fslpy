@@ -12,6 +12,8 @@ import              json
 import os.path   as op
 import itertools as it
 
+from pathlib import Path
+
 import pytest
 
 import numpy        as np
@@ -148,6 +150,8 @@ def test_load():
         # Not raising an error means the test passes
         for fname in shouldPass:
             fslimage.Image(op.join(testdir, fname))
+            testpath = Path(testdir) / fname
+            fslimage.Image(testpath)
 
         # These should raise an error
         for fname, exc in shouldRaise:
