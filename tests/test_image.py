@@ -32,11 +32,7 @@ from fsl.utils.tempdir import tempdir
 from . import make_random_image
 from . import make_dummy_file
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-
+from unittest import mock
 
 try:
     import indexed_gzip as igzip

@@ -6,7 +6,6 @@
 #
 
 import collections
-import six
 
 import numpy as np
 
@@ -44,7 +43,7 @@ def test_memoize():
         assert timesCalled[0] == 6
 
     # Unicode arg
-    s = six.u('\u25B2')
+    s = '\u25B2'
     assert memoized(s) == s * 5
     assert timesCalled[0] == 7
     assert memoized(s) == s * 5
@@ -146,7 +145,7 @@ def test_memoizeMD5():
         assert timesCalled[0] == 6
 
     # Unicode arg (and return value)
-    s = six.u('\u25B2')
+    s = '\u25B2'
     assert memoized(s) == s * 5
     assert timesCalled[0] == 7
     assert memoized(s) == s * 5

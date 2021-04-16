@@ -6,16 +6,12 @@
 #
 
 
-from __future__ import division
-
 import                 random
 import                 glob
 import os.path      as op
 import itertools    as it
 import numpy        as np
 import numpy.linalg as npla
-
-import six
 
 import pytest
 
@@ -39,8 +35,7 @@ def readlines(filename):
         #
         # Pass it [bytes, bytes, ...], and it works
         # fine.
-        if six.PY3:
-            lines = [l.encode('ascii') for l in lines]
+        lines = [l.encode('ascii') for l in lines]
 
     return lines
 

@@ -20,11 +20,9 @@ import os.path   as op
 import numpy     as np
 import nibabel   as nib
 
-from six import StringIO
+from io import StringIO
 
-
-try: from unittest import mock
-except ImportError: import mock
+from unittest import mock
 
 import fsl.data.image                     as fslimage
 from   fsl.utils.tempdir import              tempdir

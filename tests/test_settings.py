@@ -12,12 +12,7 @@ import            pickle
 import            textwrap
 import            tempfile
 
-# python 3
-try:
-    import unittest.mock as mock
-# python 2
-except:
-    import mock
+import unittest.mock as mock
 
 import pytest
 

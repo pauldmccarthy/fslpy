@@ -9,11 +9,10 @@ import gc
 import time
 import threading
 import random
-
-from six.moves import reload_module
+import importlib
 
 import pytest
-import mock
+from unittest import mock
 
 import fsl.utils.idle as idle
 from fsl.utils.platform import platform as fslplatform
@@ -428,7 +427,7 @@ def test_idle_alwaysQueue4():
         with pytest.raises(ImportError):
             import wx
 
-    reload_module(fsl.utils.platform)
+    importlib.reload(fsl.utils.platform)
 
     assert called[0]
 
