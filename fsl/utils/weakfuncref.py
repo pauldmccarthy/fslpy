@@ -7,13 +7,12 @@
 """This module provides the :class:`WeakFunctionRef` class. """
 
 
-import six
 import types
 import weakref
 import inspect
 
 
-class WeakFunctionRef(object):
+class WeakFunctionRef:
     """Class which encapsulates a :mod:`weakref` to a function or method.
 
     This class is used by :class:`.Notifier` instances to reference
@@ -28,10 +27,10 @@ class WeakFunctionRef(object):
         """
 
         # Bound method
-        if self.__isMethod(func):
+        if inspect.ismethod(func):
 
-            boundMeth = six.get_method_function(func)
-            boundSelf = six.get_method_self(    func)
+            boundMeth = func.__func__
+            boundSelf = func.__self__
 
             # We can't take a weakref of the method
             # object, so we have to weakref the object
@@ -73,35 +72,6 @@ class WeakFunctionRef(object):
         return self.__str__()
 
 
-    def __isMethod(self, func):
-        """Returns ``True`` if the given function is a bound method,
-        ``False`` otherwise.
-
-        This seems to be one of the few areas where python 2 and 3 are
-        irreconcilably incompatible (or just where :mod:`six` does not have a
-        function to help us).
-
-        In Python 3 there is no difference between an unbound method and a
-        function. But in Python 2, an unbound method is still a method (and
-        inspect.ismethod returns True).
-        """
-
-        ismethod = False
-
-        # Therefore, in python2 we need to test
-        # whether the function is a method, and
-        # also test whether it is bound.
-        if six.PY2:
-            ismethod = (inspect.ismethod(func) and
-                        six.get_method_self(func) is not None)
-
-        # But in python3, if the function is a
-        # method it is, by definition, bound.
-        elif six.PY3:
-            ismethod = inspect.ismethod(func)
-
-        return ismethod
-
 
     def __findPrivateMethod(self):
         """Finds and returns the bound method associated with the encapsulated
@@ -125,8 +95,7 @@ class WeakFunctionRef(object):
 
             att = getattr(obj, name)
 
-            if isinstance(att, types.MethodType) and \
-               six.get_method_function(att) is func:
+            if isinstance(att, types.MethodType) and att.__func__ is func:
                 return att
 
         return None

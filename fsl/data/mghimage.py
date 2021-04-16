@@ -10,8 +10,8 @@ Freesurfer ``mgh``/``mgz`` image files.
 
 
 import os.path as op
+import            pathlib
 
-import            six
 import numpy   as np
 import nibabel as nib
 
@@ -47,7 +47,7 @@ class MGHImage(fslimage.Image):
         All other arguments are passed through to :meth:`Image.__init__`
         """
 
-        if isinstance(image, six.string_types):
+        if isinstance(image, (str, pathlib.Path)):
             filename = op.abspath(image)
             name     = op.basename(filename)
             image    = nib.load(image)

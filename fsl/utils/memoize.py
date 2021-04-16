@@ -21,7 +21,6 @@ a function:
 import logging
 import hashlib
 import functools
-import six
 
 log = logging.getLogger(__name__)
 
@@ -171,7 +170,7 @@ def memoizeMD5(func):
         # compatible) bytes , and take
         # the hash of those bytes.
         for arg in args:
-            if not isinstance(arg, six.string_types):
+            if not isinstance(arg, str):
                 arg = str(arg)
             arg = arg.encode('utf-8')
             hashobj.update(arg)

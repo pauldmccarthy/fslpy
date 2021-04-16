@@ -8,8 +8,6 @@
 `FSL_ANAT <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat>`_ command.
 """
 
-import six
-
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
