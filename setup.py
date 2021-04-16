@@ -8,8 +8,9 @@
 
 from __future__ import print_function
 
-import os.path as op
-import            shutil
+import os.path       as op
+import                  shutil
+import unittest.mock as mock
 
 from setuptools import setup
 from setuptools import find_namespace_packages
@@ -67,11 +68,6 @@ class doc(Command):
         print('Building documentation [{}]'.format(destdir))
 
         import sphinx.cmd.build as sphinx_build
-
-        try:
-            import unittest.mock as mock
-        except:
-            import mock
 
         mockobj       = mock.MagicMock()
         mockobj.__version__ = '2.2.0'
