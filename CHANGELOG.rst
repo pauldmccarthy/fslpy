@@ -11,18 +11,21 @@ Changed
 ^^^^^^^
 
 * The ``fslpy`` API ocumentation is now hosted at
-  https://open.win.ox.ac.uk/fsl/fslpy
+  https://open.win.ox.ac.uk/fsl/fslpy (!290).
 * The :mod:`fsl` and :mod:`fsl.scripts` packages have been changed from being
   `pkgutil-style
   <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
   namespace packages to now being `native
   <https://packaging.python.org/guides/packaging-namespace-packages/#native-namespace-packages>`_
-  namespace packages.
+  namespace packages (!290).
 * The :class:`.TaskThread` now allows an error handler function to be
-  specified, which is run on the :mod:`.idle` loop.
+  specified, which is run on the :mod:`.idle` loop (!283).
 * The :func:`.bids.loadMetadata` function no long resolves sym-links when
-  determining whether a file is contained within a BIDS data set.
-
+  determining whether a file is contained within a BIDS data set (!287).
+* The :class:`.Image` class can now be created from a ``pathlib.Path`` object
+  (!292).
+* Some functions in the :mod:`.path` module can now be used with
+  ``pathlib.Path`` objects (!293).
 
 Deprecated
 ^^^^^^^^^^
@@ -32,17 +35,20 @@ Deprecated
   :mod:`fsl.utils.platform` module, including ``frozen``, ``haveGui``,
   ``canHaveGui``, ``inSSHSession``, ``inVNCSession``, ``wxPlatform``,
   ``wxFlavour``, ``glVersion``, ``glRenderer``, and ``glIsSoftwareRenderer``.
-  Equivalent functions are being added to the ``fsleyes-widgets`` library.
+  Equivalent functions are being added to the ``fsleyes-widgets`` library
+  (!285).
 * The :mod:`fsl.utils.filetree` package has been deprecated, and will be
   removed in a future version of ``fslpy`` - it is now published as a separate
-  library on [PyPI](https://pypi.org/project/file-tree/).
+  library on [PyPI](https://pypi.org/project/file-tree/) (!286).
 
 
 Fixed
 ^^^^^
 
 * Fixed an edge-case in the :mod:`.gifti` module, where a surface with a
-  single triangle was being loaded incorrectly.
+  single triangle was being loaded incorrectly (!288).
+* Fixed an issue in the :func:`.func_to_cmd` function, where it was
+  unintentionally leaving flie handles open (!291).
 
 
 
