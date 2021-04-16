@@ -11,12 +11,8 @@ import            os
 import            shutil
 import            textwrap
 
-# python 3
-try:  from unittest import mock
-# python 2
-except ImportError: import mock
+from unittest import mock
 
-import six
 import pytest
 
 import fsl.utils.tempdir                  as tempdir
@@ -273,7 +269,7 @@ def test_runfsl():
 
 
 def mock_submit(cmd, **kwargs):
-    if isinstance(cmd, six.string_types):
+    if isinstance(cmd, str):
         name = cmd.split()[0]
     else:
         name = cmd[0]

@@ -6,15 +6,14 @@
 #
 
 
-import            os
-import            gc
-import os.path as op
-import            sys
-import            shutil
-import            tempfile
-import            pytest
-
-import mock
+import               os
+import               gc
+import os.path    as op
+import               sys
+import               shutil
+import               tempfile
+import               pytest
+from unittest import mock
 
 
 import fsl.utils.platform as fslplatform
@@ -216,7 +215,7 @@ def test_detect_ssh():
 def test_fslwsl():
     """
     Note that ``Platform.fsldir`` requires the directory in ``FSLDIR`` to exist and
-    sets ``FSLDIR`` to ``None`` if it doesn't. So we create a ``Platform`` first 
+    sets ``FSLDIR`` to ``None`` if it doesn't. So we create a ``Platform`` first
     and then overwrite ``FSLDIR``. This is a bit of a hack but the logic we are testing
     here is whether ``Platform.fslwsl`` recognizes a WSL ``FSLDIR`` string
     """

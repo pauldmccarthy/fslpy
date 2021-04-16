@@ -32,11 +32,7 @@ from fsl.utils.tempdir import tempdir
 from . import make_random_image
 from . import make_dummy_file
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-
+from unittest import mock
 
 try:
     import indexed_gzip as igzip
@@ -206,6 +202,23 @@ def test_create():
             img = fslimage.Image(nimg)
             assert img.niftiVersion == imgtype
             assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
+
+
+def test_name_dataSource():
+    with tempdir():
+
+        expName       = 'image'
+        expDataSource = op.abspath('image.nii.gz')
+        make_image('image.nii.gz')
+
+        tests = ['image', 'image.nii.gz', op.abspath('image'),
+                 op.abspath('image.nii.gz')]
+        tests = tests + [Path(t) for t in tests]
+
+        for t in tests:
+            i = fslimage.Image(t)
+            assert i.name       == expName
+            assert i.dataSource == expDataSource
 
 
 def test_bad_create():

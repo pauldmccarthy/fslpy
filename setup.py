@@ -8,8 +8,9 @@
 
 from __future__ import print_function
 
-import os.path as op
-import            shutil
+import os.path       as op
+import                  shutil
+import unittest.mock as mock
 
 from setuptools import setup
 from setuptools import find_namespace_packages
@@ -68,11 +69,6 @@ class doc(Command):
 
         import sphinx.cmd.build as sphinx_build
 
-        try:
-            import unittest.mock as mock
-        except:
-            import mock
-
         mockobj       = mock.MagicMock()
         mockobj.__version__ = '2.2.0'
         mockedModules = open(op.join(docdir, 'mock_modules.txt')).readlines()
@@ -104,6 +100,7 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Software Development :: Libraries :: Python Modules'],
 
     packages=packages,

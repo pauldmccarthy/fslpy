@@ -5,15 +5,15 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-from __future__ import print_function
-
 import            os
 import os.path as op
 import            shutil
+import            pathlib
 import            tempfile
 
+from unittest import mock
+
 import pytest
-import mock
 
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
@@ -150,7 +150,8 @@ def test_hasExt():
     ]
 
     for path, aexts, expected in tests:
-        assert fslpath.hasExt(path, aexts) == expected
+        assert fslpath.hasExt(path,               aexts) == expected
+        assert fslpath.hasExt(pathlib.Path(path), aexts) == expected
 
 
 def test_addExt_imageFiles_mustExist_shouldPass():
@@ -248,18 +249,15 @@ def test_addExt_imageFiles_mustExist_shouldPass():
             for f in files_to_create:
                 make_dummy_image_file(op.join(workdir, f))
 
-            print('files_to_create: ', files_to_create)
-            print('workdir:         ', os.listdir(workdir))
-            print('prefix:          ', prefix)
-            print('expected:        ', expected)
-
-            result =  fslpath.addExt(op.join(workdir, prefix),
-                                     allowedExts,
-                                     mustExist=True,
-                                     fileGroups=groups)
-
-            print('result:          ', result)
-
+            result = fslpath.addExt(op.join(workdir, prefix),
+                                    allowedExts,
+                                    mustExist=True,
+                                    fileGroups=groups)
+            assert result == op.join(workdir, expected)
+            result = fslpath.addExt(pathlib.Path(op.join(workdir, prefix)),
+                                    allowedExts,
+                                    mustExist=True,
+                                    fileGroups=groups)
             assert result == op.join(workdir, expected)
 
             cleardir(workdir)
@@ -336,20 +334,15 @@ def test_addExt_otherFiles_mustExist_shouldPass():
             for f in files_to_create:
                 make_dummy_file(op.join(workdir, f))
 
-            print('files_to_create: ', files_to_create)
-            print('prefix:          ', prefix)
-            print('allowedExts:     ', allowedExts)
-            print('fileGroups:      ', fileGroups)
-            print('workdir:         ', os.listdir(workdir))
-            print('expected:        ', expected)
-
-            result =  fslpath.addExt(op.join(workdir, prefix),
-                                     allowedExts=allowedExts,
-                                     mustExist=True,
-                                     fileGroups=fileGroups)
-
-            print('result:          ', result)
-
+            result = fslpath.addExt(op.join(workdir, prefix),
+                                    allowedExts=allowedExts,
+                                    mustExist=True,
+                                    fileGroups=fileGroups)
+            assert result == op.join(workdir, expected)
+            result = fslpath.addExt(pathlib.Path(op.join(workdir, prefix)),
+                                    allowedExts=allowedExts,
+                                    mustExist=True,
+                                    fileGroups=fileGroups)
             assert result == op.join(workdir, expected)
 
             cleardir(workdir)
@@ -422,18 +415,16 @@ def test_addExt_imageFiles_mustExist_shouldFail():
             for f in files_to_create:
                 make_dummy_file(op.join(workdir, f))
 
-            print('files_to_create: ', files_to_create)
-            print('prefix:          ', prefix)
-            print('workdir:         ', os.listdir(workdir))
-
             with pytest.raises(fslpath.PathError):
-
-                result = fslpath.addExt(op.join(workdir, prefix),
-                                        allowedExts=allowedExts,
-                                        mustExist=True,
-                                        fileGroups=fileGroups)
-
-                print('result:          ', result)
+                fslpath.addExt(op.join(workdir, prefix),
+                               allowedExts=allowedExts,
+                               mustExist=True,
+                               fileGroups=fileGroups)
+            with pytest.raises(fslpath.PathError):
+                fslpath.addExt(pathlib.Path(op.join(workdir, prefix)),
+                               allowedExts=allowedExts,
+                               mustExist=True,
+                               fileGroups=fileGroups)
 
     finally:
         shutil.rmtree(workdir)
@@ -481,23 +472,19 @@ def test_addExt_otherFiles_mustExist_shouldFail():
             for f in files_to_create:
                 make_dummy_file(op.join(workdir, f))
 
-            print('files_to_create: ', files_to_create)
-            print('prefix:          ', prefix)
-            print('workdir:         ', os.listdir(workdir))
-
             with pytest.raises(fslpath.PathError):
-
-                result = fslpath.addExt(op.join(workdir, prefix),
-                                        allowedExts=allowedExts,
-                                        mustExist=True,
-                                        fileGroups=fileGroups)
-
-                print('result:          ', result)
-
+                fslpath.addExt(op.join(workdir, prefix),
+                               allowedExts=allowedExts,
+                               mustExist=True,
+                               fileGroups=fileGroups)
+            with pytest.raises(fslpath.PathError):
+                fslpath.addExt(pathlib.Path(op.join(workdir, prefix)),
+                               allowedExts=allowedExts,
+                               mustExist=True,
+                               fileGroups=fileGroups)
 
     finally:
         shutil.rmtree(workdir)
-    pass
 
 
 def test_addExt_noExist():
@@ -544,8 +531,11 @@ def test_addExt_noExist():
     ]
 
     for prefix, defaultExt, allowedExts, expected in tests:
-
         assert fslpath.addExt(prefix,
+                              allowedExts,
+                              defaultExt=defaultExt,
+                              mustExist=False) == expected
+        assert fslpath.addExt(pathlib.Path(prefix),
                               allowedExts,
                               defaultExt=defaultExt,
                               mustExist=False) == expected
@@ -582,14 +572,19 @@ def test_addExt_unambiguous():
         expected = expected.split()
 
         with testdir(create) as td:
-
             result = fslpath.addExt(prefix,
                                     allowedExts=exts,
                                     fileGroups=groups,
                                     defaultExt=defaultExt,
                                     unambiguous=False)
-
             assert sorted(expected) == sorted(result)
+            result = fslpath.addExt(pathlib.Path(prefix),
+                                    allowedExts=exts,
+                                    fileGroups=groups,
+                                    defaultExt=defaultExt,
+                                    unambiguous=False)
+            assert sorted(expected) == sorted(result)
+
 
 def test_removeExt():
 
@@ -622,7 +617,8 @@ def test_removeExt():
         if len(test) == 2: allowed = allowedExts
         else:              allowed = test[2]
 
-        assert fslpath.removeExt(path, allowed) == output
+        assert fslpath.removeExt(path,               allowed) == output
+        assert fslpath.removeExt(pathlib.Path(path), allowed) == output
 
 
 def test_getExt():
@@ -658,8 +654,8 @@ def test_getExt():
         if len(test) == 2: allowed = allowedExts
         else:              allowed = test[2]
 
-        print(filename, '==', output)
-        assert fslpath.getExt(filename, allowed) == output
+        assert fslpath.getExt(filename,               allowed) == output
+        assert fslpath.getExt(pathlib.Path(filename), allowed) == output
 
 
 def test_splitExt():
@@ -704,13 +700,14 @@ def test_splitExt():
 
     for test in tests:
         filename          = test[0]
+        pfilename         = pathlib.Path(filename)
         outbase, outext   = test[1]
 
         if len(test) == 2: allowed = allowedExts
         else:              allowed = test[2]
 
-        print(filename, '==', (outbase, outext))
-        assert fslpath.splitExt(filename, allowed) == (outbase, outext)
+        assert fslpath.splitExt(filename,  allowed) == (outbase, outext)
+        assert fslpath.splitExt(pfilename, allowed) == (outbase, outext)
 
     # firstDot=True
     tests = [
@@ -721,7 +718,9 @@ def test_splitExt():
     ]
 
     for f, exp in tests:
-        assert fslpath.splitExt(f, firstDot=True) == exp
+        pf = pathlib.Path(f)
+        assert fslpath.splitExt(f,  firstDot=True) == exp
+        assert fslpath.splitExt(pf, firstDot=True) == exp
 
 
 def test_getFileGroup_imageFiles_shouldPass():
@@ -797,11 +796,6 @@ def test_getFileGroup_imageFiles_shouldPass():
             for fn in files_to_create:
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
-
-            print()
-            print('files_to_create: ', files_to_create)
-            print('path:            ', path)
-            print('files_to_expect: ', files_to_expect)
 
             fullPaths = fslpath.getFileGroup(
                 op.join(workdir, path),
@@ -918,13 +912,6 @@ def test_getFileGroup_otherFiles_shouldPass():
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
 
-            print()
-            print('files_to_create: ', files_to_create)
-            print('path:            ', path)
-            print('allowedExts:     ', allowedExts)
-            print('fileGroups:      ', fileGroups)
-            print('files_to_expect: ', files_to_expect)
-
             fullPaths = fslpath.getFileGroup(
                 op.join(workdir, path),
                 allowedExts=allowedExts,
@@ -1006,31 +993,21 @@ def test_getFileGroup_shouldFail():
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
 
-            print()
-            print('files_to_create: ', files_to_create)
-            print('path:            ', path)
-            print('allowedExts:     ', allowedExts)
-            print('fileGroups:      ', fileGroups)
-
             with pytest.raises(fslpath.PathError):
-                fullPaths = fslpath.getFileGroup(
+                fslpath.getFileGroup(
                     op.join(workdir, path),
                     allowedExts=allowedExts,
                     fileGroups=fileGroups,
                     fullPaths=True,
                     unambiguous=unambiguous)
 
-                print('fullPaths:       ', fullPaths)
-
             with pytest.raises(fslpath.PathError):
-                exts = fslpath.getFileGroup(
+                fslpath.getFileGroup(
                     op.join(workdir, path),
                     allowedExts=allowedExts,
                     fileGroups=fileGroups,
                     fullPaths=False,
                     unambiguous=unambiguous)
-
-                print('exts:            ', exts)
 
             cleardir(workdir)
 
@@ -1117,15 +1094,8 @@ def test_removeDuplicates_imageFiles_shouldPass():
                 paths    = paths.split()
                 expected = expected.split()
 
-                print()
-                print('files_to_create: ', files_to_create)
-                print('paths:           ', paths)
-                print('expected:        ', expected)
-
                 paths  = [op.join(workdir, p) for p in paths]
                 result = fslpath.removeDuplicates(paths, allowedExts, groups)
-
-                print('result:   ', result)
 
                 assert result == [op.join(workdir, e) for e in expected]
 
@@ -1196,19 +1166,9 @@ def test_removeDuplicates_otherFiles_shouldPass():
 
             for f in files_to_create:
                 make_dummy_file(op.join(workdir, f))
-
-            print('files_to_create: {}'.format(files_to_create))
-            print('paths:           {}'.format(paths))
-            print('allowedExts:     {}'.format(allowedExts))
-            print('fileGroups:      {}'.format(fileGroups))
-            print('workdir:         {}'.format(os.listdir(workdir)))
-            print('expected:        {}'.format(expected))
-
             result = fslpath.removeDuplicates([op.join(workdir, p) for p in paths],
                                               allowedExts=allowedExts,
                                               fileGroups=fileGroups)
-
-            print('result:          {}'.format(result))
 
             assert result == [op.join(workdir, e) for e in expected]
 
@@ -1256,17 +1216,10 @@ def test_removeDuplicates_shouldFail():
                 with open(op.join(workdir, fn), 'wt') as f:
                     f.write('{}\n'.format(fn))
 
-            print()
-            print('files_to_create: ', files_to_create)
-            print('path:            ', path)
-            print('allowedExts:     ', allowedExts)
-            print('fileGroups:      ', fileGroups)
-
             with pytest.raises(fslpath.PathError):
-                result = fslpath.removeDuplicates(path,
-                                                  allowedExts=allowedExts,
-                                                  fileGroups=fileGroups)
-                print('result:          ', result)
+                fslpath.removeDuplicates(path,
+                                         allowedExts=allowedExts,
+                                         fileGroups=fileGroups)
 
     finally:
         shutil.rmtree(workdir)

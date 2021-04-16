@@ -14,8 +14,6 @@ that some condition is met.
 """
 
 
-import six
-
 import nibabel as nib
 
 import fsl.data.image as fslimage
@@ -24,7 +22,7 @@ import fsl.data.image as fslimage
 def ensureIsImage(img):
     """Ensures that the given ``img`` is an in-memory ``nibabel`` object.
     """
-    if isinstance(img, six.string_types):
+    if isinstance(img, str):
         img = fslimage.addExt(img)
         img = nib.load(img)
     return img

@@ -9,13 +9,13 @@ files. Pillow is required to use the ``Bitmap`` class.
 """
 
 
-import os.path      as op
-import                 logging
-import                 six
+import os.path as op
+import            pathlib
+import            logging
 
-import numpy        as np
+import numpy as np
 
-from . import image as fslimage
+import fsl.data.image as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class Bitmap(object):
                   data.
         """
 
-        if isinstance(bmp, six.string_types):
+        if isinstance(bmp, (pathlib.Path, str)):
 
             try:
                 # Allow big images
@@ -61,7 +61,7 @@ class Bitmap(object):
             except ImportError:
                 raise RuntimeError('Install Pillow to use the Bitmap class')
 
-            src = bmp
+            src = str(bmp)
             img = Image.open(src)
 
             # If this is a palette/LUT

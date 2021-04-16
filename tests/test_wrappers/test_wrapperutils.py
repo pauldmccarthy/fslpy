@@ -11,10 +11,8 @@ import            shlex
 import            pathlib
 import            textwrap
 
-try: from unittest import mock
-except ImportError: import mock
+from unittest import mock
 
-import six
 import pytest
 
 import numpy as np
@@ -317,7 +315,7 @@ def test_fileOrThing_sequence():
     @wutils.fileOrArray('arrs', 'out')
     def func(arrs, out):
 
-        if isinstance(arrs, six.string_types):
+        if isinstance(arrs, str):
             arrs = [arrs]
 
         arrs = [np.loadtxt(a) for a in arrs]

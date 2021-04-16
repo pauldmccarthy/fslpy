@@ -14,9 +14,6 @@ import inspect
 import contextlib
 import collections
 
-import six
-
-
 import fsl.utils.idle        as idle
 import fsl.utils.weakfuncref as weakfuncref
 
@@ -297,7 +294,7 @@ class Notifier(object):
         :arg topic: Topic or topics that the listener is registered on.
         """
 
-        if topic is None or isinstance(topic, six.string_types):
+        if topic is None or isinstance(topic, str):
             topic = [topic]
 
         topics = topic

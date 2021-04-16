@@ -103,8 +103,6 @@ import                    tempfile
 import                    warnings
 import                    functools
 
-
-import            six
 import nibabel as nib
 import numpy   as np
 
@@ -346,8 +344,7 @@ def applyArgStyle(style,
 
     # always returns a sequence
     def fmtval(val):
-        if     isinstance(val, abc.Sequence) and \
-           not isinstance(val, six.string_types):
+        if isinstance(val, abc.Sequence) and (not isinstance(val, str)):
 
             val = [str(v) for v in val]
             if   valsep == ' ': return val
@@ -711,8 +708,7 @@ class FileOrThing(object):
            kwargs.get('cmdonly', False):
             allargs = {**dict(zip(argnames, args)), **kwargs}
             for name, val in allargs.items():
-                if (name in self.__things) and \
-                   (not isinstance(val, six.string_types)):
+                if (name in self.__things) and (not isinstance(val, str)):
                     raise ValueError('Cannot use in-memory objects '
                                      'or LOAD with submit=True!')
             return func(*args, **kwargs)

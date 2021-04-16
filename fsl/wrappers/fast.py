@@ -10,8 +10,6 @@
 """
 
 
-import six
-
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
@@ -28,7 +26,7 @@ def fast(imgs, out='fast', **kwargs):
                     command line option)
     """
 
-    if isinstance(imgs, six.string_types):
+    if isinstance(imgs, str):
         imgs = [imgs]
 
     asrt.assertIsNifti(*imgs)

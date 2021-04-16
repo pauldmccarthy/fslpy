@@ -37,7 +37,7 @@ Example usage, building a short pipeline::
 """
 
 
-from six import BytesIO
+from io import BytesIO
 import os.path as op
 import glob
 import time
@@ -439,9 +439,9 @@ _external_job = ("""#!{}
 # This is a temporary file designed to run the python function {},
 # so that it can be submitted to the cluster
 import pickle
-from six import BytesIO
+from io import BytesIO
 from importlib import import_module
-{} 
+{}
 pickle_bytes = BytesIO({})
 name_type, name, func_name, args, kwargs = pickle.load(pickle_bytes)
 
@@ -455,7 +455,7 @@ elif name_type == 'script':
     func = local_execute[func_name]
 else:
     raise ValueError('Unknown name_type: %r' % name_type)
-    
+
 {}
 
 """)

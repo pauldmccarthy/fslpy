@@ -32,21 +32,20 @@ and file names:
 """
 
 
-import                      os
-import os.path           as op
-import itertools         as it
-import                      json
-import                      string
-import                      logging
-import                      tempfile
-
-import                      six
-import numpy             as np
-
-import nibabel           as nib
-import nibabel.fileslice as fileslice
+import                  os
+import os.path   as     op
+import itertools as     it
+import                  json
+import                  string
+import                  logging
+import                  tempfile
 
 from pathlib import Path
+from typing  import Union
+
+import numpy             as np
+import nibabel           as nib
+import nibabel.fileslice as fileslice
 
 import fsl.utils.meta        as meta
 import fsl.transform.affine  as affine
@@ -56,6 +55,10 @@ import fsl.utils.path        as fslpath
 import fsl.utils.bids        as fslbids
 import fsl.data.constants    as constants
 import fsl.data.imagewrapper as imagewrapper
+
+
+PathLike    = Union[str, Path]
+ImageSource = Union[PathLike, nib.Nifti1Image, np.ndarray, 'Image']
 
 
 log = logging.getLogger(__name__)
@@ -993,21 +996,21 @@ class Image(Nifti):
 
 
     def __init__(self,
-                 image,
-                 name=None,
-                 header=None,
-                 xform=None,
-                 loadData=True,
-                 calcRange=True,
-                 threaded=False,
-                 dataSource=None,
-                 loadMeta=False,
+                 image      : ImageSource,
+                 name       : str              = None,
+                 header     : nib.Nifti1Header = None,
+                 xform      : np.ndarray       = None,
+                 loadData   : bool             = True,
+                 calcRange  : bool             = True,
+                 threaded   : bool             = False,
+                 dataSource : PathLike         = None,
+                 loadMeta   : bool             = False,
                  **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
         :arg image:      A string containing the name of an image file to load,
-                         or a Path object pointing to an image file, or a 
-                         :mod:`numpy` array, or a :mod:`nibabel` image object, 
+                         or a Path object pointing to an image file, or a
+                         :mod:`numpy` array, or a :mod:`nibabel` image object,
                          or an ``Image`` object.
 
         :arg name:       A name for the image.
@@ -1086,15 +1089,10 @@ class Image(Nifti):
             header.set_qform(xform, code=qform)
 
         # The image parameter may be the name of an image file
-        if isinstance(image, six.string_types):
+        if isinstance(image, (str, Path)):
             image      = op.abspath(addExt(image))
             nibImage   = nib.load(image, **kwargs)
             dataSource = image
-            saved      = True
-        # The image parameter may be a Path object pointing to an image file
-        elif isinstance(image, Path):
-            nibImage   = nib.load(image, **kwargs)
-            dataSource = str(image)
             saved      = True
 
         # Or a numpy array - we wrap it in a nibabel image,
@@ -1141,15 +1139,13 @@ class Image(Nifti):
             nibImage = image
 
         # Figure out the name of this image, if
-        # it has not beenbeen explicitly passed in
+        # it has not been explicitly passed in
         if name is None:
 
             # If this image was loaded
             # from disk, use the file name.
-            if isinstance(image, six.string_types):
+            if isinstance(image, (str, Path)):
                 name = removeExt(op.basename(image))
-            elif isinstance(image, Path):
-                name = image.name
 
             # Or the image was created from a numpy array
             elif isinstance(image, np.ndarray):

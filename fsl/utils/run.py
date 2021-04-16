@@ -30,8 +30,6 @@ import subprocess      as sp
 import os.path         as op
 import                    os
 
-import                    six
-
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.fslsub                   as fslsub
 import fsl.utils.tempdir                  as tempdir
@@ -83,7 +81,7 @@ def prepareArgs(args):
     if len(args) == 1:
 
         # Argument was a command string
-        if isinstance(args[0], six.string_types):
+        if isinstance(args[0], str):
             args = shlex.split(args[0])
 
         # Argument was an unpacked sequence
