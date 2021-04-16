@@ -32,9 +32,15 @@ import os.path as op
 import            os
 import            glob
 import            operator
+import            pathlib
 import            re
 
+from typing import Sequence, Tuple, Union
+
 from fsl.utils.platform import platform
+
+
+PathLike = Union[str, pathlib.Path]
 
 
 class PathError(Exception):
@@ -223,19 +229,29 @@ def addExt(prefix,
     return allPaths[0]
 
 
-def removeExt(filename, allowedExts=None, firstDot=False):
+def removeExt(
+        filename    : PathLike,
+        allowedExts : Sequence[str] = None,
+        firstDot    : bool          = False
+) -> str:
     """Returns the base name of the given file name.  See :func:`splitExt`. """
-
     return splitExt(filename, allowedExts, firstDot)[0]
 
 
-def getExt(filename, allowedExts=None, firstDot=False):
+def getExt(
+        filename    : PathLike,
+        allowedExts : Sequence[str] = None,
+        firstDot    : bool          = False
+) -> str:
     """Returns the extension of the given file name.  See :func:`splitExt`. """
-
     return splitExt(filename, allowedExts, firstDot)[1]
 
 
-def splitExt(filename, allowedExts=None, firstDot=False):
+def splitExt(
+        filename    : PathLike,
+        allowedExts : Sequence[str] = None,
+        firstDot    : bool          = False
+) -> Tuple[str, str]:
     """Returns the base name and the extension from the given file name.
 
     If ``allowedExts`` is ``None`` and ``firstDot`` is ``False``, this
@@ -261,6 +277,8 @@ def splitExt(filename, allowedExts=None, firstDot=False):
     :arg firstDot:    Split the file name on the first period, rather than the
                       last period. Ignored if ``allowedExts`` is specified.
     """
+
+    filename = str(filename)
 
     # If allowedExts is not specified
     # we split on a period character
