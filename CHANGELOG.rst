@@ -2,13 +2,13 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-
-3.6.0 (Under development)
--------------------------
+3.6.0 (Monday 19th April 2021)
+------------------------------
 
 
 Changed
 ^^^^^^^
+
 
 * The ``fslpy`` API ocumentation is now hosted at
   https://open.win.ox.ac.uk/fsl/fslpy (!290).
@@ -26,6 +26,7 @@ Changed
   (!292).
 * Some functions in the :mod:`.path` module can now be used with
   ``pathlib.Path`` objects (!293).
+
 
 Deprecated
 ^^^^^^^^^^
