@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.6.1 (Thursday 27th April 2021)
+--------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Removed the ``dataclasses`` backport from requirements (!297).
+
+
 3.6.0 (Monday 19th April 2021)
 ------------------------------
 
@@ -11,7 +23,7 @@ Changed
 
 
 * The ``fslpy`` API ocumentation is now hosted at
-  https://open.win.ox.ac.uk/fsl/fslpy (!290).
+  https://open.win.ox.ac.uk/pages/fsl/fslpy (!290).
 * The :mod:`fsl` and :mod:`fsl.scripts` packages have been changed from being
   `pkgutil-style
   <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
