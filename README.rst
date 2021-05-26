@@ -98,6 +98,9 @@ The `fsl.transform.x5 <fsl/transform/x5.py>`_ module uses `h5py
 Documentation
 -------------
 
+API documentation for ``fslpy`` is hosted at
+https://open.win.ox.ac.uk/pages/fsl/fslpy/.
+
 ``fslpy`` is documented using `sphinx <http://http://sphinx-doc.org/>`_. You
 can build the API documentation by running::
 
