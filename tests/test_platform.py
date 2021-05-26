@@ -10,6 +10,7 @@ import               os
 import               gc
 import os.path    as op
 import               sys
+import               time
 import               shutil
 import               tempfile
 import               pytest
@@ -41,8 +42,22 @@ def test_haveGui():
 
     import wx
 
-    p      = fslplatform.Platform()
-    app    = wx.App()
+    p = fslplatform.Platform()
+
+    # We can get weird conflicts w.r.t. access to
+    # the display when multiple tests are running
+    # simultaneously within docker on the same
+    # machine.
+    app = None
+    for _ in range(5):
+        try:
+            app = wx.App()
+            break
+        except Exception:
+            time.sleep(1)
+    if app is None:
+        assert False
+
     frame  = wx.Frame(None)
     passed = [False]
     frame.Show()
