@@ -327,13 +327,16 @@ def test_fast():
         cmd = op.join(fsldir, 'bin', 'fast')
 
         result   = fw.fast('input', 'myseg', n_classes=3)
-        expected = [cmd, '-v', '--out=myseg', '--class=3', 'input']
+        expected = [cmd, '--out=myseg', '--class=3', 'input']
 
         assert result.stdout[0] == ' '.join(expected)
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3)
-        expected = [cmd, '-v', '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
+        expected = [cmd, '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
+        assert result.stdout[0] == ' '.join(expected)
 
+        result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3, verbose=True)
+        expected = [cmd, '--out=myseg', '--class=3', '--verbose', 'in1', 'in2', 'in3']
         assert result.stdout[0] == ' '.join(expected)
 
 
@@ -390,10 +393,10 @@ def test_tbss():
 def test_fsl_prepare_fieldmap():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_prepare_fieldmap',)) as fsldir:
         fpf = op.join(fsldir, 'bin', 'fsl_prepare_fieldmap')
-        result   = fw.fsl_prepare_fieldmap(phase_image='ph', 
-                                                 magnitude_image='mag', 
-                                                 out_image='out', 
-                                                 deltaTE=2.46, 
-                                                 nocheck=True)
+        result   = fw.fsl_prepare_fieldmap(phase_image='ph',
+                                           magnitude_image='mag',
+                                           out_image='out',
+                                           deltaTE=2.46,
+                                           nocheck=True)
         expected = (fpf, ('SIEMENS', 'ph', 'mag', 'out', '2.46', '--nocheck'))
         assert checkResult(result.stdout[0], *expected)
