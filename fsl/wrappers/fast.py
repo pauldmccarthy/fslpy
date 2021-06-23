@@ -50,7 +50,7 @@ def fast(imgs, out='fast', **kwargs):
         'n_classes' : 'class',
     }
 
-    cmd  = ['fast', '-v', '--out=%s' % out]
+    cmd  = ['fast', '--out=%s' % out]
     cmd += wutils.applyArgStyle('--=',
                                 valmap=valmap,
                                 argmap=argmap,
