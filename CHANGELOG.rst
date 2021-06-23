@@ -3,8 +3,20 @@ order.
 
 
 
-3.6.1 (Thursday 27th April 2021)
+3.6.2 (Wednesday 23rd June 2021)
 --------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The ``fsl.wrappers.fast`` wrapper passes ``-v`` to ``fast`` if ``v=True`` or
+  ``verbose=True`` is specified.
+
+
+3.6.1 (Thursday 27th May 2021)
+------------------------------
 
 
 Changed
