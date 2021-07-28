@@ -3,6 +3,19 @@ order.
 
 
 
+3.6.3 (Wednesday 28th July 2021)
+--------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* When creating an ``Image`` object with ``loadData=False``, the ``calcRange``
+  argument is ignored, as it would otherwise cause the data to be loaded
+  (!301).
+
+
 3.6.2 (Wednesday 23rd June 2021)
 --------------------------------
 

@@ -133,10 +133,18 @@ def getDataFile(meldir):
     if topDir is None:
         return None
 
-    dataFile = op.join(topDir, 'filtered_func_data')
+    # People often rename filtered_func_data.nii.gz
+    # to something like filtered_func_data_clean.nii.gz,
+    # because that is the recommended approach when
+    # performing ICA-based denoising). So we try both.
+    candidates = ['filtered_func_data', 'filtered_func_data_clean']
 
-    try:                       return fslimage.addExt(dataFile)
-    except fslimage.PathError: return None
+    for candidate in candidates:
+        dataFile = op.join(topDir, candidate)
+        try:                       return fslimage.addExt(dataFile)
+        except fslimage.PathError: continue
+
+    return None
 
 
 def getMeanFile(meldir):

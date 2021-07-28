@@ -321,3 +321,26 @@ def _test_image_calcRange(threaded):
     if threaded:
         img.getImageWrapper().getTaskThread().waitUntilIdle()
     assert img.dataRange == (0, 1)
+
+
+# sanity check - make sure data is not loaded
+# when loadData is False (fsl/fslpy#374)
+def test_Image_loadData():
+    with tests.testdir() as testdir:
+        filename = 'image.nii.gz'
+
+        # Data range grows with volume
+        data  = np.zeros((50, 50, 50, 50))
+        for vol in range(data.shape[-1]):
+            data[..., vol] = vol
+
+        fslimage.Image(data).save(filename)
+
+        img = fslimage.Image(filename, loadData=False)
+        assert not img.getImageWrapper().dataIsLoaded
+
+        img = fslimage.Image(filename, loadData=False, calcRange=False)
+        assert not img.getImageWrapper().dataIsLoaded
+
+        img = fslimage.Image(filename, loadData=False, calcRange=True)
+        assert not img.getImageWrapper().dataIsLoaded
