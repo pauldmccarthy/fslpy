@@ -388,6 +388,14 @@ class ImageWrapper(notifier.Notifier):
             self.__data = np.asanyarray(self.__image.dataobj)
 
 
+    @property
+    def dataIsLoaded(self):
+        """Return true if the image data has been loaded into memory, ``False``
+        otherwise.
+        """
+        return self.__data is not None
+
+
     def __getData(self, sliceobj, isTuple=False):
         """Retrieves the image data at the location specified by ``sliceobj``.
 

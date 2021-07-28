@@ -1042,7 +1042,8 @@ class Image(Nifti):
                          calculated immediately (vi a call to
                          :meth:`calcRange`). Otherwise, the image range is
                          incrementally updated as more data is read from memory
-                         or disk.
+                         or disk. If ``loadData=False``, ``calcRange`` is also
+                         set to ``False``.
 
         :arg threaded:   If ``True``, the :class:`.ImageWrapper` will use a
                          separate thread for data range calculation. Defaults
@@ -1065,8 +1066,11 @@ class Image(Nifti):
         nibImage = None
         saved    = False
 
-        if loadData:
-            threaded = False
+        # disable threaded access if loadData is True
+        threaded = threaded and (not loadData)
+
+        # don't calcRange if not loading data
+        calcRange = calcRange and loadData
 
         # Take a copy of the header if one has
         # been provided
