@@ -129,6 +129,12 @@ def test_getDataFile():
                    'analysis.feat/filtered_func_data.nii.gz'],
                   'analysis.feat/filtfunc.ica',
                   'analysis.feat/filtered_func_data.nii.gz'),
+                 (['analysis.feat/filtfunc.ica/melodic_IC.nii.gz',
+                   'analysis.feat/filtfunc.ica/melodic_mix',
+                   'analysis.feat/filtfunc.ica/melodic_FTmix',
+                   'analysis.feat/filtered_func_data_clean.nii.gz'],
+                  'analysis.feat/filtfunc.ica',
+                  'analysis.feat/filtered_func_data_clean.nii.gz'),
                  (['no/analysis/dirs/here/melodic_IC.nii.gz'],
                    'no/analysis/dirs/here/',
                    None),
@@ -137,7 +143,6 @@ def test_getDataFile():
                    'analysis.feat/analysis.ica/melodic_FTmix'],
                    'analysis.feat/analysis.ica',
                    None),
-
     ]
 
     for paths, meldir, expected in testcases:
