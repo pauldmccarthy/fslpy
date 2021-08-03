@@ -163,6 +163,16 @@ class fslmaths(object):
         self.__args.extend(("-bptf", hp_sigma, lp_sigma))
         return self
 
+    def kernel(self, kernel='3D'):
+        """2D or (default) 3D kernel"""
+        self.__args.extend(("-kernel", kernel))
+        return self
+
+    def fmeanu(self):
+        """Mean filtering, kernel weighted, un-normalised (gives edge effects)"""
+        self.__args.append("-fmeanu")
+        return self
+
     def run(self, output=None):
         """Save output of operations to image. Set ``output`` to a filename to have
         the result saved to file, or omit ``output`` entirely to have the
