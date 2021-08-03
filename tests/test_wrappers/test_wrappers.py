@@ -93,6 +93,14 @@ def test_flirt():
         assert checkResult(result.stdout[0], *expected)
 
 
+def test_epi_reg():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('epi_reg',)) as fsldir:
+        epi_reg  = op.join(fsldir, 'bin', 'epi_reg')
+        result   = fw.epi_reg('epi', 't1', 't1brain', 'out')
+        expected = epi_reg + ' --epi=epi --t1=t1 --t1brain=t1brain --out=out'
+        assert result.stdout[0] == expected
+
+
 def test_applyxfm():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('flirt',)) as fsldir:
         flirt    = op.join(fsldir, 'bin', 'flirt')
