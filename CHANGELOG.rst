@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.6.4 (Tuesday 3rd August 2021)
+-------------------------------
+
+
+Added
+^^^^^
+
+
+* New :meth:`.fslmaths.kernel` and :meth:`.fslmaths.fmeanu` options on the
+  :class:`.fslmaths` wrapper (!304).
+
 
 3.6.3 (Wednesday 28th July 2021)
 --------------------------------
