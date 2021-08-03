@@ -110,4 +110,5 @@ from .misc         import (fslreorient2std, # noqa
                            slicer,
                            cluster,
                            gps)
+from .epi_reg      import  epi_reg
 from .             import  tbss             # noqa

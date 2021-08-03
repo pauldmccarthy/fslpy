@@ -10,6 +10,7 @@ Added
 ^^^^^
 
 
+* New :func:`.epi_reg` wrapper function (!306).
 * New :meth:`.fslmaths.kernel` and :meth:`.fslmaths.fmeanu` options on the
   :class:`.fslmaths` wrapper (!304).
 
