@@ -100,6 +100,9 @@ def test_imglob_shouldPass2():
         ('file1.hdr file1.img file2.nii', 'file1 file2', 'primary', 'file1.hdr file2.nii'),
         ('file1.hdr file1.img file2.nii', 'file1 file2', 'all',     'file1.hdr file1.img file2.nii'),
 
+        # muiltiple files, given wildcard
+        ('file1.nii file2.nii', 'file*', 'prefix',  'file1 file2'),
+
         # no file
         ('file.nii', 'bag', 'prefix',  ''),
         ('file.nii', 'bag', 'primary', ''),
