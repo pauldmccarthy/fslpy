@@ -53,6 +53,9 @@ import warnings
 import os
 
 
+import fsl.utils.deprecated as deprecated
+
+
 log = logging.getLogger(__name__)
 
 
@@ -152,6 +155,8 @@ class SubmitParams(object):
     def __str__(self):
         return 'SubmitParams({})'.format(" ".join(self.as_flags()))
 
+    @deprecated.deprecated('3.7.0', '4.0.0',
+                           'Use fsl.wrappers.fsl_sub instead')
     def __call__(self, *command, **kwargs):
         """
         Submits the command to the cluster.
