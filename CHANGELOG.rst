@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.7.0 (Under development)
--------------------------
+3.7.0 (Friday 20th August 2021)
+-------------------------------
 
 
 Added
@@ -17,6 +17,10 @@ Added
 Changed
 ^^^^^^^
 
+
+* Performance of the :mod:`.imglob`, :mod:`.imln`, :mod:`imtest`, :mod:`.imrm`
+  and :mod:`.remove_ext` scripts has been improved, by re-organising them to
+  avoid unnecessary and expensive imports such as ``numpy``.
 * The default behaviour of the :func:`fsl.utils.run.run` function (and hence
   that of all :mod:`fsl.wrappers` functions) has been changed so that the
   standard output and error of the called command is now forwarded to the

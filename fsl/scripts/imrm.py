@@ -13,14 +13,7 @@ import itertools      as it
 import os.path        as op
 import                   os
 import                   sys
-import                   warnings
-
 import fsl.utils.path as fslpath
-
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import fsl.data.image as fslimage
 
 
 usage = """Usage: imrm <list of image names to remove>
@@ -28,7 +21,14 @@ NB: filenames can be basenames or not
 """.strip()
 
 
-ALLOWED_EXTENSIONS = fslimage.ALLOWED_EXTENSIONS + ['.mnc', '.mnc.gz']
+# This list is defined in the
+# fsl.data.image class, but are duplicated
+# here for performance (to avoid import of
+# nibabel/numpy/etc).
+exts = ['.nii.gz', '.nii',
+        '.img',    '.hdr',
+        '.img.gz', '.hdr.gz',
+        '.mnc',    '.mnc.gz']
 """List of file extensions that are removed by ``imrm``. """
 
 
@@ -42,9 +42,9 @@ def main(argv=None):
         print(usage)
         return 1
 
-    prefixes = [fslpath.removeExt(p, ALLOWED_EXTENSIONS) for p in argv]
+    prefixes = [fslpath.removeExt(p, exts) for p in argv]
 
-    for prefix, ext in it.product(prefixes, ALLOWED_EXTENSIONS):
+    for prefix, ext in it.product(prefixes, exts):
 
         path = f'{prefix}{ext}'
 

@@ -111,26 +111,15 @@ class Platform(notifier.Notifier):
         self.WX_MAC_CARBON = WX_MAC_CARBON
         self.WX_GTK        = WX_GTK
 
-        self.__inSSHSession = False
-        self.__inVNCSession = False
+        # initialise fsldir - see fsldir.setter
+        self.fsldir = self.fsldir
+
+        # These are all initialised on first access
         self.__glVersion    = None
         self.__glRenderer   = None
         self.__glIsSoftware = None
         self.__fslVersion   = None
-
-        # initialise fsldir - see fsldir.setter
-        self.fsldir = self.fsldir
-
-        # Determine if a display is available. We do
-        # this once at init (instead of on-demand in
-        # the canHaveGui method) because calling the
-        # IsDisplayAvailable function will cause the
-        # application to steal focus under OSX!
-        try:
-            import wx
-            self.__canHaveGui = wx.App.IsDisplayAvailable()
-        except ImportError:
-            self.__canHaveGui = False
+        self.__canHaveGui   = None
 
         # If one of the SSH_/VNC environment
         # variables is set, then we're probably
@@ -177,7 +166,7 @@ class Platform(notifier.Notifier):
         the event loop is called periodically, and so is not always running.
         """
         try:
-            import wx
+            import wx  # pylint: disable=import-outside-toplevel
             app = wx.GetApp()
 
             # TODO Previously this conditional
@@ -216,6 +205,17 @@ class Platform(notifier.Notifier):
         'Equivalent functionality is available in fsleyes-widgets.')
     def canHaveGui(self):
         """``True`` if it is possible to create a GUI, ``False`` otherwise. """
+
+        # Determine if a display is available. Note that
+        # calling the IsDisplayAvailable function will
+        # cause the application to steal focus under OSX!
+        if self.__canHaveGui is None:
+            try:
+                import wx  # pylint: disable=import-outside-toplevel
+                self.__canHaveGui = wx.App.IsDisplayAvailable()
+            except ImportError:
+                self.__canHaveGui = False
+
         return self.__canHaveGui
 
 
@@ -261,14 +261,14 @@ class Platform(notifier.Notifier):
         if not self.canHaveGui:
             return WX_UNKNOWN
 
-        import wx
+        import wx  # pylint: disable=import-outside-toplevel
 
         pi = [t.lower() for t in wx.PlatformInfo]
 
-        if   any(['cocoa'  in p for p in pi]): plat = WX_MAC_COCOA
-        elif any(['carbon' in p for p in pi]): plat = WX_MAC_CARBON
-        elif any(['gtk'    in p for p in pi]): plat = WX_GTK
-        else:                                  plat = WX_UNKNOWN
+        if   any('cocoa'  in p for p in pi): plat = WX_MAC_COCOA
+        elif any('carbon' in p for p in pi): plat = WX_MAC_CARBON
+        elif any('gtk'    in p for p in pi): plat = WX_GTK
+        else:                                plat = WX_UNKNOWN
 
         if plat is WX_UNKNOWN:
             log.warning('Could not determine wx platform from '
@@ -290,7 +290,7 @@ class Platform(notifier.Notifier):
         if not self.canHaveGui:
             return WX_UNKNOWN
 
-        import wx
+        import wx  # pylint: disable=import-outside-toplevel
 
         pi        = [t.lower() for t in wx.PlatformInfo]
         isPhoenix = False
@@ -323,7 +323,9 @@ class Platform(notifier.Notifier):
 
     @property
     def fslwsl(self):
-        """Boolean flag indicating whether FSL is installed in Windows Subsystem for Linux """
+        """Boolean flag indicating whether FSL is installed in Windows
+        Subsystem for Linux
+        """
         return self.fsldir is not None and self.fsldir.startswith("\\\\wsl$")
 
 
@@ -352,8 +354,9 @@ class Platform(notifier.Notifier):
             if op.exists(versionFile):
                 with open(versionFile, 'rt') as f:
                     # split string at colon for new hash style versions
-                    # first object in list is the non-hashed version string (e.g. 6.0.2)
-                    # if no ":hash:" then standard FSL version string is still returned
+                    # first object in list is the non-hashed version string
+                    # (e.g. 6.0.2) if no ":hash:" then standard FSL version
+                    # string is still returned
                     self.__fslVersion = f.read().strip().split(":")[0]
 
         self.notify(value=value)

@@ -37,8 +37,6 @@ import            re
 
 from typing import Sequence, Tuple, Union
 
-from fsl.utils.platform import platform
-
 
 PathLike = Union[str, pathlib.Path]
 
@@ -596,6 +594,7 @@ def winpath(path):
     This requires WSL2 which supports the ``\\wsl$\\`` network path.
     wslpath is assumed to be an absolute path.
     """
+    from fsl.utils.platform import platform  # pylint: disable=import-outside-toplevel  # noqa: E501
     if not platform.fslwsl:
         return path
     else:
