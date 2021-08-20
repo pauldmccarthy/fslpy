@@ -59,6 +59,19 @@ def imglob(paths, output=None):
 
     imgfiles = []
 
+    # Expand any wildcard paths if provided.
+    # Depending on the way that imglob is
+    # invoked, this may not get done by the
+    # calling shell.
+    expanded = []
+    for path in paths:
+        if any(c in path for c in '*?[]'):
+            expanded.extend(glob.glob(path))
+        else:
+            expanded.append(path)
+
+    paths = expanded
+
     # Build a list of all image files (both
     # hdr and img and otherwise) that match
     for path in paths:
