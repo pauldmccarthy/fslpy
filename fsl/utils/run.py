@@ -52,17 +52,16 @@ class FSLNotPresent(Exception):
     """Error raised by the :func:`runfsl` function when ``$FSLDIR`` cannot
     be found.
     """
-    pass
 
 
 @contextlib.contextmanager
-def dryrun(*args):
+def dryrun(*_):
     """Context manager which causes all calls to :func:`run` to be logged but
     not executed. See the :data:`DRY_RUN` flag.
 
     The returned standard output will be equal to ``' '.join(args)``.
     """
-    global DRY_RUN
+    global DRY_RUN  # pylint: disable=global-statement
 
     oldval  = DRY_RUN
     DRY_RUN = True
@@ -184,16 +183,16 @@ def run(*args, **kwargs):
     returnExitcode = kwargs.pop('exitcode', False)
     submit         = kwargs.pop('submit',   {})
     cmdonly        = kwargs.pop('cmdonly',  False)
-    log            = kwargs.pop('log',      None)
+    logg           = kwargs.pop('log',      None)
     args           = prepareArgs(args)
 
-    if log is None:
-        log = {}
+    if logg is None:
+        logg = {}
 
-    tee       = log.get('tee',    False)
-    logStdout = log.get('stdout', None)
-    logStderr = log.get('stderr', None)
-    logCmd    = log.get('cmd',    None)
+    tee       = logg.get('tee',    False)
+    logStdout = logg.get('stdout', None)
+    logStderr = logg.get('stderr', None)
+    logCmd    = logg.get('cmd',    None)
 
     if not bool(submit):
         submit = None
@@ -394,25 +393,32 @@ def runfsl(*args, **kwargs):
 
 
 def wslcmd(cmdpath, *args):
-    """
-    Convert a command + arguments into an equivalent set of arguments that will run the command
-    under Windows Subsystem for Linux
+    """Convert a command + arguments into an equivalent set of arguments that
+    will run the command under Windows Subsystem for Linux
 
-    :param cmdpath: Fully qualified path to the command. This is essentially a WSL path not a Windows
-                    one since FSLDIR is specified as a WSL path, however it may have backslashes
-                    as path separators due to previous use of ``os.path.join``
-    :param args: Sequence of command arguments (the first of which is the unqualified command name)
+    :param cmdpath: Fully qualified path to the command. This is essentially
+                    a WSL path not a Windows one since FSLDIR is specified
+                    as a WSL path, however it may have backslashes as path
+                    separators due to previous use of ``os.path.join``
 
-    :return: If ``cmdpath`` exists and is executable in WSL, return a sequence of command arguments
-             which when executed will run the command in WSL. Windows paths in the argument list will
-             be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
+    :param args:    Sequence of command arguments (the first of which is the
+                    unqualified command name)
+
+    :return: If ``cmdpath`` exists and is executable in WSL, return a
+             sequence of command arguments which when executed will run the
+             command in WSL. Windows paths in the argument list will be
+             converted to WSL paths. If ``cmdpath`` was not executable in
+             WSL, returns None
     """
-    # Check if command exists in WSL (remembering that the command path may include FSLDIR which
-    # is a Windows path)
+    # Check if command exists in WSL (remembering
+    # that the command path may include FSLDIR
+    # which is a Windows path)
     cmdpath = fslpath.wslpath(cmdpath)
-    _stdout, _stderr, retcode = _realrun(False, None, None, None, "wsl", "test", "-x", cmdpath)
+    _stdout, _stderr, retcode = _realrun(
+        False, None, None, None, "wsl", "test", "-x", cmdpath)
     if retcode == 0:
-        # Form a new argument list and convert any Windows paths in it into WSL paths
+        # Form a new argument list and convert
+        # any Windows paths in it into WSL paths
         wslargs = [fslpath.wslpath(arg) for arg in args]
         wslargs[0] = cmdpath
         local_fsldir = fslpath.wslpath(fslplatform.fsldir)
@@ -420,8 +426,10 @@ def wslcmd(cmdpath, *args):
             local_fsldevdir = fslpath.wslpath(fslplatform.fsldevdir)
         else:
             local_fsldevdir = None
-        # Prepend important environment variables - note that it seems we cannot
-        # use WSLENV for this due to its insistance on path mapping. FIXME FSLDEVDIR?
+        # Prepend important environment variables -
+        # note that it seems we cannot use WSLENV
+        # for this due to its insistance on path
+        # mapping. FIXME FSLDEVDIR?
         local_path = "$PATH"
         if local_fsldevdir:
             local_path += ":%s/bin" % local_fsldevdir

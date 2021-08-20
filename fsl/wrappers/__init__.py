@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# pylint: disable=unused-import
+# flake8: noqa: F401
+#
 # __init__.py - Wrappers for FSL command-line tools.
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
@@ -79,37 +82,37 @@ decorators.
 """
 
 
-from .wrapperutils import (LOAD,)           # noqa
-from .bet          import (bet,             # noqa
-                           robustfov)
-from .eddy         import (eddy_cuda,       # noqa
-                           topup,
-                           applytopup)
-from .fast         import (fast,)           # noqa
-from .fsl_anat     import (fsl_anat,)       # noqa
-from .fsl_sub      import (fsl_sub,)        # noqa
-from .flirt        import (flirt,           # noqa
-                           invxfm,
-                           applyxfm,
-                           applyxfm4D,
-                           concatxfm,
-                           mcflirt)
-from .fnirt        import (fnirt,           # noqa
-                           applywarp,
-                           invwarp,
-                           convertwarp)
-from .fslmaths     import (fslmaths,)       # noqa
-from .fslstats     import (fslstats,)       # noqa
-from .fugue        import (fugue,           # noqa
-                           prelude,
-                           sigloss,
-                           fsl_prepare_fieldmap)
-from .melodic      import (melodic,         # noqa
-                           fsl_regfilt)
-from .misc         import (fslreorient2std, # noqa
-                           fslroi,
-                           slicer,
-                           cluster,
-                           gps)
-from .epi_reg      import  epi_reg
-from .             import  tbss             # noqa
+from fsl.wrappers.wrapperutils import (LOAD,)
+from fsl.wrappers.bet          import (bet,
+                                       robustfov)
+from fsl.wrappers.eddy         import (eddy_cuda,
+                                       topup,
+                                       applytopup)
+from fsl.wrappers.fast         import (fast,)
+from fsl.wrappers.fsl_anat     import (fsl_anat,)
+from fsl.wrappers.fsl_sub      import (fsl_sub,)
+from fsl.wrappers.flirt        import (flirt,
+                                       invxfm,
+                                       applyxfm,
+                                       applyxfm4D,
+                                       concatxfm,
+                                       mcflirt)
+from fsl.wrappers.fnirt        import (fnirt,
+                                       applywarp,
+                                       invwarp,
+                                       convertwarp)
+from fsl.wrappers.fslmaths     import (fslmaths,)
+from fsl.wrappers.fslstats     import (fslstats,)
+from fsl.wrappers.fugue        import (fugue,
+                                       prelude,
+                                       sigloss,
+                                       fsl_prepare_fieldmap)
+from fsl.wrappers.melodic      import (melodic,
+                                       fsl_regfilt)
+from fsl.wrappers.misc         import (fslreorient2std,
+                                       fslroi,
+                                       slicer,
+                                       cluster,
+                                       gps)
+from fsl.wrappers.epi_reg      import  epi_reg
+from fsl.wrappers              import  tbss
