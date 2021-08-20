@@ -5,10 +5,11 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import              os
 import os.path   as op
 import itertools as it
 import textwrap  as tw
+import              os
+import              shlex
 
 import numpy as np
 
@@ -21,8 +22,10 @@ from .. import mockFSLDIR, make_random_image
 
 
 def checkResult(cmd, base, args, stripdir=None):
-    """We can't control the order in which command line args are generated,
-    so we need to test all possible orderings.
+    """Check that the generate dcommand matches the expected command.
+
+    Pre python 3.7, we couldn't control the order in which command
+    line args were generated, so we needed to test all possible orderings.
 
     :arg cmd:      Generated command
     :arg base:     Beginning of expected command
@@ -409,3 +412,15 @@ def test_fsl_prepare_fieldmap():
                                            nocheck=True)
         expected = (fpf, ('SIEMENS', 'ph', 'mag', 'out', '2.46', '--nocheck'))
         assert checkResult(result.stdout[0], *expected)
+
+
+def test_fsl_sub():
+    with run.dryrun(), mockFSLDIR(bin=('fsl_sub',)) as fsldir:
+        expected = [op.join(fsldir, 'bin', 'fsl_sub'),
+                    '--jobhold', '123',
+                    '--queue', 'long.q',
+                    'some_command', '--some_arg']
+
+        result = fw.fsl_sub(
+            'some_command', '--some_arg', jobhold='123', queue='long.q')
+        assert shlex.split(result[0]) == expected
