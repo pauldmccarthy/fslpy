@@ -10,13 +10,9 @@ NIFTI/ANALYZE image files.
 
 
 import                   sys
-import                   warnings
+import                   glob
+import itertools      as it
 import fsl.utils.path as fslpath
-
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import fsl.data.image as fslimage
 
 
 usage = """
@@ -25,8 +21,17 @@ Usage: imglob [-extension/extensions] <list of names>
        -extensions for image list with full extensions
 """.strip()
 
-exts   = fslimage.ALLOWED_EXTENSIONS
-groups = fslimage.FILE_GROUPS
+
+# The lists below are defined in the
+# fsl.data.image class, but are duplicated
+# here for performance (to avoid import of
+# nibabel/numpy/etc).
+exts   = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
+"""List of supported image file extensions. """
+
+
+groups = [('.hdr',    '.img'), ('.hdr.gz', '.img.gz')]
+"""List of known image file groups (image/header file pairs). """
 
 
 def imglob(paths, output=None):
@@ -76,8 +81,10 @@ def imglob(paths, output=None):
     # hdr and img and otherwise) that match
     for path in paths:
         try:
-            path = fslimage.removeExt(path)
-            imgfiles.extend(fslimage.addExt(path, unambiguous=False))
+            path = fslpath.removeExt(path, allowedExts=exts)
+            imgfiles.extend(fslpath.addExt(path,
+                                           allowedExts=exts,
+                                           unambiguous=False))
         except fslpath.PathError:
             continue
 
