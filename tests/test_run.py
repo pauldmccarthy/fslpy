@@ -119,11 +119,22 @@ def test_run_tee():
 
         capture = CaptureStdout()
 
+        # default behaviour is for tee=True
         with capture:
-            stdout = run.run('./script.sh 1 2 3', log={'tee' : True})
-
+            stdout = run.run('./script.sh 1 2 3')
         assert stdout         == expstdout
         assert capture.stdout == expstdout
+
+        with capture.reset():
+            stdout = run.run('./script.sh 1 2 3', log={'tee' : True})
+        assert stdout         == expstdout
+        assert capture.stdout == expstdout
+
+        # disable forwarding
+        with capture.reset():
+            stdout = run.run('./script.sh 1 2 3', log={'tee' : False})
+        assert stdout         == expstdout
+        assert capture.stdout == ''
 
         with capture.reset():
             stdout, stderr = run.run('./script.sh 1 2 3', stderr=True,
@@ -268,9 +279,9 @@ def test_runfsl():
         run.FSL_PREFIX        = None
 
 
-def mock_fsl_sub(cmd, **kwargs):
-    if isinstance(cmd, str):
-        name = cmd.split()[0]
+def mock_fsl_sub(*cmd, **kwargs):
+    if len(cmd) == 1 and isinstance(cmd[0], str):
+        name = cmd[0].split()[0]
     else:
         name = cmd[0]
 

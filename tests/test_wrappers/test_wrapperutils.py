@@ -27,7 +27,7 @@ import fsl.wrappers.wrapperutils as wutils
 
 
 from .. import mockFSLDIR, cleardir, checkdir, testdir, touch
-from ..test_run import mock_submit
+from ..test_run import mock_fsl_sub
 
 
 def test_applyArgStyle():
@@ -789,7 +789,7 @@ def test_cmdwrapper_submit():
     newpath = op.pathsep.join(('.', os.environ['PATH']))
 
     with tempdir.tempdir(), \
-         mock.patch('fsl.utils.fslsub.submit', mock_submit), \
+         mock.patch('fsl.wrappers.fsl_sub', mock_fsl_sub), \
          mock.patch.dict(os.environ, {'PATH' : newpath}):
 
         with open('test_script', 'wt') as f:
@@ -812,7 +812,7 @@ def test_fslwrapper_submit():
     test_func = wutils.fslwrapper(_test_script_func)
 
     with mockFSLDIR() as fsldir, \
-         mock.patch('fsl.utils.fslsub.submit', mock_submit):
+         mock.patch('fsl.wrappers.fsl_sub', mock_fsl_sub):
 
         test_file = op.join(fsldir, 'bin', 'test_script')
 
