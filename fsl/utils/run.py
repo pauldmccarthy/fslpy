@@ -152,12 +152,14 @@ def run(*args, **kwargs):
                    executed, but rather is returned directly, as a list of
                    arguments.
 
-    :arg log:      Must be passed as a keyword argument.  An optional ``dict``
-                   which may be used to redirect the command's standard output
-                   and error. The following keys are recognised:
+    :arg log:      Must be passed as a keyword argument.  Defaults to
+                   ``{'tee' : True}``. An optional ``dict`` which may be used
+                   to redirect the command's standard output and error. The
+                   following keys are recognised:
 
-                     - tee:    If ``True``, the command's standard output/error
-                               streams are forwarded to this processes streams.
+                     - tee:    If ``True`` (the default), the command's
+                               standard output/error streams are forwarded to
+                               this processes streams.
 
                      - stdout: Optional file-like object to which the command's
                                standard output stream can be forwarded.
@@ -189,7 +191,7 @@ def run(*args, **kwargs):
     if logg is None:
         logg = {}
 
-    tee       = logg.get('tee',    False)
+    tee       = logg.get('tee',    True)
     logStdout = logg.get('stdout', None)
     logStderr = logg.get('stderr', None)
     logCmd    = logg.get('cmd',    None)
