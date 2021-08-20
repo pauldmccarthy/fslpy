@@ -87,6 +87,7 @@ from .eddy         import (eddy_cuda,       # noqa
                            applytopup)
 from .fast         import (fast,)           # noqa
 from .fsl_anat     import (fsl_anat,)       # noqa
+from .fsl_sub      import (fsl_sub,)        # noqa
 from .flirt        import (flirt,           # noqa
                            invxfm,
                            applyxfm,
