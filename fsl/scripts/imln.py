@@ -17,19 +17,22 @@ to NIFTI image files.
 import os.path        as op
 import                   os
 import                   sys
-import                   warnings
-
 import fsl.utils.path as fslpath
 
 
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import fsl.data.image as fslimage
+# The lists below are defined in the
+# fsl.data.image class, but are duplicated
+# here for performance (to avoid import of
+# nibabel/numpy/etc).
+exts = ['.nii.gz', '.nii',
+        '.img',    '.hdr',
+        '.img.gz', '.hdr.gz',
+        '.mnc',    '.mnc.gz']
+"""List of file extensions that are supported by ``imtest``.
+"""
 
-
-ALLOWED_EXTENSIONS = fslimage.ALLOWED_EXTENSIONS + ['.mnc', '.mnc.gz']
-"""List of file extensions that are supported by ``imln``. """
+groups = [('.hdr', '.img'), ('.hdr.gz', '.img.gz')]
+"""List of known image file groups (image/header file pairs). """
 
 
 usage = """
@@ -50,8 +53,8 @@ def main(argv=None):
         return 1
 
     target, linkbase = argv
-    target           = fslpath.removeExt(target,   ALLOWED_EXTENSIONS)
-    linkbase         = fslpath.removeExt(linkbase, ALLOWED_EXTENSIONS)
+    target           = fslpath.removeExt(target,   exts)
+    linkbase         = fslpath.removeExt(linkbase, exts)
 
     # Target must exist, so we can
     # infer the correct extension(s).
@@ -59,8 +62,8 @@ def main(argv=None):
     # (e.g. a.img without a.hdr).
     try:
         targets = fslpath.getFileGroup(target,
-                                       allowedExts=ALLOWED_EXTENSIONS,
-                                       fileGroups=fslimage.FILE_GROUPS,
+                                       allowedExts=exts,
+                                       fileGroups=groups,
                                        unambiguous=True)
     except Exception as e:
         print(f'Error: {e}')
@@ -70,7 +73,7 @@ def main(argv=None):
         if not op.exists(target):
             continue
 
-        ext  = fslpath.getExt(target, ALLOWED_EXTENSIONS)
+        ext  = fslpath.getExt(target, exts)
         link = f'{linkbase}{ext}'
 
         try:

@@ -11,7 +11,6 @@ NIFTI/ANALYZE image files.
 
 import                   sys
 import                   glob
-import itertools      as it
 import fsl.utils.path as fslpath
 
 
@@ -30,7 +29,7 @@ exts   = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
 """List of supported image file extensions. """
 
 
-groups = [('.hdr',    '.img'), ('.hdr.gz', '.img.gz')]
+groups = [('.hdr', '.img'), ('.hdr.gz', '.img.gz')]
 """List of known image file groups (image/header file pairs). """
 
 

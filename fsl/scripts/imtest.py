@@ -11,18 +11,22 @@ not, without having to know the file suffix (.nii, .nii.gz, etc).
 
 import os.path        as op
 import                   sys
-import                   warnings
-
 import fsl.utils.path as fslpath
 
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import fsl.data.image as fslimage
 
+# The lists below are defined in the
+# fsl.data.image class, but are duplicated
+# here for performance (to avoid import of
+# nibabel/numpy/etc).
+exts = ['.nii.gz', '.nii',
+        '.img',    '.hdr',
+        '.img.gz', '.hdr.gz',
+        '.mnc',    '.mnc.gz']
+"""List of file extensions that are supported by ``imtest``.
+"""
 
-ALLOWED_EXTENSIONS = fslimage.ALLOWED_EXTENSIONS + ['.mnc', '.mnc.gz']
-"""List of file extensions that are supported by ``imln``. """
+groups = [('.hdr', '.img'), ('.hdr.gz', '.img.gz')]
+"""List of known image file groups (image/header file pairs). """
 
 
 def main(argv=None):
@@ -38,7 +42,7 @@ def main(argv=None):
         print('0')
         return 0
 
-    path = fslpath.removeExt(argv[0], ALLOWED_EXTENSIONS)
+    path = fslpath.removeExt(argv[0], exts)
     path = op.realpath(path)
 
     # getFileGroup will raise an error
@@ -47,8 +51,8 @@ def main(argv=None):
     # image) does not exist
     try:
         fslpath.getFileGroup(path,
-                             allowedExts=ALLOWED_EXTENSIONS,
-                             fileGroups=fslimage.FILE_GROUPS,
+                             allowedExts=exts,
+                             fileGroups=groups,
                              unambiguous=True)
         print('1')
     except fslpath.PathError:
