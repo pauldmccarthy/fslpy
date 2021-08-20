@@ -268,7 +268,7 @@ def test_runfsl():
         run.FSL_PREFIX        = None
 
 
-def mock_submit(cmd, **kwargs):
+def mock_fsl_sub(cmd, **kwargs):
     if isinstance(cmd, str):
         name = cmd.split()[0]
     else:
@@ -286,7 +286,7 @@ def mock_submit(cmd, **kwargs):
         for k in sorted(kwargs.keys()):
             f.write('{}: {}\n'.format(k, kwargs[k]))
 
-    return jid
+    return (jid, '')
 
 
 def test_run_submit():
@@ -304,7 +304,7 @@ def test_run_submit():
 
     with tempdir.tempdir(), \
          mockFSLDIR(), \
-         mock.patch('fsl.utils.fslsub.submit', mock_submit):
+         mock.patch('fsl.wrappers.fsl_sub', mock_fsl_sub):
 
         mkexec(op.expandvars('$FSLDIR/bin/fsltest'), test_script)
 
