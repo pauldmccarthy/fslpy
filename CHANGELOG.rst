@@ -2,6 +2,47 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.7.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :mod:`fsl.wrappers.fsl_sub` wrapper function for the ``fsl_sub``
+  command.
+
+
+Changed
+^^^^^^^
+
+* The default behaviour of the :func:`fsl.utils.run.run` function (and hence
+  that of all :mod:`fsl.wrappers` functions) has been changed so that the
+  standard output and error of the called command is now forwarded to the
+  calling Python process, in addition to being returned from ``run`` as
+  strings. In other words, the default behaviour of ``run('cmd')``, is now
+  equivalent to ``run('cmd', log={"tee":True})``. The previous default
+  behaviour can be achieved with ``run('cmd', log={"tee":False})``.
+* The :func:`fsl.utils.run.run` and :func:`fsl.utils.run.runfsl` functions
+  (and hence all :mod:`fsl.wrappers` functions) have been modified to use
+  ``fsl.wrappers.fsl_sub`` instead of ``fsl.utils.fslsub.submit``. This is an
+  internal change which should not affect the usage of the ``run``, ``runfsl``
+  or wrapper functions.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :class:`fsl.utils.fslsub.SubmitParams` and :func:`fsl.utils.fslsub.submit`
+  have been deprecated in favour of using the ``fsl.wrappers.fsl_sub`` wrapper
+  function.
+* The :func:`fsl.utils.fslsub.info` function has been deprecated in favour of
+  using the ``fsl_sub.report`` function, from the separate `fsl_sub
+  <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ Python library.
+
+
 3.6.4 (Tuesday 3rd August 2021)
 -------------------------------
 

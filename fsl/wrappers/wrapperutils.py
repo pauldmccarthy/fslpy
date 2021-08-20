@@ -441,7 +441,7 @@ file should be loaded into memory and returned as a Python object.
 """
 
 
-class FileOrThing(object):
+class FileOrThing:
     """Decorator which ensures that certain arguments which are passed into the
     decorated function are always passed as file names. Both positional and
     keyword arguments can be specified.

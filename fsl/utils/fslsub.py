@@ -53,13 +53,19 @@ import warnings
 import os
 
 
+import fsl.utils.deprecated as deprecated
+
+
 log = logging.getLogger(__name__)
 
 
 @dataclass
 class SubmitParams(object):
-    """
-    Represents the fsl_sub parameters
+    """Represents the fsl_sub parameters
+
+    The ``SubmitParams`` class is deprecated - you should use
+    :mod:`fsl.wrappers.fsl_sub` instead, or use the ``fsl_sub`` Python
+    library, which is installed as part of FSL.
 
     Any command line script can be submitted by the parameters by calling the `SubmitParams` object:
 
@@ -152,6 +158,8 @@ class SubmitParams(object):
     def __str__(self):
         return 'SubmitParams({})'.format(" ".join(self.as_flags()))
 
+    @deprecated.deprecated('3.7.0', '4.0.0',
+                           'Use fsl.wrappers.fsl_sub instead')
     def __call__(self, *command, **kwargs):
         """
         Submits the command to the cluster.
@@ -254,6 +262,10 @@ def submit(*command, **kwargs):
     """
     Submits a given command to the cluster
 
+    The ``submit`` function is deprecated - you should use
+    :mod:`fsl.wrappers.fsl_sub` instead, or use the ``fsl_sub`` Python
+    library, which is available in FSL 6.0.5 and newer.
+
     You can pass the command and arguments as a single string, or as a regular or unpacked sequence.
 
     :arg command:        string or regular/unpacked sequence of strings with the job command
@@ -288,8 +300,13 @@ def submit(*command, **kwargs):
     return SubmitParams(**kwargs)(*command)
 
 
+@deprecated.deprecated('3.7.0', '4.0.0', 'Use fsl_sub.report instead')
 def info(job_ids) -> Dict[str, Optional[Dict[str, str]]]:
     """Gets information on a given job id
+
+    The ``info`` function is deprecated - you should use the
+    ``fsl_sub.report`` function from the ``fsl_sub`` Python library, which
+    is available in FSL 6.0.5 and newer.
 
     Uses `qstat -j <job_ids>`
 

@@ -31,9 +31,9 @@ import os.path         as op
 import                    os
 
 from   fsl.utils.platform import platform as fslplatform
-import fsl.utils.fslsub                   as fslsub
 import fsl.utils.tempdir                  as tempdir
 import fsl.utils.path                     as fslpath
+
 
 log = logging.getLogger(__name__)
 
@@ -52,17 +52,16 @@ class FSLNotPresent(Exception):
     """Error raised by the :func:`runfsl` function when ``$FSLDIR`` cannot
     be found.
     """
-    pass
 
 
 @contextlib.contextmanager
-def dryrun(*args):
+def dryrun(*_):
     """Context manager which causes all calls to :func:`run` to be logged but
     not executed. See the :data:`DRY_RUN` flag.
 
     The returned standard output will be equal to ``' '.join(args)``.
     """
-    global DRY_RUN
+    global DRY_RUN  # pylint: disable=global-statement
 
     oldval  = DRY_RUN
     DRY_RUN = True
@@ -146,19 +145,21 @@ def run(*args, **kwargs):
 
     :arg submit:   Must be passed as a keyword argument. Defaults to ``None``.
                    If ``True``, the command is submitted as a cluster job via
-                   the :func:`.fslsub.submit` function.  May also be a
+                   the :mod:`fsl.wrappers.fsl_sub` function.  May also be a
                    dictionary containing arguments to that function.
 
     :arg cmdonly:  Defaults to ``False``. If ``True``, the command is not
                    executed, but rather is returned directly, as a list of
                    arguments.
 
-    :arg log:      Must be passed as a keyword argument.  An optional ``dict``
-                   which may be used to redirect the command's standard output
-                   and error. The following keys are recognised:
+    :arg log:      Must be passed as a keyword argument.  Defaults to
+                   ``{'tee' : True}``. An optional ``dict`` which may be used
+                   to redirect the command's standard output and error. The
+                   following keys are recognised:
 
-                     - tee:    If ``True``, the command's standard output/error
-                               streams are forwarded to this processes streams.
+                     - tee:    If ``True`` (the default), the command's
+                               standard output/error streams are forwarded to
+                               this processes streams.
 
                      - stdout: Optional file-like object to which the command's
                                standard output stream can be forwarded.
@@ -173,10 +174,10 @@ def run(*args, **kwargs):
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
     are passed through to the :func:`.fslsub.submit` function.
 
-    :returns:      If ``submit`` is provided, the return value of
-                   :func:`.fslsub` is returned. Otherwise returns a single
-                   value or a tuple, based on the based on the ``stdout``,
-                   ``stderr``, and ``exitcode`` arguments.
+    :returns: If ``submit`` is provided, the ID of the submitted job is
+              returned as a string. Otherwise returns a single value or a
+              tuple, based on the based on the ``stdout``, ``stderr``, and
+              ``exitcode`` arguments.
     """
 
     returnStdout   = kwargs.pop('stdout',   True)
@@ -184,16 +185,16 @@ def run(*args, **kwargs):
     returnExitcode = kwargs.pop('exitcode', False)
     submit         = kwargs.pop('submit',   {})
     cmdonly        = kwargs.pop('cmdonly',  False)
-    log            = kwargs.pop('log',      None)
+    logg           = kwargs.pop('log',      None)
     args           = prepareArgs(args)
 
-    if log is None:
-        log = {}
+    if logg is None:
+        logg = {}
 
-    tee       = log.get('tee',    False)
-    logStdout = log.get('stdout', None)
-    logStderr = log.get('stderr', None)
-    logCmd    = log.get('cmd',    None)
+    tee       = logg.get('tee',    True)
+    logStdout = logg.get('stdout', None)
+    logStderr = logg.get('stderr', None)
+    logCmd    = logg.get('cmd',    None)
 
     if not bool(submit):
         submit = None
@@ -217,9 +218,12 @@ def run(*args, **kwargs):
         return _dryrun(
             submit, returnStdout, returnStderr, returnExitcode, *args)
 
-    # submit - delegate to fslsub
+    # submit - delegate to fsl_sub. This will induce a nested
+    # call back to this run function, which is a bit confusing,
+    # but harmless, as we've popped the "submit" arg above.
     if submit is not None:
-        return fslsub.submit(' '.join(args), **submit, **kwargs)
+        from fsl.wrappers import fsl_sub  # pylint: disable=import-outside-toplevel  # noqa: E501
+        return fsl_sub(*args, **submit, **kwargs)[0].strip()
 
     # Run directly - delegate to _realrun
     stdout, stderr, exitcode = _realrun(
@@ -391,25 +395,32 @@ def runfsl(*args, **kwargs):
 
 
 def wslcmd(cmdpath, *args):
-    """
-    Convert a command + arguments into an equivalent set of arguments that will run the command
-    under Windows Subsystem for Linux
+    """Convert a command + arguments into an equivalent set of arguments that
+    will run the command under Windows Subsystem for Linux
 
-    :param cmdpath: Fully qualified path to the command. This is essentially a WSL path not a Windows
-                    one since FSLDIR is specified as a WSL path, however it may have backslashes
-                    as path separators due to previous use of ``os.path.join``
-    :param args: Sequence of command arguments (the first of which is the unqualified command name)
+    :param cmdpath: Fully qualified path to the command. This is essentially
+                    a WSL path not a Windows one since FSLDIR is specified
+                    as a WSL path, however it may have backslashes as path
+                    separators due to previous use of ``os.path.join``
 
-    :return: If ``cmdpath`` exists and is executable in WSL, return a sequence of command arguments
-             which when executed will run the command in WSL. Windows paths in the argument list will
-             be converted to WSL paths. If ``cmdpath`` was not executable in WSL, returns None
+    :param args:    Sequence of command arguments (the first of which is the
+                    unqualified command name)
+
+    :return: If ``cmdpath`` exists and is executable in WSL, return a
+             sequence of command arguments which when executed will run the
+             command in WSL. Windows paths in the argument list will be
+             converted to WSL paths. If ``cmdpath`` was not executable in
+             WSL, returns None
     """
-    # Check if command exists in WSL (remembering that the command path may include FSLDIR which
-    # is a Windows path)
+    # Check if command exists in WSL (remembering
+    # that the command path may include FSLDIR
+    # which is a Windows path)
     cmdpath = fslpath.wslpath(cmdpath)
-    _stdout, _stderr, retcode = _realrun(False, None, None, None, "wsl", "test", "-x", cmdpath)
+    _stdout, _stderr, retcode = _realrun(
+        False, None, None, None, "wsl", "test", "-x", cmdpath)
     if retcode == 0:
-        # Form a new argument list and convert any Windows paths in it into WSL paths
+        # Form a new argument list and convert
+        # any Windows paths in it into WSL paths
         wslargs = [fslpath.wslpath(arg) for arg in args]
         wslargs[0] = cmdpath
         local_fsldir = fslpath.wslpath(fslplatform.fsldir)
@@ -417,8 +428,10 @@ def wslcmd(cmdpath, *args):
             local_fsldevdir = fslpath.wslpath(fslplatform.fsldevdir)
         else:
             local_fsldevdir = None
-        # Prepend important environment variables - note that it seems we cannot
-        # use WSLENV for this due to its insistance on path mapping. FIXME FSLDEVDIR?
+        # Prepend important environment variables -
+        # note that it seems we cannot use WSLENV
+        # for this due to its insistance on path
+        # mapping. FIXME FSLDEVDIR?
         local_path = "$PATH"
         if local_fsldevdir:
             local_path += ":%s/bin" % local_fsldevdir
@@ -438,13 +451,17 @@ def wslcmd(cmdpath, *args):
 
 
 def hold(job_ids, hold_filename=None):
-    """
-    Waits until all jobs have finished
+    """Waits until all jobs have finished
 
-    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
-    :param hold_filename: filename to use as a hold file.
-        The containing directory should exist, but the file itself should not.
-        Defaults to a ./.<random characters>.hold in the current directory.
-    :return: only returns when all the jobs have finished
+    :param job_ids: possibly nested sequence of job ids. The job ids
+                    themselves should be strings.
+
+    :param hold_filename: filename to use as a hold file.  The
+                          containing directory should exist, but the
+                          file itself should not.  Defaults to a
+                          ./.<random characters>.hold in the current
+                          directory.  :return: only returns when all
+                          the jobs have finished
     """
+    import fsl.utils.fslsub as fslsub  # pylint: disable=import-outside-toplevel  # noqa: E501
     fslsub.hold(job_ids, hold_filename)

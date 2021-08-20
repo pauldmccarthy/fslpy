@@ -69,7 +69,7 @@ def touch(fname):
         pass
 
 
-class CaptureStdout(object):
+class CaptureStdout:
     """Context manager which captures stdout and stderr. """
 
     def __init__(self):
