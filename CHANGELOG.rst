@@ -2,6 +2,38 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.7.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :mod:`fsl.wrappers.fsl_sub` wrapper function for the ``fsl_sub``
+  command.
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`fsl.utils.run.run` and :func:`fsl.utils.run.runfsl` functions
+  (and hence all :mod:`fsl.wrappers` functions) have been modified to use
+  ``fsl.wrappers.fsl_sub`` instead of ``fsl.utils.fslsub.submit``. This is an
+  internal change which should not affect the usage of the ``run``, ``runfsl``
+  or wrapper functions.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* :class:`fsl.utils.fslsub.SubmitParams` and :func:`fsl.utils.fslsub.submit`
+  have been deprecated in favour of using the ``fsl.wrappers.fsl_sub`` wrapper
+  function.
+
+
 3.6.4 (Tuesday 3rd August 2021)
 -------------------------------
 
