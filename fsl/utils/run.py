@@ -31,9 +31,9 @@ import os.path         as op
 import                    os
 
 from   fsl.utils.platform import platform as fslplatform
-import fsl.utils.fslsub                   as fslsub
 import fsl.utils.tempdir                  as tempdir
 import fsl.utils.path                     as fslpath
+
 
 log = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ def run(*args, **kwargs):
 
     :arg submit:   Must be passed as a keyword argument. Defaults to ``None``.
                    If ``True``, the command is submitted as a cluster job via
-                   the :func:`.fslsub.submit` function.  May also be a
+                   the :mod:`fsl.wrappers.fsl_sub` function.  May also be a
                    dictionary containing arguments to that function.
 
     :arg cmdonly:  Defaults to ``False``. If ``True``, the command is not
@@ -173,10 +173,10 @@ def run(*args, **kwargs):
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
     are passed through to the :func:`.fslsub.submit` function.
 
-    :returns:      If ``submit`` is provided, the return value of
-                   :func:`.fslsub` is returned. Otherwise returns a single
-                   value or a tuple, based on the based on the ``stdout``,
-                   ``stderr``, and ``exitcode`` arguments.
+    :returns: If ``submit`` is provided, the ID of the submitted job is
+              returned as a string. Otherwise returns a single value or a
+              tuple, based on the based on the ``stdout``, ``stderr``, and
+              ``exitcode`` arguments.
     """
 
     returnStdout   = kwargs.pop('stdout',   True)
@@ -217,9 +217,12 @@ def run(*args, **kwargs):
         return _dryrun(
             submit, returnStdout, returnStderr, returnExitcode, *args)
 
-    # submit - delegate to fslsub
+    # submit - delegate to fsl_sub. This will induce a nested
+    # call back to this run function, which is a bit confusing,
+    # but harmless, as we've popped the "submit" arg above.
     if submit is not None:
-        return fslsub.submit(' '.join(args), **submit, **kwargs)
+        from fsl.wrappers import fsl_sub  # pylint: disable=import-outside-toplevel  # noqa: E501
+        return fsl_sub(*args, **submit, **kwargs)[0].strip()
 
     # Run directly - delegate to _realrun
     stdout, stderr, exitcode = _realrun(
@@ -438,13 +441,17 @@ def wslcmd(cmdpath, *args):
 
 
 def hold(job_ids, hold_filename=None):
-    """
-    Waits until all jobs have finished
+    """Waits until all jobs have finished
 
-    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
-    :param hold_filename: filename to use as a hold file.
-        The containing directory should exist, but the file itself should not.
-        Defaults to a ./.<random characters>.hold in the current directory.
-    :return: only returns when all the jobs have finished
+    :param job_ids: possibly nested sequence of job ids. The job ids
+                    themselves should be strings.
+
+    :param hold_filename: filename to use as a hold file.  The
+                          containing directory should exist, but the
+                          file itself should not.  Defaults to a
+                          ./.<random characters>.hold in the current
+                          directory.  :return: only returns when all
+                          the jobs have finished
     """
+    import fsl.utils.fslsub as fslsub  # pylint: disable=import-outside-toplevel  # noqa: E501
     fslsub.hold(job_ids, hold_filename)
