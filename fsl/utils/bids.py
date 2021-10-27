@@ -187,7 +187,7 @@ def isBIDSFile(filename, strict=True):
 def loadMetadataFile(filename):
     """Load ``filename`` (assumed to be JSON), returning its contents. """
     with open(filename, 'rt') as f:
-        return json.load(f)
+        return json.load(f, strict=False)
 
 
 def loadMetadata(filename):
