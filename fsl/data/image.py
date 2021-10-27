@@ -1569,7 +1569,7 @@ def loadMetadata(image):
     jsonfile = op.join(dirname, '{}.json'.format(basename))
     if op.exists(jsonfile):
         with open(jsonfile, 'rt') as f:
-            return json.load(f)
+            return json.load(f, strict=False)
 
     return {}
 
