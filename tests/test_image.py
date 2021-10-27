@@ -1484,6 +1484,21 @@ def test_loadMeta_badJSON():
         assert list(img.metaKeys()) == []
 
 
+def test_loadMeta_control_characters():
+    with tempdir():
+        make_image('image.nii.gz')
+
+        with open('image.json', 'wt') as f:
+            f.write('{"a" : 1, "b" : "abc\x19\x1b"}')
+
+        # bad json should not cause failure
+        img = fslimage.Image('image.nii.gz', loadMeta=True)
+
+        assert list(img.metaKeys()) == ['a', 'b']
+        assert img.getMeta('a')     == 1
+        assert img.getMeta('b')     == 'abc\x19\x1b'
+
+
 def test_loadMetadata():
     with tempdir():
         make_image('image.nii.gz')

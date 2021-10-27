@@ -110,6 +110,21 @@ def test_loadMetadata():
         assert fslbids.loadMetadata(t1) == {**meta4, **meta2, **meta1}
 
 
+def test_loadMetadata_control_characters():
+    dd     = Path('dataset_description.json')
+    t1     = Path('sub-01/func/sub-01_task-stim_bold.nii.gz')
+    json1  = Path('sub-01/func/sub-01_task-stim_bold.json')
+    meta1  =  {"a" : "1",  "b" : "2\x19\x20"}
+    smeta1 = '{"a" : "1",  "b" : "2\x19\x20"}'
+
+    with tempdir():
+        dd.touch()
+        Path(op.dirname(t1)).mkdir(parents=True)
+        t1.touch()
+        assert fslbids.loadMetadata(t1) == {}
+        json1.write_text(smeta1)
+        assert fslbids.loadMetadata(t1) == meta1
+
 
 def test_loadMetadata_symlinked():
     ddreal = Path('a')
