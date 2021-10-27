@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.8.0 (Under development)
+-------------------------
+
+
+Changed
+^^^^^^^
+
+
+* BIDS and ``dcm2niix`` ``.json`` sidecar files with control characters
+  are now accepted.
+
+
 3.7.0 (Friday 20th August 2021)
 -------------------------------
 
