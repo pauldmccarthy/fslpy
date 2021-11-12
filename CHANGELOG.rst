@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.7.1 (Friday 12th November 2021)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* BIDS and ``dcm2niix`` ``.json`` sidecar files with control characters
+  are now accepted (!312).
+
+
+Fixed
+^^^^^
+
+
+* Fixed an issue with temporary input files created by :mod:`fsl.wrappers`
+  functions not being deleted (!313).
+
+
 3.7.0 (Friday 20th August 2021)
 -------------------------------
 
@@ -11,7 +31,7 @@ Added
 
 
 * New :mod:`fsl.wrappers.fsl_sub` wrapper function for the ``fsl_sub``
-  command.
+  command (!309).
 
 
 Changed
@@ -20,19 +40,19 @@ Changed
 
 * Performance of the :mod:`.imglob`, :mod:`.imln`, :mod:`imtest`, :mod:`.imrm`
   and :mod:`.remove_ext` scripts has been improved, by re-organising them to
-  avoid unnecessary and expensive imports such as ``numpy``.
+  avoid unnecessary and expensive imports such as ``numpy`` (!310).
 * The default behaviour of the :func:`fsl.utils.run.run` function (and hence
   that of all :mod:`fsl.wrappers` functions) has been changed so that the
   standard output and error of the called command is now forwarded to the
   calling Python process, in addition to being returned from ``run`` as
   strings. In other words, the default behaviour of ``run('cmd')``, is now
   equivalent to ``run('cmd', log={"tee":True})``. The previous default
-  behaviour can be achieved with ``run('cmd', log={"tee":False})``.
+  behaviour can be achieved with ``run('cmd', log={"tee":False})`` (!309).
 * The :func:`fsl.utils.run.run` and :func:`fsl.utils.run.runfsl` functions
   (and hence all :mod:`fsl.wrappers` functions) have been modified to use
   ``fsl.wrappers.fsl_sub`` instead of ``fsl.utils.fslsub.submit``. This is an
   internal change which should not affect the usage of the ``run``, ``runfsl``
-  or wrapper functions.
+  or wrapper functions (!309).
 
 
 Deprecated
@@ -41,10 +61,10 @@ Deprecated
 
 * :class:`fsl.utils.fslsub.SubmitParams` and :func:`fsl.utils.fslsub.submit`
   have been deprecated in favour of using the ``fsl.wrappers.fsl_sub`` wrapper
-  function.
+  function (!309).
 * The :func:`fsl.utils.fslsub.info` function has been deprecated in favour of
   using the ``fsl_sub.report`` function, from the separate `fsl_sub
-  <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ Python library.
+  <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ Python library (!309).
 
 
 3.6.4 (Tuesday 3rd August 2021)
