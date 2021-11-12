@@ -1050,6 +1050,12 @@ def fileOrImage(*args, **kwargs):
                 hd, infile = tempfile.mkstemp(fslimage.defaultExt(),
                                               dir=workdir)
                 os.close(hd)
+
+                # Create a copy of the input image and
+                # save that, so the original doesn't
+                # get associated with the temp file
+                val = nib.nifti1.Nifti1Image(
+                    np.asanyarray(val.dataobj), None, val.header)
                 val.to_filename(infile)
 
         return infile
