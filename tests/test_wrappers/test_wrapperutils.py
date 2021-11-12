@@ -876,3 +876,61 @@ def test_cmdwrapper_cmdonly_assert():
         assert func()[0].strip() == 'hello'
         os.remove('file')
         assert func(cmdonly=True) == ['echo', 'hello']
+
+
+def test_fileOrArray_all_tempfiles_cleared():
+
+    tempfiles = []
+
+    @wutils.fileOrArray('in_', 'out')
+    def array(in_, out):
+        tempfiles.extend((in_, out))
+        i = np.loadtxt(in_)
+        i = i + 1
+        np.savetxt(out, i)
+
+    arr    = np.array([[1, 2], [ 3, 4]])
+    arrout = array(arr, wutils.LOAD).out
+
+    assert np.all(np.isclose(arrout, arr + 1))
+    assert len(tempfiles) == 2
+    assert not any(op.exists(f) for f in tempfiles)
+
+
+def test_fileOrImage_all_tempfiles_cleared():
+
+    tempfiles = []
+
+    @wutils.fileOrImage('in_', 'out')
+    def image(in_, out):
+        tempfiles.extend((in_, out))
+        i = nib.load(in_)
+        i = nib.Nifti1Image(i.get_fdata() + 1, np.eye(4))
+        i.to_filename(out)
+
+    arr    = np.array([[1, 2], [ 3, 4]])
+    img    = nib.nifti1.Nifti1Image(arr, np.eye(4))
+    imgout = image(img, wutils.LOAD).out
+
+    assert np.all(np.isclose(imgout.get_fdata(), img.get_fdata() + 1))
+    assert len(tempfiles) == 2
+    assert not any(op.exists(f) for f in tempfiles)
+
+
+def test_fileOrText_all_tempfiles_cleared():
+
+    tempfiles = []
+
+    @wutils.fileOrText('in_', 'out')
+    def text(in_, out):
+        tempfiles.extend((in_, out))
+        with open(in_, 'rt') as inf, open(out, 'wt') as outf:
+            outf.write(inf.read())
+            outf.write('456')
+
+    txt    = '123'
+    txtout = text( txt, wutils.LOAD).out
+
+    assert txtout == '123456'
+    assert len(tempfiles) == 2
+    assert not any(op.exists(f) for f in tempfiles)
