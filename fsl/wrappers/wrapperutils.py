@@ -1046,7 +1046,7 @@ def fileOrImage(*args, **kwargs):
 
             # in-memory image - we have
             # to save it out to a file
-            if infile is None:
+            if infile is None or not op.exists(infile):
                 hd, infile = tempfile.mkstemp(fslimage.defaultExt(),
                                               dir=workdir)
                 os.close(hd)
