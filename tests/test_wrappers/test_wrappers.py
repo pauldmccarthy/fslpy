@@ -250,6 +250,21 @@ def test_fsl_regfilt():
         assert checkResult(result.stdout[0], *expected)
 
 
+def test_fslorient():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslorient',)) as fsldir:
+        fslo    = op.join(fsldir, 'bin', 'fslorient')
+        result   = fw.fslorient('input', setsform=(-2, 0, 0, 90, 0, 2, 0, -126, 0, 0, 2, -72, 0, 0, 0, 1))
+        expected = fslo + ' -setsform -2 0 0 90 0 2 0 -126 0 0 2 -72 0 0 0 1' + ' input'
+        assert result.stdout[0] == expected
+
+        result   = fw.fslorient('input', getorient=True)
+        expected = fslo + ' -getorient' + ' input'
+        assert result.stdout[0] == expected
+
+        result   = fw.fslorient('input', setsformcode=1)
+        expected = fslo + ' -setsformcode 1' + ' input'
+        assert result.stdout[0] == expected
+
 
 def test_fslreorient2std():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslreorient2std',)) as fsldir:

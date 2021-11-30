@@ -29,6 +29,34 @@ def fslreorient2std(input, output=None):
     return cmd
 
 
+@wutils.fileOrImage('input')
+@wutils.fslwrapper
+def fslorient(input, **kwargs):
+    """Wrapper for the ``fslorient`` tool."""
+
+    asrt.assertIsNifti(input)
+
+    valmap = {
+        'getorient'                : wutils.SHOW_IF_TRUE,
+        'getsform'                 : wutils.SHOW_IF_TRUE,
+        'getqform'                 : wutils.SHOW_IF_TRUE,
+        'getsformcode'             : wutils.SHOW_IF_TRUE,
+        'getqformcode'             : wutils.SHOW_IF_TRUE,
+        'copysform2qform'          : wutils.SHOW_IF_TRUE,
+        'copyqform2sform'          : wutils.SHOW_IF_TRUE,
+        'deleteorient'             : wutils.SHOW_IF_TRUE,
+        'forceradiological'        : wutils.SHOW_IF_TRUE,
+        'forceneurological'        : wutils.SHOW_IF_TRUE,
+        'swaporient'               : wutils.SHOW_IF_TRUE,
+    }
+
+    cmd = ['fslorient']
+    cmd += wutils.applyArgStyle('-', valsep=' ', valmap=valmap, **kwargs)
+    cmd += [input]
+
+    return cmd
+
+
 @wutils.fileOrImage('input', 'output')
 @wutils.fslwrapper
 def fslroi(input, output, *args):
