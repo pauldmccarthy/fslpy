@@ -22,7 +22,8 @@ log = logging.getLogger(__name__)
 
 
 BITMAP_EXTENSIONS = ['.bmp', '.png',  '.jpg', '.jpeg',
-                     '.tif', '.tiff', '.gif', '.rgba']
+                     '.tif', '.tiff', '.gif', '.rgba',
+                     '.jp2', '.jpg2', '.jp2k']
 """File extensions we understand. """
 
 
@@ -34,7 +35,10 @@ BITMAP_DESCRIPTIONS = [
     'TIFF',
     'TIFF',
     'Graphics Interchange Format',
-    'Raw RGBA']
+    'Raw RGBA',
+    'JPEG 2000',
+    'JPEG 2000',
+    'JPEG 2000']
 """A description for each :attr:`BITMAP_EXTENSION`. """
 
 
@@ -54,9 +58,11 @@ class Bitmap(object):
         if isinstance(bmp, (pathlib.Path, str)):
 
             try:
-                # Allow big images
-                import PIL.Image as Image
-                Image.MAX_IMAGE_PIXELS = 1e9
+                # Allow big/truncated images
+                import PIL.Image     as Image
+                import PIL.ImageFile as ImageFile
+                Image    .MAX_IMAGE_PIXELS      = None
+                ImageFile.LOAD_TRUNCATED_IMAGES = True
 
             except ImportError:
                 raise RuntimeError('Install Pillow to use the Bitmap class')

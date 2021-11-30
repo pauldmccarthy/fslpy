@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.8.0 (Under development)
+-------------------------
+
+
+Added
+^^^^^
+
+
+* New :func:`.fslorient` wrapper function (!315).
+* The :class:`.Bitmap` class has basic support for loading JPEG2000 images
+  (!316).
+
+
 3.7.1 (Friday 12th November 2021)
 ---------------------------------
 
