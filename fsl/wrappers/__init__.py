@@ -110,6 +110,7 @@ from fsl.wrappers.fugue        import (fugue,
 from fsl.wrappers.melodic      import (melodic,
                                        fsl_regfilt)
 from fsl.wrappers.misc         import (fslreorient2std,
+                                       fslorient,
                                        fslroi,
                                        slicer,
                                        cluster,
