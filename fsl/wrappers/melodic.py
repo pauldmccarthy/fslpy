@@ -50,8 +50,6 @@ def melodic(input, **kwargs):
         'logPower'     : wutils.SHOW_IF_TRUE,
     }
 
-    asrt.assertIsNifti(input)
-
     cmd  = ['melodic', '--in={}'.format(input)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
