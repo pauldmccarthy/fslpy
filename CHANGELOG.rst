@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.8.1 (Tuesday 28th December 2021)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* The :func:`.melodic` wrapper function no longer requires its ``input``
+  argument to be a NIFTI image or file (!321).
+
+
+
 3.8.0 (Thursday 23rd December 2021)
 -----------------------------------
 
