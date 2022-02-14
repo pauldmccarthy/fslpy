@@ -92,7 +92,8 @@ def applytopup(imain, datain, index, **kwargs):
     }
 
     asrt.assertFileExists(datain)
-    asrt.assertIsNifti(imain)
+    for fn in imain.split(','):
+        asrt.assertIsNifti(fn)
 
     cmd  = [
         'applytopup', '--imain={}'.format(imain),

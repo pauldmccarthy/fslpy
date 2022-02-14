@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.8.2 (Tuesday 15th February 2022)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* The the :func:`.topup` wrapper function now allows multiple file names to
+  be passed to the ``--imain``argument (!324).
+
 
 3.8.1 (Tuesday 28th December 2021)
 ----------------------------------
