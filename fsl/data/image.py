@@ -1310,7 +1310,7 @@ class Image(Nifti):
         if self.__dataMgr is not None:
             return self[:]
 
-        if self.__data is not None:
+        if self.__data is None:
             self.__data = self[:]
 
         return self.__data
@@ -1443,8 +1443,8 @@ class Image(Nifti):
             # expects (data, affine, header)
             if not self.saveState:
                 self.__nibImage = type(self.__nibImage)(self.data,
-                                                        None,
-                                                        self.header)
+                                                        affine=None,
+                                                        header=self.header)
                 self.header     = self.__nibImage.header
 
             nib.save(self.__nibImage, tmpfname)
