@@ -94,7 +94,7 @@ Made available in this module for convenience.
 """
 
 
-class DataManager(notifier.Notifier):
+class DataManager:
     """The ``DataManager`` defines an interface which may be used by
     :class:`Image` instances for managing access and modification of
     data in a ``nibabel.Nifti1Image`` image.
