@@ -47,14 +47,15 @@ import numpy             as np
 import nibabel           as nib
 import nibabel.fileslice as fileslice
 
-import fsl.utils.meta       as meta
-import fsl.utils.deprecated as deprecated
-import fsl.transform.affine as affine
-import fsl.utils.notifier   as notifier
-import fsl.utils.memoize    as memoize
-import fsl.utils.path       as fslpath
-import fsl.utils.bids       as fslbids
-import fsl.data.constants   as constants
+import fsl.utils.meta        as meta
+import fsl.utils.deprecated  as deprecated
+import fsl.transform.affine  as affine
+import fsl.utils.notifier    as notifier
+import fsl.utils.naninfrange as nir
+import fsl.utils.memoize     as memoize
+import fsl.utils.path        as fslpath
+import fsl.utils.bids        as fslbids
+import fsl.data.constants    as constants
 
 
 PathLike    = Union[str, Path]
@@ -1329,10 +1330,15 @@ class Image(Nifti):
 
 
     @property
-    @deprecated.deprecated('3.9.0', '4.0.0', 'Use a DataManager')
+    @deprecated.deprecated(
+        '3.9.0', '4.0.0', 'Access the image data directly, '
+                          'or use a custom DataManager')
     def dataRange(self):
-        """Deprecated, always returns ``(None, None)``. """
-        return None, None
+        """Deprecated. Returns the minimum/maxmimum image data values.
+        Note that calling this method may result in the image data being
+        loaded into memory.
+        """
+        return nir.naninfrange(self.data)
 
 
     @property
