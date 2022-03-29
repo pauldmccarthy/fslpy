@@ -1002,11 +1002,11 @@ class Image(Nifti):
 
     Internally, the image data is managed using one of the following methods:
 
-     1. For read-only access, the ``Image`` class delegates
-        entirely to the underlying ``nibabel`` ``Nifti1Image``
-        instance - refer to
-        https://nipy.org/nibabel/nibabel_images.html#the-image-data-array
-        for more details.
+     1. For read-only access, the ``Image`` class delegates entirely to the
+        underlying ``nibabel`` ``Nifti1Image`` instance, accessing the data
+        via the ``Nifti1Image.dataobj`` attribute.  Refer to
+        https://nipy.org/nibabel/nibabel_images.html#the-image-data-array for
+        more details.
 
      2. As soon as any data is modified, the ``Image`` class will
         load the image data as a numpy array into memory and will maintain its
