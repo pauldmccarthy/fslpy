@@ -1009,7 +1009,10 @@ class Image(Nifti):
 
      2. As soon as any data is modified, the ``Image`` class will
         load the image data as a numpy array into memory and will maintain its
-        own reference to the array for subsequent access.
+        own reference to the array for subsequent access. Note that this
+        array is entirely independent of any array that is cached by
+        the underlying ``nibabel.Nifti1Image`` object (refer to
+        https://nipy.org/nibabel/images_and_memory.html)
 
      3. For more complicated requirements, a :class:`DataManager`,
         implementing custom data access management logic, can be provided when
@@ -1024,6 +1027,7 @@ class Image(Nifti):
 
       - will not result in any notifications (described below)
       - will not affect the value of :meth:`saveState`
+      - have undefined semantics when a custom :class:`DataManager` is in use
 
 
     The ``Image`` class adds some :class:`.Notifier` topics to those which are
