@@ -32,13 +32,14 @@ and file names:
 """
 
 
-import                  os
-import os.path   as     op
-import itertools as     it
-import                  json
-import                  string
-import                  logging
-import                  tempfile
+import                    os
+import os.path         as op
+import itertools       as it
+import collections.abc as abc
+import                    json
+import                    string
+import                    logging
+import                    tempfile
 
 from pathlib import Path
 from typing  import Union
@@ -995,6 +996,9 @@ class Image(Nifti):
     ============== ===========================================================
 
 
+    *Data access*
+
+
     The ``Image`` class supports access to and assignment of the image data
     via the ``[]`` slice operator, e.g.::
 
@@ -1031,6 +1035,22 @@ class Image(Nifti):
       - will not result in any notifications (described below)
       - will not affect the value of :meth:`saveState`
       - have undefined semantics when a custom :class:`DataManager` is in use
+
+
+
+    *Image dimensionality*
+
+
+    The ``Image`` class abstracts away trailing image dimensions of length 1.
+    This means that if the header for a NIFTI image specifies that the image
+    has four dimensions, but the fourth dimension is of length 1, you do not
+    need to worry about indexing that fourth dimension. However, all NIFTI
+    images will be presented as having at least three dimensions, so if your
+    image header specifies a third dimension of length 1, you will still
+    need provide an index of 0 for that dimensions, for all data accesses.
+
+
+    *Notification of changes to an Image*
 
 
     The ``Image`` class adds some :class:`.Notifier` topics to those which are
@@ -1485,16 +1505,50 @@ class Image(Nifti):
 
 
     def __getitem__(self, slc):
-        """Access the image data with the specified ``sliceobj``.
+        """Access the image data with the specified ``slc``.
 
         :arg slc: Something which can slice the image data.
         """
 
         log.debug('%s: __getitem__ [%s]', self.name, slc)
 
-        if   self.__dataMgr is not None: return self.__dataMgr[slc]
-        elif self.__data    is not None: return self.__data[slc]
-        else:                            return self.__nibImage.dataobj[slc]
+        # Make the slice object compatible
+        # with the actual image shape - e.g.
+        # an underlying 2D image is presented
+        # as having 3 dimensions.
+        shape              = self.shape
+        realShape          = self.realShape
+        slc                = canonicalSliceObj(slc, shape)
+        fancy              = isValidFancySliceObj(sliceobj, shape)
+        expNdims, expShape = expectedShape(    slc, shape)
+        slc                = canonicalSliceObj(slc, realShape)
+
+        if   self.__dataMgr is not None: data = self.__dataMgr[slc]
+        elif self.__data    is not None: data = self.__data[slc]
+        else:                            data = self.__nibImage.dataobj[slc]
+
+        # Make sure that the result has the
+        # shape that the caller is expecting.
+        if fancy: data = data.reshape((data.size, ))
+        else:     data = data.reshape(expShape)
+
+        # If expNdims == 0, we should
+        # return a scalar. If expNdims
+        # == 0, but data.size != 1,
+        # something is wrong somewhere
+        # (and is not being handled
+        # here).
+        if expNdims == 0 and data.size == 1:
+
+            # Funny behaviour with numpy scalar arrays.
+            # data[()] returns a numpy scalar (which is
+            # what we want). But data.item() returns a
+            # python scalar. And if the data is a
+            # ndarray with 0 dims, data[0] will raise
+            # an error!
+            data = data[()]
+
+        return data
 
 
     def __setitem__(self, slc, values):
@@ -1512,6 +1566,36 @@ class Image(Nifti):
             return
 
         log.debug('%s: __setitem__ [%s = %s]', self.name, slc, values.shape)
+
+        realShape = self.realShape
+        slc       = canonicalSliceObj(slc, realShape)
+
+        # If the image shape does not match its
+        # 'display' shape (either less three
+        # dims, or  has trailing dims of length
+        # 1), we might need to re-shape the
+        # values to prevent numpy from raising
+        # an error in the assignment below.
+        if realShape != self.shape:
+
+            expNdims, expShape = expectedShape(slc, realShape)
+
+            # If we are slicing a scalar, the
+            # assigned value has to be scalar.
+            if expNdims == 0 and isinstance(values, abc.Sequence):
+
+                if len(values) > 1:
+                    raise IndexError('Invalid assignment: [{}] = {}'.format(
+                        slc, len(values)))
+
+                values = np.array(values).flatten()[0]
+
+            # Make sure that the values
+            # have a compatible shape.
+            else:
+                values = np.array(values)
+                if values.shape != expShape:
+                    values = values.reshape(expShape)
 
         # Use DataManager to manage data
         # access if one has been specified

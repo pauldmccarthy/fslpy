@@ -181,8 +181,6 @@ class ImageWrapper(notifier.Notifier):
                         data range is updated directly on reads/writes.
         """
 
-        import fsl.data.image as fslimage
-
         self.__image      = image
         self.__name       = name
         self.__taskThread = None
