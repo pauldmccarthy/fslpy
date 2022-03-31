@@ -1518,10 +1518,10 @@ class Image(Nifti):
         # as having 3 dimensions.
         shape              = self.shape
         realShape          = self.realShape
-        slc                = canonicalSliceObj(slc, shape)
-        fancy              = isValidFancySliceObj(sliceobj, shape)
-        expNdims, expShape = expectedShape(    slc, shape)
-        slc                = canonicalSliceObj(slc, realShape)
+        slc                = canonicalSliceObj(   slc, shape)
+        fancy              = isValidFancySliceObj(slc, shape)
+        expNdims, expShape = expectedShape(       slc, shape)
+        slc                = canonicalSliceObj(   slc, realShape)
 
         if   self.__dataMgr is not None: data = self.__dataMgr[slc]
         elif self.__data    is not None: data = self.__data[slc]
