@@ -2,6 +2,31 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.9.0 (Under devlopment)
+------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :class:`.Image` class no longer uses an :class:`.ImageWrapper` to
+  manage data access and assignment.
+* Semantics for accessing and modifying image data via the
+  :meth:`.Image.__getitem__` and :meth:`.Image.__setitem__` methods have
+  been clarified.
+
+
+Deprecated
+^^^^^^^^^^
+
+* The :mod:`.imagewrapper` module (and the :class:`.ImageWrapper` class) is
+  being migrated to FSLeyes - it, and all associated functions and options
+  in the :class:`.Image` class, have been marked as deprecated.
+
+
+
 3.8.2 (Tuesday 15th February 2022)
 ----------------------------------
 
