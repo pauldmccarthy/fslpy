@@ -45,10 +45,9 @@ import                    collections
 import collections.abc as abc
 import itertools       as it
 
-import numpy     as np
-import nibabel   as nib
+import numpy           as np
 
-
+import fsl.data.image        as fslimage
 import fsl.utils.deprecated  as deprecated
 import fsl.utils.notifier    as notifier
 import fsl.utils.naninfrange as nir
@@ -732,112 +731,29 @@ class ImageWrapper(notifier.Notifier):
         self.__updateDataRangeOnWrite(slices, values)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to fsl.data.image')
 def isValidFancySliceObj(sliceobj, shape):
-    """Returns ``True`` if the given ``sliceobj`` is a valid and fancy slice
-    object.
-
-    ``nibabel`` refers to slice objects as "fancy" if they comprise anything
-    but tuples of integers and simple ``slice`` objects. The ``ImageWrapper``
-    class supports one type of "fancy" slicing, where the ``sliceobj`` is a
-    boolean ``numpy`` array of the same shape as the image.
-
-    This function returns ``True`` if the given ``sliceobj`` adheres to these
-    requirements, ``False`` otherwise.
-    """
-
-    # We only support boolean numpy arrays
-    # which have the same shape as the image
-    return (isinstance(sliceobj, np.ndarray) and
-            sliceobj.dtype == bool           and
-            np.prod(sliceobj.shape) == np.prod(shape))
+    """Deprecated - moved to :mod:`fsl.data.image`."""
+    return fslimage.isValidFancySliceObj(sliceobj, shape)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to fsl.data.image')
 def canonicalSliceObj(sliceobj, shape):
-    """Returns a canonical version of the given ``sliceobj``. See the
-    ``nibabel.fileslice.canonical_slicers`` function.
-    """
-
-    # Fancy slice objects must have
-    # the same shape as the data
-    if isValidFancySliceObj(sliceobj, shape):
-        return sliceobj.reshape(shape)
-
-    else:
-
-        if not isinstance(sliceobj, tuple):
-            sliceobj = (sliceobj,)
-
-        if len(sliceobj) > len(shape):
-            sliceobj = sliceobj[:len(shape)]
-
-        return nib.fileslice.canonical_slicers(sliceobj, shape)
+    """Deprecated - moved to :mod:`fsl.data.image`."""
+    return fslimage.canonicalSliceObj(sliceobj, shape)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to fsl.data.image')
 def expectedShape(sliceobj, shape):
-    """Given a slice object, and the shape of an array to which
-    that slice object is going to be applied, returns the expected
-    shape of the result.
-
-    .. note:: It is assumed that the ``sliceobj`` has been passed through
-              the :func:`canonicalSliceObj` function.
-
-    :arg sliceobj: Something which can be used to slice an array
-                   of shape ``shape``.
-
-    :arg shape:    Shape of the array being sliced.
-
-    :returns:      A tuple containing:
-
-                     - Expected number of dimensions of the result
-
-                     - Expected shape of the result (or ``None`` if
-                       ``sliceobj`` is fancy).
-    """
-
-    if isValidFancySliceObj(sliceobj, shape):
-        return 1, None
-
-    # Truncate some dimensions from the
-    # slice object if it has too many
-    # (e.g. trailing dims of length 1).
-    elif len(sliceobj) > len(shape):
-        sliceobj = sliceobj[:len(shape)]
-
-    # Figure out the number of dimensions
-    # that the result should have, given
-    # this slice object.
-    expShape = []
-
-    for i in range(len(sliceobj)):
-
-        # Each dimension which has an
-        # int slice will be collapsed
-        if isinstance(sliceobj[i], int):
-            continue
-
-        start = sliceobj[i].start
-        stop  = sliceobj[i].stop
-
-        if start is None: start = 0
-        if stop  is None: stop  = shape[i]
-
-        stop = min(stop, shape[i])
-
-        expShape.append(stop - start)
-
-    return len(expShape), expShape
+    """Deprecated - moved to :mod:`fsl.data.image`."""
+    return fslimage.expectedShape(sliceobj, shape)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def sliceObjToSliceTuple(sliceobj, shape):
-    """Turns an array slice object into a tuple of (low, high) index
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Turns an array slice object into a tuple of (low, high) index
     pairs, one pair for each dimension in the given shape
 
     :arg sliceobj: Something which can be used to slice an array of shape
@@ -876,10 +792,11 @@ def sliceObjToSliceTuple(sliceobj, shape):
     return tuple(indices)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def sliceTupleToSliceObj(slices):
-    """Turns a sequence of (low, high) index pairs into a tuple of array
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Turns a sequence of (low, high) index pairs into a tuple of array
     ``slice`` objects.
 
     :arg slices: A sequence of (low, high) index pairs.
@@ -893,10 +810,11 @@ def sliceTupleToSliceObj(slices):
     return tuple(sliceobj)
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def adjustCoverage(oldCoverage, slices):
-    """Adjusts/expands the given ``oldCoverage`` so that it covers the
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Adjusts/expands the given ``oldCoverage`` so that it covers the
     given set of ``slices``.
 
     :arg oldCoverage: A ``numpy`` array of shape ``(2, n)`` containing
@@ -943,10 +861,11 @@ return code for the :func:`sliceOverlap` function.
 """
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def sliceOverlap(slices, coverage):
-    """Determines whether the given ``slices`` overlap with the given
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Determines whether the given ``slices`` overlap with the given
     ``coverage``.
 
     :arg slices:    A sequence of (low, high) index pairs, assumed to cover
@@ -1012,10 +931,11 @@ def sliceOverlap(slices, coverage):
     elif np.all(overlapStates == OVERLAP_ALL):  return OVERLAP_ALL
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def sliceCovered(slices, coverage):
-    """Returns ``True`` if the portion of the image data calculated by
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Returns ``True`` if the portion of the image data calculated by
     the given ``slices` has already been calculated, ``False`` otherwise.
 
     :arg slices:    A sequence of (low, high) index pairs, assumed to cover
@@ -1046,10 +966,11 @@ def sliceCovered(slices, coverage):
     return True
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def calcExpansion(slices, coverage):
-    """Calculates a series of *expansion* slices, which can be used to expand
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Calculates a series of *expansion* slices, which can be used to expand
     the given ``coverage`` so that it includes the given ``slices``.
 
     :arg slices:   Slices that the coverage needs to be expanded to cover.
@@ -1218,10 +1139,11 @@ def calcExpansion(slices, coverage):
     return volumes, expansions
 
 
-@deprecated.deprecated('3.9.0', '4.0.0',
-                       'The imagewrapper module been migrated to FSLeyes')
+@deprecated.deprecated('3.9.0', '4.0.0', 'Moved to FSLeyes')
 def collapseExpansions(expansions, numDims):
-    """Scans through the given list of expansions (each assumed to pertain
+    """Deprecated - the imagewrapper has been moved to FSLeyes.
+
+    Scans through the given list of expansions (each assumed to pertain
     to a single 3D image), and combines any which cover the same
     image area, and cover adjacent volumes.
 

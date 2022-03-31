@@ -136,7 +136,9 @@ class Nifti(notifier.Notifier, meta.Meta):
                       object.
 
     ``shape``         A list/tuple containing the number of voxels along
-                      each image dimension.
+                      each image dimension - see notes below.
+
+    ``realShape``     A list/tuple containing the actual image data shape.
 
     ``pixdim``        A list/tuple containing the length of one voxel
                       along each image dimension.
@@ -163,8 +165,11 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     The ``shape`` attribute may not precisely match the image shape as
     reported in the NIFTI header, because trailing dimensions of size 1 are
-    squeezed out. See the :meth:`__determineShape` and :meth:`mapIndices`
-    methods.
+    squeezed out. See the :meth:`__determineShape` method and the
+    :func:`canonicalSliceObj` function. The actual image data shape can be
+    queried via the :meth:`realShape` property. Note also that the
+    :class:`Image` class expects data access to be with respect to the adjusted
+    shape, not the real shape.
 
 
     **Affine transformations**
@@ -570,6 +575,12 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     @property
+    def realShape(self):
+        """Returns a tuple containing the image data shape. """
+        return tuple(self.__origShape)
+
+
+    @property
     def ndim(self):
         """Returns the number of dimensions in this image. This number may not
         match the number of dimensions specified in the NIFTI header, as
@@ -738,18 +749,9 @@ class Nifti(notifier.Notifier, meta.Meta):
         return self.getAffine('fsl', 'voxel')
 
 
+    @deprecated.deprecated('3.9.0', '4.0.0', 'Use canonicalSliceObj instead')
     def mapIndices(self, sliceobj):
-        """Adjusts the given slice object so that it may be used to index the
-        underlying ``nibabel`` NIFTI image object.
-
-        See the :meth:`__determineShape` method.
-
-        :arg sliceobj: Something that can be used to slice a
-                       multi-dimensional array, e.g. ``arr[sliceobj]``.
-        """
-
-        # How convenient - nibabel has a function
-        # that does the dirty work for us.
+        """Deprecated - use :func:`canonicalSliceObj` instead. """
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
 
 
@@ -1552,6 +1554,102 @@ def canonicalShape(shape):
         shape = shape + [1] * (3 - len(shape))
 
     return shape
+
+
+def isValidFancySliceObj(sliceobj, shape):
+    """Returns ``True`` if the given ``sliceobj`` is a valid and fancy slice
+    object.
+
+    ``nibabel`` refers to slice objects as "fancy" if they comprise anything
+    but tuples of integers and simple ``slice`` objects. The ``Image`` class
+    supports an additional type of "fancy" slicing, where the ``sliceobj`` is
+    a boolean ``numpy`` array of the same shape as the image.
+
+    This function returns ``True`` if the given ``sliceobj`` adheres to these
+    requirements, ``False`` otherwise.
+    """
+
+    # We only support boolean numpy arrays
+    # which have the same shape as the image
+    return (isinstance(sliceobj, np.ndarray) and
+            sliceobj.dtype == bool           and
+            np.prod(sliceobj.shape) == np.prod(shape))
+
+
+def canonicalSliceObj(sliceobj, shape):
+    """Returns a canonical version of the given ``sliceobj``. See the
+    ``nibabel.fileslice.canonical_slicers`` function.
+    """
+
+    # Fancy slice objects must have
+    # the same shape as the data
+    if isValidFancySliceObj(sliceobj, shape):
+        return sliceobj.reshape(shape)
+
+    else:
+
+        if not isinstance(sliceobj, tuple):
+            sliceobj = (sliceobj,)
+
+        if len(sliceobj) > len(shape):
+            sliceobj = sliceobj[:len(shape)]
+
+        return nib.fileslice.canonical_slicers(sliceobj, shape)
+
+
+def expectedShape(sliceobj, shape):
+    """Given a slice object, and the shape of an array to which
+    that slice object is going to be applied, returns the expected
+    shape of the result.
+
+    .. note:: It is assumed that the ``sliceobj`` has been passed through
+              the :func:`canonicalSliceObj` function.
+
+    :arg sliceobj: Something which can be used to slice an array
+                   of shape ``shape``.
+
+    :arg shape:    Shape of the array being sliced.
+
+    :returns:      A tuple containing:
+
+                     - Expected number of dimensions of the result
+
+                     - Expected shape of the result (or ``None`` if
+                       ``sliceobj`` is fancy).
+    """
+
+    if isValidFancySliceObj(sliceobj, shape):
+        return 1, None
+
+    # Truncate some dimensions from the
+    # slice object if it has too many
+    # (e.g. trailing dims of length 1).
+    elif len(sliceobj) > len(shape):
+        sliceobj = sliceobj[:len(shape)]
+
+    # Figure out the number of dimensions
+    # that the result should have, given
+    # this slice object.
+    expShape = []
+
+    for i in range(len(sliceobj)):
+
+        # Each dimension which has an
+        # int slice will be collapsed
+        if isinstance(sliceobj[i], int):
+            continue
+
+        start = sliceobj[i].start
+        stop  = sliceobj[i].stop
+
+        if start is None: start = 0
+        if stop  is None: stop  = shape[i]
+
+        stop = min(stop, shape[i])
+
+        expShape.append(stop - start)
+
+    return len(expShape), expShape
 
 
 def loadMetadata(image):
