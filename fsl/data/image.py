@@ -1019,7 +1019,7 @@ class Image(Nifti):
     Internally, the image data is managed using one of the following methods:
 
      1. For read-only access, the ``Image`` class delegates entirely to the
-        underlying ``nibabel`` ``Nifti1Image`` instance, accessing the data
+        underlying ``nibabel.Nifti1Image`` instance, accessing the data
         via the ``Nifti1Image.dataobj`` attribute.  Refer to
         https://nipy.org/nibabel/nibabel_images.html#the-image-data-array for
         more details.
@@ -1033,7 +1033,7 @@ class Image(Nifti):
 
      3. For more complicated requirements, a :class:`DataManager`,
         implementing custom data access management logic, can be provided when
-        an ``Image`` is created, . If a ``DataManager``is provided, an
+        an ``Image`` is created. If a ``DataManager``is provided, an
         internal reference to the data (see 2 above) will **not** be created or
         maintained.
 
