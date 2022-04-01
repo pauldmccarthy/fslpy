@@ -23,9 +23,8 @@ def random_shape():
     return shape
 
 
-def random_data_from_slice(slc, dtype=None):
-    size = [s.stop - s.start for s in slc]
-    data = (np.random.random(size) * 50)
+def random_data_from_slice(shape, slc, dtype=None):
+    data = (np.random.random(shape) * 50)[slc]
     if dtype is not None: return data.astype(dtype)
     else:                 return data
 
@@ -99,7 +98,7 @@ def _test_image_read_write(suffix):
     with tempdir():
         img, _ = create_image(filename, shape)
         slc    = random_slice(shape)
-        data   = random_data_from_slice(slc, img.dtype)
+        data   = random_data_from_slice(shape, slc, img.dtype)
 
         assert not img.inMemory
         img[slc] = data
@@ -111,10 +110,13 @@ def _test_image_read_write(suffix):
 # Custom data manager - Image class
 # does not promise anything
 class NoOpDataManager(fslimage.DataManager):
+    def __init__(self, shape):
+        self.__shape = shape
     def copy(self, nibImage):
+        self.__shape = nibImage.shape
         return self
     def __getitem__(self, slc):
-        return random_data_from_slice(slc)
+        return random_data_from_slice(self.__shape, slc)
     def __setitem__(self, slc, value):
         pass
 
@@ -124,7 +126,8 @@ def test_image_read_write_datamanager():
     shape    = random_shape()
 
     with tempdir():
-        dm     = NoOpDataManager()
+
+        dm     = NoOpDataManager(shape)
         img, _ = create_image(filename, shape, dataMgr=dm)
         slc    = random_slice(shape)
 
