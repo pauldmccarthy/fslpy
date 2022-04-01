@@ -105,7 +105,7 @@ def _test_image_read_write(suffix):
         img[slc] = data
         assert img.inMemory
 
-        assert np.all(np.isclose(img[slc], data))
+        assert np.all(np.isclose(img[slc].reshape(data.shape), data))
 
 
 # Custom data manager - Image class
