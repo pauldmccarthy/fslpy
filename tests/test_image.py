@@ -867,12 +867,8 @@ def _test_Image_changeData(imgtype):
         def onSaveState(*a):
             notified['save'] = True
 
-        def onDataRange(*a):
-            notified['dataRange'] = True
-
         img.register('name1', onData,      'data')
         img.register('name2', onSaveState, 'saveState')
-        img.register('name3', onDataRange, 'dataRange')
 
         # Calculate the actual data range
         data   = np.asanyarray(img.nibImage.dataobj)
@@ -913,13 +909,11 @@ def _test_Image_changeData(imgtype):
                 img[minx, miny, minz] = newdmin
                 break
 
-        assert notified.get('data',      False)
-        assert notified.get('dataRange', False)
+        assert notified.get('data', False)
         assert np.isclose(img[minx, miny, minz], newdmin)
         assert np.all(np.isclose(img.dataRange, (newdmin, dmax)))
 
         notified.pop('data')
-        notified.pop('dataRange')
 
         # random value above the data range,
         # making sure not to overwrite the
@@ -930,13 +924,10 @@ def _test_Image_changeData(imgtype):
                 img[maxx, maxy, maxz] = newdmax
                 break
 
-        assert notified.get('data',      False)
-        assert notified.get('dataRange', False)
+        assert notified.get('data', False)
         assert np.isclose(img[maxx, maxy, maxz], newdmax)
-        assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
         img.deregister('name1', 'data')
         img.deregister('name2', 'data')
-        img.deregister('name3', 'data')
         img = None
 
 
