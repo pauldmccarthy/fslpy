@@ -164,13 +164,17 @@ class Nifti(notifier.Notifier, meta.Meta):
     property if you need to know what type of image you are dealing with.
 
 
-    The ``shape`` attribute may not precisely match the image shape as
-    reported in the NIFTI header, because trailing dimensions of size 1 are
-    squeezed out. See the :meth:`__determineShape` method and the
-    :func:`canonicalSliceObj` function. The actual image data shape can be
-    queried via the :meth:`realShape` property. Note also that the
-    :class:`Image` class expects data access to be with respect to the adjusted
-    shape, not the real shape.
+    **Image dimensionality**
+
+
+    By default, the ``Nifti`` and ``Image`` classes abstract away trailing
+    image dimensions of length 1.  Therefore, the ``shape`` attribute may not
+    precisely match the image shape as reported in the NIFTI header, because
+    trailing dimensions of size 1 are squeezed out. The actual image data
+    shape can be queried via the :meth:`realShape` property. Note also that
+    the :class:`Image` class expects data access/slicing to be with respect to
+    the normalised shape, not the real shape. See the :meth:`__determineShape`
+    method and the :func:`canonicalSliceObj` function for more details.
 
 
     **Affine transformations**
@@ -272,9 +276,9 @@ class Nifti(notifier.Notifier, meta.Meta):
         """Create a ``Nifti`` object.
 
         :arg header: A :class:`nibabel.nifti1.Nifti1Header`,
-                       :class:`nibabel.nifti2.Nifti2Header`, or
-                       ``nibabel.analyze.AnalyzeHeader`` to be used as the
-                       image header.
+                     :class:`nibabel.nifti2.Nifti2Header`, or
+                     ``nibabel.analyze.AnalyzeHeader`` to be used as the
+                     image header.
         """
 
         # Nifti2Header is a sub-class of Nifti1Header,
@@ -571,13 +575,18 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     @property
     def shape(self):
-        """Returns a tuple containing the image data shape. """
+        """Returns a tuple containing the normalised image data shape.  The
+        image shape is at least three dimensions, and trailing dimensions of
+        length 1 are squeezed out.
+        """
         return tuple(self.__shape)
 
 
     @property
     def realShape(self):
-        """Returns a tuple containing the image data shape. """
+        """Returns a tuple containing the image data shape, as reported in
+        the NIfTI image header.
+        """
         return tuple(self.__origShape)
 
 
@@ -601,6 +610,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     def intent(self):
         """Returns the NIFTI intent code of this image. """
         return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
+
 
     @property
     def niftiDataType(self):
@@ -1037,7 +1047,6 @@ class Image(Nifti):
       - have undefined semantics when a custom :class:`DataManager` is in use
 
 
-
     *Image dimensionality*
 
 
@@ -1328,7 +1337,10 @@ class Image(Nifti):
 
     @property
     def data(self):
-        """Returns the image data as a ``numpy`` array.
+        """Returns the image data as a ``numpy`` array. The shape of the
+        returned array is normalised - it will have at least three dimensions,
+        and any trailing dimensions of length 1 will be squeezed out.  See
+        :meth:`Nifti.shape` and :meth:`Nifti.realShape`.
 
         .. warning:: Calling this method may cause the entire image to be
                      loaded into memory.
@@ -1337,10 +1349,28 @@ class Image(Nifti):
         if self.__dataMgr is not None:
             return self[:]
 
+        # The internal cache has real image shape -
+        # this makes code in __getitem__ easier,
+        # as it can use the real shape regardless
+        # of how the data is accessed
         if self.__data is None:
-            self.__data = self[:]
+            self.__data = self.nibImage.dataobj[:]
 
-        return self.__data
+        return self.__data.reshape(self.shape)
+
+
+    @property
+    def inMemory(self):
+        """Returns ``True`` if the image data has been loaded into memory,
+        ``False``otherwise. This does not reflect whether the underlying
+        ``nibabel.Nifti1Image`` object has loaded the image data into
+        memory. However, if all data access takes place through the ``Image``
+        class, the underlying ``nibabel`` image will not use a cache.
+
+        If custom ``DataManager`` has loaded the data, this method will always
+        return ``False``.
+        """
+        return self.__data is not None
 
 
     @property
@@ -1369,7 +1399,7 @@ class Image(Nifti):
 
         # Get the data type from the
         # first voxel in the image
-        coords = [0] * len(self.__nibImage.shape)
+        coords = [0] * len(self.shape)
         return self[tuple(coords)].dtype
 
 
