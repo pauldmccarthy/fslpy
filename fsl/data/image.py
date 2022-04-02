@@ -109,6 +109,14 @@ class DataManager:
         raise NotImplementedError()
 
 
+    @property
+    def dataRange(self):
+        """Return the image minimum/maximum data values as a ``(min, max)``
+        tuple.
+        """
+        raise NotImplementedError()
+
+
     def __getitem__(self, slc):
         """Return data at ``slc``. """
         raise NotImplementedError()
@@ -998,6 +1006,8 @@ class Image(Nifti):
                    file from where it was loaded, or some other string
                    describing its origin.
 
+    ``dataRange``  The ``(min, max)`` image data values.
+
     ``nibImage``   A reference to the ``nibabel`` NIFTI image object.
 
     ``saveState``  A boolean value which is ``True`` if this image is
@@ -1251,6 +1261,7 @@ class Image(Nifti):
         self.__nibImage   = nibImage
         self.__saveState  = saved
         self.__dataMgr    = dataMgr
+        self.__dataRange  = None
         self.__data       = None
 
         # Listen to ourself for changes
@@ -1382,15 +1393,14 @@ class Image(Nifti):
 
 
     @property
-    @deprecated.deprecated(
-        '3.9.0', '4.0.0', 'Access the image data directly, '
-                          'or use a custom DataManager')
     def dataRange(self):
-        """Deprecated. Returns the minimum/maxmimum image data values.
-        Note that calling this method may result in the image data being
-        loaded into memory.
-        """
-        return nir.naninfrange(self.data)
+        """Returns the minimum/maxmimum image data values. """
+
+        if   self.__dataMgr   is not None: return self.__dataMgr.dataRange
+        elif self.__dataRange is not None: return self.__dataRange
+
+        self.__dataRange = nir.naninfrange(self.data)
+        return self.__dataRange
 
 
     @property
@@ -1636,9 +1646,12 @@ class Image(Nifti):
         # to persist data changes
         else:
             # force-load data - see the data() method
+            # Reset data range whenever the data is
+            # modified - see dataRange() method
             if self.__data is None:
                 self.data
             self.__data[slc] = values
+            self.__dataRange = None
 
         # Notify that data has changed/image is not saved
         self.notify(topic='data', value=slc)
