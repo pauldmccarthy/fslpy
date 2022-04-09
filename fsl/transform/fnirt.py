@@ -283,7 +283,7 @@ def readFnirt(fname, src, ref, defType=None, intent=None):
     # If the intent is provided, assume
     # that the caller knows the type of
     # the field.
-    img    = fslimage.Image(fname, loadData=False)
+    img    = fslimage.Image(fname)
     intent = intent or img.intent
     disps  = (constants.FSL_FNIRT_DISPLACEMENT_FIELD,
               constants.FSL_TOPUP_FIELD)

@@ -377,9 +377,7 @@ def loadClusterResults(featdir, settings, contrast):
         # space, the cluster coordinates are in standard
         # space. We transform them to voxel coordinates.
         # later on.
-        coordXform = fslimage.Image(
-            getDataFile(featdir),
-            loadData=False).worldToVoxMat
+        coordXform = fslimage.Image(getDataFile(featdir)).worldToVoxMat
 
     log.debug('Loading cluster results for contrast {} from {}'.format(
         contrast, clusterFile))
