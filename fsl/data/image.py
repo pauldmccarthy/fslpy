@@ -623,7 +623,42 @@ class Nifti(notifier.Notifier, meta.Meta):
     @property
     def niftiDataType(self):
         """Returns the NIFTI data type code of this image. """
-        return self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
+        dt = self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
+
+        return int(dt)
+
+
+    @property
+    def niftiDataTypeSize(self):
+        """Returns the number of bits per voxel, according to the NIfTI
+        data type. Returns ``None`` if the data type is not recognised.
+        """
+        sizes = {
+           constants.NIFTI_DT_BINARY        : 1,
+           constants.NIFTI_DT_UNSIGNED_CHAR : 8,
+           constants.NIFTI_DT_SIGNED_SHORT  : 16,
+           constants.NIFTI_DT_SIGNED_INT    : 32,
+           constants.NIFTI_DT_FLOAT         : 32,
+           constants.NIFTI_DT_COMPLEX       : 64,
+           constants.NIFTI_DT_DOUBLE        : 64,
+           constants.NIFTI_DT_RGB           : 24,
+           constants.NIFTI_DT_UINT8         : 8,
+           constants.NIFTI_DT_INT16         : 16,
+           constants.NIFTI_DT_INT32         : 32,
+           constants.NIFTI_DT_FLOAT32       : 32,
+           constants.NIFTI_DT_COMPLEX64     : 64,
+           constants.NIFTI_DT_FLOAT64       : 64,
+           constants.NIFTI_DT_RGB24         : 24,
+           constants.NIFTI_DT_INT8          : 8,
+           constants.NIFTI_DT_UINT16        : 16,
+           constants.NIFTI_DT_UINT32        : 32,
+           constants.NIFTI_DT_INT64         : 64,
+           constants.NIFTI_DT_UINT64        : 64,
+           constants.NIFTI_DT_FLOAT128      : 128,
+           constants.NIFTI_DT_COMPLEX128    : 128,
+           constants.NIFTI_DT_COMPLEX256    : 256,
+           constants.NIFTI_DT_RGBA32        : 32}
+        return sizes.get(self.niftiDataType, None)
 
 
     @intent.setter
