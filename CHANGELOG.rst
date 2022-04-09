@@ -7,24 +7,45 @@ order.
 ------------------------
 
 
+Added
+^^^^^
+
+
+* New :meth:`.Image.niftiDataTypeSize` method, which reports the number
+  of bits per voxel, according to the NIfTI data type (!327).
+
+
 Changed
 ^^^^^^^
 
 
 * The :class:`.Image` class no longer uses an :class:`.ImageWrapper` to
-  manage data access and assignment.
-* Semantics for accessing and modifying image data via the
-  :meth:`.Image.__getitem__` and :meth:`.Image.__setitem__` methods have
-  been clarified.
+  manage data access and assignment (!327).
+* Semantics for accessing and modifying image data have changed. By default,
+  image data access is now delegated to the underlying ``nibabel.Nifti1Image``
+  object (and so remains on disk by default). Image data can be loaded into
+  memory by accessing the :meth:`.Image.data` property, or by modifying the
+  data through :meth:`.Image.__setitem__` (!327).
+
+
+Fixed
+^^^^^
+
+
+* Fixes to the :mod:`.melodic` and :meth:`.eddy` wrapper functions.
 
 
 Deprecated
 ^^^^^^^^^^
 
-* The :mod:`.imagewrapper` module (and the :class:`.ImageWrapper` class) is
-  being migrated to FSLeyes - it, and all associated functions and options
-  in the :class:`.Image` class, have been marked as deprecated.
 
+* The :mod:`.imagewrapper` module (and the :class:`.ImageWrapper` class) is
+  being migrated to FSLeyes (!327).
+* The ``loadData``, ``calcRange``, and ``threaded`` arguments to the
+  :class:`.Image` class are deprecated and no longer have any effect (!327).
+* The :meth:`.Image.getImageWrapper`, :meth:`.Image.calcRange` and
+  :meth:`.Image.loadData` methods are deprecated and no longer have any effect
+  (!327).
 
 
 3.8.2 (Tuesday 15th February 2022)
