@@ -93,9 +93,6 @@ def make_image(filename=None,
 # Need to test:
 #     - Create image from existing nibabel image
 #     - Create image from numpy array
-#     - calcRange
-#     - loadData
-
 
 def test_load():
     """Create an Image from a file name. """

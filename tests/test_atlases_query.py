@@ -41,17 +41,9 @@ _atlases = cache.Cache()
 def _get_atlas(atlasID, res, summary=False):
     atlas = _atlases.get((atlasID, res, summary), default=None)
     if atlas is None:
-        if summary or atlasID in ('talairach', 'striatum-structural',
-                                  'jhu-labels', 'smatt'):
-            kwargs = {}
-        else:
-            kwargs = {'loadData'  : False,
-                      'calcRange' : False}
-
         atlas = fslatlases.loadAtlas(atlasID,
                                      loadSummary=summary,
-                                     resolution=res,
-                                     **kwargs)
+                                     resolution=res)
         _atlases.put((atlasID, res, summary), atlas)
 
     return atlas

@@ -441,11 +441,7 @@ def test_bad_mask(seed):
 
         for atlasID, use_label in it.product(atlases, use_labels):
 
-            atlas  = fslatlases.loadAtlas(
-                atlasID,
-                loadSummary=use_label,
-                loadData=False,
-                calcRange=False)
+            atlas  = fslatlases.loadAtlas(atlasID, loadSummary=use_label)
             ashape = list(atlas.shape[:3])
 
             wrongdims  = fslimage.Image(
