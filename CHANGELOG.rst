@@ -43,6 +43,7 @@ Deprecated
   being migrated to FSLeyes (!327).
 * The ``loadData``, ``calcRange``, and ``threaded`` arguments to the
   :class:`.Image` class are deprecated and no longer have any effect (!327).
+* The :meth:`.Nifti.mapIndices` method is deprecated (!327).
 * The :meth:`.Image.getImageWrapper`, :meth:`.Image.calcRange` and
   :meth:`.Image.loadData` methods are deprecated and no longer have any effect
   (!327).
