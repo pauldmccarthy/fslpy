@@ -516,14 +516,15 @@ def test_defaultExt():
                       'NIFTI2', 'NIFTI2_PAIR', 'NIFTI2_GZ', 'NIFTI2_PAIR_GZ']
     exts           = ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
 
-    os.environ.pop('FSLOUTPUTTYPE', None)
-    assert fslimage.defaultExt() == '.nii.gz'
+    env = os.environ.copy()
 
-    for o, e in zip(fslOutputTypes, exts):
+    env.pop('FSLOUTPUTTYPE', None)
 
-        os.environ['FSLOUTPUTTYPE'] = o
-
-        assert fslimage.defaultExt() == e
+    with mock.patch('os.environ', env):
+        assert fslimage.defaultExt() == '.nii.gz'
+        for o, e in zip(fslOutputTypes, exts):
+            env['FSLOUTPUTTYPE'] = o
+            assert fslimage.defaultExt() == e
 
 
 def test_defaultImageType():
@@ -534,13 +535,15 @@ def test_defaultImageType():
     exts           = ['.nii.gz'] + \
                      ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
 
-    with tempdir():
+    env = os.environ.copy()
+
+    with tempdir(), mock.patch('os.environ', env):
         for o, e in zip(fslOutputTypes, exts):
 
             if o is None:
-                os.environ.pop('FSLOUTPUTTYPE', None)
+                env.pop('FSLOUTPUTTYPE', None)
             else:
-                os.environ['FSLOUTPUTTYPE'] = o
+                env['FSLOUTPUTTYPE'] = o
 
             if o is None or 'NIFTI2' not in o:
                 exptype = nib.Nifti1Image
