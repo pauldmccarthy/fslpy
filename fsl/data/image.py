@@ -145,9 +145,10 @@ class Nifti(notifier.Notifier, meta.Meta):
                       object.
 
     ``shape``         A list/tuple containing the number of voxels along
-                      each image dimension - see notes below.
+                      each image dimension.
 
-    ``realShape``     A list/tuple containing the actual image data shape.
+    ``realShape``     A list/tuple containing the actual image data shape
+                      - see notes below.
 
     ``pixdim``        A list/tuple containing the length of one voxel
                       along each image dimension.
@@ -206,7 +207,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     See `here <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_transformation_parameters.3F>`_
-    for more details on the ``fsl`` coordinate system..
+    for more details on the ``fsl`` coordinate system.
 
 
     The ``Nifti`` class follows the same process as ``nibabel`` in determining
@@ -634,30 +635,30 @@ class Nifti(notifier.Notifier, meta.Meta):
         data type. Returns ``None`` if the data type is not recognised.
         """
         sizes = {
-           constants.NIFTI_DT_BINARY        : 1,
-           constants.NIFTI_DT_UNSIGNED_CHAR : 8,
-           constants.NIFTI_DT_SIGNED_SHORT  : 16,
-           constants.NIFTI_DT_SIGNED_INT    : 32,
-           constants.NIFTI_DT_FLOAT         : 32,
-           constants.NIFTI_DT_COMPLEX       : 64,
-           constants.NIFTI_DT_DOUBLE        : 64,
-           constants.NIFTI_DT_RGB           : 24,
-           constants.NIFTI_DT_UINT8         : 8,
-           constants.NIFTI_DT_INT16         : 16,
-           constants.NIFTI_DT_INT32         : 32,
-           constants.NIFTI_DT_FLOAT32       : 32,
-           constants.NIFTI_DT_COMPLEX64     : 64,
-           constants.NIFTI_DT_FLOAT64       : 64,
-           constants.NIFTI_DT_RGB24         : 24,
-           constants.NIFTI_DT_INT8          : 8,
-           constants.NIFTI_DT_UINT16        : 16,
-           constants.NIFTI_DT_UINT32        : 32,
-           constants.NIFTI_DT_INT64         : 64,
-           constants.NIFTI_DT_UINT64        : 64,
-           constants.NIFTI_DT_FLOAT128      : 128,
-           constants.NIFTI_DT_COMPLEX128    : 128,
-           constants.NIFTI_DT_COMPLEX256    : 256,
-           constants.NIFTI_DT_RGBA32        : 32}
+            constants.NIFTI_DT_BINARY        : 1,
+            constants.NIFTI_DT_UNSIGNED_CHAR : 8,
+            constants.NIFTI_DT_SIGNED_SHORT  : 16,
+            constants.NIFTI_DT_SIGNED_INT    : 32,
+            constants.NIFTI_DT_FLOAT         : 32,
+            constants.NIFTI_DT_COMPLEX       : 64,
+            constants.NIFTI_DT_DOUBLE        : 64,
+            constants.NIFTI_DT_RGB           : 24,
+            constants.NIFTI_DT_UINT8         : 8,
+            constants.NIFTI_DT_INT16         : 16,
+            constants.NIFTI_DT_INT32         : 32,
+            constants.NIFTI_DT_FLOAT32       : 32,
+            constants.NIFTI_DT_COMPLEX64     : 64,
+            constants.NIFTI_DT_FLOAT64       : 64,
+            constants.NIFTI_DT_RGB24         : 24,
+            constants.NIFTI_DT_INT8          : 8,
+            constants.NIFTI_DT_UINT16        : 16,
+            constants.NIFTI_DT_UINT32        : 32,
+            constants.NIFTI_DT_INT64         : 64,
+            constants.NIFTI_DT_UINT64        : 64,
+            constants.NIFTI_DT_FLOAT128      : 128,
+            constants.NIFTI_DT_COMPLEX128    : 128,
+            constants.NIFTI_DT_COMPLEX256    : 256,
+            constants.NIFTI_DT_RGBA32        : 32}
         return sizes.get(self.niftiDataType, None)
 
 
