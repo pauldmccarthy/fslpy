@@ -44,6 +44,13 @@ def _get_atlas(atlasID, res, summary=False):
         atlas = fslatlases.loadAtlas(atlasID,
                                      loadSummary=summary,
                                      resolution=res)
+
+        # We need some atlases to be loaded into memory,
+        # so we can use boolean-mask-based indexing
+        if summary or atlasID in ('talairach', 'striatum-structural',
+                                  'jhu-labels', 'smatt'):
+            atlas.data
+
         _atlases.put((atlasID, res, summary), atlas)
 
     return atlas
