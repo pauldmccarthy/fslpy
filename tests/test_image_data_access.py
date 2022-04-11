@@ -103,6 +103,7 @@ def _test_image_read_write(suffix):
         assert not img.inMemory
         img[slc] = data
         assert img.inMemory
+        assert not img.nibImage.in_memory
 
         assert np.all(np.isclose(img[slc].reshape(data.shape), data))
 
