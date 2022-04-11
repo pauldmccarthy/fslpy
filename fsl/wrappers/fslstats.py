@@ -20,7 +20,7 @@ import fsl.data.image      as fslimage
 from . import wrapperutils as wutils
 
 
-class fslstats(object):
+class fslstats:
     """The ``fslstats`` class is a wrapper around the ``fslstats`` command-line
     tool. It provides an object-oriented interface - options are specified by
     chaining method calls and attribute accesses together.
@@ -230,7 +230,7 @@ class fslstats(object):
             # We need know the number of volumes
             # (or the number of labels) in order
             # to know how to shape the results.
-            img = fslimage.Image(self.__input, loadData=False)
+            img = fslimage.Image(self.__input)
 
             if img.ndim >= 4: nvols = img.shape[3]
             else:             nvols = 1

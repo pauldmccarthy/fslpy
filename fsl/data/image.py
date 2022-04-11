@@ -32,13 +32,14 @@ and file names:
 """
 
 
-import                  os
-import os.path   as     op
-import itertools as     it
-import                  json
-import                  string
-import                  logging
-import                  tempfile
+import                    os
+import os.path         as op
+import itertools       as it
+import collections.abc as abc
+import                    json
+import                    string
+import                    logging
+import                    tempfile
 
 from pathlib import Path
 from typing  import Union
@@ -48,13 +49,14 @@ import nibabel           as nib
 import nibabel.fileslice as fileslice
 
 import fsl.utils.meta        as meta
+import fsl.utils.deprecated  as deprecated
 import fsl.transform.affine  as affine
 import fsl.utils.notifier    as notifier
+import fsl.utils.naninfrange as nir
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
 import fsl.utils.bids        as fslbids
 import fsl.data.constants    as constants
-import fsl.data.imagewrapper as imagewrapper
 
 
 PathLike    = Union[str, Path]
@@ -93,6 +95,39 @@ Made available in this module for convenience.
 """
 
 
+class DataManager:
+    """The ``DataManager`` defines an interface which may be used by
+    :class:`Image` instances for managing access and modification of
+    data in a ``nibabel.Nifti1Image`` image.
+    """
+
+
+    def copy(self, nibImage : nib.Nifti1Image):
+        """Return a copy of this ``DataManager``, associated with the
+        given ``nibImage``,
+        """
+        raise NotImplementedError()
+
+
+    @property
+    def dataRange(self):
+        """Return the image minimum/maximum data values as a ``(min, max)``
+        tuple.
+        """
+        raise NotImplementedError()
+
+
+    def __getitem__(self, slc):
+        """Return data at ``slc``. """
+        raise NotImplementedError()
+
+
+    def __setitem__(self, slc, val):
+        """Set data at ``slc`` to ``val``. """
+        raise NotImplementedError()
+
+
+
 class Nifti(notifier.Notifier, meta.Meta):
     """The ``Nifti`` class is intended to be used as a base class for
     things which either are, or are associated with, a NIFTI image.
@@ -111,6 +146,9 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     ``shape``         A list/tuple containing the number of voxels along
                       each image dimension.
+
+    ``realShape``     A list/tuple containing the actual image data shape
+                      - see notes below.
 
     ``pixdim``        A list/tuple containing the length of one voxel
                       along each image dimension.
@@ -135,10 +173,19 @@ class Nifti(notifier.Notifier, meta.Meta):
     property if you need to know what type of image you are dealing with.
 
 
-    The ``shape`` attribute may not precisely match the image shape as
-    reported in the NIFTI header, because trailing dimensions of size 1 are
-    squeezed out. See the :meth:`__determineShape` and :meth:`mapIndices`
-    methods.
+    **Image dimensionality**
+
+
+    By default, the ``Nifti`` and ``Image`` classes "normalise" the
+    dimensionality of an image to always have at least 3 dimensions, and so
+    that trailing dimensions of length 1 are removed.  Therefore, the
+    ``shape`` attribute may not precisely match the image shape as reported in
+    the NIFTI header, because trailing dimensions of size 1 are squeezed
+    out. The actual image data shape can be queried via the :meth:`realShape`
+    property. Note also that the :class:`Image` class expects data
+    access/slicing to be with respect to the normalised shape, not the real
+    shape. See the :meth:`__determineShape` method and the
+    :func:`canonicalSliceObj` function for more details.
 
 
     **Affine transformations**
@@ -162,7 +209,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     See `here <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_transformation_parameters.3F>`_
-    for more details on the ``fsl`` coordinate system..
+    for more details on the ``fsl`` coordinate system.
 
 
     The ``Nifti`` class follows the same process as ``nibabel`` in determining
@@ -240,9 +287,9 @@ class Nifti(notifier.Notifier, meta.Meta):
         """Create a ``Nifti`` object.
 
         :arg header: A :class:`nibabel.nifti1.Nifti1Header`,
-                       :class:`nibabel.nifti2.Nifti2Header`, or
-                       ``nibabel.analyze.AnalyzeHeader`` to be used as the
-                       image header.
+                     :class:`nibabel.nifti2.Nifti2Header`, or
+                     ``nibabel.analyze.AnalyzeHeader`` to be used as the
+                     image header.
         """
 
         # Nifti2Header is a sub-class of Nifti1Header,
@@ -539,8 +586,19 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     @property
     def shape(self):
-        """Returns a tuple containing the image data shape. """
+        """Returns a tuple containing the normalised image data shape.  The
+        image shape is at least three dimensions, and trailing dimensions of
+        length 1 are squeezed out.
+        """
         return tuple(self.__shape)
+
+
+    @property
+    def realShape(self):
+        """Returns a tuple containing the image data shape, as reported in
+        the NIfTI image header.
+        """
+        return tuple(self.__origShape)
 
 
     @property
@@ -564,10 +622,46 @@ class Nifti(notifier.Notifier, meta.Meta):
         """Returns the NIFTI intent code of this image. """
         return self.header.get('intent_code', constants.NIFTI_INTENT_NONE)
 
+
     @property
     def niftiDataType(self):
         """Returns the NIFTI data type code of this image. """
-        return self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
+        dt = self.header.get('datatype', constants.NIFTI_DT_UNKNOWN)
+
+        return int(dt)
+
+
+    @property
+    def niftiDataTypeSize(self):
+        """Returns the number of bits per voxel, according to the NIfTI
+        data type. Returns ``None`` if the data type is not recognised.
+        """
+        sizes = {
+            constants.NIFTI_DT_BINARY        : 1,
+            constants.NIFTI_DT_UNSIGNED_CHAR : 8,
+            constants.NIFTI_DT_SIGNED_SHORT  : 16,
+            constants.NIFTI_DT_SIGNED_INT    : 32,
+            constants.NIFTI_DT_FLOAT         : 32,
+            constants.NIFTI_DT_COMPLEX       : 64,
+            constants.NIFTI_DT_DOUBLE        : 64,
+            constants.NIFTI_DT_RGB           : 24,
+            constants.NIFTI_DT_UINT8         : 8,
+            constants.NIFTI_DT_INT16         : 16,
+            constants.NIFTI_DT_INT32         : 32,
+            constants.NIFTI_DT_FLOAT32       : 32,
+            constants.NIFTI_DT_COMPLEX64     : 64,
+            constants.NIFTI_DT_FLOAT64       : 64,
+            constants.NIFTI_DT_RGB24         : 24,
+            constants.NIFTI_DT_INT8          : 8,
+            constants.NIFTI_DT_UINT16        : 16,
+            constants.NIFTI_DT_UINT32        : 32,
+            constants.NIFTI_DT_INT64         : 64,
+            constants.NIFTI_DT_UINT64        : 64,
+            constants.NIFTI_DT_FLOAT128      : 128,
+            constants.NIFTI_DT_COMPLEX128    : 128,
+            constants.NIFTI_DT_COMPLEX256    : 256,
+            constants.NIFTI_DT_RGBA32        : 32}
+        return sizes.get(self.niftiDataType, None)
 
 
     @intent.setter
@@ -712,18 +806,9 @@ class Nifti(notifier.Notifier, meta.Meta):
         return self.getAffine('fsl', 'voxel')
 
 
+    @deprecated.deprecated('3.9.0', '4.0.0', 'Use canonicalSliceObj instead')
     def mapIndices(self, sliceobj):
-        """Adjusts the given slice object so that it may be used to index the
-        underlying ``nibabel`` NIFTI image object.
-
-        See the :meth:`__determineShape` method.
-
-        :arg sliceobj: Something that can be used to slice a
-                       multi-dimensional array, e.g. ``arr[sliceobj]``.
-        """
-
-        # How convenient - nibabel has a function
-        # that does the dirty work for us.
+        """Deprecated - use :func:`canonicalSliceObj` instead. """
         return fileslice.canonical_slicers(sliceobj, self.__origShape)
 
 
@@ -941,8 +1026,9 @@ class Nifti(notifier.Notifier, meta.Meta):
 class Image(Nifti):
     """Class which represents a NIFTI image. Internally, the image is
     loaded/stored using a :mod:`nibabel.nifti1.Nifti1Image` or
-    :mod:`nibabel.nifti2.Nifti2Image`, and data access managed by a
-    :class:`.ImageWrapper`.
+    :mod:`nibabel.nifti2.Nifti2Image`. This class adds functionality for
+    loading metadata from JSON sidecar files, and for keeping track of
+    modifications to the image data.
 
 
     In addition to the attributes added by the :meth:`Nifti.__init__` method,
@@ -958,18 +1044,70 @@ class Image(Nifti):
                    file from where it was loaded, or some other string
                    describing its origin.
 
+    ``dataRange``  The ``(min, max)`` image data values.
+
     ``nibImage``   A reference to the ``nibabel`` NIFTI image object.
 
     ``saveState``  A boolean value which is ``True`` if this image is
                    saved to disk, ``False`` if it is in-memory, or has
                    been edited.
-
-    ``dataRange``  The minimum/maximum values in the image. Depending upon
-                   the value of the ``calcRange`` parameter to
-                   :meth:`__init__`, this may be calculated when the ``Image``
-                   is created, or may be incrementally updated as more image
-                   data is loaded from disk.
     ============== ===========================================================
+
+
+    *Data access*
+
+
+    The ``Image`` class supports access to and assignment of the image data
+    via the ``[]`` slice operator, e.g.::
+
+        img             = Image('image.nii.gz')
+        val             = img[20, 30, 25]
+        img[30, 40, 20] = 999
+
+    Internally, the image data is managed using one of the following methods:
+
+     1. For read-only access, the ``Image`` class delegates entirely to the
+        underlying ``nibabel.Nifti1Image`` instance, accessing the data
+        via the ``Nifti1Image.dataobj`` attribute.  Refer to
+        https://nipy.org/nibabel/nibabel_images.html#the-image-data-array for
+        more details.
+
+     2. As soon as any data is modified, the ``Image`` class will
+        load the image data as a numpy array into memory and will maintain its
+        own reference to the array for subsequent access. Note that this
+        array is entirely independent of any array that is cached by
+        the underlying ``nibabel.Nifti1Image`` object (refer to
+        https://nipy.org/nibabel/images_and_memory.html)
+
+     3. For more complicated requirements, a :class:`DataManager`,
+        implementing custom data access management logic, can be provided when
+        an ``Image`` is created. If a ``DataManager``is provided, an
+        internal reference to the data (see 2 above) will **not** be created or
+        maintained.
+
+
+    It is also possible to obtain a reference to a numpy array containing
+    the image data via the :meth:`data` method. However, modifications to
+    the returned array:
+
+      - will not result in any notifications (described below)
+      - will not affect the value of :meth:`saveState`
+      - have undefined semantics when a custom :class:`DataManager` is in use
+
+
+    *Image dimensionality*
+
+
+    The ``Image`` class abstracts away trailing image dimensions of length 1.
+    This means that if the header for a NIFTI image specifies that the image
+    has four dimensions, but the fourth dimension is of length 1, you do not
+    need to worry about indexing that fourth dimension. However, all NIFTI
+    images will be presented as having at least three dimensions, so if your
+    image header specifies a third dimension of length 1, you will still
+    need provide an index of 0 for that dimensions, for all data accesses.
+
+
+    *Notification of changes to an Image*
 
 
     The ``Image`` class adds some :class:`.Notifier` topics to those which are
@@ -989,8 +1127,7 @@ class Image(Nifti):
                     image changes (i.e. data or ``voxToWorldMat`` is
                     edited, or the image saved to disk).
 
-    ``'dataRange'`` This topic is notified whenever the image data range
-                    is changed/adjusted.
+    ``'dataRange'`` Deprecated - No notifications are made on this topic.
     =============== ======================================================
     """
 
@@ -1000,11 +1137,12 @@ class Image(Nifti):
                  name       : str              = None,
                  header     : nib.Nifti1Header = None,
                  xform      : np.ndarray       = None,
-                 loadData   : bool             = True,
-                 calcRange  : bool             = True,
-                 threaded   : bool             = False,
+                 loadData   : bool             = None,
+                 calcRange  : bool             = None,
+                 threaded   : bool             = None,
                  dataSource : PathLike         = None,
                  loadMeta   : bool             = False,
+                 dataMgr    : DataManager      = None,
                  **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
@@ -1030,24 +1168,11 @@ class Image(Nifti):
                          ``header`` are provided, the ``xform`` is used in
                          preference to the header transformation.
 
-        :arg loadData:   If ``True`` (the default) the image data is loaded
-                         in to memory.  Otherwise, only the image header
-                         information is read, and the image data is kept
-                         from disk. In either case, the image data is
-                         accessed through an :class:`.ImageWrapper` instance.
-                         The data may be loaded into memory later on via the
-                         :meth:`loadData` method.
+        :arg loadData:   Deprecated, has no effect
 
-        :arg calcRange:  If ``True`` (the default), the image range is
-                         calculated immediately (vi a call to
-                         :meth:`calcRange`). Otherwise, the image range is
-                         incrementally updated as more data is read from memory
-                         or disk. If ``loadData=False``, ``calcRange`` is also
-                         set to ``False``.
+        :arg calcRange:  Deprecated, has no effect
 
-        :arg threaded:   If ``True``, the :class:`.ImageWrapper` will use a
-                         separate thread for data range calculation. Defaults
-                         to ``False``. Ignored if ``loadData`` is ``True``.
+        :arg threaded:   Deprecated, has no effect
 
         :arg dataSource: If ``image`` is not a file name, this argument may be
                          used to specify the file from which the image was
@@ -1059,18 +1184,25 @@ class Image(Nifti):
                          can be loaded at a later stage via the
                          :func:`loadMeta` function. Defaults to ``False``.
 
+        :arg dataMgr:    Object implementing the :class:`DataManager`
+                         interface, for managing access to the image data.
+
         All other arguments are passed through to the ``nibabel.load`` function
         (if it is called).
         """
 
+        if threaded is not None:
+            deprecated.warn('Image(threadd)', vin='3.9.0', rin='4.0.0',
+                            msg='The threaded option has no effect')
+        if loadData is not None:
+            deprecated.warn('Image(loadData)', vin='3.9.0', rin='4.0.0',
+                            msg='The loadData option has no effect')
+        if calcRange is not None:
+            deprecated.warn('Image(calcRange)', vin='3.9.0', rin='4.0.0',
+                            msg='The calcRange option has no effect')
+
         nibImage = None
         saved    = False
-
-        # disable threaded access if loadData is True
-        threaded = threaded and (not loadData)
-
-        # don't calcRange if not loading data
-        calcRange = calcRange and loadData
 
         # Take a copy of the header if one has
         # been provided
@@ -1161,27 +1293,20 @@ class Image(Nifti):
 
         Nifti.__init__(self, nibImage.header)
 
-        self.name           = name
-        self.__lName        = '{}_{}'.format(id(self), self.name)
-        self.__dataSource   = dataSource
-        self.__threaded     = threaded
-        self.__nibImage     = nibImage
-        self.__saveState    = saved
-        self.__imageWrapper = imagewrapper.ImageWrapper(self.nibImage,
-                                                        self.name,
-                                                        loadData=loadData,
-                                                        threaded=threaded)
+        self.name         = name
+        self.__lName      = '{}_{}'.format(id(self), self.name)
+        self.__dataSource = dataSource
+        self.__nibImage   = nibImage
+        self.__saveState  = saved
+        self.__dataMgr    = dataMgr
+        self.__dataRange  = None
+        self.__data       = None
 
         # Listen to ourself for changes
         # to header attributse so we
         # can update the saveState.
         self.register(self.name, self.__headerChanged, topic='transform')
         self.register(self.name, self.__headerChanged, topic='header')
-
-        # calculate min/max
-        # of image data
-        if calcRange:
-            self.calcRange()
 
         # try and load metadata
         # from JSON sidecar files
@@ -1191,8 +1316,6 @@ class Image(Nifti):
             except Exception as e:
                 log.warning('Failed to load metadata for %s: %s',
                             self.dataSource, e)
-
-        self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
 
 
     def __hash__(self):
@@ -1216,17 +1339,31 @@ class Image(Nifti):
 
     def __del__(self):
         """Closes any open file handles, and clears some references. """
+
+        # Nifti class may have
+        # been GC'd at shutdown
         if Nifti is not None:
             Nifti.__del__(self)
-        self.__nibImage     = None
-        self.__imageWrapper = None
+        self.__nibImage = None
+        self.__dataMgr  = None
+        self.__data     = None
 
 
+    @deprecated.deprecated('3.9.0', '4.0.0',
+                           'The Image class no longer uses an ImageWrapper')
     def getImageWrapper(self):
         """Returns the :class:`.ImageWrapper` instance used to manage
         access to the image data.
         """
-        return self.__imageWrapper
+        return None
+
+
+    @property
+    def dataManager(self):
+        """Return the :class:`.DataManager` associated with this ``Image``,
+        if one was specified when it was created.
+        """
+        return self.__dataMgr
 
 
     @property
@@ -1249,13 +1386,40 @@ class Image(Nifti):
 
     @property
     def data(self):
-        """Returns the image data as a ``numpy`` array.
+        """Returns the image data as a ``numpy`` array. The shape of the
+        returned array is normalised - it will have at least three dimensions,
+        and any trailing dimensions of length 1 will be squeezed out.  See
+        :meth:`Nifti.shape` and :meth:`Nifti.realShape`.
 
-        .. warning:: Calling this method will cause the entire image to be
+        .. warning:: Calling this method may cause the entire image to be
                      loaded into memory.
         """
-        self.__imageWrapper.loadData()
-        return self[:]
+
+        if self.__dataMgr is not None:
+            return self[:]
+
+        # The internal cache has real image shape -
+        # this makes code in __getitem__ easier,
+        # as it can use the real shape regardless
+        # of how the data is accessed
+        if self.__data is None:
+            self.__data = self.nibImage.dataobj[:]
+
+        return self.__data.reshape(self.shape)
+
+
+    @property
+    def inMemory(self):
+        """Returns ``True`` if the image data has been loaded into memory,
+        ``False``otherwise. This does not reflect whether the underlying
+        ``nibabel.Nifti1Image`` object has loaded the image data into
+        memory. However, if all data access takes place through the ``Image``
+        class, the underlying ``nibabel`` image will not use a cache.
+
+        If custom ``DataManager`` has loaded the data, this method will always
+        return ``False``.
+        """
+        return self.__data is not None
 
 
     @property
@@ -1268,26 +1432,13 @@ class Image(Nifti):
 
     @property
     def dataRange(self):
-        """Returns the image data range as a  ``(min, max)`` tuple. If the
-        ``calcRange`` parameter to :meth:`__init__` was ``False``, these
-        values may not be accurate, and may change as more image data is
-        accessed.
+        """Returns the minimum/maxmimum image data values. """
 
-        If the data range has not been no data has been accessed,
-        ``(None, None)`` is returned.
-        """
-        if self.__imageWrapper is None: drange = (None, None)
-        else:                           drange = self.__imageWrapper.dataRange
+        if   self.__dataMgr   is not None: return self.__dataMgr.dataRange
+        elif self.__dataRange is not None: return self.__dataRange
 
-        # Fall back to the cal_min/max
-        # fields in the NIFTI header
-        # if we don't yet know anything
-        # about the image data range.
-        if drange[0] is None or drange[1] is None:
-            drange = (float(self.header['cal_min']),
-                      float(self.header['cal_max']))
-
-        return drange
+        self.__dataRange = nir.naninfrange(self.data)
+        return self.__dataRange
 
 
     @property
@@ -1296,7 +1447,7 @@ class Image(Nifti):
 
         # Get the data type from the
         # first voxel in the image
-        coords = [0] * len(self.__nibImage.shape)
+        coords = [0] * len(self.shape)
         return self[tuple(coords)].dtype
 
 
@@ -1346,53 +1497,14 @@ class Image(Nifti):
             self.notify(topic='saveState')
 
 
-    def __dataRangeChanged(self, *args, **kwargs):
-        """Called when the :class:`.ImageWrapper` data range changes.
-        Notifies any listeners of this ``Image`` (registered through the
-        :class:`.Notifier` interface) on the ``'dataRange'`` topic.
-        """
-        self.notify(topic='dataRange')
+    @deprecated.deprecated('3.9.0', '4.0.0', 'calcRange has no effect')
+    def calcRange(self, *args, **kwargs):
+        """Deprecated, has no effect """
 
 
-    def calcRange(self, sizethres=None):
-        """Forces calculation of the image data range.
-
-        :arg sizethres: If not ``None``, specifies an image size threshold
-                        (total number of bytes). If the number of bytes in
-                        the image is greater than this threshold, the range
-                        is calculated on a sample (the first volume for a
-                        4D image, or slice for a 3D image).
-        """
-
-        # The ImageWrapper automatically calculates
-        # the range of the specified slice, whenever
-        # it gets indexed. All we have to do is
-        # access a portion of the data to trigger the
-        # range calculation.
-        nbytes = np.prod(self.shape) * self.dtype.itemsize
-
-        # If an image size threshold has not been specified,
-        # then we'll calculate the full data range right now.
-        if sizethres is None or nbytes < sizethres:
-            log.debug('%s: Forcing calculation of full '
-                      'data range', self.name)
-            self.__imageWrapper[:]
-
-        else:
-            log.debug('%s: Calculating data range '
-                      'from sample', self.name)
-
-            # Otherwise if the number of values in the
-            # image is bigger than the size threshold,
-            # we'll calculate the range from a sample:
-            self.__imageWrapper[..., 0]
-
-
+    @deprecated.deprecated('3.9.0', '4.0.0', 'loadData has no effect')
     def loadData(self):
-        """Makes sure that the image data is loaded into memory.
-        See :meth:`.ImageWrapper.loadData`.
-        """
-        self.__imageWrapper.loadData()
+        """Deprecated, has no effect """
 
 
     def save(self, filename=None):
@@ -1433,16 +1545,16 @@ class Image(Nifti):
             # First of all, the nibabel object won't know
             # about any image data modifications, so if
             # any have occurred, we need to create a new
-            # nibabel image using the data managed by the
-            # imagewrapper, and the old header.
+            # nibabel image using our copy of the data,
+            # and the old header.
             #
             # Assuming here that analyze/nifti1/nifti2
             # nibabel classes have an __init__ which
             # expects (data, affine, header)
             if not self.saveState:
-                self.__nibImage = type(self.__nibImage)(self[:],
-                                                        None,
-                                                        self.header)
+                self.__nibImage = type(self.__nibImage)(self.data,
+                                                        affine=None,
+                                                        header=self.header)
                 self.header     = self.__nibImage.header
 
             nib.save(self.__nibImage, tmpfname)
@@ -1458,18 +1570,11 @@ class Image(Nifti):
             os.remove(tmpfname)
 
         # Because we've created a new nibabel image,
-        # we have to create a new ImageWrapper
+        # we may have to create a new DataManager
         # instance too, as we have just destroyed
-        # the nibabel image we gave to the last
-        # one.
-        self.__imageWrapper.deregister(self.__lName)
-        self.__imageWrapper = imagewrapper.ImageWrapper(
-            self.nibImage,
-            self.name,
-            loadData=False,
-            dataRange=self.dataRange,
-            threaded=self.__threaded)
-        self.__imageWrapper.register(self.__lName, self.__dataRangeChanged)
+        # the nibabel image we gave to the last one.
+        if self.__dataMgr is not None:
+            self.__dataMgr = self.__dataMgr.copy(self.nibImage)
 
         self.__dataSource = filename
         self.__saveState  = True
@@ -1477,47 +1582,120 @@ class Image(Nifti):
         self.notify(topic='saveState')
 
 
-    def __getitem__(self, sliceobj):
-        """Access the image data with the specified ``sliceobj``.
+    def __getitem__(self, slc):
+        """Access the image data with the specified ``slc``.
 
-        :arg sliceobj: Something which can slice the image data.
+        :arg slc: Something which can slice the image data.
         """
 
-        log.debug('%s: __getitem__ [%s]', self.name, sliceobj)
+        log.debug('%s: __getitem__ [%s]', self.name, slc)
 
-        return self.__imageWrapper.__getitem__(sliceobj)
+        # Make the slice object compatible
+        # with the actual image shape - e.g.
+        # an underlying 2D image is presented
+        # as having 3 dimensions.
+        shape              = self.shape
+        realShape          = self.realShape
+        slc                = canonicalSliceObj(   slc, shape)
+        fancy              = isValidFancySliceObj(slc, shape)
+        expNdims, expShape = expectedShape(       slc, shape)
+        slc                = canonicalSliceObj(   slc, realShape)
+
+        if   self.__dataMgr is not None: data = self.__dataMgr[slc]
+        elif self.__data    is not None: data = self.__data[slc]
+        else:                            data = self.__nibImage.dataobj[slc]
+
+        # Make sure that the result has the
+        # shape that the caller is expecting.
+        if fancy: data = data.reshape((data.size, ))
+        else:     data = data.reshape(expShape)
+
+        # If expNdims == 0, we should
+        # return a scalar. If expNdims
+        # == 0, but data.size != 1,
+        # something is wrong somewhere
+        # (and is not being handled
+        # here).
+        if expNdims == 0 and data.size == 1:
+
+            # Funny behaviour with numpy scalar arrays.
+            # data[()] returns a numpy scalar (which is
+            # what we want). But data.item() returns a
+            # python scalar. And if the data is a
+            # ndarray with 0 dims, data[0] will raise
+            # an error!
+            data = data[()]
+
+        return data
 
 
-    def __setitem__(self, sliceobj, values):
-        """Set the image data at ``sliceobj`` to ``values``.
+    def __setitem__(self, slc, values):
+        """Set the image data at ``slc`` to ``values``.
 
-        :arg sliceobj: Something which can slice the image data.
-        :arg values:   New image data.
+        :arg slc:    Something which can slice the image data.
+        :arg values: New image data.
 
-        .. note:: Modifying image data will force the entire image to be
+        .. note:: Modifying image data may force the entire image to be
                   loaded into memory if it has not already been loaded.
         """
         values = np.array(values)
 
-        log.debug('%s: __setitem__ [%s = %s]',
-                  self.name, sliceobj, values.shape)
+        if values.size == 0:
+            return
 
-        with self.__imageWrapper.skip(self.__lName):
+        log.debug('%s: __setitem__ [%s = %s]', self.name, slc, values.shape)
 
-            oldRange = self.__imageWrapper.dataRange
-            self.__imageWrapper.__setitem__(sliceobj, values)
-            newRange = self.__imageWrapper.dataRange
+        realShape = self.realShape
+        slc       = canonicalSliceObj(slc, realShape)
 
-        if values.size > 0:
+        # If the image shape does not match its
+        # 'display' shape (either less three
+        # dims, or  has trailing dims of length
+        # 1), we might need to re-shape the
+        # values to prevent numpy from raising
+        # an error in the assignment below.
+        if realShape != self.shape:
 
-            self.notify(topic='data', value=sliceobj)
+            expNdims, expShape = expectedShape(slc, realShape)
 
-            if self.__saveState:
-                self.__saveState = False
-                self.notify(topic='saveState')
+            # If we are slicing a scalar, the
+            # assigned value has to be scalar.
+            if expNdims == 0 and isinstance(values, abc.Sequence):
 
-            if not np.all(np.isclose(oldRange, newRange)):
-                self.notify(topic='dataRange')
+                if len(values) > 1:
+                    raise IndexError('Invalid assignment: [{}] = {}'.format(
+                        slc, len(values)))
+
+                values = np.array(values).flatten()[0]
+
+            # Make sure that the values
+            # have a compatible shape.
+            else:
+                values = np.array(values)
+                if values.shape != expShape:
+                    values = values.reshape(expShape)
+
+        # Use DataManager to manage data
+        # access if one has been specified
+        if self.__dataMgr is not None:
+            self.__dataMgr[slc] = values
+
+        # Use an internal numpy array
+        # to persist data changes
+        else:
+            # force-load data - see the data() method
+            # Reset data range whenever the data is
+            # modified - see dataRange() method
+            if self.__data is None:
+                self.data
+            self.__data[slc] = values
+            self.__dataRange = None
+
+        # Notify that data has changed/image is not saved
+        self.notify(topic='data', value=slc)
+        if self.__saveState:
+            self.__saveState = False
+            self.notify(topic='saveState')
 
 
 def canonicalShape(shape):
@@ -1541,6 +1719,102 @@ def canonicalShape(shape):
         shape = shape + [1] * (3 - len(shape))
 
     return shape
+
+
+def isValidFancySliceObj(sliceobj, shape):
+    """Returns ``True`` if the given ``sliceobj`` is a valid and fancy slice
+    object.
+
+    ``nibabel`` refers to slice objects as "fancy" if they comprise anything
+    but tuples of integers and simple ``slice`` objects. The ``Image`` class
+    supports an additional type of "fancy" slicing, where the ``sliceobj`` is
+    a boolean ``numpy`` array of the same shape as the image.
+
+    This function returns ``True`` if the given ``sliceobj`` adheres to these
+    requirements, ``False`` otherwise.
+    """
+
+    # We only support boolean numpy arrays
+    # which have the same shape as the image
+    return (isinstance(sliceobj, np.ndarray) and
+            sliceobj.dtype == bool           and
+            np.prod(sliceobj.shape) == np.prod(shape))
+
+
+def canonicalSliceObj(sliceobj, shape):
+    """Returns a canonical version of the given ``sliceobj``. See the
+    ``nibabel.fileslice.canonical_slicers`` function.
+    """
+
+    # Fancy slice objects must have
+    # the same shape as the data
+    if isValidFancySliceObj(sliceobj, shape):
+        return sliceobj.reshape(shape)
+
+    else:
+
+        if not isinstance(sliceobj, tuple):
+            sliceobj = (sliceobj,)
+
+        if len(sliceobj) > len(shape):
+            sliceobj = sliceobj[:len(shape)]
+
+        return nib.fileslice.canonical_slicers(sliceobj, shape)
+
+
+def expectedShape(sliceobj, shape):
+    """Given a slice object, and the shape of an array to which
+    that slice object is going to be applied, returns the expected
+    shape of the result.
+
+    .. note:: It is assumed that the ``sliceobj`` has been passed through
+              the :func:`canonicalSliceObj` function.
+
+    :arg sliceobj: Something which can be used to slice an array
+                   of shape ``shape``.
+
+    :arg shape:    Shape of the array being sliced.
+
+    :returns:      A tuple containing:
+
+                     - Expected number of dimensions of the result
+
+                     - Expected shape of the result (or ``None`` if
+                       ``sliceobj`` is fancy).
+    """
+
+    if isValidFancySliceObj(sliceobj, shape):
+        return 1, None
+
+    # Truncate some dimensions from the
+    # slice object if it has too many
+    # (e.g. trailing dims of length 1).
+    elif len(sliceobj) > len(shape):
+        sliceobj = sliceobj[:len(shape)]
+
+    # Figure out the number of dimensions
+    # that the result should have, given
+    # this slice object.
+    expShape = []
+
+    for i in range(len(sliceobj)):
+
+        # Each dimension which has an
+        # int slice will be collapsed
+        if isinstance(sliceobj[i], int):
+            continue
+
+        start = sliceobj[i].start
+        stop  = sliceobj[i].stop
+
+        if start is None: start = 0
+        if stop  is None: stop  = shape[i]
+
+        stop = min(stop, shape[i])
+
+        expShape.append(stop - start)
+
+    return len(expShape), expShape
 
 
 def loadMetadata(image):

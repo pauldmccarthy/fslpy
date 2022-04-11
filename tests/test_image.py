@@ -93,9 +93,6 @@ def make_image(filename=None,
 # Need to test:
 #     - Create image from existing nibabel image
 #     - Create image from numpy array
-#     - calcRange
-#     - loadData
-
 
 def test_load():
     """Create an Image from a file name. """
@@ -519,14 +516,15 @@ def test_defaultExt():
                       'NIFTI2', 'NIFTI2_PAIR', 'NIFTI2_GZ', 'NIFTI2_PAIR_GZ']
     exts           = ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
 
-    os.environ.pop('FSLOUTPUTTYPE', None)
-    assert fslimage.defaultExt() == '.nii.gz'
+    env = os.environ.copy()
 
-    for o, e in zip(fslOutputTypes, exts):
+    env.pop('FSLOUTPUTTYPE', None)
 
-        os.environ['FSLOUTPUTTYPE'] = o
-
-        assert fslimage.defaultExt() == e
+    with mock.patch('os.environ', env):
+        assert fslimage.defaultExt() == '.nii.gz'
+        for o, e in zip(fslOutputTypes, exts):
+            env['FSLOUTPUTTYPE'] = o
+            assert fslimage.defaultExt() == e
 
 
 def test_defaultImageType():
@@ -537,13 +535,15 @@ def test_defaultImageType():
     exts           = ['.nii.gz'] + \
                      ['.nii', '.img', '.nii.gz', '.img.gz'] * 2
 
-    with tempdir():
+    env = os.environ.copy()
+
+    with tempdir(), mock.patch('os.environ', env):
         for o, e in zip(fslOutputTypes, exts):
 
             if o is None:
-                os.environ.pop('FSLOUTPUTTYPE', None)
+                env.pop('FSLOUTPUTTYPE', None)
             else:
-                os.environ['FSLOUTPUTTYPE'] = o
+                env['FSLOUTPUTTYPE'] = o
 
             if o is None or 'NIFTI2' not in o:
                 exptype = nib.Nifti1Image
@@ -867,12 +867,8 @@ def _test_Image_changeData(imgtype):
         def onSaveState(*a):
             notified['save'] = True
 
-        def onDataRange(*a):
-            notified['dataRange'] = True
-
         img.register('name1', onData,      'data')
         img.register('name2', onSaveState, 'saveState')
-        img.register('name3', onDataRange, 'dataRange')
 
         # Calculate the actual data range
         data   = np.asanyarray(img.nibImage.dataobj)
@@ -913,13 +909,11 @@ def _test_Image_changeData(imgtype):
                 img[minx, miny, minz] = newdmin
                 break
 
-        assert notified.get('data',      False)
-        assert notified.get('dataRange', False)
+        assert notified.get('data', False)
         assert np.isclose(img[minx, miny, minz], newdmin)
         assert np.all(np.isclose(img.dataRange, (newdmin, dmax)))
 
         notified.pop('data')
-        notified.pop('dataRange')
 
         # random value above the data range,
         # making sure not to overwrite the
@@ -930,13 +924,10 @@ def _test_Image_changeData(imgtype):
                 img[maxx, maxy, maxz] = newdmax
                 break
 
-        assert notified.get('data',      False)
-        assert notified.get('dataRange', False)
+        assert notified.get('data', False)
         assert np.isclose(img[maxx, maxy, maxz], newdmax)
-        assert np.all(np.isclose(img.dataRange, (newdmin, newdmax)))
         img.deregister('name1', 'data')
         img.deregister('name2', 'data')
-        img.deregister('name3', 'data')
         img = None
 
 

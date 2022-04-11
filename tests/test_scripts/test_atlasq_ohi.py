@@ -95,11 +95,7 @@ def test_coords(seed):
     for ad in atlases:
 
         # atlasquery/ohi always uses 2mm resolution
-        atlas = fslatlases.loadAtlas(
-            ad.atlasID,
-            resolution=2,
-            calcRange=False,
-            loadData=False)
+        atlas = fslatlases.loadAtlas(ad.atlasID, resolution=2)
 
         print(ad.name)
 

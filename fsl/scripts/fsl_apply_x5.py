@@ -55,7 +55,7 @@ def parseArgs(args):
                         choices=('nearest', 'linear', 'cubic'),
                         default='linear'),
         'ref'    : dict(help=helps['ref'],
-                        type=ft.partial(parse_data.Image, loadData=False)),
+                        type=parse_data.Image),
     }
 
     parser.add_argument(*flags['input'],  **opts['input'])

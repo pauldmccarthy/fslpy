@@ -14,12 +14,6 @@ import numpy as np
 
 
 def pytest_addoption(parser):
-    parser.addoption('--niters',
-                     type=int,
-                     action='store',
-                     default=50,
-                     help='Number of test iterations for imagewrapper')
-
     parser.addoption('--testdir',
                      action='store',
                      help='FSLeyes test data directory')
@@ -28,11 +22,6 @@ def pytest_addoption(parser):
                      type=int,
                      help='Seed for random number generator')
 
-
-@pytest.fixture
-def niters(request):
-    """Number of test iterations."""
-    return request.config.getoption('--niters')
 
 
 @pytest.fixture

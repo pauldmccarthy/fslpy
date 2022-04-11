@@ -67,7 +67,8 @@ CORE_GEOMETRY_FILES = ['?h.orig',
                        '?h.pial',
                        '?h.white',
                        '?h.inflated',
-                       '?h.sphere']
+                       '?h.sphere',
+                       '?h.pial_semi_inflated']
 """File patterns for identifying the core Freesurfer geometry files. """
 
 
@@ -76,7 +77,8 @@ CORE_GEOMETRY_DESCRIPTIONS = [
     "Freesurfer surface (pial)",
     "Freesurfer surface (white matter)",
     "Freesurfer surface (inflated)",
-    "Freesurfer surface (sphere)"]
+    "Freesurfer surface (sphere)",
+    "Freesurfer surface (pial semi-inflated)"]
 """A description for each extension in :attr:`GEOMETRY_EXTENSIONS`. """
 
 

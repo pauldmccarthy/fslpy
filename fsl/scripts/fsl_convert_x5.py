@@ -56,7 +56,7 @@ def parseArgs(args):
     subparsers = parser.add_subparsers(dest='ctype')
     flirt      = subparsers.add_parser('flirt', epilog=epilog)
     fnirt      = subparsers.add_parser('fnirt', epilog=epilog)
-    imgtype    = ft.partial(parse_data.Image, loadData=False)
+    imgtype    = parse_data.Image
 
     flirt.add_argument('input',                  help=helps['input'])
     flirt.add_argument('output',                 help=helps['output'])

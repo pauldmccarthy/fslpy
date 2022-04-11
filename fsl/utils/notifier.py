@@ -73,7 +73,7 @@ class _Listener(object):
         return self.__str__()
 
 
-class Notifier(object):
+class Notifier:
     """The ``Notifier`` class is a mixin which provides simple notification
     capability. Listeners can be registered/deregistered to listen via the
     :meth:`register` and :meth:`deregister` methods, and notified via the

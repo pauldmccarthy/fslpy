@@ -377,7 +377,7 @@ class AtlasLabel(object):
         )
 
 
-class AtlasDescription(object):
+class AtlasDescription:
     """An ``AtlasDescription`` instance parses and stores the information
     stored in the FSL XML file that describes a single FSL atlas.  An XML
     atlas specification file is assumed to have a structure that looks like
@@ -560,7 +560,7 @@ class AtlasDescription(object):
             imagefile        = op.normpath(atlasDir + imagefile)
             summaryimagefile = op.normpath(atlasDir + summaryimagefile)
 
-            i = fslimage.Image(imagefile, loadData=False, calcRange=False)
+            i = fslimage.Image(imagefile)
 
             self.images       .append(imagefile)
             self.summaryImages.append(summaryimagefile)

@@ -191,7 +191,7 @@ def getNumComponents(meldir):
     contained in the given directrory.
     """
 
-    icImg = fslimage.Image(getICFile(meldir), loadData=False, calcRange=False)
+    icImg = fslimage.Image(getICFile(meldir))
     return icImg.shape[3]
 
 
