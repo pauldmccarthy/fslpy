@@ -176,14 +176,16 @@ class Nifti(notifier.Notifier, meta.Meta):
     **Image dimensionality**
 
 
-    By default, the ``Nifti`` and ``Image`` classes abstract away trailing
-    image dimensions of length 1.  Therefore, the ``shape`` attribute may not
-    precisely match the image shape as reported in the NIFTI header, because
-    trailing dimensions of size 1 are squeezed out. The actual image data
-    shape can be queried via the :meth:`realShape` property. Note also that
-    the :class:`Image` class expects data access/slicing to be with respect to
-    the normalised shape, not the real shape. See the :meth:`__determineShape`
-    method and the :func:`canonicalSliceObj` function for more details.
+    By default, the ``Nifti`` and ``Image`` classes "normalise" the
+    dimensionality of an image to always have at least 3 dimensions, and so
+    that trailing dimensions of length 1 are removed.  Therefore, the
+    ``shape`` attribute may not precisely match the image shape as reported in
+    the NIFTI header, because trailing dimensions of size 1 are squeezed
+    out. The actual image data shape can be queried via the :meth:`realShape`
+    property. Note also that the :class:`Image` class expects data
+    access/slicing to be with respect to the normalised shape, not the real
+    shape. See the :meth:`__determineShape` method and the
+    :func:`canonicalSliceObj` function for more details.
 
 
     **Affine transformations**
