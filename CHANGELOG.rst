@@ -26,6 +26,9 @@ Changed
   object (and so remains on disk by default). Image data can be loaded into
   memory by accessing the :meth:`.Image.data` property, or by modifying the
   data through :meth:`.Image.__setitem__` (!327).
+* The :func:`.func_to_cmd` function now uses `dill
+  <https://dill.readthedocs.io/en/latest/>`_ instead of ``pickle`` for
+  serialisation (!328).
 
 
 Fixed
