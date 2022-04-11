@@ -41,7 +41,7 @@ from io import BytesIO
 import os.path as op
 import glob
 import time
-import pickle
+import dill
 import sys
 import tempfile
 import logging
@@ -455,23 +455,12 @@ def hold(job_ids, hold_filename=None):
 _external_job = ("""#!{}
 # This is a temporary file designed to run the python function {},
 # so that it can be submitted to the cluster
-import pickle
+import dill
 from io import BytesIO
 from importlib import import_module
 {}
-pickle_bytes = BytesIO({})
-name_type, name, func_name, args, kwargs = pickle.load(pickle_bytes)
-
-if name_type == 'module':
-    # retrieves a function defined in an external module
-    func = getattr(import_module(name), func_name)
-elif name_type == 'script':
-    # retrieves a function defined in the __main__ script
-    local_execute = {{'__name__': '__not_main__', '__file__': name}}
-    exec(open(name, 'r').read(), local_execute)
-    func = local_execute[func_name]
-else:
-    raise ValueError('Unknown name_type: %r' % name_type)
+dill_bytes = BytesIO({})
+func, args, kwargs = dill.load(dill_bytes)
 
 {}
 
@@ -504,13 +493,8 @@ def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbo
         args = ()
     if kwargs is None:
         kwargs = {}
-    pickle_bytes = BytesIO()
-    if func.__module__ == '__main__':
-        pickle.dump(('script', importlib.import_module('__main__').__file__, func.__name__,
-                     args, kwargs), pickle_bytes)
-    else:
-        pickle.dump(('module', func.__module__, func.__name__,
-                     args, kwargs), pickle_bytes)
+    dill_bytes = BytesIO()
+    dill.dump((func, args, kwargs), dill_bytes)
 
     handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
                                         suffix='.py',
@@ -531,7 +515,7 @@ import os; os.remove("{filename}")"""
     python_cmd = _external_job.format(sys.executable,
                                       func.__name__,
                                       verbose_script,
-                                      pickle_bytes.getvalue(),
+                                      dill_bytes.getvalue(),
                                       run_script)
 
     with open(filename, 'w') as python_file:

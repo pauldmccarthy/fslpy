@@ -2,3 +2,4 @@ h5py>=2.9
 nibabel>=2.4
 numpy>=1
 scipy>=0.18
+dill
