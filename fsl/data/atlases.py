@@ -880,9 +880,16 @@ class LabelAtlas(Atlas):
                        of each present value. The proportions are returned as
                        values between 0 and 100.
 
+        .. note:: Calling this method will cause the atlas image data to be
+                  loaded into memory.
+
         .. note:: Use the :meth:`find` method to retrieve the ``AtlasLabel``
                   associated with each returned value.
         """
+
+        # Mask-based indexing requires the image
+        # data to be loaded into memory
+        self.data
 
         # Extract the values that are in
         # the mask, and their corresponding
