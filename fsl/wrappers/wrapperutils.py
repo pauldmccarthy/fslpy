@@ -243,7 +243,7 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style,
+def applyArgStyle(style=None,
                   valsep=None,
                   argmap=None,
                   valmap=None,
@@ -254,6 +254,10 @@ def applyArgStyle(style,
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
+
+    The default settings will generate arguments that match typical UNIX
+    conventions, e.g. ``-a val``, ``--arg=val``, ``-a val1 val2``,
+    ``--arg=val1,val2``.
 
     The ``style`` and ``valsep`` (and ``charstyle`` and ``charsep``) arguments
     control how key-value pairs are converted into command-line options:
@@ -279,7 +283,7 @@ def applyArgStyle(style,
 
     :arg style:     Controls how the ``kwargs`` are converted into command-line
                     options - must be one of ``'-'``, ``'--'``, ``'-='``, or
-                    ``'--='``.
+                    ``'--='`` (the default).
 
     :arg valsep:    Controls how the values passed to command-line options
                     which expect multiple arguments are delimited - must be
@@ -324,8 +328,10 @@ def applyArgStyle(style,
     :arg kwargs: Arguments to be converted into command-line options.
 
     :returns:    A list containing the generated command-line options.
-
     """
+
+    if style is None:
+        style = '--='
 
     if charstyle is None:
         if   singlechar_args: charstyle = '-'
@@ -343,9 +349,21 @@ def applyArgStyle(style,
     if style not in ('-', '--', '-=', '--='):
         raise ValueError(f'Invalid style: {style}')
     if charstyle not in ('-', '--', '-=', '--='):
-        raise ValueError(f'Invalid charstyle: {style}')
+        raise ValueError(f'Invalid charstyle: {charstyle}')
     if valsep not in (' ', ',', '"'):
-        raise ValueError(f'Invalid valsep: {style}')
+        raise ValueError(f'Invalid valsep: {valsep}')
+    if charsep not in (' ', ',', '"'):
+        raise ValueError(f'Invalid charsep: {charsep}')
+
+    # It makes no sense to combine argument+value
+    # with an equals sign, but not have the value
+    # quoted (e.g "--arg=val1 val2 val3").
+    if '=' in style and valsep == ' ':
+        raise ValueError(f'Incompatible style {style} '
+                         'and valsep ({valsep})')
+    if '=' in charstyle and charsep == ' ':
+        raise ValueError(f'Incompatible style {charstyle} '
+                         'and valsep ({charsep})')
 
     if argmap is None: argmap = {}
     if valmap is None: valmap = {}
@@ -356,10 +374,12 @@ def applyArgStyle(style,
         else:                      return f'-{arg}'
 
     # Formt the argument value. Always returns
-    # a sequence. Ultimately we rely on shlex
-    # to ensure that args are properly quoted,
-    # so we don't add quotes around multi-
-    # paramter values here.
+    # a sequence. We don't add quotes around
+    # values - instead we just ensure that
+    # arguments+values are grouped correctly in
+    # the final result (the same as what
+    # shlex.split would generate for a properly
+    # quoted string).
     def fmtval(val, sep):
         if isinstance(val, abc.Sequence) and (not isinstance(val, str)):
             val = [str(v) for v in val]
