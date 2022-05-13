@@ -30,11 +30,24 @@ from .. import mockFSLDIR, cleardir, checkdir, testdir, touch
 from ..test_run import mock_fsl_sub
 
 
+def test_applyArgStyle_default():
+    kwargs = {
+        'arg1' : 'val',
+        'arg2' : ['val1', 'val2'],
+        'a'    : 'val',
+        'b'    : ['val1', 'val2'],
+    }
+
+    exp = ['--arg1=val', '--arg2=val1,val2', '-a', 'val', '-b', 'val1', 'val2']
+
+    assert wutils.applyArgStyle(**kwargs) == exp
+
 def test_applyArgStyle():
 
     kwargs = {
         'name'  : 'val',
         'name2' : ['val1', 'val2'],
+        'name3' : 'val1 val2',
     }
 
     # these combinations of style+valsep should
@@ -51,28 +64,70 @@ def test_applyArgStyle():
         wutils.applyArgStyle('-', valsep='b', **kwargs)
 
     # style, valsep, expected_result.
-    # Order of arguments is not guaranteed
     tests = [
-        ('-',   ' ', [' -name  val', '-name2   val1 val2']),
-        ('-',   '"', [' -name  val', '-name2  "val1 val2"']),
-        ('-',   ',', [' -name  val', '-name2   val1,val2']),
+        ('-',   ' ', ['-name', 'val', '-name2', 'val1', 'val2', '-name3', 'val1 val2']),
+        ('-',   '"', ['-name', 'val', '-name2', 'val1 val2',    '-name3', 'val1 val2']),
+        ('-',   ',', ['-name', 'val', '-name2', 'val1,val2',    '-name3', 'val1 val2']),
 
-        ('--',  ' ', ['--name  val', '--name2  val1 val2']),
-        ('--',  '"', ['--name  val', '--name2 "val1 val2"']),
-        ('--',  ',', ['--name  val', '--name2  val1,val2']),
+        ('--',  ' ', ['--name', 'val', '--name2', 'val1', 'val2', '--name3', 'val1 val2']),
+        ('--',  '"', ['--name', 'val', '--name2', 'val1 val2',    '--name3', 'val1 val2']),
+        ('--',  ',', ['--name', 'val', '--name2', 'val1,val2',    '--name3', 'val1 val2']),
 
-        ('-=',  '"', [' -name=val', '-name2="val1 val2"']),
-        ('-=',  ',', [' -name=val', '-name2=val1,val2']),
+        ('-=',  '"', ['-name=val', '-name2=val1 val2', '-name3=val1 val2']),
+        ('-=',  ',', ['-name=val', '-name2=val1,val2', '-name3=val1 val2']),
 
-        ('--=', '"', ['--name=val', '--name2="val1 val2"']),
-        ('--=', ',', ['--name=val', '--name2=val1,val2']),
+        ('--=', '"', ['--name=val', '--name2=val1 val2', '--name3=val1 val2']),
+        ('--=', ',', ['--name=val', '--name2=val1,val2', '--name3=val1 val2']),
     ]
 
     for style, valsep, exp in tests:
-        exp    = [shlex.split(e) for e in exp]
         result = wutils.applyArgStyle(style, valsep=valsep, **kwargs)
+        assert result == exp
 
-        assert result in (exp[0] + exp[1], exp[1] + exp[0])
+
+def test_applyArgStyle_charstyle():
+
+    kwargs = {
+        'n' : 'val',
+        'm' : ['val1', 'val2'],
+        'o' : 'val1 val2',
+    }
+
+    # these combinations of charstyle+
+    # charsep should raise an error
+    with pytest.raises(ValueError):
+        wutils.applyArgStyle(charstyle='--=',  charsep=' ', **kwargs)
+    with pytest.raises(ValueError):
+        wutils.applyArgStyle(charstyle='-=',  charsep=' ', **kwargs)
+
+    # unsupported chrastyle/charsep
+    with pytest.raises(ValueError):
+        wutils.applyArgStyle(charstyle='?', **kwargs)
+    with pytest.raises(ValueError):
+        wutils.applyArgStyle('-', charsep='b', **kwargs)
+
+    # style, valsep, charstyle, charsep, expected_result.
+    # Order of arguments is not guaranteed
+    tests = [
+        ('-',   ' ', ['-n', 'val', '-m', 'val1', 'val2', '-o', 'val1 val2']),
+        ('-',   '"', ['-n', 'val', '-m', 'val1 val2',    '-o', 'val1 val2']),
+        ('-',   ',', ['-n', 'val', '-m', 'val1,val2',    '-o', 'val1 val2']),
+
+        ('--',  ' ', ['--n', 'val', '--m', 'val1','val2', '--o', 'val1 val2']),
+        ('--',  '"', ['--n', 'val', '--m', 'val1 val2',   '--o', 'val1 val2']),
+        ('--',  ',', ['--n', 'val', '--m', 'val1,val2',   '--o', 'val1 val2']),
+
+        ('-=',  '"', ['-n=val', '-m=val1 val2', '-o=val1 val2']),
+        ('-=',  ',', ['-n=val', '-m=val1,val2', '-o=val1 val2']),
+
+        ('--=', '"', ['--n=val', '--m=val1 val2', '--o=val1 val2']),
+        ('--=', ',', ['--n=val', '--m=val1,val2', '--o=val1 val2']),
+    ]
+
+    for style, valsep, exp in tests:
+        result = wutils.applyArgStyle(charstyle=style, charsep=valsep, **kwargs)
+
+        assert result == exp
 
 
 def test_applyArgStyle_argmap():

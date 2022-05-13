@@ -243,18 +243,24 @@ generated command line arguments.
 """
 
 
-def applyArgStyle(style,
+def applyArgStyle(style=None,
                   valsep=None,
                   argmap=None,
                   valmap=None,
                   singlechar_args=False,
+                  charstyle=None,
+                  charsep=None,
                   **kwargs):
     """Turns the given ``kwargs`` into command line options. This function
     is intended to be used to automatically generate command line options
     from arguments passed into a Python function.
 
-    The ``style`` and ``valsep`` arguments control how key-value pairs
-    are converted into command-line options:
+    The default settings will generate arguments that match typical UNIX
+    conventions, e.g. ``-a val``, ``--arg=val``, ``-a val1 val2``,
+    ``--arg=val1,val2``.
+
+    The ``style`` and ``valsep`` (and ``charstyle`` and ``charsep``) arguments
+    control how key-value pairs are converted into command-line options:
 
 
     =========  ==========  ===========================
@@ -275,86 +281,117 @@ def applyArgStyle(style,
     =========  ==========  ===========================
 
 
-    :arg style:  Controls how the ``kwargs`` are converted into command-line
-                 options - must be one of ``'-'``, ``'--'``, ``'-='``, or
-                 ``'--='``.
+    :arg style:     Controls how the ``kwargs`` are converted into command-line
+                    options - must be one of ``'-'``, ``'--'``, ``'-='``, or
+                    ``'--='`` (the default).
 
-    :arg valsep: Controls how the values passed to command-line options
-                 which expect multiple arguments are delimited - must be
-                 one of ``' '``, ``','`` or ``'"'``. Defaults to ``' '``
-                 if ``'=' not in style``, ``','`` otherwise.
+    :arg valsep:    Controls how the values passed to command-line options
+                    which expect multiple arguments are delimited - must be
+                    one of ``' '``, ``','`` or ``'"'``. Defaults to ``' '``
+                    if ``'=' not in style``, ``','`` otherwise.
 
-    :arg argmap: Dictionary of ``{kwarg-name : cli-name}`` mappings. This can
-                 be used if you want to use different argument names in your
-                 Python function for the command-line options.
+    :arg argmap:    Dictionary of ``{kwarg-name : cli-name}`` mappings. This be
+                    used if you want to use different argument names in your
+                    Python function for the command-line options.
 
-    :arg valmap: Dictionary of ``{cli-name : value}`` mappings. This can be
-                 used to define specific semantics for some command-line
-                 options. Acceptable values for ``value`` are as follows
+    :arg valmap:    Dictionary of ``{cli-name : value}`` mappings. This can be
+                    used to define specific semantics for some command-line
+                    options. Acceptable values for ``value`` are as follows
 
-                  - :data:`SHOW_IF_TRUE` - if the argument is present, and
-                    ``True`` in ``kwargs``, the command line option
-                    will be added (without any arguments).
+                     - :data:`SHOW_IF_TRUE` - if the argument is present, and
+                       ``True`` in ``kwargs``, the command line option
+                       will be added (without any arguments).
 
-                  - :data:`HIDE_IF_TRUE` - if the argument is present, and
-                    ``False`` in ``kwargs``, the command line option
-                    will be added (without any arguments).
+                     - :data:`HIDE_IF_TRUE` - if the argument is present, and
+                       ``False`` in ``kwargs``, the command line option
+                       will be added (without any arguments).
 
-                  - Any other constant value. If the argument is present
-                    in ``kwargs``, its command-line option will be
-                    added, with the constant value as its argument.
+                     - Any other constant value. If the argument is present
+                       in ``kwargs``, its command-line option will be
+                       added, with the constant value as its argument.
 
-                 The argument for any options not specified in the ``valmap``
-                 will be converted into strings.
+                    The argument for any options not specified in the
+                    ``valmap`` will be converted into strings.
 
-    :arg singlechar_args: If True, single character arguments always take a
-                          single hyphen prefix (e.g. -h) regardless of the
-                          style.
+    :arg charstyle: Separate style specification for single-character
+                    arguments. If ``style == '--='``, defaults to ``'-'``,
+                    matching UNIX conventions. Otherwise defaults to the
+                    value of ``style``.
+
+    :arg charsep:   Controls how the values passed to command-line options
+                    which expect multiple arguments are delimited - must be
+                    one of ``' '``, ``','`` or ``'"'``. Defaults to ``' '``
+                    if ``'=' not in style``, ``','`` otherwise.
+
+    :arg singlechar_args: If ``True``, equivalent to ``charstyle='-'``.
 
     :arg kwargs: Arguments to be converted into command-line options.
 
     :returns:    A list containing the generated command-line options.
     """
 
+    if style is None:
+        style = '--='
+
+    if charstyle is None:
+        if   singlechar_args: charstyle = '-'
+        elif style == '--=':  charstyle = '-'
+        else:                 charstyle = style
+
     if valsep is None:
         if '=' in style: valsep = ','
         else:            valsep = ' '
 
-    if style not in ('-', '--', '-=', '--='):
-        raise ValueError('Invalid style: {}'.format(style))
-    if valsep not in (' ', ',', '"'):
-        raise ValueError('Invalid valsep: {}'.format(valsep))
+    if charsep is None:
+        if '=' in charstyle: charsep = ','
+        else:                charsep = ' '
 
-    # we don't handle the case where '=' in
-    # style, and valsep == ' ', because no
-    # sane CLI app would do this. Right?
+    if style not in ('-', '--', '-=', '--='):
+        raise ValueError(f'Invalid style: {style}')
+    if charstyle not in ('-', '--', '-=', '--='):
+        raise ValueError(f'Invalid charstyle: {charstyle}')
+    if valsep not in (' ', ',', '"'):
+        raise ValueError(f'Invalid valsep: {valsep}')
+    if charsep not in (' ', ',', '"'):
+        raise ValueError(f'Invalid charsep: {charsep}')
+
+    # It makes no sense to combine argument+value
+    # with an equals sign, but not have the value
+    # quoted (e.g "--arg=val1 val2 val3").
     if '=' in style and valsep == ' ':
-        raise ValueError('Incompatible style and valsep: s={} v={}'.format(
-            style, valsep))
+        raise ValueError(f'Incompatible style {style} '
+                         'and valsep ({valsep})')
+    if '=' in charstyle and charsep == ' ':
+        raise ValueError(f'Incompatible style {charstyle} '
+                         'and valsep ({charsep})')
 
     if argmap is None: argmap = {}
     if valmap is None: valmap = {}
 
-    def fmtarg(arg):
-        if   style in ('-',  '-=') or (singlechar_args and len(arg) == 1):
-            arg =  '-{}'.format(arg)
-        elif style in ('--', '--='):
-            arg = '--{}'.format(arg)
-        return arg
+    # Format the argument.
+    def fmtarg(arg, style):
+        if style in ('--', '--='): return f'--{arg}'
+        else:                      return f'-{arg}'
 
-    # always returns a sequence
-    def fmtval(val):
+    # Formt the argument value. Always returns
+    # a sequence. We don't add quotes around
+    # values - instead we just ensure that
+    # arguments+values are grouped correctly in
+    # the final result (the same as what
+    # shlex.split would generate for a properly
+    # quoted string).
+    def fmtval(val, sep):
         if isinstance(val, abc.Sequence) and (not isinstance(val, str)):
-
             val = [str(v) for v in val]
-            if   valsep == ' ': return val
-            elif valsep == '"': return [' '   .join(val)]
-            else:               return [valsep.join(val)]
+            if   sep == ' ': return val
+            elif sep == '"': return [' '.join(val)]
+            else:            return [sep.join(val)]
         else:
             return [str(val)]
 
-    # val is assumed to be a sequence
-    def fmtargval(arg, val):
+    # Format the argument and value together.
+    # val is assumed to be a sequence.
+    def fmtargval(arg, val, style):
         # if '=' in style, val will
         # always be a single string
         if '=' in style: return ['{}={}'.format(arg, val[0])]
@@ -366,16 +403,19 @@ def applyArgStyle(style,
 
         if v is None: continue
 
+        if len(k) == 1: sty, sep = charstyle, charsep
+        else:           sty, sep = style,     valsep
+
         k    = argmap.get(k, k)
-        mapv = valmap.get(k, fmtval(v))
-        k    = fmtarg(k)
+        mapv = valmap.get(k, fmtval(v, sep))
+        k    = fmtarg(k, sty)
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
                (mapv is HIDE_IF_TRUE and not v):
                 args.append(k)
         else:
-            args.extend(fmtargval(k, mapv))
+            args.extend(fmtargval(k, mapv, sty))
 
     return args
 

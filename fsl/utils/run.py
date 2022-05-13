@@ -252,7 +252,8 @@ def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
 
     results = []
     stderr  = ''
-    stdout  = ' '.join(args)
+    join    = getattr(shlex, 'join', ' '.join)
+    stdout  = join(args)
 
     if returnStdout:   results.append(stdout)
     if returnStderr:   results.append(stderr)
