@@ -3,6 +3,21 @@ order.
 
 
 
+3.9.1 (Friday 13th May 2022)
+----------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Adjusted the :func:`.applyArgStyle` function so that it allows separate
+  specification of the style to use for single-character arguments. This
+  fixes some usage issues with commands such as FSL ``fast``, which have
+  regular ``--=`` arguments, but also single-character arguments which
+  expect multiple positional values (!335).
+
+
 3.9.0 (Tuesday 12th April 2022)
 -------------------------------
 
