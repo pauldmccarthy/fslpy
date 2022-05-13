@@ -27,6 +27,10 @@ def checkResult(cmd, base, args, stripdir=None):
     Pre python 3.7, we couldn't control the order in which command
     line args were generated, so we needed to test all possible orderings.
 
+    But for Python >= 3.7, the order in which kwargs are passed will
+    be the same as the order in which they are rendered, so this function
+    is not required.
+
     :arg cmd:      Generated command
     :arg base:     Beginning of expected command
     :arg args:     Sequence of expected arguments
@@ -364,6 +368,12 @@ def test_fast():
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3, verbose=True)
         expected = [cmd, '--out=myseg', '--class=3', '--verbose', 'in1', 'in2', 'in3']
+        assert result.stdout[0] == ' '.join(expected)
+
+        result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3,
+                           a='reg.mat', A=('csf', 'gm', 'wm'), Prior=True)
+        expected = [cmd, '--out=myseg', '--class=3', '-a', 'reg.mat',
+                    '-A', 'csf', 'gm', 'wm', '--Prior', 'in1', 'in2', 'in3']
         assert result.stdout[0] == ' '.join(expected)
 
 
