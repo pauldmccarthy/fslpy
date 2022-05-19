@@ -3,6 +3,18 @@ order.
 
 
 
+3.9.2 (Friday 20th May 2022)
+----------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Added the :data:`.NIFTI_XFORM_TEMPLATE_OTHER` identifier, an extension to the
+  NIfTI standard (!337).
+
+
 3.9.1 (Friday 13th May 2022)
 ----------------------------
 

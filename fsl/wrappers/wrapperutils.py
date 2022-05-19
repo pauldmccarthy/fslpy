@@ -259,8 +259,9 @@ def applyArgStyle(style=None,
     conventions, e.g. ``-a val``, ``--arg=val``, ``-a val1 val2``,
     ``--arg=val1,val2``.
 
-    The ``style`` and ``valsep`` (and ``charstyle`` and ``charsep``) arguments
-    control how key-value pairs are converted into command-line options:
+    The ``style`` and ``valsep`` options (and ``charstyle`` and ``charsep``,
+    for single-character/short arguments) control how key-value pairs are
+    converted into command-line options:
 
 
     =========  ==========  ===========================
@@ -323,11 +324,15 @@ def applyArgStyle(style=None,
                     one of ``' '``, ``','`` or ``'"'``. Defaults to ``' '``
                     if ``'=' not in style``, ``','`` otherwise.
 
-    :arg singlechar_args: If ``True``, equivalent to ``charstyle='-'``.
+    :arg singlechar_args: If ``True``, equivalent to ``charstyle='-'``. This
+                          argument remains for compatibility, but may be
+                          removed in a future version.
 
     :arg kwargs: Arguments to be converted into command-line options.
 
-    :returns:    A list containing the generated command-line options.
+    :returns:    A sequence containing the generated command-line options, the
+                 same as what ``shlex.split`` would generate for a properly
+                 quoted string.
     """
 
     if style is None:
@@ -373,13 +378,7 @@ def applyArgStyle(style=None,
         if style in ('--', '--='): return f'--{arg}'
         else:                      return f'-{arg}'
 
-    # Formt the argument value. Always returns
-    # a sequence. We don't add quotes around
-    # values - instead we just ensure that
-    # arguments+values are grouped correctly in
-    # the final result (the same as what
-    # shlex.split would generate for a properly
-    # quoted string).
+    # Formt the argument value.
     def fmtval(val, sep):
         if isinstance(val, abc.Sequence) and (not isinstance(val, str)):
             val = [str(v) for v in val]
@@ -389,7 +388,7 @@ def applyArgStyle(style=None,
         else:
             return [str(val)]
 
-    # Format the argument and value together.
+    # Combine the argument and value together.
     # val is assumed to be a sequence.
     def fmtargval(arg, val, style):
         # if '=' in style, val will
