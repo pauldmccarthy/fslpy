@@ -30,6 +30,7 @@ specification:
    NIFTI_XFORM_ALIGNED_ANAT
    NIFTI_XFORM_TALAIRACH
    NIFTI_XFORM_MNI_152
+   NIFTI_XFORM_TEMPLATE_OTHER
 """
 
 
@@ -81,7 +82,14 @@ NIFTI_XFORM_MNI_152      = 4
 """MNI 152 normalized coordinates."""
 
 
-NIFTI_XFORM_ANALYZE      = 5
+NIFTI_XFORM_TEMPLATE_OTHER = 5
+"""Coordinates aligned to some template that is not MNI152 or Talairach.
+
+See https://www.nitrc.org/forum/message.php?msg_id=26394 for details.
+ """
+
+
+NIFTI_XFORM_ANALYZE      = 6
 """Code which indicates that this is an ANALYZE image, not a NIFTI image. """
 
 

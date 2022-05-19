@@ -825,6 +825,7 @@ class Nifti(notifier.Notifier, meta.Meta):
                     - :data:`~.constants.NIFTI_XFORM_ALIGNED_ANAT`
                     - :data:`~.constants.NIFTI_XFORM_TALAIRACH`
                     - :data:`~.constants.NIFTI_XFORM_MNI_152`
+                    - :data:`~.constants.NIFTI_XFORM_TEMPLATE_OTHER`
                     - :data:`~.constants.NIFTI_XFORM_ANALYZE`
         """
 
@@ -852,8 +853,9 @@ class Nifti(notifier.Notifier, meta.Meta):
             if   sform_code != constants.NIFTI_XFORM_UNKNOWN: code = sform_code
             elif qform_code != constants.NIFTI_XFORM_UNKNOWN: code = qform_code
 
-        # Invalid values
-        if code not in range(5):
+        # Invalid code (the maxmimum NIFTI_XFORM_*
+        # code value is 5 at present)
+        if code not in range(6):
             code = constants.NIFTI_XFORM_UNKNOWN
 
         return int(code)
