@@ -173,22 +173,6 @@ def test_add_to_parser():
                 assert res_flags[idx + start_index] == part
 
 
-def myfunc():
-    print('standard output')
-    print('standard error', file=sys.stderr)
-
-
-def test_func_to_cmd():
-    with fslsub_mockFSLDIR(), tempdir():
-        cmd = fslsub.func_to_cmd(myfunc, (), {})
-        jid = fslsub.submit(cmd)
-
-        stdout, stderr = fslsub.output(jid)
-
-        assert stdout.strip() == 'standard output'
-        assert stderr.strip() == 'standard error'
-
-
 example_qstat_reply = """==============================================================
 job_number:                 9985061
 exec_file:                  job_scripts/9985061

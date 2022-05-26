@@ -494,7 +494,7 @@ def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbo
     if kwargs is None:
         kwargs = {}
     dill_bytes = BytesIO()
-    dill.dump((func, args, kwargs), dill_bytes)
+    dill.dump((func, args, kwargs), dill_bytes, recurse=True)
 
     handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
                                         suffix='.py',

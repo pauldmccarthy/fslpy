@@ -2,6 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.9.3 (Friday 27th May 2022)
+----------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed an issue in the :func:`.func_to_cmd` function (!339).
+
 
 3.9.2 (Friday 20th May 2022)
 ----------------------------
