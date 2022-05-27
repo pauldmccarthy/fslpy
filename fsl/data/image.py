@@ -1068,7 +1068,7 @@ class Image(Nifti):
 
     Internally, the image data is managed using one of the following methods:
 
-     1. For read-only access, the ``Image`` class delegates entirely to the
+     1. For read-only access, the ``Image`` class delegates to the
         underlying ``nibabel.Nifti1Image`` instance, accessing the data
         via the ``Nifti1Image.dataobj`` attribute.  Refer to
         https://nipy.org/nibabel/nibabel_images.html#the-image-data-array for
@@ -1081,7 +1081,13 @@ class Image(Nifti):
         the underlying ``nibabel.Nifti1Image`` object (refer to
         https://nipy.org/nibabel/images_and_memory.html)
 
-     3. For more complicated requirements, a :class:`DataManager`,
+     3. The ``nibabel.Nifti1Image`` class does not support indexing of image
+        data with boolean mask arrays (e.g. ``image[mask > 0]``). If an
+        attempt is made to access image data in this way, the ``Image`` class
+        will be loaded into memory in the same way as described in point 2
+        above.
+
+     4. For more complicated requirements, a :class:`DataManager`,
         implementing custom data access management logic, can be provided when
         an ``Image`` is created. If a ``DataManager``is provided, an
         internal reference to the data (see 2 above) will **not** be created or
@@ -1602,6 +1608,17 @@ class Image(Nifti):
         fancy              = isValidFancySliceObj(slc, shape)
         expNdims, expShape = expectedShape(       slc, shape)
         slc                = canonicalSliceObj(   slc, realShape)
+
+        # The nibabel arrayproxy does not support
+        # boolean mask-based (a.k.a. "fancy")
+        # indexing. If we are given a mask, we
+        # force-load the image data into memory.
+        if all((fancy,
+                self.__dataMgr is None,
+                self.__data    is None)):
+            log.debug('Fancy slice detected - force-loading image '
+                      'data  into memory (%s)', self.name)
+            self.data
 
         if   self.__dataMgr is not None: data = self.__dataMgr[slc]
         elif self.__data    is not None: data = self.__data[slc]

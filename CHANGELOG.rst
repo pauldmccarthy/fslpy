@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.9.4 (Friday 27th May 2022)
+----------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Changed the behaviour of :meth:`.Image.__getitem__` so that, if image
+  data is accessed with a boolean mask array (e.g. ``image[mask > 0]``),
+  the image data is loaded into memory (!341).
+* Fixed an issue in the :func:`.func_to_cmd` function (!339).
+
+
 3.9.3 (Friday 27th May 2022)
 ----------------------------
 
