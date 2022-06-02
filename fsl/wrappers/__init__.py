@@ -79,7 +79,7 @@ Similarly, we can run a ``fslmaths`` command on in-memory images::
 It is possible to run a Python script in Windows, and call FSL commands which
 are installed in a WSL environment. When specifying inputs/outputs as
 file/directory paths, the safest option is to use ``pathlib.Path`` objects
-to ensure that they are correctly  translated bewteen Windows and Linux-style
+to ensure that they are correctly translated bewteen Windows and Linux-style
 paths, e.g.::
 
     from pathlib import Path
