@@ -2,6 +2,27 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.9.5 (Thursday 6th June 2022)
+------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Updated the :func:`.ensureIsImage` function to support ``pathlib.Path``
+  objects (!343).
+
+
+Fixed
+^^^^^
+
+
+* Some fixes in the :mod:`.wrappers` module (specifically in the
+  :class:`.FileOrThing` class) to better support ``pathlib.Path`` objects
+  (!343).
+
+
 3.9.4 (Friday 27th May 2022)
 ----------------------------
 
@@ -13,7 +34,6 @@ Changed
 * Changed the behaviour of :meth:`.Image.__getitem__` so that, if image
   data is accessed with a boolean mask array (e.g. ``image[mask > 0]``),
   the image data is loaded into memory (!341).
-* Fixed an issue in the :func:`.func_to_cmd` function (!339).
 
 
 3.9.3 (Friday 27th May 2022)

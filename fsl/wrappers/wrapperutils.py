@@ -709,6 +709,7 @@ class FileOrThing:
 
           - The argument value that was passed in
         """
+
         self.__func      = func
         self.__prepIn    = prepIn
         self.__prepOut   = prepOut
@@ -873,6 +874,8 @@ class FileOrThing:
         # accept an output prefix which contains
         # a directory path.
         if prefix is not None:
+            if isinstance(prefix, pathlib.Path):
+                prefix = op.abspath(prefix)
 
             # If prefix is set to LOAD,
             # all generated output files
@@ -964,6 +967,15 @@ class FileOrThing:
 
         if realPrefix is not None and len(prefixedFiles) == 0:
             allargs[self.__outprefix] = realPrefix
+
+        # Turn any Path objects into absolute path
+        # strings. Don't use Path.resolve(), as it
+        # returns a relative path for non-existent
+        # files/dirs on Windows/certain Python
+        # versions.
+        for k, v in allargs.items():
+            if isinstance(v, pathlib.Path):
+                allargs[k] = op.abspath(v)
 
         args   = [allargs.pop(k) for k in argnames]
         kwargs = allargs

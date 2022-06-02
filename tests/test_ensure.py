@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import pathlib
 
 import numpy   as np
 import nibabel as nib
@@ -22,8 +23,10 @@ def test_ensureIsImage():
 
         assert ensure.ensureIsImage(img) is img
 
-        loaded = [ensure.ensureIsImage('image.nii'),
-                  ensure.ensureIsImage('image')]
+        loaded = [ensure.ensureIsImage(             'image.nii'),
+                  ensure.ensureIsImage(             'image'),
+                  ensure.ensureIsImage(pathlib.Path('image')),
+                  ensure.ensureIsImage(pathlib.Path('image.nii'))]
 
         for l in loaded:
             assert isinstance(l, nib.nifti1.Nifti1Image)
