@@ -475,6 +475,28 @@ def test_fileOrThing_outprefix():
         cleardir(td, 'myout*')
 
 
+def test_fileOrThing_pathlib():
+    @wutils.fileOrImage('img', outprefix='output_base')
+    def basefunc(img, output_base):
+        img = np.asanyarray(nib.load(img).dataobj)
+
+        out1 = nib.nifti1.Nifti1Image(img * 5,  np.eye(4))
+        out2 = nib.nifti1.Nifti1Image(img * 10, np.eye(4))
+
+        nib.save(out1, '{}_times5.nii.gz' .format(output_base))
+        nib.save(out2, '{}_times10.nii.gz'.format(output_base))
+
+    with tempdir.tempdir() as td:
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        exp1 = np.asanyarray(img.dataobj) * 5
+        exp2 = np.asanyarray(img.dataobj) * 10
+        nib.save(img, 'img.nii')
+
+        basefunc(pathlib.Path('img.nii'), pathlib.Path('myout'))
+        assert np.all(np.asanyarray(nib.load('myout_times5.nii.gz') .dataobj) == exp1)
+        assert np.all(np.asanyarray(nib.load('myout_times10.nii.gz').dataobj) == exp2)
+
+
 def test_fileOrThing_outprefix_differentTypes():
 
     @wutils.fileOrImage('img', outprefix='outpref')
