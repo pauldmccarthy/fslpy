@@ -10,8 +10,17 @@ Changed
 ^^^^^^^
 
 
-* Updated the :func:`.ensureIsImage` function, and the `outprefix` option
-  of :class:`.FileOrThing` objects to accept ``pathlib.Path`` objects (!343).
+* Updated the :func:`.ensureIsImage` function to support ``pathlib.Path``
+  objects (!343).
+
+
+Fixed
+^^^^^
+
+
+* Some fixes in the :mod:`.wrappers` module (specifically in the
+  :class:`.FileOrThing` class) to better support ``pathlib.Path`` objects
+  (!343).
 
 
 3.9.4 (Friday 27th May 2022)
