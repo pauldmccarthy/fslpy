@@ -709,6 +709,7 @@ class FileOrThing:
 
           - The argument value that was passed in
         """
+
         self.__func      = func
         self.__prepIn    = prepIn
         self.__prepOut   = prepOut
@@ -873,6 +874,11 @@ class FileOrThing:
         # accept an output prefix which contains
         # a directory path.
         if prefix is not None:
+
+            # Accept pathlib, but all the
+            # code below works on strings
+            if isinstance(prefix, pathlib.Path):
+                prefix = str(prefix)
 
             # If prefix is set to LOAD,
             # all generated output files
