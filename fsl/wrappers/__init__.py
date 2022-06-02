@@ -76,6 +76,21 @@ Similarly, we can run a ``fslmaths`` command on in-memory images::
     output = fslmaths(image).mas(mask).bin().run()
 
 
+It is possible to run a Python script in Windows, and call FSL commands which
+are installed in a WSL environment. When specifying inputs/outputs as
+file/directory paths, the safest option is to use ``pathlib.Path`` objects
+to ensure that they are correctly translated bewteen Windows and Linux-style
+paths, e.g.::
+
+    from pathlib import Path
+    from fsl.wrappers import bet
+
+    bet(Path('T1\\T1.nii.gz`), Path('T1_brain'))
+
+If you use strings to specify inputs/outputs, they must be absolute paths, as
+they may otherwise not be translated correctly.
+
+
 If you are *writing* wrapper functions, take a look at the
 :mod:`.wrapperutils` module - it contains several useful functions and
 decorators.
