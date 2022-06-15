@@ -321,7 +321,8 @@ def test_fslmaths():
             .fillh().ero().dilM().dilF().add('addim').sub('subim') \
             .mul('mulim').div('divim').mas('masim').rem('remim')   \
             .thr('thrim').uthr('uthrim').inm('inmim').bptf(1, 10) \
-            .smooth(sigma=6).kernel('3D').fmeanu().run('output')
+            .smooth(sigma=6).kernel('3D').fmeanu().roi(10, 3, 20, 21, 1, 5) \
+            .run('output')
 
         expected = [cmd, 'input',
                     '-abs', '-bin', '-binv', '-recip', '-Tmean', '-Tstd',
@@ -329,6 +330,7 @@ def test_fslmaths():
                     '-add addim', '-sub subim', '-mul mulim', '-div divim',
                     '-mas masim', '-rem remim', '-thr thrim', '-uthr uthrim',
                     '-inm inmim', '-bptf 1 10', '-s 6', '-kernel 3D', '-fmeanu',
+                    '-roi 10 3 20 21 1 5 0 -1',
                     'output']
         expected = ' '.join(expected)
 

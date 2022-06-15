@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.9.6 (Wednesday 15th June 2022)
+--------------------------------
+
+
+Added
+^^^^^
+
+
+* The `.fslmaths` wrapper now supports the ``-roi`` option, via the
+  :meth:`.fslmaths.roi` method (!346).
+
+
 3.9.5 (Thursday 2nd June 2022)
 ------------------------------
 
