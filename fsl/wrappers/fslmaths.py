@@ -173,6 +173,13 @@ class fslmaths(object):
         self.__args.append("-fmeanu")
         return self
 
+    def roi(self, xmin, xsize, ymin, ysize, zmin, zsize, tmin=0, tsize=-1):
+        """Zero outside ROI (using voxel coordinates). """
+        self.__args.extend(('-roi',
+                            xmin, xsize, ymin, ysize,
+                            zmin, zsize, tmin, tsize))
+        return self
+
     def run(self, output=None):
         """Save output of operations to image. Set ``output`` to a filename to have
         the result saved to file, or omit ``output`` entirely to have the
