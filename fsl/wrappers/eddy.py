@@ -5,6 +5,7 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Martin Craig <martin.craig@eng.ox.a.uk>
+# Author: Michiel Cottaar <michiel.cottaar@ndcn.ox.ac.uk>
 #
 """This module provides wrapper functions for the FSL `TOPUP
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup>`_ and `EDDY
@@ -27,7 +28,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('imain', 'mask', 'field')
 @wutils.fileOrArray('index', 'acqp', 'bvecs', 'bvals', 'field_mat')
 @wutils.fslwrapper
-def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
+def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, cuda_version=None, **kwargs):
     """Wrapper for the ``eddy_cuda`` command."""
 
     valmap = {
@@ -59,7 +60,12 @@ def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
                    'bvals' : bvals,
                    'out'   : out})
 
-    cmd = ['eddy_cuda'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    if cuda_version is None:
+        base_cmd = 'eddy_cuda'
+    else:
+        base_cmd = 'eddy_cuda' + str(cuda_version)
+
+    cmd = [base_cmd] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
     return cmd
 
 
