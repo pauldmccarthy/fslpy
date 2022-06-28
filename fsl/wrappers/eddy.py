@@ -5,6 +5,7 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Martin Craig <martin.craig@eng.ox.a.uk>
+# Author: Michiel Cottaar <michiel.cottaar@ndcn.ox.ac.uk>
 #
 """This module provides wrapper functions for the FSL `TOPUP
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup>`_ and `EDDY
@@ -21,14 +22,15 @@ estimation and eddy-current distortion correction.
 
 
 import fsl.utils.assertions as asrt
+from fsl.utils.deprecated import deprecated
 from . import wrapperutils  as wutils
 
 
 @wutils.fileOrImage('imain', 'mask', 'field')
 @wutils.fileOrArray('index', 'acqp', 'bvecs', 'bvals', 'field_mat')
 @wutils.fslwrapper
-def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
-    """Wrapper for the ``eddy_cuda`` command."""
+def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
+    """Wrapper for the ``eddy`` command."""
 
     valmap = {
         'fep'                             : wutils.SHOW_IF_TRUE,
@@ -59,8 +61,13 @@ def eddy_cuda(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
                    'bvals' : bvals,
                    'out'   : out})
 
-    cmd = ['eddy_cuda'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    cmd = ['eddy'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
     return cmd
+
+
+@deprecated("3.10", "4.0", "eddy_cuda has been deprecated in favour of eddy, which will call the appropriate GPU or CPU version of eddy automatically.")
+def eddy_cuda(*args, **kwargs):
+    eddy(*args, **kwargs)
 
 
 @wutils.fileOrImage('imain', 'fout', 'iout', outprefix='out')
