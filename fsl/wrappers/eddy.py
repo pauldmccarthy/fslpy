@@ -30,7 +30,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrArray('index', 'acqp', 'bvecs', 'bvals', 'field_mat')
 @wutils.fslwrapper
 def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
-    """Wrapper for the ``eddy_cuda`` command."""
+    """Wrapper for the ``eddy`` command."""
 
     valmap = {
         'fep'                             : wutils.SHOW_IF_TRUE,
