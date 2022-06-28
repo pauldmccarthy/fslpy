@@ -65,7 +65,7 @@ def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
     return cmd
 
 
-@deprecated("3.11", "4.0", "eddy_cuda has been deprecated in favour of eddy, which will call the appropriate GPU or CPU version of eddy automatically.")
+@deprecated("3.10", "4.0", "eddy_cuda has been deprecated in favour of eddy, which will call the appropriate GPU or CPU version of eddy automatically.")
 def eddy_cuda(*args, **kwargs):
     eddy(*args, **kwargs)
 
