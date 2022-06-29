@@ -66,11 +66,11 @@ def test_robustfov():
         assert checkResult(result.stdout[0], *expected)
 
 
-def test_eddy_cuda():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('eddy_cuda',)) as fsldir:
-        eddy     = op.join(fsldir, 'bin', 'eddy_cuda')
-        result   = fw.eddy_cuda('imain', 'mask', 'index', 'acqp',
-                                'bvecs', 'bvals', 'out', dont_mask_output=True)
+def test_eddy():
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('eddy',)) as fsldir:
+        eddy     = op.join(fsldir, 'bin', 'eddy')
+        result   = fw.eddy('imain', 'mask', 'index', 'acqp',
+                           'bvecs', 'bvals', 'out', dont_mask_output=True)
         expected = (eddy, ('--imain=imain',
                            '--mask=mask',
                            '--index=index',
