@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.10.0 (Wednesday 29th June 2022)
+---------------------------------
+
+
+Added
+^^^^^
+
+
+* New :func:`fsl.wrappers.eddy.eddy` function, to replace :func:`.eddy_cuda`.
+  Note that this function will not work with FSL versions 6.0.5.2 or older
+  (!348).
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The :func:`fsl.wrappers.eddy.eddy_cuda` function has been deprecated in
+  favour of the ``eddy`` function (!348).
+
 
 3.9.6 (Wednesday 15th June 2022)
 --------------------------------
