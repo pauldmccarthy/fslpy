@@ -61,7 +61,10 @@ def flirt(src, ref, **kwargs):
 
 
 def applyxfm(src, ref, mat, out, interp='spline', **kwargs):
-    """Convenience function which runs ``flirt -applyxfm ...``."""
+    """Convenience function which runs ``flirt -applyxfm ...``.
+    Note that the default value for ``-interp`` is ``spline``,
+    which differs from the command-line default.
+    """
     return flirt(src,
                  ref,
                  out=out,

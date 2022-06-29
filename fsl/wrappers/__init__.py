@@ -100,7 +100,8 @@ decorators.
 from fsl.wrappers.wrapperutils import (LOAD,)
 from fsl.wrappers.bet          import (bet,
                                        robustfov)
-from fsl.wrappers.eddy         import (eddy_cuda,
+from fsl.wrappers.eddy         import (eddy,
+                                       eddy_cuda,
                                        topup,
                                        applytopup)
 from fsl.wrappers.fast         import (fast,)
