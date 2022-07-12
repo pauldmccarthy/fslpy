@@ -11,7 +11,7 @@ the FSL `standard_space_roi`_ command.
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
-@wutils.fileOrImage('input', 'maskMASK', 'roiMASK', 'ssref', 'altinput',outprefix='output')
+@wutils.fileOrImage('input', 'output', 'maskMASK', 'roiMASK', 'ssref', 'altinput')
 @wutils.fslwrapper
 def standard_space_roi(input, output, **kwargs):
     """Wrapper for the ``standard_space_roi`` command.
@@ -33,17 +33,30 @@ def standard_space_roi(input, output, **kwargs):
     """
     asrt.assertIsNifti(input)
 
+    argmap = {
+        'twod' : '2D'
+    }
+
     valmap = {
-        'maskFOV' : wutils.SHOW_IF_TRUE,
-        'maskNONE' : wutils.SHOW_IF_TRUE,
-        'roiFOV' : wutils.SHOW_IF_TRUE,
-        'roiNONE' : wutils.SHOW_IF_TRUE,
-        'd' : wutils.SHOW_IF_TRUE,
-        'b' : wutils.SHOW_IF_TRUE,
+        'maskFOV'      : wutils.SHOW_IF_TRUE,
+        'maskNONE'     : wutils.SHOW_IF_TRUE,
+        'roiFOV'       : wutils.SHOW_IF_TRUE,
+        'roiNONE'      : wutils.SHOW_IF_TRUE,
+        'd'            : wutils.SHOW_IF_TRUE,
+        'b'            : wutils.SHOW_IF_TRUE,
+        'usesqform'    : wutils.SHOW_IF_TRUE,
+        'displayinit'  : wutils.SHOW_IF_TRUE,
+        'noresample'   : wutils.SHOW_IF_TRUE,
+        'forcescaling' : wutils.SHOW_IF_TRUE,
+        'applyxfm'     : wutils.SHOW_IF_TRUE,
+        'nosearch'     : wutils.SHOW_IF_TRUE,
+        'noclamp'      : wutils.SHOW_IF_TRUE,
+        'noresampblur' : wutils.SHOW_IF_TRUE,
+        '2D'           : wutils.SHOW_IF_TRUE,
+        'v'            : wutils.SHOW_IF_TRUE
     }
 
     cmd  = ['standard_space_roi', input, output]
-
-    cmd += wutils.applyArgStyle('-', valmap=valmap, **kwargs)
+    cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd

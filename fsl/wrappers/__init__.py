@@ -97,39 +97,40 @@ decorators.
 """
 
 
-from fsl.wrappers.wrapperutils import (LOAD,)
-from fsl.wrappers.bet          import (bet,
+from fsl.wrappers.wrapperutils       import (LOAD,)
+from fsl.wrappers.bet                import (bet,
                                        robustfov)
-from fsl.wrappers.eddy         import (eddy,
+from fsl.wrappers.eddy               import (eddy,
                                        eddy_cuda,
                                        topup,
                                        applytopup)
-from fsl.wrappers.fast         import (fast,)
-from fsl.wrappers.fsl_anat     import (fsl_anat,)
-from fsl.wrappers.fsl_sub      import (fsl_sub,)
-from fsl.wrappers.flirt        import (flirt,
+from fsl.wrappers.fast               import (fast,)
+from fsl.wrappers.fsl_anat           import (fsl_anat,)
+from fsl.wrappers.fsl_sub            import (fsl_sub,)
+from fsl.wrappers.flirt              import (flirt,
                                        invxfm,
                                        applyxfm,
                                        applyxfm4D,
                                        concatxfm,
                                        mcflirt)
-from fsl.wrappers.fnirt        import (fnirt,
+from fsl.wrappers.fnirt              import (fnirt,
                                        applywarp,
                                        invwarp,
                                        convertwarp)
-from fsl.wrappers.fslmaths     import (fslmaths,)
-from fsl.wrappers.fslstats     import (fslstats,)
-from fsl.wrappers.fugue        import (fugue,
+from fsl.wrappers.fslmaths           import (fslmaths,)
+from fsl.wrappers.fslstats           import (fslstats,)
+from fsl.wrappers.fugue              import (fugue,
                                        prelude,
                                        sigloss,
                                        fsl_prepare_fieldmap)
-from fsl.wrappers.melodic      import (melodic,
+from fsl.wrappers.melodic            import (melodic,
                                        fsl_regfilt)
-from fsl.wrappers.misc         import (fslreorient2std,
+from fsl.wrappers.misc               import (fslreorient2std,
                                        fslorient,
                                        fslroi,
                                        slicer,
                                        cluster,
                                        gps)
-from fsl.wrappers.epi_reg      import  epi_reg
-from fsl.wrappers              import  tbss
+from fsl.wrappers.epi_reg            import  epi_reg
+from fsl.wrappers                    import  tbss
+from fsl.wrappers.standard_space_roi import standard_space_roi
