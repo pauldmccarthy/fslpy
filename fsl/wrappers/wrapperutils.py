@@ -201,7 +201,7 @@ def genxwrapper(func, runner):
         exitcode = kwargs.pop('exitcode', RUN_OPTIONS['exitcode'])
         submit   = kwargs.pop('submit',   RUN_OPTIONS['submit'])
         cmdonly  = kwargs.pop('cmdonly',  RUN_OPTIONS['cmdonly'])
-        logg     = kwargs.pop('log',      RUN_OPTIONS['tee'])
+        logg     = kwargs.pop('log',      RUN_OPTIONS['log'])
 
         # many wrapper functions use fsl.utils.assertions
         # statements to check that input arguments are
