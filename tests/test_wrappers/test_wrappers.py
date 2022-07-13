@@ -451,3 +451,36 @@ def test_fsl_sub():
         result = fw.fsl_sub(
             'some_command', '--some_arg', jobhold='123', queue='long.q')
         assert shlex.split(result[0]) == expected
+
+
+def test_standard_space_roi():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('standard_space_roi',)) as fsldir:
+        expected = [op.join(fsldir, 'bin', 'standard_space_roi'),
+                    'input',
+                    'output',
+                    '-maskFOV',
+                    '-maskNONE',
+                    '-maskMASK', 'mask',
+                    '-d',
+                    '-b',
+                    '-ssref', 'ssref',
+                    '-altinput', 'altinput',
+                    '-2D',
+                    '-usesqform',
+                    '-ref flirt_ref']
+
+        result = fw.standard_space_roi(
+            'input', 'output',
+            maskFOV=True,
+            maskNONE=True,
+            maskMASK='mask',
+            d=True,
+            b=True,
+            ssref='ssref',
+            altinput='altinput',
+            twod=True,
+            usesqform=True,
+            ref='flirt_ref')
+        assert result.stdout[0] == ' '.join(expected)

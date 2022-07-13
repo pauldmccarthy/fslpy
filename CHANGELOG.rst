@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.11.0 (Under development)
+--------------------------
+
+
+Added
+^^^^^
+
+
+* New :func:`.standard_space_roi` wrapper function for the FSL command (!351).
+
+
 3.10.0 (Wednesday 29th June 2022)
 ---------------------------------
 
