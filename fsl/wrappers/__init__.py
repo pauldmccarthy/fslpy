@@ -97,7 +97,8 @@ decorators.
 """
 
 
-from fsl.wrappers.wrapperutils       import (LOAD,)
+from fsl.wrappers.wrapperutils       import (LOAD,
+                                             RUN_OPTIONS)
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
 from fsl.wrappers.eddy               import (eddy,

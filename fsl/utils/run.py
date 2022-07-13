@@ -154,12 +154,14 @@ def run(*args, **kwargs):
 
     :arg log:      Must be passed as a keyword argument.  Defaults to
                    ``{'tee' : True}``. An optional ``dict`` which may be used
-                   to redirect the command's standard output and error. The
-                   following keys are recognised:
+                   to redirect the command's standard output and error. Ignored
+                   if ``submit`` is specified. The following keys are
+                   recognised:
 
                      - tee:    If ``True`` (the default), the command's
                                standard output/error streams are forwarded to
-                               this processes streams.
+                               the output streams of this process, in addition
+                               to being captured and returned.
 
                      - stdout: Optional file-like object to which the command's
                                standard output stream can be forwarded.
@@ -172,7 +174,7 @@ def run(*args, **kwargs):
 
     All other keyword arguments are passed through to the ``subprocess.Popen``
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
-    are passed through to the :func:`.fslsub.submit` function.
+    are passed through to the :func:`.fsl_sub` function.
 
     :returns: If ``submit`` is provided, the ID of the submitted job is
               returned as a string. Otherwise returns a single value or a
@@ -200,10 +202,6 @@ def run(*args, **kwargs):
         submit = None
 
     if submit is not None:
-        returnStdout   = False
-        returnStderr   = False
-        returnExitcode = False
-
         if submit is True:
             submit = dict()
 
