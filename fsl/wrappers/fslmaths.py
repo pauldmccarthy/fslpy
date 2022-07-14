@@ -12,7 +12,7 @@ for the ``fslmaths`` command-line tool.
 from . import wrapperutils as wutils
 
 
-class fslmaths(object):
+class fslmaths:
     """Perform mathematical manipulation of images.
 
     ``fslmaths`` is unlike the other FSL wrapper tools in that it provides an
@@ -180,10 +180,13 @@ class fslmaths(object):
                             zmin, zsize, tmin, tsize))
         return self
 
-    def run(self, output=None):
+    def run(self, output=None, **kwargs):
         """Save output of operations to image. Set ``output`` to a filename to have
         the result saved to file, or omit ``output`` entirely to have the
         result returned as a ``nibabel`` image.
+
+        All other arguments are ultimately passed through to the
+        :func:`fsl.utils.run.run` function.
         """
 
         cmd = ['fslmaths', self.__input] + self.__args
@@ -192,7 +195,7 @@ class fslmaths(object):
             output = wutils.LOAD
 
         cmd   += [output]
-        result = self.__run(*cmd)
+        result = self.__run(*cmd, **kwargs)
 
         # if output is LOADed, there
         # will only be one entry in

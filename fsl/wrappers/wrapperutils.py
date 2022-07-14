@@ -148,6 +148,19 @@ def _unwrap(func):
     return func
 
 
+RUN_OPTIONS = {
+    'stdout'   : True,
+    'stderr'   : True,
+    'exitcode' : False,
+    'submit'   : None,
+    'log'      : {'tee' : True},
+    'cmdonly'  : False
+}
+"""Contains default settings for :func:`fsl.utils.run.run`. These are used
+by the :func:`cmdwrapper` and :func:`fslwrapper` decorators.
+"""
+
+
 def genxwrapper(func, runner):
     """This function is used by :func:`cmdwrapper` and :func:`fslwrapper`.
     It is not intended to be used in any other circumstances.
@@ -174,17 +187,21 @@ def genxwrapper(func, runner):
       - ``log``:      Passed to ``runner``. Defaults to ``{'tee':True}``.
       - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
 
+    The default values for these arguments are stored in the
+    :attr:`RUN_OPTIONS` dictionary, and may be changed by modifying that
+    dictionary.
+
     :arg func:   A function which generates a command line.
     :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
     """
 
     def wrapper(*args, **kwargs):
-        stdout   = kwargs.pop('stdout',   True)
-        stderr   = kwargs.pop('stderr',   True)
-        exitcode = kwargs.pop('exitcode', False)
-        submit   = kwargs.pop('submit',   None)
-        cmdonly  = kwargs.pop('cmdonly',  False)
-        log      = kwargs.pop('log',      {'tee' : True})
+        stdout   = kwargs.pop('stdout',   RUN_OPTIONS['stdout'])
+        stderr   = kwargs.pop('stderr',   RUN_OPTIONS['stderr'])
+        exitcode = kwargs.pop('exitcode', RUN_OPTIONS['exitcode'])
+        submit   = kwargs.pop('submit',   RUN_OPTIONS['submit'])
+        cmdonly  = kwargs.pop('cmdonly',  RUN_OPTIONS['cmdonly'])
+        logg     = kwargs.pop('log',      RUN_OPTIONS['log'])
 
         # many wrapper functions use fsl.utils.assertions
         # statements to check that input arguments are
@@ -196,7 +213,7 @@ def genxwrapper(func, runner):
 
         return runner(cmd,
                       stderr=stderr,
-                      log=log,
+                      log=logg,
                       submit=submit,
                       cmdonly=cmdonly,
                       stdout=stdout,

@@ -88,6 +88,7 @@ class CaptureStdout:
 
         sys.stdout = self.__mock_stdout
         sys.stderr = self.__mock_stderr
+        return self
 
 
     def __exit__(self, *args, **kwargs):

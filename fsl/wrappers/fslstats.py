@@ -194,7 +194,7 @@ class fslstats:
         return self
 
 
-    def run(self, raw=False):
+    def run(self, raw=False, **kwargs):
         """Run the ``fslstats`` command-line tool. See :meth:`__init__` for a
         description of the return value.
 
@@ -202,6 +202,9 @@ class fslstats:
                   and error is returned, instead of a scalar/numpy array.
 
         :returns: Result of ``fslstats`` as a scalar or ``numpy`` array.
+
+        All other arguments are ultimately passed through to the
+        :func:`fsl.utils.run.run` function.
         """
 
         # The parsing logic below will not work
@@ -212,8 +215,11 @@ class fslstats:
         # The default behaviour of run/runfsl
         # is to tee the command output streams
         # to the calling process streams. We
-        # can disable this via log=None.
-        result = self.__run('fslstats', *self.__options, log=None)
+        # can disable this via the log argument
+        # (but this can be overridden by the
+        # caller).
+        log    = kwargs.pop('log', {'tee' : False})
+        result = self.__run('fslstats', *self.__options, log=log, **kwargs)
 
         if raw:
             return result.stdout
