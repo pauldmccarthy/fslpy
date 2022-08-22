@@ -25,6 +25,13 @@ Changed
   to accept arguments destined for :func:`fsl.utils.run.run` (!352).
 
 
+Fixed
+^^^^^
+
+
+* Fixed a bug in the :meth:`.Image.strval` method (!353).
+
+
 3.10.0 (Wednesday 29th June 2022)
 ---------------------------------
 
