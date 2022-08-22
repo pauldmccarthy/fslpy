@@ -1546,3 +1546,17 @@ def test_adjust():
         imgb = affine.axisBounds(img.shape, img.voxToWorldMat)
         adjb = affine.axisBounds(adj.shape, adj.voxToWorldMat)
         assert np.all(np.isclose(imgb, adjb, rtol=1e-5, atol=1e-5))
+
+
+def test_strval():
+    tests = [
+        (b'abcde\x13\xf7fgh\0', 'abcdefgh'),
+        (b'abcde\0fghij\0',     'abcde'),
+    ]
+    with tempdir():
+        for aux_file, expect in tests:
+            i = make_image('image.nii', dims=(10, 10, 10), pixdims=(1, 1, 1))
+            i.header['aux_file'] = aux_file
+            i.to_filename('image.nii')
+            i = fslimage.Image('image.nii')
+            assert i.strval('aux_file') == expect

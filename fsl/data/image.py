@@ -522,8 +522,7 @@ class Nifti(notifier.Notifier, meta.Meta):
 
     def strval(self, key):
         """Returns the specified NIFTI header field, converted to a python
-        string, correctly null-terminated, and with non-printable characters
-        removed.
+        string, with non-printable characters removed.
 
         This method is used to sanitise some NIFTI header fields. The default
         Python behaviour for converting a sequence of bytes to a string is to
@@ -542,9 +541,10 @@ class Nifti(notifier.Notifier, meta.Meta):
         try:              val = bytes(val).partition(b'\0')[0]
         except Exception: val = bytes(val)
 
-        val = val.decode('ascii')
+        val = [chr(c) for c in val]
+        val = ''.join(c for c in val if c in string.printable).strip()
 
-        return ''.join([c for c in val if c in string.printable]).strip()
+        return val
 
 
     @property
