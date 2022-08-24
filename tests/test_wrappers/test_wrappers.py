@@ -484,3 +484,15 @@ def test_standard_space_roi():
             usesqform=True,
             ref='flirt_ref')
         assert result.stdout[0] == ' '.join(expected)
+
+
+def test_fslswsapdim():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('fslswapdim',)) as fsldir:
+        expected = [op.join(fsldir, 'bin', 'fslswpadim'), 'input', 'a', 'b' 'c']
+        result   = fw.fslswapdim('input', 'a', 'b', 'c')
+        assert result.stdout[0] == ' '.join(expected)
+        expected = [op.join(fsldir, 'bin', 'fslswpadim'), 'input', 'a', 'b' 'c', 'output']
+        result   = fw.fslswapdim('input', 'a', 'b', 'c', 'output')
+        assert result.stdout[0] == ' '.join(expected)
