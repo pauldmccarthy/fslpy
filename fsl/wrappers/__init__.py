@@ -128,6 +128,7 @@ from fsl.wrappers.melodic            import (melodic,
                                              fsl_regfilt)
 from fsl.wrappers.misc               import (fslreorient2std,
                                              fslorient,
+                                             fslswapdim,
                                              fslroi,
                                              slicer,
                                              cluster,

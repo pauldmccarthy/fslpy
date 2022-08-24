@@ -59,6 +59,20 @@ def fslorient(input, **kwargs):
 
 @wutils.fileOrImage('input', 'output')
 @wutils.fslwrapper
+def fslswapdim(input, a, b, c, output=None):
+    """Wrapper for the ``fslswapdim`` tool."""
+
+    asrt.assertIsNifti(input)
+
+    cmd = ['fslswapdim', a, b, c]
+    if output is not None:
+        cmd.append(output)
+
+    return cmd
+
+
+@wutils.fileOrImage('input', 'output')
+@wutils.fslwrapper
 def fslroi(input, output, *args):
     """Wrapper for the ``fslroi`` tool."""
 
