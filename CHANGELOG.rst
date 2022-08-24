@@ -10,7 +10,8 @@ Added
 ^^^^^
 
 
-* New :func:`.standard_space_roi` wrapper function for the FSL command (!351).
+* New :func:`.standard_space_roi` and :func:`.fslswapdim` wrapper functions
+  for the FSL commands (!351, !354).
 
 
 Changed
