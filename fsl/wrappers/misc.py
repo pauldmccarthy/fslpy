@@ -64,7 +64,7 @@ def fslswapdim(input, a, b, c, output=None):
 
     asrt.assertIsNifti(input)
 
-    cmd = ['fslswapdim', a, b, c]
+    cmd = ['fslswapdim', input, a, b, c]
     if output is not None:
         cmd.append(output)
 
