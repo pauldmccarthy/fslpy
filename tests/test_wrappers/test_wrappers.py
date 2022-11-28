@@ -354,6 +354,7 @@ def test_fslmaths():
         got = fw.fslmaths('input').run(fw.LOAD)
         assert np.all(expect.dataobj[:] == got.dataobj[:])
 
+
 def test_fast():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fast',)) as fsldir:
 
@@ -496,3 +497,57 @@ def test_fslswapdim():
         expected = [op.join(fsldir, 'bin', 'fslswapdim'), 'input', 'a', 'b', 'c', 'output']
         result   = fw.fslswapdim('input', 'a', 'b', 'c', 'output')
         assert result.stdout[0] == ' '.join(expected)
+
+
+
+def test_first():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('first', 'first_flirt', 'run_first',
+                         'run_first_all', 'first_utils',
+                         'concat_bvars')) as fsldir:
+        first         = op.join(fsldir, 'bin', 'first')
+        first_flirt   = op.join(fsldir, 'bin', 'first_flirt')
+        run_first     = op.join(fsldir, 'bin', 'run_first')
+        run_first_all = op.join(fsldir, 'bin', 'run_first_all')
+        first_utils   = op.join(fsldir, 'bin', 'first_utils')
+        concat_bvars  = op.join(fsldir, 'bin', 'concat_bvars')
+
+        expected = f'{first} --in=input --outputName=output ' \
+                    '--inputModel=inmodel --flirtMatrix=flirtmat '\
+                    '--shcond -n 5 --bmapname=bmaps'
+        result = fw.first('input', 'output', 'inmodel', 'flirtmat',
+                          shcond=True, n=5, bmapname='bmaps')
+        assert result.stdout[0] == expected
+
+        expected = f'{first_flirt} input outbase -b -cost costfn'
+        result   = fw.first_flirt('input', 'outbase', b=True, cost='costfn')
+        assert result.stdout[0] == expected
+
+        expected = f'{run_first} -i input -t mat -n 20 ' \
+                    '-o output -m L_Thal -multipleImages -intref R_Thal'
+        result   = fw.run_first('input', 'mat', 20, 'output', 'L_Thal',
+                                multipleImages=True, intref='R_Thal')
+        assert result.stdout[0] == expected
+
+        expected = f'{run_first} -i input -t mat -n 20 ' \
+                    '-o output -m L_Thal -multipleImages -intref R_Thal'
+        result   = fw.run_first('input', 'mat', 20, 'output', 'L_Thal',
+                                multipleImages=True, intref='R_Thal')
+        assert result.stdout[0] == expected
+
+        expected = f'{run_first_all} -i input -o outbase -3 -s L_Hipp,R_Hipp '\
+                    '-d'
+        result   = fw.run_first_all('input', 'outbase', three=True,
+                                    s='L_Hipp,R_Hipp', d=True)
+        assert result.stdout[0] == expected
+
+        expected = f'{first_utils} --in input --out out --useScale '\
+                    '--numModes=20'
+        result   = fw.first_utils('input', 'out', useScale=True,
+                                  numModes=20)
+        assert result.stdout[0] == expected
+
+        expected = f'{concat_bvars} output in1 in2 in3'
+        result   = fw.concat_bvars('output', 'in1', 'in2', 'in3')
+        assert result[0] == expected
