@@ -12,6 +12,7 @@ Added
 
 * New :func:`.standard_space_roi` and :func:`.fslswapdim` wrapper functions
   for the FSL commands (!351, !354).
+* New :mod:`fsl.wrappers.first` wrapper functions (!355).
 
 
 Changed
