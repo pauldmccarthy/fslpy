@@ -99,15 +99,21 @@ decorators.
 
 from fsl.wrappers.wrapperutils       import (LOAD,
                                              RUN_OPTIONS)
+from fsl.wrappers                    import  tbss
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
 from fsl.wrappers.eddy               import (eddy,
                                              eddy_cuda,
                                              topup,
                                              applytopup)
+from fsl.wrappers.epi_reg            import  epi_reg
 from fsl.wrappers.fast               import (fast,)
-from fsl.wrappers.fsl_anat           import (fsl_anat,)
-from fsl.wrappers.fsl_sub            import (fsl_sub,)
+from fsl.wrappers.first              import (concat_bvars,
+                                             first,
+                                             first_flirt,
+                                             first_utils,
+                                             run_first,
+                                             run_first_all)
 from fsl.wrappers.flirt              import (flirt,
                                              invxfm,
                                              applyxfm,
@@ -118,6 +124,8 @@ from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,
                                              convertwarp)
+from fsl.wrappers.fsl_anat           import (fsl_anat,)
+from fsl.wrappers.fsl_sub            import (fsl_sub,)
 from fsl.wrappers.fslmaths           import (fslmaths,)
 from fsl.wrappers.fslstats           import (fslstats,)
 from fsl.wrappers.fugue              import (fugue,
@@ -133,6 +141,4 @@ from fsl.wrappers.misc               import (fslreorient2std,
                                              slicer,
                                              cluster,
                                              gps)
-from fsl.wrappers.epi_reg            import  epi_reg
-from fsl.wrappers                    import  tbss
 from fsl.wrappers.standard_space_roi import  standard_space_roi
