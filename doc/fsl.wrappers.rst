@@ -8,6 +8,7 @@
    fsl.wrappers.eddy
    fsl.wrappers.epi_reg
    fsl.wrappers.fast
+   fsl.wrappers.first
    fsl.wrappers.flirt
    fsl.wrappers.fnirt
    fsl.wrappers.fsl_anat
