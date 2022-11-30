@@ -140,3 +140,26 @@ def test_cmdonly(fileorthing):
 
         create_mock_command(0)
         run_command(fileorthing, ['mock_command'], cmdonly=True)
+
+
+@pytest.mark.parametrize('fileorthing', [True, False])
+def test_wrapperconfig(fileorthing):
+    newpath = op.pathsep.join(('.', os.environ['PATH']))
+    with tempdir.tempdir(), \
+         mock.patch.dict(os.environ, {'PATH' : newpath}):
+
+        create_mock_command(0)
+
+        # default: stdout=true, stderr=true, exitcode=False
+        run_command(fileorthing, ('Standard output\n', 'Standard error\n'))
+
+        with wrappers.wrapperconfig(stdout=False):
+            run_command(fileorthing, 'Standard error\n')
+            run_command(fileorthing, ('Standard error\n', 0), exitcode=True)
+
+        with wrappers.wrapperconfig(stderr=False):
+            run_command(fileorthing, 'Standard output\n')
+            run_command(fileorthing, ('Standard output\n', 0), exitcode=True)
+
+        # check that default behaviour is restored
+        run_command(fileorthing, ('Standard output\n', 'Standard error\n'))
