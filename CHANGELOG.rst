@@ -13,15 +13,15 @@ Added
 * New :func:`.standard_space_roi` and :func:`.fslswapdim` wrapper functions
   for the FSL commands (!351, !354).
 * New :mod:`fsl.wrappers.first` wrapper functions (!355).
+* New :func:`.wrapperconfig` context manager function, which allows the
+  default values for arguments passed by the :mod:`fsl.wrappers` functions to
+  the :func:`fsl.utils.run.run` function to be changed (!352, !356).
 
 
 Changed
 ^^^^^^^
 
 
-* The default values for arguments passed by the :mod:`fsl.wrappers` functions
-  to the :func:`fsl.utils.run.run` function can now be changed, via the
-  :attr:`fsl.wrappers.RUN_OPTIONS` dictionary (!352).
 * The :class:`fsl.wrappers.fslmaths.fslmaths` and
   :class:`fsl.wrappers.fslstats.fslstats` wrapper functions have been updated
   to accept arguments destined for :func:`fsl.utils.run.run` (!352).
