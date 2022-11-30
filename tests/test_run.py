@@ -424,3 +424,14 @@ def test_run_logcmd():
 
         assert stdout                         == expstdout
         assert open('my_stdout', 'rt').read() == expcmd + expstdout
+
+        logged = []
+        def logfunc(cmd):
+            logged.append(cmd)
+
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : logfunc})
+        assert stdout    == expstdout
+        assert logged[0] == expcmd
+        stdout = run.run('./script.sh 1 2 3', log={'cmd' : logfunc})
+        assert stdout    == expstdout
+        assert logged[1] == expcmd

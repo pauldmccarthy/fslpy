@@ -169,8 +169,8 @@ def run(*args, **kwargs):
                      - stderr: Optional file-like object to which the command's
                                standard error stream can be forwarded.
 
-                     - cmd:    Optional file-like object to which the command
-                               itself is logged.
+                     - cmd:    Optional file-like or callable to which
+                               the command itself is logged.
 
     All other keyword arguments are passed through to the ``subprocess.Popen``
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
@@ -275,8 +275,8 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
     :arg logStderr: Optional file-like object to which the command's standard
                     error stream can be forwarded.
 
-    :arg logCmd:    Optional file-like object to which the command itself is
-                    logged.
+    :arg logCmd:    Optional file-like or callable to which the command itself
+                    is logged.
 
     :arg args:      Command to run
 
@@ -319,9 +319,13 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
             if logStdout is not None: outstreams.append(logStdout)
             if logStderr is not None: errstreams.append(logStderr)
 
-            # log the command if requested
-            if logCmd is not None:
-                cmd = ' '.join(args) + '\n'
+            # log the command if requested.
+            # logCmd can be a callable, or
+            # can be a file-like.
+            cmd = ' '.join(args) + '\n'
+            if callable(logCmd):
+                logCmd(cmd)
+            elif logCmd is not None:
                 if 'b' in getattr(logCmd, 'mode', 'w'):
                     logCmd.write(cmd.encode('utf-8'))
                 else:

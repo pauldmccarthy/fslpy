@@ -102,6 +102,7 @@ import                    logging
 import                    tempfile
 import                    warnings
 import                    functools
+import                    contextlib
 
 import nibabel as nib
 import numpy   as np
@@ -148,19 +149,6 @@ def _unwrap(func):
     return func
 
 
-RUN_OPTIONS = {
-    'stdout'   : True,
-    'stderr'   : True,
-    'exitcode' : False,
-    'submit'   : None,
-    'log'      : {'tee' : True},
-    'cmdonly'  : False
-}
-"""Contains default settings for :func:`fsl.utils.run.run`. These are used
-by the :func:`cmdwrapper` and :func:`fslwrapper` decorators.
-"""
-
-
 def genxwrapper(func, runner):
     """This function is used by :func:`cmdwrapper` and :func:`fslwrapper`.
     It is not intended to be used in any other circumstances.
@@ -188,20 +176,22 @@ def genxwrapper(func, runner):
       - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
 
     The default values for these arguments are stored in the
-    :attr:`RUN_OPTIONS` dictionary, and may be changed by modifying that
-    dictionary.
+    ``genxwrapper.run_options`` dictionary. This dictionary should not be
+    changed directly, but rather can be temporarily modified via the
+    :func:`wrapperconfig` context manager function.
 
     :arg func:   A function which generates a command line.
     :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
     """
 
     def wrapper(*args, **kwargs):
-        stdout   = kwargs.pop('stdout',   RUN_OPTIONS['stdout'])
-        stderr   = kwargs.pop('stderr',   RUN_OPTIONS['stderr'])
-        exitcode = kwargs.pop('exitcode', RUN_OPTIONS['exitcode'])
-        submit   = kwargs.pop('submit',   RUN_OPTIONS['submit'])
-        cmdonly  = kwargs.pop('cmdonly',  RUN_OPTIONS['cmdonly'])
-        logg     = kwargs.pop('log',      RUN_OPTIONS['log'])
+        opts     = genxwrapper.run_options
+        stdout   = kwargs.pop('stdout',   opts['stdout'])
+        stderr   = kwargs.pop('stderr',   opts['stderr'])
+        exitcode = kwargs.pop('exitcode', opts['exitcode'])
+        submit   = kwargs.pop('submit',   opts['submit'])
+        cmdonly  = kwargs.pop('cmdonly',  opts['cmdonly'])
+        logg     = kwargs.pop('log',      opts['log'])
 
         # many wrapper functions use fsl.utils.assertions
         # statements to check that input arguments are
@@ -222,6 +212,16 @@ def genxwrapper(func, runner):
     return _update_wrapper(wrapper, func)
 
 
+genxwrapper.run_options = {
+    'stdout'   : True,
+    'stderr'   : True,
+    'exitcode' : False,
+    'submit'   : None,
+    'log'      : {'tee' : True},
+    'cmdonly'  : False
+}
+
+
 def cmdwrapper(func):
     """This decorator can be used on functions which generate a command line.
     It will pass the return value of the function to the
@@ -240,6 +240,23 @@ def fslwrapper(func):
     See the :func:`genxwrapper` function for details.
     """
     return genxwrapper(func, run.runfsl)
+
+
+@contextlib.contextmanager
+def wrapperconfig(**kwargs):
+    """Context manager to be used when calling wrapper functions. Can modify
+    the options/arguments that are passed to :func:`fsl.utils.run.run` when
+    calling a command from a wrapper function. For example::
+
+        with wrapperconfig(stdout=False):
+            bet('struct', 'struct_brain')
+    """
+    opts = dict(genxwrapper.run_options)
+    genxwrapper.run_options.update(kwargs)
+    try:
+        yield
+    finally:
+        genxwrapper.run_options = opts
 
 
 SHOW_IF_TRUE = object()

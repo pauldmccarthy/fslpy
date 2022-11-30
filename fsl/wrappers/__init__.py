@@ -98,7 +98,7 @@ decorators.
 
 
 from fsl.wrappers.wrapperutils       import (LOAD,
-                                             RUN_OPTIONS)
+                                             wrapperconfig)
 from fsl.wrappers                    import  tbss
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
