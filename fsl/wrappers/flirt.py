@@ -125,6 +125,30 @@ def concatxfm(atob, btoc, atoc):
     return cmd
 
 
+@wutils.fileOrArray('inmat1', 'inmat2', 'omat')
+@wutils.fslwrapper
+def fixscaleskew(inmat1, inmat2, omat):
+    """Use ``convert_xfm`` to  fix the skew scale of an affine. Note that 
+    the order of the input matrices is the opposite of the order expected
+    by ``convert_xfm``.
+
+    :arg inmat1: Input matrix to fix.
+    :arg inmat2: Matrix to scale the skew to.
+    :arg omat:   Output matrix.
+    """
+
+    asrt.assertFileExists(inmat1, inmat2)
+
+    cmd = ['convert_xfm',
+           '-fixscaleskew',
+           inmat2,
+           inmat1,
+           '-omat',
+           omat]
+
+    return cmd
+
+
 @wutils.fileOrImage('infile', 'out', 'reffile', outprefix='out')
 @wutils.fileOrArray('init', outprefix='out')
 @wutils.fslwrapper

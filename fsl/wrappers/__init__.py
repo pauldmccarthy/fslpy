@@ -108,6 +108,7 @@ from fsl.wrappers.eddy               import (eddy,
                                              applytopup)
 from fsl.wrappers.epi_reg            import  epi_reg
 from fsl.wrappers.fast               import (fast,)
+from fsl.wrappers.avwutils           import (fslmerge,)
 from fsl.wrappers.first              import (concat_bvars,
                                              first,
                                              first_flirt,
@@ -119,6 +120,7 @@ from fsl.wrappers.flirt              import (flirt,
                                              applyxfm,
                                              applyxfm4D,
                                              concatxfm,
+                                             fixscaleskew,
                                              mcflirt)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
