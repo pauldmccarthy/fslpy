@@ -40,9 +40,9 @@ def fslmerge(how, out, *images, tr=None, n=None):
     asrt.assertIsNifti(*images)
 
     cmd  = ['fslmerge', '-'+how, out] + list(images)
-    if not tr == None:
+    if tr is not None:
         cmd.append(tr)
-    if not n == None:
-        cmd =+ wutils.applyArgStyle('-', n)
+    if n is not None:
+        cmd.append('-n ' + str(n)
 
     return cmd
