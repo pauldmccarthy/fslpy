@@ -43,6 +43,6 @@ def fslmerge(how, out, *images, tr=None, n=None):
     if tr is not None:
         cmd.append(tr)
     if n is not None:
-        cmd.append('-n ' + str(n)
+        cmd.append('-n ' + str(n))
 
     return cmd
