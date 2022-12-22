@@ -121,7 +121,8 @@ from fsl.wrappers.flirt              import (flirt,
                                              applyxfm4D,
                                              concatxfm,
                                              fixscaleskew,
-                                             mcflirt)
+                                             mcflirt,
+                                             standard_space_roi)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,
@@ -143,4 +144,8 @@ from fsl.wrappers.misc               import (fslreorient2std,
                                              slicer,
                                              cluster,
                                              gps)
-from fsl.wrappers.standard_space_roi import  standard_space_roi
+from fsl.wrappers.bianca             import (bianca,
+                                             bianca_cluster_stats,
+                                             bianca_overlap_measures,
+                                             bianca_perivent_deep,
+                                             make_bianca_mask)
