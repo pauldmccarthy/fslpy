@@ -214,14 +214,15 @@ def test_namedPositionals():
     def func6(a, b, *args): pass
     def func7(a, b, *args, **kwargs): pass
 
+    suf   = wutils.namedPositionals.varargsSuffix
     tests = [
         (func1, [],        []),
         (func2, [1, 2, 3], ['a', 'b', 'c']),
         (func3, [1, 2, 3], ['a', 'b', 'c']),
-        (func4, [1, 2, 3], ['args0', 'args1', 'args2']),
-        (func5, [1, 2, 3], ['args0', 'args1', 'args2']),
-        (func6, [1, 2, 3], ['a', 'b', 'args0']),
-        (func7, [1, 2, 3], ['a', 'b', 'args0']),
+        (func4, [1, 2, 3], [f'args0{suf}', f'args1{suf}', f'args2{suf}']),
+        (func5, [1, 2, 3], [f'args0{suf}', f'args1{suf}', f'args2{suf}']),
+        (func6, [1, 2, 3], ['a', 'b', f'args0{suf}']),
+        (func7, [1, 2, 3], ['a', 'b', f'args0{suf}']),
     ]
 
     for func, args, expected in tests:
@@ -406,6 +407,29 @@ def test_fileOrThing_sequence():
         assert np.all(np.loadtxt('result.txt') == inputs[0])
 
         assert np.all(func(infiles[0], wutils.LOAD)['out'] == inputs[0])
+
+
+def test_fileOrThing_var_positionals():
+
+    @wutils.fileOrArray('output', 'inputs')
+    def func(output, *inputs):
+
+        ins = [np.loadtxt(i) for i in inputs]
+        res  = np.sum(ins, axis=0)
+
+        np.savetxt(output, res)
+
+    inputs  = [np.random.randint(1, 10, (3, 3)) for i in range(4)]
+    infiles = ['input{}.txt'.format(i) for i in range(len(inputs))]
+    exp     = np.sum(inputs, axis=0)
+
+    with tempdir.tempdir():
+
+        for ifile, idata in zip(infiles, inputs):
+            np.savetxt(ifile, idata)
+
+        func('result.txt', *inputs)
+        assert np.all(np.loadtxt('result.txt') == exp)
 
 
 def test_fileOrText():
