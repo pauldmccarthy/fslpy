@@ -568,7 +568,7 @@ def test_fslmerge():
          run.dryrun(), \
          mockFSLDIR(bin=('fslmerge',)) as fsldir:
 
-        fslmerge  = op.join(fsldir, 'bin', 'fslmerge')
+        fslmerge = op.join(fsldir, 'bin', 'fslmerge')
 
         expected = f'{fslmerge} -x out in1 in2 in3'
         result   = fw.fslmerge('x', 'out', 'in1', 'in2', 'in3')
@@ -580,4 +580,40 @@ def test_fslmerge():
 
         expected = f'{fslmerge} -tr out in1 in2 in3 123'
         result   = fw.fslmerge('tr', 'out', 'in1', 'in2', 'in3', 123)
+        assert result.stdout[0] == expected
+
+
+def test_bianca():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('bianca',
+                         'bianca_cluster_stats',
+                         'bianca_overlap_measures',
+                         'bianca_perivent_deep',
+                         'make_bianca_mask')) as fsldir:
+
+        bianca                  = op.join(fsldir, 'bin', 'bianca')
+        bianca_cluster_stats    = op.join(fsldir, 'bin', 'bianca_cluster_stats')
+        bianca_overlap_measures = op.join(fsldir, 'bin', 'bianca_overlap_measures')
+        bianca_perivent_deep    = op.join(fsldir, 'bin', 'bianca_perivent_deep')
+        make_bianca_mask        = op.join(fsldir, 'bin', 'make_bianca_mask')
+
+        expected = f'{bianca} --singlefile sfile --patch3d --querysubjectnum 3 -v'
+        result   = fw.bianca('sfile', patch3d=True, querysubjectnum=3, v=True)
+        assert result[0] == expected
+
+        expected = f'{bianca_cluster_stats} out 9 5 mask'
+        result   = fw.bianca_cluster_stats('out', 9, 5, 'mask')
+        assert result.stdout[0] == expected
+
+        expected = f'{bianca_overlap_measures} lesions 9 mask 1'
+        result   = fw.bianca_overlap_measures('lesions', 9, 'mask', True)
+        assert result.stdout[0] == expected
+
+        expected = f'{bianca_perivent_deep} wmh vent 2 out'
+        result   = fw.bianca_perivent_deep('wmh', 'vent', 'out', 2)
+        assert result.stdout[0] == expected
+
+        expected = f'{make_bianca_mask} struc csf warp 1'
+        result   = fw.make_bianca_mask('struc', 'csf', 'warp', True)
         assert result.stdout[0] == expected
