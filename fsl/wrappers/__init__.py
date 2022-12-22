@@ -108,6 +108,7 @@ from fsl.wrappers.eddy               import (eddy,
                                              applytopup)
 from fsl.wrappers.epi_reg            import  epi_reg
 from fsl.wrappers.fast               import (fast,)
+from fsl.wrappers.avwutils           import (fslmerge,)
 from fsl.wrappers.first              import (concat_bvars,
                                              first,
                                              first_flirt,
@@ -119,7 +120,9 @@ from fsl.wrappers.flirt              import (flirt,
                                              applyxfm,
                                              applyxfm4D,
                                              concatxfm,
-                                             mcflirt)
+                                             fixscaleskew,
+                                             mcflirt,
+                                             standard_space_roi)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,
@@ -141,4 +144,8 @@ from fsl.wrappers.misc               import (fslreorient2std,
                                              slicer,
                                              cluster,
                                              gps)
-from fsl.wrappers.standard_space_roi import  standard_space_roi
+from fsl.wrappers.bianca             import (bianca,
+                                             bianca_cluster_stats,
+                                             bianca_overlap_measures,
+                                             bianca_perivent_deep,
+                                             make_bianca_mask)

@@ -4,7 +4,9 @@
 .. toctree::
    :hidden:
 
+   fsl.wrappers.avwutils
    fsl.wrappers.bet
+   fsl.wrappers.bianca
    fsl.wrappers.eddy
    fsl.wrappers.epi_reg
    fsl.wrappers.fast

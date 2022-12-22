@@ -462,16 +462,6 @@ def namedPositionals(func, args):
     :arg args: Tuple of positional arguments to be passed to ``func``.
     """
 
-    # Current implementation will
-    # result in naming collisions
-    # for something like this:
-    #
-    # def func(args0, *args):
-    #     ...
-    # because of automatic vararg
-    # naming. But who would write
-    # a function like that anyway?
-
     # Remove any decorators
     # from the function
     func = _unwrap(func)
@@ -500,12 +490,14 @@ def namedPositionals(func, args):
     # that are being passed in
     argnames = argnames[:len(args)]
 
-    # make up names for varargs
+    # generate names for varargs
     nvarargs = len(args) - len(argnames)
+    suffix   = namedPositionals.varargsSuffix
     if varargs is not None and nvarargs > 0:
-        argnames += ['{}{}'.format(varargs, i) for i in range(nvarargs)]
+        argnames += [f'{varargs}{i}{suffix}' for i in range(nvarargs)]
 
     return argnames
+namedPositionals.varargsSuffix = '_VARARG'
 
 
 LOAD = object()
@@ -848,17 +840,20 @@ class FileOrThing:
         passed to the ``prepOut`` function specified at :meth:`__init__`.
         All other arguments are passed through the ``prepIn`` function.
 
-        :arg parent:  ``True`` if this ``FileOrThing`` is the first in a
-                      chain of ``FileOrThing`` decorators.
+        :arg parent:   ``True`` if this ``FileOrThing`` is the first in a
+                       chain of ``FileOrThing`` decorators.
 
-        :arg workdir: Directory in which all temporary files should be stored.
+        :arg workdir:  Directory in which all temporary files should be stored.
 
-        :arg args:    Positional arguments to be passed to the decorated
-                      function.
+        :arg argnames: Names for each positional argument.
 
-        :arg kwargs:  Keyword arguments to be passed to the decorated function.
+        :arg args:     Positional arguments to be passed to the decorated
+                       function.
 
-        :returns:     A tuple containing:
+        :arg kwargs:   Keyword arguments to be passed to the decorated
+                       function.
+
+        :returns:      A tuple containing:
 
                         - An updated copy of ``args``.
 
@@ -954,7 +949,9 @@ class FileOrThing:
             isprefixed = (prefix is not None and
                           name.startswith(prefix))
 
-            if not (isprefixed or name in things):
+            if not any((isprefixed,
+                        name in things,
+                        name.endswith(namedPositionals.varargsSuffix))):
                 continue
 
             # Prefixed output files may only
