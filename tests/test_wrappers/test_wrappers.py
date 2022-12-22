@@ -100,6 +100,16 @@ def test_flirt():
         assert checkResult(result.stdout[0], *expected)
 
 
+def test_fixscaleskew():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('convert_xfm',)) as fsldir:
+        convert_xfm = op.join(fsldir, 'bin', 'convert_xfm')
+        result      = fw.fixscaleskew('mat1', 'mat2', 'out')
+        expected    = f'{convert_xfm} -fixscaleskew mat2 mat1 -omat out'
+        assert result.stdout[0] == expected
+
+
 def test_epi_reg():
     with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('epi_reg',)) as fsldir:
         epi_reg  = op.join(fsldir, 'bin', 'epi_reg')
@@ -551,3 +561,23 @@ def test_first():
         expected = f'{concat_bvars} output in1 in2 in3'
         result   = fw.concat_bvars('output', 'in1', 'in2', 'in3')
         assert result[0] == expected
+
+
+def test_fslmerge():
+    with asrt.disabled(), \
+         run.dryrun(), \
+         mockFSLDIR(bin=('fslmerge',)) as fsldir:
+
+        fslmerge  = op.join(fsldir, 'bin', 'fslmerge')
+
+        expected = f'{fslmerge} -x out in1 in2 in3'
+        result   = fw.fslmerge('x', 'out', 'in1', 'in2', 'in3')
+        assert result.stdout[0] == expected
+
+        expected = f'{fslmerge} -n 123 out in1 in2 in3'
+        result   = fw.fslmerge('n', 'out', 123, 'in1', 'in2', 'in3')
+        assert result.stdout[0] == expected
+
+        expected = f'{fslmerge} -tr out in1 in2 in3 123'
+        result   = fw.fslmerge('tr', 'out', 'in1', 'in2', 'in3', 123)
+        assert result.stdout[0] == expected
