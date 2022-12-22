@@ -10,39 +10,62 @@
 """
 
 
+import functools as ft
+
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
 
-@wutils.fileOrImage('out')
-@wutils.fslwrapper
-def fslmerge(how, out, *images, tr=None, n=None):
+def fslmerge(axis, output, *images, **kwargs):
     """Wrapper for the ``fslmerge`` command.
 
-    :arg how:           Specifies how the concatenation is done: <-x/y/z/t/a/tr>
-                           -t : concatenate images in time
-                           -x : concatenate images in the x direction
-                           -y : concatenate images in the y direction
-                           -z : concatenate images in the z direction
-                           -a : auto-choose: single slices -> volume, 
-                                             volumes -> 4D (time series)
-                           -tr : Concatenate images in time and set the 
-                                 output image tr to the final option value
-    :arg out:           Output image   
-    :arg images:        Different images to concatenate
-    :arg tr             tr for the output image when concatenating in ``tr`` mode
-    :arg n:             Only use volume <n> from each input file 
-                        (first volume is 0, not 1)
+    This function emulates the ``fslmerge`` command-line, despite its
+    inconsistencies::
+
+        fslmerge -<txyza> out in1 in2 in3
+        fslmerge -tr      out in1 in2 in3 <tr>
+        fslmerge -n <n>   out in1 in2 in3
+
+    If ``axis == 'n'``, the first positional argument is assumed to be
+    the volume index.
+
+    If ``axis == 'tr'``, the last positional argument is assumed to be
+    the TR time.
 
     Refer to the ``fslmerge`` command-line help for details on all arguments.
     """
 
+    if axis == 'n':
+        n      = images[0]
+        images = images[1:]
+        func   = ft.partial(_fslmerge_n, n=n)
+    elif axis == 'tr':
+        tr     = images[-1]
+        images = images[:-1]
+        func   = ft.partial(_fslmerge_tr, tr=tr)
+    else:
+        func   = ft.partial(_fslmerge, axis=axis)
+
     asrt.assertIsNifti(*images)
+    return func(axis, output, *images, **kwargs)
 
-    cmd  = ['fslmerge', '-'+how, out] + list(images)
-    if tr is not None:
-        cmd.append(tr)
-    if n is not None:
-        cmd.append('-n ' + str(n))
 
-    return cmd
+@wutils.fileOrImage('images', 'output')
+@wutils.fslwrapper
+def _fslmerge(axis, output, *images):
+    """Calls ``fslmerge -<txyza> output [image image ...]``. """
+    return ['fslmerge', f'-{axis}', output] + list(images)
+
+
+@wutils.fileOrImage('images', 'output')
+@wutils.fslwrapper
+def _fslmerge_n(n, output, *images):
+    """Calls ``fslmerge -n <n> output [image image ...]``. """
+    return ['fslmerge', '-n', str(n), output] + list(images)
+
+
+@wutils.fileOrImage('images', 'output')
+@wutils.fslwrapper
+def _fslmerge_tr(tr, output, *images):
+    """Calls ``fslmerge -tr output [image image ...] <tr>``. """
+    return ['fslmerge', '-tr', output] + list(images) + [str(tr)]
