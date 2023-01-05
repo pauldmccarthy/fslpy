@@ -18,6 +18,7 @@ Added
 * New :func:`.wrapperconfig` context manager function, which allows the
   default values for arguments passed by the :mod:`fsl.wrappers` functions to
   the :func:`fsl.utils.run.run` function to be changed (!352, !356).
+* New :func:`.affine.mergeBounds` function (!360).
 
 
 Changed
@@ -27,6 +28,8 @@ Changed
 * The :class:`fsl.wrappers.fslmaths.fslmaths` and
   :class:`fsl.wrappers.fslstats.fslstats` wrapper functions have been updated
   to accept arguments destined for :func:`fsl.utils.run.run` (!352).
+* :class:`.Mesh` objects can now be created without indices/triangles - they
+  can be assigned after creation (!360).
 
 
 Fixed
