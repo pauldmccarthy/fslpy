@@ -20,6 +20,7 @@ transformations. The following functions are available:
    rotMatToAxisAngles
    axisAnglesToRotMat
    axisBounds
+   mergeBounds
    rmsdev
    rescale
 
@@ -468,10 +469,44 @@ def axisBounds(shape,
     else:      return (lo,    hi)
 
 
+def mergeBounds(*bounds):
+    """Merge multiple ``(lo, hi)`` bounds together. Returns the union of
+    all bounds, i.e. a new set of bounds which encompasses all given bounds.
+
+    Each set of bounds can be provided in one of the following formats:
+
+      - ``((lo, lo, lo), (hi, hi, hi))``
+      - ``((lo, hi), (lo, hi), (lo, hi))``
+
+    The return value will be a tuple of tuples, otherwise having the same
+    format as the inputs.
+    """
+
+    nbounds = len(bounds)
+    bounds  = np.array(bounds)
+
+    if bounds.shape not in ((nbounds, 3, 2), (nbounds, 2, 3)):
+        raise ValueError('Unsupported bounds format')
+
+    if bounds.shape == (nbounds, 2, 3):
+        return ((bounds[:, 0, 0].min(),
+                 bounds[:, 0, 1].min(),
+                 bounds[:, 0, 2].min()),
+                (bounds[:, 1, 0].max(),
+                 bounds[:, 1, 1].max(),
+                 bounds[:, 1, 2].max()))
+    else:
+        return ((bounds[:, 0, 0].min(),
+                 bounds[:, 0, 1].max()),
+                (bounds[:, 1, 0].min(),
+                 bounds[:, 1, 1].max()),
+                (bounds[:, 2, 0].min(),
+                 bounds[:, 2, 1].max()))
+
+
 def transform(p, xform, axes=None, vector=False):
     """Transforms the given set of points ``p`` according to the given affine
     transformation ``xform``.
-
 
     :arg p:      A sequence or array of points of shape :math:`N \\times  3`.
 
