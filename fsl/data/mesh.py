@@ -355,7 +355,13 @@ class Mesh(notifier.Notifier, meta.Meta):
         ``Mesh`` instance. The bounding box is arranged like so:
 
             ``((xlow, ylow, zlow), (xhigh, yhigh, zhigh))``
+
+        Returns ``None`` if indices or vertices have not yet been assigned.
         """
+
+        if self.__indices is None or len(self.__vertices) == 0:
+            return None
+
         lo = self.__loBounds[self.__selected]
         hi = self.__hiBounds[self.__selected]
         return lo, hi
