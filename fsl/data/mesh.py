@@ -155,7 +155,7 @@ class Mesh(notifier.Notifier, meta.Meta):
 
 
     def __init__(self,
-                 indices,
+                 indices=None,
                  name='mesh',
                  dataSource=None,
                  vertices=None,
@@ -166,7 +166,8 @@ class Mesh(notifier.Notifier, meta.Meta):
         :meth:`addVertices` method.
 
         :arg indices:    A list of indices into the vertex data, defining the
-                         mesh triangles.
+                         mesh triangles. If not provided, must be provided
+                         after creation via the :meth:`indices` setter method.
 
         :arg name:       A name for this ``Mesh``.
 
@@ -179,22 +180,31 @@ class Mesh(notifier.Notifier, meta.Meta):
                          :meth:`addVertices` method along with ``vertices``.
         """
 
+        if indices is None and vertices is not None:
+            raise ValueError('Indices must be provided '
+                             'if vertices are provided')
+
         self.__name       = name
         self.__dataSource = dataSource
-        self.__nvertices  = int(indices.max()) + 1
-        self.__selected   = None
+
+        # nvertices/indices are assigned in the
+        # indices setter method.
 
         # We potentially store two copies of
-        # the indices, with opposite unwinding
-        # orders. The vindices dict stores refs
-        # to one or the other for each vertex
-        # set.
-        self.__indices      = np.asarray(indices, dtype=np.int32).reshape((-1, 3))
+        # the indices, - one set (__indices)
+        # as provided, and the other
+        # (__fixedIndices) with opposite
+        # unwinding orders. The vindices dict
+        # stores refs to one or the other for
+        # each vertex set.
+        self.__nvertices    = None
+        self.__indices      = None
         self.__fixedIndices = None
         self.__vindices     = collections.OrderedDict()
 
         # All of these are populated
         # in the addVertices method
+        self.__selected = None
         self.__vertices = collections.OrderedDict()
         self.__loBounds = collections.OrderedDict()
         self.__hiBounds = collections.OrderedDict()
@@ -212,8 +222,9 @@ class Mesh(notifier.Notifier, meta.Meta):
         # in the trimesh method
         self.__trimesh = collections.OrderedDict()
 
-        # Add initial vertex
-        # set if provided
+        # Add initial indices/vertices if provided
+        if indices is not None:
+            self.indices = indices
         if vertices is not None:
             self.addVertices(vertices, fixWinding=fixWinding)
 
@@ -282,8 +293,23 @@ class Mesh(notifier.Notifier, meta.Meta):
 
     @property
     def indices(self):
-        """The ``(M, 3)`` triangles of this mesh. """
+        """The ``(M, 3)`` triangles of this mesh. Returns ``None`` if
+        indices have not yet been assigned.
+        """
+        if self.__indices is None:
+            return None
         return self.__vindices[self.__selected]
+
+
+    @indices.setter
+    def indices(self, indices):
+        """Set the indices for this mesh. """
+        if self.__indices is not None:
+            raise ValueError('Indices are already set')
+
+        indices          = np.asarray(indices, dtype=np.int32)
+        self.__nvertices = int(indices.max()) + 1
+        self.__indices   = indices.reshape((-1, 3))
 
 
     @property
@@ -383,6 +409,9 @@ class Mesh(notifier.Notifier, meta.Meta):
         :raises:         ``ValueError`` if the provided ``vertices`` array
                          has the wrong number of vertices.
         """
+
+        if self.__indices is None:
+            raise ValueError('Mesh indices have not yet been set')
 
         if key is None:
             key = 'default'
