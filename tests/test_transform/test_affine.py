@@ -380,6 +380,23 @@ def test_axisBounds():
         affine.axisBounds(shape, xform, origin=origin, boundary='Blufu')
 
 
+def test_mergeBounds():
+
+    bounds = [[[ 0,  0, 0], [10, 10, 10]],
+              [[ 0, -2, 5], [11,  8,  7]],
+              [[ 4,  6, 3], [12,  9,  8]],
+              [[-1,  3, 2], [ 9, 11, 21]]]
+    expect =  ((-1, -2, 0), (12, 11, 21))
+    assert affine.mergeBounds(*bounds) == expect
+
+    bounds = [[[ 0, 10], [ 0, 10], [0, 10]],
+              [[ 0, 11], [-2,  8], [5,  7]],
+              [[ 4, 12], [ 6,  9], [3,  8]],
+              [[-1,  9], [ 3, 11], [2, 21]]]
+    expect =  ((-1, 12), (-2, 11), (0, 21))
+    assert affine.mergeBounds(*bounds) == expect
+
+
 def test_transform():
 
     def is_orthogonal(xform):

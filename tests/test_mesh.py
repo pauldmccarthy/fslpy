@@ -66,20 +66,24 @@ def test_mesh_create():
     verts = np.array(CUBE_VERTICES)
     tris  = np.array(CUBE_TRIANGLES_CCW)
 
-    mesh = fslmesh.Mesh(tris, vertices=verts)
+    def test(mesh):
+        assert mesh.name       == 'mesh'
+        assert mesh.dataSource is None
+        assert mesh.nvertices  == 8
+        assert np.all(np.isclose(mesh.vertices, verts))
+        assert np.all(np.isclose(mesh.indices,  tris))
 
-    print(str(mesh))
+        blo, bhi = mesh.bounds
 
-    assert mesh.name       == 'mesh'
-    assert mesh.dataSource is None
-    assert mesh.nvertices  == 8
-    assert np.all(np.isclose(mesh.vertices, verts))
-    assert np.all(np.isclose(mesh.indices,  tris))
+        assert np.all(np.isclose(blo, verts.min(axis=0)))
+        assert np.all(np.isclose(bhi, verts.max(axis=0)))
 
-    blo, bhi = mesh.bounds
+    test(fslmesh.Mesh(tris, vertices=verts))
 
-    assert np.all(np.isclose(blo, verts.min(axis=0)))
-    assert np.all(np.isclose(bhi, verts.max(axis=0)))
+    mesh = fslmesh.Mesh()
+    mesh.indices = tris
+    mesh.addVertices(verts)
+    test(mesh)
 
 
 def test_mesh_addVertices():
