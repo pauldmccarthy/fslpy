@@ -234,7 +234,7 @@ def test_resampleToReference3():
 
     # Test resampling image to ref
     # with mismatched dimensions
-    imgdata = np.random.randint(0, 65536, (5, 5, 5))
+    imgdata = np.random.randint(0, 65536, (5, 5, 5), dtype=np.int32)
     img     = fslimage.Image(imgdata, xform=affine.scaleOffsetXform(
         (2, 2, 2), (0.5, 0.5, 0.5)))
 
@@ -272,7 +272,7 @@ def test_resampleToReference4():
     # will bring them into alignment
     img2ref = affine.scaleOffsetXform([2, 2, 2], [10, 10, 10])
 
-    imgdata = np.random.randint(0, 65536, (5, 5, 5))
+    imgdata = np.random.randint(0, 65536, (5, 5, 5), dtype=np.int32)
     refdata = np.zeros((5, 5, 5))
     img     = fslimage.Image(imgdata)
     ref     = fslimage.Image(refdata, xform=img2ref)

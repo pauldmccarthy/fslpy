@@ -294,10 +294,13 @@ def test_fileOrImage():
 
     with tempdir.tempdir():
 
-        img1     = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
-        img2     = nib.nifti1.Nifti1Image(np.array([[5,  6], [ 7,  8]]), np.eye(4))
-        img3     = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
-        expected = np.array([[5, 12], [21, 32]])
+        img1     = nib.nifti1.Nifti1Image(
+            np.array([[1,  2], [ 3,  4]], dtype=np.int32), np.eye(4))
+        img2     = nib.nifti1.Nifti1Image(
+            np.array([[5,  6], [ 7,  8]], dtype=np.int32), np.eye(4))
+        img3     = nib.nifti1.Nifti1Image(
+            np.array([[1,  2], [ 3,  4]], dtype=np.int32), np.eye(4))
+        expected = np.array([[5, 12], [21, 32]], dtype=np.int32)
         nib.save(img1, 'img1.nii')
         nib.save(img2, 'img2.nii')
 
@@ -470,7 +473,8 @@ def test_fileOrThing_outprefix():
 
 
     with tempdir.tempdir() as td:
-        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                      np.eye(4))
         exp1 = np.asanyarray(img.dataobj) * 5
         exp2 = np.asanyarray(img.dataobj) * 10
         nib.save(img, 'img.nii')
@@ -507,7 +511,8 @@ def test_fileOrThing_pathlib():
         nib.save(outimg, out)
 
     with tempdir.tempdir() as td:
-        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                     np.eye(4))
         exp = np.asanyarray(img.dataobj) * 5
         nib.save(img, 'img.nii')
 
@@ -527,7 +532,8 @@ def test_fileOrThing_outprefix_pathlib():
         nib.save(out2, '{}_times10.nii.gz'.format(output_base))
 
     with tempdir.tempdir() as td:
-        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                      np.eye(4))
         exp1 = np.asanyarray(img.dataobj) * 5
         exp2 = np.asanyarray(img.dataobj) * 10
         nib.save(img, 'img.nii')
@@ -552,7 +558,8 @@ def test_fileOrThing_outprefix_differentTypes():
             f.write(text)
 
     with tempdir.tempdir() as td:
-        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                      np.eye(4))
         expi = np.asanyarray(img.dataobj) * 2
         expt = '1234567890'
 
@@ -597,7 +604,8 @@ def test_fileOrThing_outprefix_directory():
         nib.save(img4, op.join(outdir, 'img4.nii.gz'))
 
     with tempdir.tempdir() as td:
-        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img  = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                      np.eye(4))
         exp2 = np.asanyarray(img.dataobj) * 2
         exp4 = np.asanyarray(img.dataobj) * 4
 
@@ -754,7 +762,8 @@ def test_chained_fileOrImageAndArray():
         np.savetxt(outarray, array * 2)
         outimg.to_filename(outimage)
 
-    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
+    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]], dtype=np.int32),
+                                   np.eye(4))
     array = np.array([[5, 6, 7, 8]])
 
     expimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
@@ -813,7 +822,8 @@ def test_fileOrThing_chained_outprefix():
         np.savetxt('{}_array.txt'.format(out), outarr)
         outimg.to_filename('{}_image.nii'.format(out))
 
-    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]]), np.eye(4))
+    image = nib.nifti1.Nifti1Image(np.array([[1,  2], [ 3,  4]], dtype=np.int32),
+                                   np.eye(4))
     array = np.array([[5, 6, 7, 8]])
 
     expimg = nib.nifti1.Nifti1Image(np.asanyarray(image.dataobj) * 2, np.eye(4))
@@ -846,7 +856,8 @@ def test_fileOrThing_submit_cmdonly():
         nib.save(img, output)
 
     with tempdir.tempdir() as td:
-        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]]), np.eye(4))
+        img = nib.nifti1.Nifti1Image(np.array([[1, 2], [3, 4]], dtype=np.int32),
+                                     np.eye(4))
         exp = np.asanyarray(img.dataobj) * 2
         nib.save(img, 'input.nii.gz')
 
@@ -1025,7 +1036,7 @@ def test_fileOrImage_all_tempfiles_cleared():
         i = nib.Nifti1Image(i.get_fdata() + 1, np.eye(4))
         i.to_filename(out)
 
-    arr    = np.array([[1, 2], [ 3, 4]])
+    arr    = np.array([[1, 2], [ 3, 4]], dtype=np.int32)
     img    = nib.nifti1.Nifti1Image(arr, np.eye(4))
     imgout = image(img, wutils.LOAD).out
 

@@ -16,6 +16,7 @@ import nibabel.freesurfer  as nibfs
 
 import pytest
 
+import fsl.version         as fslver
 import fsl.data.freesurfer as fslfs
 
 from .test_mesh import (CUBE_VERTICES, CUBE_TRIANGLES_CCW)
@@ -174,11 +175,10 @@ def test_loadVertexData_mgh():
 
 def test_loadVertexData_annot():
 
-    import nibabel.info as nibinfo
+    nibver = tuple(fslver.parseVersionString(nib.__version__))
 
-    # assume nibabel 2.*
     # nibabel 2.2.1 is broken w.r.t. .annot files.
-    if nibinfo._version_minor == 2 and nibinfo._version_micro <= 1:
+    if (2, 2, 0) <= nibver <= (2, 2, 1):
         return
 
     verts = np.array(CUBE_VERTICES)

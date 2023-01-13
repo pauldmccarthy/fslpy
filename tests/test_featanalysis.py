@@ -312,7 +312,7 @@ def test_loadClusterResults():
             # header, so we have to generate it.
             if not firstlevel:
                 datafile = op.join(featdir, 'filtered_func_data.nii.gz')
-                data  = np.random.randint(1, 10, (91, 109, 91))
+                data  = np.random.randint(1, 10, (91, 109, 91), dtype=np.int32)
                 xform = np.array([[-2, 0, 0,   90],
                                   [ 0, 2, 0, -126],
                                   [ 0, 0, 2,  -72],

@@ -46,7 +46,7 @@ def test_roi():
     ]
 
     for inshape, bounds, outshape, offset in tests:
-        data  = np.random.randint(1, 10, inshape)
+        data  = np.random.randint(1, 10, inshape, dtype=np.int32)
         image = fslimage.Image(data, xform=np.eye(4))
 
         result = roi.roi(image, bounds)
@@ -84,7 +84,7 @@ def test_roi():
     #  - not enough bounds
     #  - too many bounds
     #  - hi >= lo
-    data  = np.random.randint(1, 10, (10, 10, 10))
+    data  = np.random.randint(1, 10, (10, 10, 10), dtype=np.int32)
     image = fslimage.Image(data, xform=np.eye(4))
     with pytest.raises(ValueError): roi.roi(image, [(0, 10), (0, 10)])
     with pytest.raises(ValueError): roi.roi(image, [(0, 10), (0, 10), (0, 10), (0, 10)])

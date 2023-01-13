@@ -550,7 +550,8 @@ def test_defaultImageType():
             else:
                 exptype = nib.Nifti2Image
 
-            img = fslimage.Image(np.random.randint(1, 10, (30, 30, 30)))
+            data = np.random.randint(1, 10, (30, 30, 30), dtype=np.int32)
+            img  = fslimage.Image(data)
 
             assert type(img.nibImage) == exptype
 
