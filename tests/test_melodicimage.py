@@ -67,7 +67,7 @@ def _create_dummy_melodic_analysis(basedir,
     fslimage.Image(icimg).save(icfile)
 
     if with_data:
-        dataimg = np.zeros(list(shape4D[:3]) + [timepoints])
+        dataimg = np.zeros(list(shape4D[:3]) + [timepoints], dtype=np.int32)
         for t in range(timepoints):
             dataimg[..., t] = t
 
@@ -82,7 +82,7 @@ def _create_dummy_melodic_analysis(basedir,
 
     if with_meanfile:
         nvoxels = np.prod(shape4D[:3])
-        data = np.arange(0, nvoxels).reshape(shape4D[:3])
+        data = np.arange(0, nvoxels).reshape(shape4D[:3]).astype(np.int32)
         fslimage.Image(data).save(meanfile)
 
     return meldir

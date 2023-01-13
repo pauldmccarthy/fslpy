@@ -99,7 +99,7 @@ def test_linear_altref(seed):
         src2ref = affine.scaleOffsetXform([1, 1, 1], [5,  5,  5])
         altv2w  = affine.scaleOffsetXform([1, 1, 1], [10, 10, 10])
 
-        srcdata = np.random.randint(1, 65536, (10, 10, 10))
+        srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
         src     = fslimage.Image(srcdata,  xform=np.eye(4))
         ref     = fslimage.Image(src.data, xform=src2ref)
         altref  = fslimage.Image(src.data, xform=altv2w)
@@ -127,7 +127,7 @@ def test_nonlinear_altref(seed):
         ref2src = affine.invert(src2ref)
         altv2w  = affine.scaleOffsetXform([1, 1, 1], [10, 10, 10])
 
-        srcdata = np.random.randint(1, 65536, (10, 10, 10))
+        srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
         src     = fslimage.Image(srcdata,  xform=np.eye(4))
         ref     = fslimage.Image(src.data, xform=src2ref)
         altref  = fslimage.Image(src.data, xform=altv2w)

@@ -384,8 +384,8 @@ def test_applyDeformation():
         np.random.random(3))
     ref2src = affine.invert(src2ref)
 
-    srcdata = np.random.randint(1, 65536, (10, 10, 10))
-    refdata = np.random.randint(1, 65536, (10, 10, 10))
+    srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
+    refdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
 
     src   = fslimage.Image(srcdata)
     ref   = fslimage.Image(refdata, xform=src2ref)
@@ -407,8 +407,8 @@ def test_applyDeformation_altsrc():
         [0, 0, 0])
     ref2src = affine.invert(src2ref)
 
-    srcdata = np.random.randint(1, 65536, (10, 10, 10))
-    refdata = np.random.randint(1, 65536, (10, 10, 10))
+    srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
+    refdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
 
     src   = fslimage.Image(srcdata)
     ref   = fslimage.Image(refdata, xform=src2ref)
@@ -455,8 +455,8 @@ def test_applyDeformation_premat():
         [0, 0, 0])
     ref2src = affine.invert(src2ref)
 
-    srcdata = np.random.randint(1, 65536, (10, 10, 10))
-    refdata = np.random.randint(1, 65536, (10, 10, 10))
+    srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
+    refdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
 
     src   = fslimage.Image(srcdata)
     ref   = fslimage.Image(refdata, xform=src2ref)
@@ -508,8 +508,8 @@ def test_applyDeformation_altref():
         np.random.random(3))
     ref2src = affine.invert(src2ref)
 
-    srcdata = np.random.randint(1, 65536, (10, 10, 10))
-    refdata = np.random.randint(1, 65536, (10, 10, 10))
+    srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
+    refdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
 
     src   = fslimage.Image(srcdata)
     ref   = fslimage.Image(refdata, xform=src2ref)
@@ -544,7 +544,7 @@ def test_applyDeformation_worldAligned():
     src2ref  = refv2w
     ref2src  = affine.invert(src2ref)
 
-    srcdata = np.random.randint(1, 65536, (10, 10, 10))
+    srcdata = np.random.randint(1, 65536, (10, 10, 10), dtype=np.int32)
 
     src   = fslimage.Image(srcdata)
     ref   = fslimage.Image(srcdata, xform=src2ref)

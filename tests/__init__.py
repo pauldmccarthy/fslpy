@@ -319,6 +319,7 @@ def make_mock_feat_analysis(featdir,
             data = np.ravel_multi_index(data, shape)
             data = data.reshape(list(shape) + [1]).repeat(timepoints, axis=3)
             data[..., :] += range(i, i + timepoints)
+            data = data.astype(np.int32)
 
             img = nib.nifti1.Nifti1Image(data, xform)
 
