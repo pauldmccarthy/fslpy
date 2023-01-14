@@ -117,6 +117,14 @@ class DataManager:
         raise NotImplementedError()
 
 
+    @property
+    def editable(self):
+        """Return ``True`` if the image data can be modified, ``False``
+        otherwise. The default implementation returns ``True``.
+        """
+        return True
+
+
     def __getitem__(self, slc):
         """Return data at ``slc``. """
         raise NotImplementedError()
@@ -1479,6 +1487,16 @@ class Image(Nifti):
         return np.issubdtype(self.dtype, np.complexfloating)
 
 
+    @property
+    def editable(self):
+        """Return ``True`` if the image data can be modified, ``False``
+        otherwise. Delegates to :meth:`DataManager.editable` if a
+        :class:`DataManager` is in use.
+        """
+        if self.__dataMgr is not None: return self.__dataMgr.editable
+        else:                          return True
+
+
     @Nifti.voxToWorldMat.setter
     def voxToWorldMat(self, xform):
         """Overrides the :meth:`Nifti.voxToWorldMat` property setter.
@@ -1657,6 +1675,10 @@ class Image(Nifti):
         .. note:: Modifying image data may force the entire image to be
                   loaded into memory if it has not already been loaded.
         """
+
+        if not self.editable:
+            raise RuntimeError('Image is not editable')
+
         values = np.array(values)
 
         if values.size == 0:
