@@ -41,6 +41,13 @@ import fsl.transform.affine as affine
 log = logging.getLogger(__name__)
 
 
+class IncompatibleVerticesError(ValueError):
+    """``ValueError`` raised by the :meth:`Mesh.addVertices` method if
+    an attempt is made to add a vertex set with the wrong number of
+    vertices.
+    """
+
+
 class Mesh(notifier.Notifier, meta.Meta):
     """The ``Mesh`` class represents a 3D model. A mesh is defined by a
     collection of ``N`` vertices, and ``M`` triangles.  The triangles are
@@ -412,8 +419,8 @@ class Mesh(notifier.Notifier, meta.Meta):
 
         :returns:        The vertices, possibly reshaped
 
-        :raises:         ``ValueError`` if the provided ``vertices`` array
-                         has the wrong number of vertices.
+        :raises:         ``IncompatibleVerticesError`` if the provided
+                         ``vertices`` array has the wrong number of vertices.
         """
 
         if self.__indices is None:
@@ -434,10 +441,9 @@ class Mesh(notifier.Notifier, meta.Meta):
         # reshape raised an error -
         # wrong number of vertices
         except ValueError:
-            raise ValueError('{}: invalid number of vertices: '
-                             '{} != ({}, 3)'.format(key,
-                                                    vertices.shape,
-                                                    self.nvertices))
+            raise IncompatibleVerticesError(
+                f'{key}: invalid number of vertices: '
+                f'{vertices.shape} != ({self.nvertices}, 3)')
 
         self.__vertices[key] = vertices
         self.__vindices[key] = self.__indices
