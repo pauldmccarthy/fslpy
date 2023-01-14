@@ -7,6 +7,7 @@
 #
 
 
+import                   pytest
 import numpy          as np
 import nibabel        as nib
 import fsl.data.image as fslimage
@@ -123,7 +124,7 @@ class NoOpDataManager(fslimage.DataManager):
 
 def test_image_read_write_datamanager():
 
-    filename = f'image.nii.gz'
+    filename = 'image.nii.gz'
     shape    = random_shape()
 
     with tempdir():
@@ -139,6 +140,27 @@ def test_image_read_write_datamanager():
         assert     img.editable
         assert not img.inMemory
         assert not img.nibImage.in_memory
+
+
+def test_Image_without_nibabel_object():
+
+    filename = f'image.nii.gz'
+    shape    = random_shape()
+
+    with tempdir():
+        dm     = NoOpDataManager(shape)
+        img, _ = create_image(filename, shape)
+        hdr    = img.header
+
+        # We must provide a header and a data manager
+        with pytest.raises(ValueError):
+            fslimage.Image()
+        with pytest.raises(ValueError):
+            fslimage.Image(header=hdr)
+        with pytest.raises(ValueError):
+            fslimage.Image(dataMgr=dm)
+
+        img = fslimage.Image(header=hdr, dataMgr=dm)
 
 
 def test_3D_indexing(shape=None, img=None):
