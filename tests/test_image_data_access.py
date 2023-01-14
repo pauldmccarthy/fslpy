@@ -136,6 +136,7 @@ def test_image_read_write_datamanager():
         img[slc] = data
 
         # true for this specific DataManager
+        assert     img.editable
         assert not img.inMemory
         assert not img.nibImage.in_memory
 
