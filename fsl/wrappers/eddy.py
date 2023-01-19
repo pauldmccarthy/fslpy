@@ -48,6 +48,8 @@ def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
         'estimate_move_by_susceptibility' : wutils.SHOW_IF_TRUE,
         'verbose'                         : wutils.SHOW_IF_TRUE,
         'very_verbose'                    : wutils.SHOW_IF_TRUE,
+        'sep_offs_move'                   : wutils.SHOW_IF_TRUE,
+        'rms'                             : wutils.SHOW_IF_TRUE,
     }
 
     asrt.assertFileExists(imain, mask, index, acqp, bvecs, bvals)
@@ -74,7 +76,38 @@ def eddy_cuda(*args, **kwargs):
 @wutils.fileOrArray('datain', outprefix='out')
 @wutils.fslwrapper
 def topup(imain, datain, **kwargs):
-    """Wrapper for the ``topup`` command."""
+    """Wrapper for the ``topup`` command.
+
+Compulsory arguments (You MUST set one or more of):
+    :arg imain:    name of 4D file with images
+    :arg datain:   name of text file with PE directions/times
+
+Optional arguments (You may optionally specify one or more of):
+    :arg out:         Base-name of output files (spline coefficients (Hz) and movement parameters)
+    :arg fout:        Name of image file with field (Hz)
+    :arg iout:        Name of 4D image file with unwarped images
+    :arg jacout:      Name of 4D image file with jacobian of the warp
+    :arg logout:      Name of log-file
+    :arg warpres:     (approximate) resolution (in mm) of warp basis for the different sub-sampling levels, default 10
+    :arg subsamp:     sub-sampling scheme, default 1
+    :arg fwhm:        FWHM (in mm) of gaussian smoothing kernel, default 8
+    :arg config:      Name of config file specifying command line arguments
+    :arg miter:       Max # of non-linear iterations, default 5
+    :arg lambda:      Weight of regularisation, default depending on :arg ssqlambda and :arg regmod switches. See user documetation.
+    :arg ssqlambda:   If set (=1), lambda is weighted by current ssq, default 1
+    :arg regmod:      Model for regularisation of warp-field [membrane_energy bending_energy], default bending_energy
+    :arg estmov:      Estimate movements if set, default 1 (true)
+    :arg minmet:      Minimisation method 0=Levenberg-Marquardt, 1=Scaled Conjugate Gradient, default 0 (LM)
+    :arg splineorder: Order of spline, 2->Qadratic spline, 3->Cubic spline. Default=3
+    :arg numprec:     Precision for representing Hessian, double or float. Default double
+    :arg interp:      Image interpolation model, linear or spline. Default spline
+    :arg scale:       If set (=1), the images are individually scaled to a common mean, default 0 (false)
+    :arg regrid:      If set (=1), the calculations are done in a different grid, default 1 (true)
+    :arg nthr:        Number of threads to use (cannot be greater than numbers of hardware cores), default 1
+    :arg h:           display help info
+    :arg v:           Print diagonostic information while running
+
+    """
 
     valmap = {
         'verbose' : wutils.SHOW_IF_TRUE
@@ -88,11 +121,27 @@ def topup(imain, datain, **kwargs):
 
     return cmd
 
-@wutils.fileOrImage('imain', 'out')
+@wutils.fileOrImage('imain', outprefix='out')
 @wutils.fileOrArray('datain')
 @wutils.fslwrapper
-def applytopup(imain, datain, index, **kwargs):
-    """Wrapper for the ``applytopup`` command."""
+def applytopup(imain, datain, index, topup, out, **kwargs):
+    """Wrapper for the ``applytopup`` command.
+
+Compulsory arguments (You MUST set one or more of):
+    :arg imain:    comma separated list of names of input image (to be corrected)
+    :arg datain:   name of text file with PE directions/times
+    :arg inindex:  comma separated list of indicies into --datain of the input image (to be corrected)
+    :arg topup:    name of field/movements (from topup)
+    :arg out:      basename for output (warped) image
+
+Optional arguments (You may optionally specify one or more of):
+    :arg method:    Use jacobian modulation (jac) or least-squares resampling (lsr), default=lsr.
+    :arg interp:    interpolation method {trilinear,spline}, default=spline
+    :arg datatype:  Force output data type [char short int float double].
+    :arg verbose:   switch on diagnostic messages
+    :arg help:      display this message
+
+    """
 
     valmap = {
         'verbose' : wutils.SHOW_IF_TRUE
@@ -106,6 +155,8 @@ def applytopup(imain, datain, index, **kwargs):
         'applytopup', '--imain={}'.format(imain),
         '--inindex={}'.format(index),
         '--datain={}'.format(datain),
+        '--topup={}'.format(topup), 
+        '--out={}'.format(out)
     ]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 

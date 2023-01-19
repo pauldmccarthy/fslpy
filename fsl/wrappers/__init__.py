@@ -108,7 +108,10 @@ from fsl.wrappers.eddy               import (eddy,
                                              applytopup)
 from fsl.wrappers.epi_reg            import  epi_reg
 from fsl.wrappers.fast               import (fast,)
-from fsl.wrappers.avwutils           import (fslmerge,)
+from fsl.wrappers.avwutils           import (fslmerge,
+                                             fslselectvols,
+                                             fslsplit,
+                                             fslcpgeom,)
 from fsl.wrappers.first              import (concat_bvars,
                                              first,
                                              first_flirt,
@@ -136,7 +139,8 @@ from fsl.wrappers.fugue              import (fugue,
                                              sigloss,
                                              fsl_prepare_fieldmap)
 from fsl.wrappers.melodic            import (melodic,
-                                             fsl_regfilt)
+                                             fsl_regfilt,
+                                             fsl_glm)
 from fsl.wrappers.misc               import (fslreorient2std,
                                              fslorient,
                                              fslswapdim,
@@ -149,3 +153,10 @@ from fsl.wrappers.bianca             import (bianca,
                                              bianca_overlap_measures,
                                              bianca_perivent_deep,
                                              make_bianca_mask)
+from fsl.wrappers.standard_space_roi import  standard_space_roi
+from fsl.wrappers.feat               import  feat
+from fsl.wrappers.dtifit             import  dtifit
+from fsl.wrappers.bedpostx           import (xfibres_gpu,
+                                             split_parts_gpu,
+                                             bedpostx_postproc_gpu,
+                                             probtrackx)

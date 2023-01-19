@@ -56,9 +56,29 @@ class fslmaths:
         self.__args.append("-binv")
         return self
 
+    def sqr(self):
+        """Square."""
+        self.__args.append("-sqr")
+        return self
+
+    def sqrt(self):
+        """Square root."""
+        self.__args.append("-sqrt")
+        return self
+
+    def log(self):
+        """Natural logarithm."""
+        self.__args.append("-log")
+        return self
+
     def recip(self):
         """Reciprocal (1/current image)."""
         self.__args.append("-recip")
+        return self
+
+    def range(self):
+        """Set the output calmin/max to full data range."""
+        self.__args.append("-range")
         return self
 
     def Tmean(self):
@@ -97,6 +117,12 @@ class fslmaths:
         """Mean Dilation of non-zero voxels."""
         for i in range(repeat):
             self.__args.append("-dilM")
+        return self
+
+    def dilD(self, repeat=1):
+        """Modal Dilation of non-zero voxels."""
+        for i in range(repeat):
+            self.__args.append("-dilD")
         return self
 
     def dilF(self, repeat=1):
@@ -151,6 +177,16 @@ class fslmaths:
         self.__args.extend(("-uthr", image))
         return self
 
+    def max(self, image):
+        """take maximum of following input and current image."""
+        self.__args.extend(("-max", image))
+        return self
+
+    def min(self, image):
+        """take minimum of following input and current image."""
+        self.__args.extend(("-min", image))
+        return self
+
     def inm(self, image):
         """Intensity normalisation (per 3D volume mean)"""
         self.__args.extend(("-inm", image))
@@ -163,9 +199,14 @@ class fslmaths:
         self.__args.extend(("-bptf", hp_sigma, lp_sigma))
         return self
 
-    def kernel(self, kernel='3D'):
-        """2D or (default) 3D kernel"""
-        self.__args.extend(("-kernel", kernel))
+    def kernel(self, *args):
+        """Perform a kernel operation"""
+        self.__args.extend(["-kernel"] + list(args))
+        return self
+
+    def fmedian(self):
+        """Median filtering"""
+        self.__args.append("-fmedian")
         return self
 
     def fmeanu(self):
