@@ -153,7 +153,6 @@ from fsl.wrappers.bianca             import (bianca,
                                              bianca_overlap_measures,
                                              bianca_perivent_deep,
                                              make_bianca_mask)
-from fsl.wrappers.standard_space_roi import  standard_space_roi
 from fsl.wrappers.feat               import  feat
 from fsl.wrappers.dtifit             import  dtifit
 from fsl.wrappers.bedpostx           import (xfibres_gpu,
