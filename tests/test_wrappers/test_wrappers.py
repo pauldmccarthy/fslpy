@@ -599,3 +599,32 @@ def test_xfibres_gpu():
         exp = f'{xfibres_gpu} --data=data --mask=mask --bvecs=bvecs ' \
                '--bvals=bvals --f0 --nf=20 subjdir 1 10 100'
         assert res.stdout[0] == exp
+
+
+def test_split_parts_gpu():
+    with testenv('split_parts_gpu') as split_parts_gpu:
+        res = fw.split_parts_gpu('data', 'mask', 'bvals', 'bvecs', 10, 'out')
+        exp = f'{split_parts_gpu} data mask bvals bvecs None 0 10 out'
+        assert res.stdout[0] == exp
+        res = fw.split_parts_gpu('data', 'mask', 'bvals', 'bvecs', 10, 'out', 'grad')
+        exp = f'{split_parts_gpu} data mask bvals bvecs grad 1 10 out'
+        assert res.stdout[0] == exp
+
+
+def test_bedpostx_postproc_gpu():
+    with testenv('bedpostx_postproc_gpu.sh') as bpg:
+        res = fw.bedpostx_postproc_gpu('data', 'mask', 'bvecs', 'bvals',
+                                       100, 10, 'subdir', 'bindir', nf=20)
+        exp = f'{bpg} --data=data --mask=mask --bvecs=bvecs --bvals=bvals ' \
+               '--nf=20 100 10 subdir bindir'
+        assert res.stdout[0] == exp
+
+
+
+def test_probtrackx():
+    with testenv('probtrackx') as ptx:
+        res = fw.probtrackx('samples', 'mask', 'seed', rseed=20,
+                            usef=True, S=50, nsamples=50)
+        exp = f'{ptx} --samples=samples --mask=mask --seed=seed --rseed=20 ' \
+               '--usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp
