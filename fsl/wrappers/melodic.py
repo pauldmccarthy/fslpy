@@ -69,14 +69,16 @@ def fsl_regfilt(input, out, design, **kwargs):
         'freqfilt' : wutils.SHOW_IF_TRUE,
         'freq_ic'  : wutils.HIDE_IF_TRUE,
         'vn'       : wutils.SHOW_IF_TRUE,
+        'F'        : wutils.SHOW_IF_TRUE,
         'v'        : wutils.SHOW_IF_TRUE,
+        'a'        : wutils.SHOW_IF_TRUE,
     }
 
     cmd  = ['fsl_regfilt',
             '--in={}'.format(input),
             '--out={}'.format(out),
             '--design={}'.format(design)]
-    cmd += wutils.applyArgStyle('--=', valsep=',', valmap=valmap, **kwargs)
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
 
@@ -84,7 +86,7 @@ def fsl_regfilt(input, out, design, **kwargs):
 @wutils.fileOrImage('input', 'mask')
 @wutils.fileOrArray('design')
 @wutils.fslwrapper
-def fsl_glm(input, **kwargs):
+def fsl_glm(input, out=None, design=None, **kwargs):
     """Wrapper for the ``fsl_glm`` command. """
 
     asrt.assertIsNifti(input)
@@ -96,7 +98,11 @@ def fsl_glm(input, **kwargs):
         'vn'       : wutils.SHOW_IF_TRUE
     }
 
-    cmd  = ['fsl_glm', '--in={}'.format(input)]
-    cmd += wutils.applyArgStyle('--=', valsep=',', valmap=valmap, **kwargs)
+    cmd = ['fsl_glm', f'--in={input}']
+
+    if out    is not None: cmd.append(f'--out={out}')
+    if design is not None: cmd.append(f'--design={design}')
+
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd

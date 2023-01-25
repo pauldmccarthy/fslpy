@@ -57,15 +57,15 @@ def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
     asrt.assertFileExists(imain, mask, index, acqp, bvecs, bvals)
     asrt.assertIsNifti(imain, mask)
 
-    kwargs.update({'imain' : imain,
-                   'mask'  : mask,
-                   'index' : index,
-                   'acqp'  : acqp,
-                   'bvecs' : bvecs,
-                   'bvals' : bvals,
-                   'out'   : out})
-
-    cmd = ['eddy'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    cmd = ['eddy',
+           f'--imain={imain}',
+           f'--mask={mask}',
+           f'--index={index}',
+           f'--acqp={acqp}',
+           f'--bvecs={bvecs}',
+           f'--bvals={bvals}',
+           f'--out={out}']
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
     return cmd
 
 

@@ -15,7 +15,7 @@ from . import wrapperutils  as wutils
 @wutils.fileOrImage('data', 'mask', 'field')
 @wutils.fileOrArray('bvecs', 'bvals')
 @wutils.fslwrapper
-def dtifit(data, mask, bvecs, bvals, out, **kwargs):
+def dtifit(data, out, mask, bvecs, bvals, **kwargs):
     """Wrapper for the ``dtifit`` command."""
 
     valmap = {
@@ -34,9 +34,9 @@ def dtifit(data, mask, bvecs, bvals, out, **kwargs):
 
     cmd  = ['dtifit',
             '--data='  + data,
-            '--mask='  + mask,
             '--out='   + out,
+            '--mask='  + mask,
             '--bvecs=' + bvecs,
             '--bvals=' + bvals]
-    cmd += wutils.applyArgStyle('--', valmap=valmap, **kwargs)
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
     return cmd

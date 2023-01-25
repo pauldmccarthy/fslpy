@@ -43,8 +43,8 @@ a couple of wrapper functions.
 @wutils.fileOrImage('data', 'mask',)
 @wutils.fileOrArray('bvecs', 'bvals')
 @wutils.fslwrapper
-def xfibres_gpu(data, mask, bvecs, bvals, SubjectDir, NumThisPart,
-                TotalNumParts, TotalNumVoxels, **kwargs):
+def xfibres_gpu(data, mask, bvecs, bvals, subjdir, idpart,
+                nparts, numvoxels, **kwargs):
     """Wrapper for the ``xfibres_gpu`` command."""
 
     asrt.assertFileExists(data, bvecs, bvals)
@@ -57,7 +57,7 @@ def xfibres_gpu(data, mask, bvecs, bvals, SubjectDir, NumThisPart,
            '--bvals=' + bvals]
 
     cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
-    cmd += [SubjectDir, NumThisPart, TotalNumParts, TotalNumVoxels]
+    cmd += [subjdir, str(idpart), str(nparts), str(numvoxels)]
     return cmd
 
 
