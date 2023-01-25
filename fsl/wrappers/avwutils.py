@@ -12,6 +12,7 @@
 
 import pathlib
 import functools as ft
+
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
@@ -74,16 +75,8 @@ def _fslmerge_tr(tr, output, *images):
 @wutils.fileOrImage('src', 'out')
 @wutils.fslwrapper
 def fslselectvols(src, out, vols, m=False, v=False):
-    """Wrapper for the ``fslselectvols`` command.
-
-    Select volumes from a 4D time series and output a subset 4D volume
-
-    :arg src:  Input file name (4D image)
-    :arg out:  Output file name (4D image)
-    :arg vols: Sequence of volumes to extract (sequence or comma-separated
-               list or ascii file)
-    :arg m     Output mean instead of concat
-    :arg v     Output variance instead of concat
+    """Wrapper for the ``fslselectvols`` command. ``vols`` may be a sequence,
+    or comma-separated string, or path to a file.
 
     Refer to the ``fslselectvols`` command-line help for details on all
     arguments.
@@ -112,7 +105,7 @@ def fslsplit(src, out=None, dim=None):
 
     Splits a file in different volumes / slices
 
-    :arg src: Input input
+    :arg src: Input image
     :arg out: Output basename
     :arg dim: One of ``'t'``, ``'x'``, ``'y'``, or ``'z'``
 
@@ -132,20 +125,10 @@ def fslsplit(src, out=None, dim=None):
 @wutils.fileOrImage('src', 'out')
 @wutils.fslwrapper
 def fslcpgeom(src, dest, d=False):
-    """Wrapper for the ``fslcpgeom`` command.
-
-    Copies the geometry of an image to the second image
-
-    :arg src: Input input
-    :arg out: Output basename
-    :arg d:   Don't copy image dimensions
-
-    Refer to the ``fslcpgeom`` command-line help for details on all arguments.
-    """
+    """Wrapper for the ``fslcpgeom`` command. """
 
     asrt.assertIsNifti(src)
     cmd = ['fslcpgeom', src, dest]
     if d:
         cmd += ['-d']
     return cmd
-
