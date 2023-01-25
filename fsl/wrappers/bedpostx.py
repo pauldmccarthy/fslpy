@@ -79,7 +79,7 @@ def split_parts_gpu(Datafile, Maskfile, Bvalsfile, Bvecsfile, TotalNumParts,
     else:                Use_grad_file = '1'
 
     cmd  = ['split_parts_gpu', Datafile, Maskfile, Bvalsfile, Bvecsfile,
-             Gradfile, Use_grad_file, TotalNumParts, OutputDirectory]
+             str(Gradfile), Use_grad_file, str(TotalNumParts), OutputDirectory]
     return cmd
 
 
@@ -100,7 +100,7 @@ def bedpostx_postproc_gpu(data, mask, bvecs, bvals, TotalNumVoxels,
            '--bvals=' + bvals]
 
     cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
-    cmd += [TotalNumVoxels, TotalNumParts, SubjectDir, bindir]
+    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
     return cmd
 
 
@@ -112,13 +112,17 @@ def probtrackx(samples, mask, seed, **kwargs):
     valmap = {
         'forcedir'  : wutils.SHOW_IF_TRUE,
         'network'   : wutils.SHOW_IF_TRUE,
-        'vebose'    : wutils.SHOW_IF_TRUE,
+        'V'         : wutils.SHOW_IF_TRUE,
+        'verbose'   : wutils.SHOW_IF_TRUE,
         'opd'       : wutils.SHOW_IF_TRUE,
+        'os2t'      : wutils.SHOW_IF_TRUE,
         'pd'        : wutils.SHOW_IF_TRUE,
         'sampvox'   : wutils.SHOW_IF_TRUE,
+        'l'         : wutils.SHOW_IF_TRUE,
         'loopcheck' : wutils.SHOW_IF_TRUE,
         'usef'      : wutils.SHOW_IF_TRUE,
         'modeuler'  : wutils.SHOW_IF_TRUE,
+        's2tastext' : wutils.SHOW_IF_TRUE,
     }
 
     asrt.assertIsNifti(mask, seed)
