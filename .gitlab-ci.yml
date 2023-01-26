@@ -153,12 +153,6 @@ variables:
     - bash ./.ci/test_template.sh
 
 
-test:3.7:
-  stage: test
-  image: pauldmccarthy/fsleyes-py37-wxpy4-gtk3
-  <<: *test_template
-
-
 test:3.8:
   stage: test
   image: pauldmccarthy/fsleyes-py38-wxpy4-gtk3
@@ -177,9 +171,15 @@ test:3.10:
   <<: *test_template
 
 
+test:3.11:
+  stage: test
+  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+  <<: *test_template
+
+
 test:build-pypi-dist:
   stage: test
-  image: pauldmccarthy/fsleyes-py37-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
   <<: *except_releases
 
   tags:
@@ -197,7 +197,7 @@ test:build-pypi-dist:
 
 style:
   stage: style
-  image: pauldmccarthy/fsleyes-py37-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
   <<: *test_template
   variables:
     TEST_STYLE:  "true"
@@ -220,7 +220,7 @@ pages:
    - docker
 
   stage: doc
-  image: python:3.7
+  image: python:3.10
 
   script:
     - bash ./.ci/build_doc.sh
@@ -240,7 +240,7 @@ build-pypi-dist:
   <<: *check_version
 
   stage: build
-  image: python:3.7
+  image: python:3.10
 
   tags:
     - docker
@@ -264,7 +264,7 @@ deploy-pypi:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.7
+  image: python:3.10
 
   tags:
     - docker
@@ -281,7 +281,7 @@ deploy-zenodo:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.7
+  image: python:3.10
 
   tags:
     - docker
