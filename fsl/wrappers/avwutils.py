@@ -98,7 +98,7 @@ def fslselectvols(src, out, vols, m=False, v=False):
     return cmd
 
 
-@wutils.fileOrImage('src', 'out')
+@wutils.fileOrImage('src', outprefix='out')
 @wutils.fslwrapper
 def fslsplit(src, out=None, dim=None):
     """Wrapper for the ``fslsplit`` command.

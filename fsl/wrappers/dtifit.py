@@ -12,7 +12,8 @@ import fsl.utils.assertions as asrt
 
 from . import wrapperutils  as wutils
 
-@wutils.fileOrImage('data', 'mask', 'field')
+
+@wutils.fileOrImage('data', 'mask', 'field', outprefix='out')
 @wutils.fileOrArray('bvecs', 'bvals')
 @wutils.fslwrapper
 def dtifit(data, out, mask, bvecs, bvals, **kwargs):
