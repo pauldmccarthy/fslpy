@@ -592,6 +592,15 @@ def test_dtifit():
         assert res.stdout[0] == exp
 
 
+def test_xfibres():
+    with testenv('xfibres') as xfibres:
+        res = fw.xfibres('data', 'mask', 'bvecs', 'bvals',
+                         f0=True, nf=20, V=True)
+        exp = f'{xfibres} --data=data --mask=mask --bvecs=bvecs ' \
+               '--bvals=bvals --f0 --nf=20 -V'
+        assert res.stdout[0] == exp
+
+
 def test_xfibres_gpu():
     with testenv('xfibres_gpu') as xfibres_gpu:
         res = fw.xfibres_gpu('data', 'mask', 'bvecs', 'bvals', 'subjdir',
@@ -620,11 +629,28 @@ def test_bedpostx_postproc_gpu():
         assert res.stdout[0] == exp
 
 
-
 def test_probtrackx():
     with testenv('probtrackx') as ptx:
         res = fw.probtrackx('samples', 'mask', 'seed', rseed=20,
                             usef=True, S=50, nsamples=50)
         exp = f'{ptx} --samples=samples --mask=mask --seed=seed --rseed=20 ' \
                '--usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp
+
+
+def test_probtrackx2():
+    with testenv('probtrackx2') as ptx2:
+        res = fw.probtrackx2('samples', 'mask', 'seed', rseed=20,
+                             usef=True, S=50, nsamples=50)
+        exp = f'{ptx2} --samples=samples --mask=mask --seed=seed --rseed=20 ' \
+               '--usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp
+
+
+def test_probtrackx2_gpu():
+    with testenv('probtrackx2_gpu') as ptx2gpu:
+        res = fw.probtrackx2_gpu('samples', 'mask', 'seed', rseed=20,
+                                 usef=True, S=50, nsamples=50)
+        exp = f'{ptx2gpu} --samples=samples --mask=mask --seed=seed ' \
+               '--rseed=20 --usef -S 50 --nsamples=50'
         assert res.stdout[0] == exp
