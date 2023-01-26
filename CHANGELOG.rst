@@ -35,6 +35,9 @@ Changed
   to accept arguments destined for :func:`fsl.utils.run.run` (!352).
 * :class:`.Mesh` objects can now be created without indices/triangles - they
   can be assigned after creation (!360).
+* The :mod:`.dicom` module will now preferentially call
+  ``$FSLDIR/bin/dcm2niix``, instead of calling the first ``dcm2niix`` on the
+  ``$PATH`` (!365).
 
 
 Fixed
