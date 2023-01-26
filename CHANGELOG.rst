@@ -210,7 +210,7 @@ Fixed
 
 
 * The the :func:`.topup` wrapper function now allows multiple file names to
-  be passed to the ``--imain``argument (!324).
+  be passed to the ``--imain`` argument (!324).
 
 
 3.8.1 (Tuesday 28th December 2021)
@@ -465,7 +465,8 @@ Added
 ^^^^^
 
 
-* New ``fsl_anat.tree``, for use with the :mod:`.filetree` package (!264).
+* New ``fsl_anat.tree``, for use with the :mod:`~fsl.utils.filetree` package
+  (!264).
 * New :func:`.fsl_prepare_fieldmap` wrapper function (!265).
 * The :class:`.fslmaths` wrapper now supports the ``fslmaths -s`` option
   via the :meth:`.fslmaths.smooth` method (!271).
@@ -1129,8 +1130,8 @@ Added
 ^^^^^
 
 
-* New tensor conversion routines in the :mod:`.dtifit` module (Michiel
-  Cottaar).
+* New tensor conversion routines in the :mod:`~fsl.data.dtifit` module
+  (Michiel Cottaar).
 * New :func:`.makeWriteable` function which ensures that a ``numpy.array`` is
   writeable, and creates a copy if necessary
 
