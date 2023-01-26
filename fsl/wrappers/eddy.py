@@ -112,14 +112,15 @@ def applytopup(imain, datain, index, topup, out, **kwargs):
     for fn in imain.split(','):
         asrt.assertIsNifti(fn)
 
-    cmd  = [
-        'applytopup',
-        f'--imain={imain}',
-        f'--inindex={index}',
-        f'--datain={datain}',
-        f'--topup={topup}',
-        f'--out={out}'
-    ]
-    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    allargs = {
+        'imain'   : imain,
+        'datain'  : datain,
+        'inindex' : index,
+        'topup'   : topup,
+        'out'     : out
+    }
+    allargs.update(kwargs)
+
+    cmd  = ['applytopup'] + wutils.applyArgStyle('--=', valmap=valmap, **allargs)
 
     return cmd
