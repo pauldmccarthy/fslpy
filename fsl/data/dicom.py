@@ -33,15 +33,17 @@ import               sys
 import               glob
 import               json
 import               shlex
+import               shutil
 import               logging
 import               binascii
 
 import numpy      as np
 import nibabel    as nib
 
-import fsl.utils.tempdir as tempdir
-import fsl.utils.memoize as memoize
-import fsl.data.image    as fslimage
+import fsl.utils.tempdir  as tempdir
+import fsl.utils.memoize  as memoize
+import fsl.utils.platform as fslplatform
+import fsl.data.image     as fslimage
 
 
 log = logging.getLogger(__name__)
@@ -58,6 +60,22 @@ used to convert a single DICOM series, requires that a CRC checksum
 identifying the series be passed (see the :func:`seriesCRC`
 function). Versions prior to this require the series number to be passed.
 """
+
+
+def dcm2niix() -> str:
+    """Tries to find an absolute path to the ``dcm2niix`` command. Returns
+    ``'dcm2niix'`` (unqualified) if a specific executable cannot be found.
+    """
+    candidates = [
+        op.join(fslplatform.platform.fsldir, 'bin', 'dcm2niix'),
+        shutil.which('dcm2niix')
+    ]
+
+    for c in candidates:
+        if op.exists(c):
+            return c
+
+    return 'dcm2niix'
 
 
 class DicomImage(fslimage.Image):
@@ -105,7 +123,7 @@ def installedVersion():
       - Day
     """
 
-    cmd            = 'dcm2niix -h'
+    cmd            = f'{dcm2niix()} -h'
     versionPattern = re.compile(r'v'
                                 r'(?P<major>[0-9]+)\.'
                                 r'(?P<minor>[0-9]+)\.'
@@ -130,7 +148,7 @@ def installedVersion():
                         int(match.group('day')))
 
     except Exception as e:
-        log.debug('Error parsing dcm2niix version string: {}'.format(e))
+        log.debug(f'Error parsing dcm2niix version string: {e}')
     return None
 
 
@@ -177,7 +195,7 @@ def scanDir(dcmdir):
         raise RuntimeError('dcm2niix is not available or is too old')
 
     dcmdir = op.abspath(dcmdir)
-    cmd    = 'dcm2niix -b o -ba n -f %s -o . "{}"'.format(dcmdir)
+    cmd    = f'{dcm2niix()} -b o -ba n -f %s -o . "{dcmdir}"'
     series = []
 
     with tempdir.tempdir() as td:
@@ -237,7 +255,7 @@ def seriesCRC(series):
     crc32 = str(binascii.crc32(uid.encode()))
 
     if echo is not None and echo > 1:
-        crc32 = '{}.{}'.format(crc32, echo)
+        crc32 = f'{crc32}.{echo}'
 
     return crc32
 
@@ -272,14 +290,14 @@ def loadSeries(series):
     else:
         ident = snum
 
-    cmd = 'dcm2niix -b n -f %s -z n -o . -n "{}" "{}"'.format(ident, dcmdir)
+    cmd = f'{dcm2niix()} -b n -f %s -z n -o . -n "{ident}" "{dcmdir}"'
 
     with tempdir.tempdir() as td:
 
         with open(os.devnull, 'wb') as devnull:
             sp.call(shlex.split(cmd), stdout=devnull, stderr=devnull)
 
-        files  = glob.glob(op.join(td, '{}*.nii'.format(snum)))
+        files  = glob.glob(op.join(td, f'{snum}*.nii'))
         images = [nib.load(f, mmap=False) for f in files]
 
         # copy images so nibabel no longer

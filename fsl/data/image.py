@@ -1089,7 +1089,7 @@ class Image(Nifti):
 
      4. For more complicated requirements, a :class:`DataManager`,
         implementing custom data access management logic, can be provided when
-        an ``Image`` is created. If a ``DataManager``is provided, an
+        an ``Image`` is created. If a ``DataManager`` is provided, an
         internal reference to the data (see 2 above) will **not** be created or
         maintained.
 
