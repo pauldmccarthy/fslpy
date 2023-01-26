@@ -85,7 +85,7 @@ paths, e.g.::
     from pathlib import Path
     from fsl.wrappers import bet
 
-    bet(Path('T1\\T1.nii.gz`), Path('T1_brain'))
+    bet(Path('T1\\T1.nii.gz'), Path('T1_brain'))
 
 If you use strings to specify inputs/outputs, they must be absolute paths, as
 they may otherwise not be translated correctly.
