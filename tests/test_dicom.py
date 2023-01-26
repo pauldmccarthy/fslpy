@@ -29,15 +29,16 @@ pytestmark = pytest.mark.dicomtest
 
 
 @contextlib.contextmanager
-def install_dcm2niix(version='1.0.20201102'):
+def install_dcm2niix(version='1.0.20220720'):
     filenames = {
         '1.0.20201102' : 'v1.0.20201102/dcm2niix_lnx.zip',
         '1.0.20190902' : 'v1.0.20190902/dcm2niix_lnx.zip',
         '1.0.20181125' : 'v1.0.20181125/dcm2niix_25-Nov-2018_lnx.zip',
         '1.0.20171017' : 'v1.0.20171017/dcm2niix_18-Oct-2017_lnx.zip',
+        '1.0.20220720' : 'v1.0.20220720/dcm2niix_lnx.zip',
     }
     prefix = 'https://github.com/rordenlab/dcm2niix/releases/download/'
-    url    = prefix + filenames[version]
+    url    = prefix + filenames.get(version, f'v{version}/dcm2niix_lnx.zip')
 
     with tempdir.tempdir() as td:
         request.urlretrieve(url, 'dcm2niix.zip')
@@ -47,9 +48,9 @@ def install_dcm2niix(version='1.0.20201102'):
 
         os.chmod(op.join(td, 'dcm2niix'), 0o755)
 
-        path = op.pathsep.join((op.abspath('.'), os.environ['PATH']))
+        path = op.abspath('dcm2niix')
 
-        with mock.patch.dict('os.environ', {'PATH' : path}):
+        with mock.patch('fsl.data.dicom.dcm2niix', return_value=path):
             try:
                 yield
             finally:
