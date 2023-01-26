@@ -20,10 +20,6 @@ from . import wrapperutils as wutils
 def fugue(input=None, **kwargs):
     """Wrapper for the ``fugue`` command."""
 
-    argmap = {
-        'input' : 'in'
-    }
-
     valmap = {
         'dwelltoasym' : wutils.SHOW_IF_TRUE,
         'median'      : wutils.SHOW_IF_TRUE,
@@ -41,12 +37,8 @@ def fugue(input=None, **kwargs):
         'verbose'     : wutils.SHOW_IF_TRUE,
     }
 
-    kwargs.update({'input' : input})
-
-    cmd = ['fugue'] + wutils.applyArgStyle('--=',
-                                           argmap=argmap,
-                                           valmap=valmap,
-                                           **kwargs)
+    cmd  = ['fugue', f'--in={input}']
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
 
@@ -90,11 +82,11 @@ def fsl_prepare_fieldmap(phase_image, magnitude_image, out_image, deltaTE, scann
     """Wrapper for the ``fsl_prepare_fieldmap`` command. <scanner> defaults to 'SIEMENS'"""
     if scanner is None:
         scanner = 'SIEMENS'
-    
+
     valmap = {
         'nocheck' : wutils.SHOW_IF_TRUE,
     }
-    
+
     cmd = ['fsl_prepare_fieldmap', scanner, phase_image, magnitude_image, out_image, str(deltaTE)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 

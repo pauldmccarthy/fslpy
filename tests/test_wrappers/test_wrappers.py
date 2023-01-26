@@ -9,6 +9,8 @@ import os.path   as op
 import itertools as it
 import textwrap  as tw
 import              os
+import              contextlib
+import              pathlib
 import              shlex
 
 import numpy as np
@@ -50,223 +52,187 @@ def checkResult(cmd, base, args, stripdir=None):
     return any([cmd == p for p in possible])
 
 
+@contextlib.contextmanager
+def testenv(*fslexes):
+    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=fslexes) as fsldir:
+        fslexes = [op.join(fsldir, 'bin', e) for e in fslexes]
+        if len(fslexes) == 1: yield fslexes[0]
+        else:                 yield fslexes
+
+
 def test_bet():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('bet',)) as fsldir:
-        bet      = op.join(fsldir, 'bin', 'bet')
+    with testenv('bet') as bet:
         result   = fw.bet('input', 'output', mask=True, c=(10, 20, 30))
         expected = (bet + ' input output', ('-m', '-c 10 20 30'))
         assert checkResult(result.stdout[0], *expected, stripdir=[2])
 
 
 def test_robustfov():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('robustfov',)) as fsldir:
-        rfov     = op.join(fsldir, 'bin', 'robustfov')
+    with testenv('robustfov') as rfov:
         result   = fw.robustfov('input', 'output', b=180)
-        expected = (rfov + ' -i input', ('-r output', '-b 180'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{rfov} -i input -b 180 -r output'
+        assert result.stdout[0] == expected
 
 
 def test_eddy():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('eddy',)) as fsldir:
-        eddy     = op.join(fsldir, 'bin', 'eddy')
+    with testenv('eddy') as eddy:
         result   = fw.eddy('imain', 'mask', 'index', 'acqp',
                            'bvecs', 'bvals', 'out', dont_mask_output=True)
-        expected = (eddy, ('--imain=imain',
-                           '--mask=mask',
-                           '--index=index',
-                           '--acqp=acqp',
-                           '--bvecs=bvecs',
-                           '--bvals=bvals',
-                           '--out=out',
-                           '--dont_mask_output'))
-
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{eddy} ' \
+                    '--imain=imain '\
+                    '--mask=mask '\
+                    '--index=index '\
+                    '--acqp=acqp '\
+                    '--bvecs=bvecs '\
+                    '--bvals=bvals '\
+                    '--out=out '\
+                    '--dont_mask_output'
+        assert result.stdout[0] == expected
 
 
 def test_topup():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('topup',)) as fsldir:
-        topup    = op.join(fsldir, 'bin', 'topup')
+    with testenv('topup') as topup:
         result   = fw.topup('imain', 'datain', minmet=1)
         expected = topup + ' --imain=imain --datain=datain --minmet=1'
         assert result.stdout[0] == expected
 
 
 def test_flirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('flirt',)) as fsldir:
-        flirt    = op.join(fsldir, 'bin', 'flirt')
+    with testenv('flirt') as flirt:
         result   = fw.flirt('src', 'ref', usesqform=True, anglerep='euler')
-        expected = (flirt + ' -in src -ref ref',
-                    ('-usesqform', '-anglerep euler'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{flirt} -in src -ref ref -usesqform -anglerep euler'
+        assert result.stdout[0] == expected
 
 
 def test_fixscaleskew():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('convert_xfm',)) as fsldir:
-        convert_xfm = op.join(fsldir, 'bin', 'convert_xfm')
+    with testenv('convert_xfm') as convert_xfm:
         result      = fw.fixscaleskew('mat1', 'mat2', 'out')
         expected    = f'{convert_xfm} -fixscaleskew mat2 mat1 -omat out'
         assert result.stdout[0] == expected
 
 
 def test_epi_reg():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('epi_reg',)) as fsldir:
-        epi_reg  = op.join(fsldir, 'bin', 'epi_reg')
+    with testenv('epi_reg') as epi_reg:
         result   = fw.epi_reg('epi', 't1', 't1brain', 'out')
         expected = epi_reg + ' --epi=epi --t1=t1 --t1brain=t1brain --out=out'
         assert result.stdout[0] == expected
 
 
 def test_applyxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('flirt',)) as fsldir:
-        flirt    = op.join(fsldir, 'bin', 'flirt')
+    with testenv('flirt') as flirt:
         result   = fw.applyxfm('src', 'ref', 'mat', 'out', interp='trilinear')
-        expected = (flirt + ' -in src -ref ref',
-                    ('-applyxfm',
-                     '-out out',
-                     '-init mat',
-                     '-interp trilinear'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{flirt} -in src -ref ref -out out -applyxfm -init mat -interp trilinear'
+        assert result.stdout[0] == expected
 
 
 def test_applyxfm4D():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('applyxfm4D',)) as fsldir:
-        applyxfm = op.join(fsldir, 'bin', 'applyxfm4D')
+    with testenv('applyxfm4D') as applyxfm:
         result   = fw.applyxfm4D(
             'src', 'ref', 'out', 'mat', fourdigit=True, userprefix='boo')
-        expected = (applyxfm + ' src ref out mat',
-                    ('-fourdigit',
-                     '-userprefix boo'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{applyxfm} src ref out mat -fourdigit -userprefix boo'
+        assert result.stdout[0] == expected
 
 
 def test_invxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convert_xfm',)) as fsldir:
-        cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
+    with testenv('convert_xfm') as cnvxfm:
         result   = fw.invxfm('mat', 'output')
         expected = cnvxfm + ' -omat output -inverse mat'
         assert result.stdout[0] == expected
 
 
 def test_concatxfm():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convert_xfm',)) as fsldir:
-        cnvxfm   = op.join(fsldir, 'bin', 'convert_xfm')
+    with testenv('convert_xfm') as cnvxfm:
         result   = fw.concatxfm('mat1', 'mat2', 'output')
         expected = cnvxfm + ' -omat output -concat mat2 mat1'
         assert result.stdout[0] == expected
 
 
 def test_mcflirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('mcflirt',)) as fsldir:
-        mcflirt  = op.join(fsldir, 'bin', 'mcflirt')
+    with testenv('mcflirt') as mcflirt:
         result   = fw.mcflirt('input', out='output', cost='normcorr', dof=12)
-        expected = (mcflirt + ' -in input',
-                    ('-out output',
-                     '-cost normcorr',
-                     '-dof 12'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{mcflirt} -in input -out output -cost normcorr -dof 12'
+        assert result.stdout[0] == expected
 
 
 def test_fnirt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fnirt',)) as fsldir:
-        fnirt    = op.join(fsldir, 'bin', 'fnirt')
+    with testenv('fnirt') as fnirt:
         result   = fw.fnirt('src', ref='ref', iout='iout', fout='fout',
                             subsamp=(8, 6, 4, 2))
-        expected = (fnirt + ' --in=src',
-                    ('--ref=ref',
-                     '--iout=iout',
-                     '--fout=fout',
-                     '--subsamp=8,6,4,2'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{fnirt} --in=src --ref=ref --iout=iout --fout=fout --subsamp=8,6,4,2'
+        assert result.stdout[0] == expected
 
 
 def test_applywarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('applywarp',)) as fsldir:
-        applywarp = op.join(fsldir, 'bin', 'applywarp')
+    with testenv('applywarp') as applywarp:
         result    = fw.applywarp('src', 'ref', 'out', warp='warp', abs=True, super=True)
-        expected  = (applywarp + ' --in=src --ref=ref --out=out',
-                     ('--warp=warp', '--abs', '--super'))
-        assert checkResult(result.stdout[0], *expected)
+        expected  = f'{applywarp} --in=src --ref=ref --out=out --warp=warp --abs --super'
+        assert result.stdout[0] == expected
 
 
 def test_invwarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('invwarp',)) as fsldir:
-        invwarp  = op.join(fsldir, 'bin', 'invwarp')
-        result   = fw.invwarp('warp', 'ref', 'out',
-                              rel=True, noconstraint=True)
-        expected = (invwarp + ' --warp=warp --ref=ref --out=out',
-                     ('--rel', '--noconstraint'))
-        assert checkResult(result.stdout[0], *expected)
+    with testenv('invwarp') as invwarp:
+        result   = fw.invwarp('warp', 'ref', 'out', rel=True, noconstraint=True)
+        expected = f'{invwarp} --warp=warp --ref=ref --out=out --rel --noconstraint'
+        assert result.stdout[0] == expected
 
 
 def test_convertwarp():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('convertwarp',)) as fsldir:
-        cnvwarp  = op.join(fsldir, 'bin', 'convertwarp')
+    with testenv('convertwarp') as cnvwarp:
         result   = fw.convertwarp('out', 'ref', absout=True, jacobian='jacobian')
-        expected = (cnvwarp + ' --ref=ref --out=out',
-                     ('--absout', '--jacobian=jacobian'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{cnvwarp} --ref=ref --out=out --absout --jacobian=jacobian'
+        assert result.stdout[0] == expected
 
 
 def test_fugue():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fugue',)) as fsldir:
-        fugue    = op.join(fsldir, 'bin', 'fugue')
-        result   = fw.fugue(input='input', warp='warp',
-                            median=True, dwell=10)
-        expected = (fugue, ('--in=input',
-                            '--warp=warp',
-                            '--median',
-                            '--dwell=10'))
-        assert checkResult(result.stdout[0], *expected)
+    with testenv('fugue') as fugue:
+        result   = fw.fugue(input='input', warp='warp', median=True, dwell=10)
+        expected = f'{fugue} --in=input --warp=warp --median --dwell=10'
+        assert result.stdout[0] == expected
 
 
 
 def test_sigloss():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('sigloss',)) as fsldir:
-        sigloss  = op.join(fsldir, 'bin', 'sigloss')
+    with testenv('sigloss') as sigloss:
         result   = fw.sigloss('input', 'sigloss', mask='mask', te=0.5)
-        expected = (sigloss + ' --in input --sigloss sigloss',
-                    ('--mask mask', '--te 0.5'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{sigloss} --in input --sigloss sigloss --mask mask --te 0.5'
+        assert result.stdout[0] == expected
 
 
 def test_prelude():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('prelude',)) as fsldir:
-        prelude  = op.join(fsldir, 'bin', 'prelude')
+    with testenv('prelude') as prelude:
         result   = fw.prelude(complex='complex',
                               out='out',
                               labelslices=True,
                               start=5)
-        expected = (prelude, ('--complex=complex',
-                              '--out=out',
-                              '--labelslices',
-                              '--start=5'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{prelude} --complex=complex --out=out --labelslices --start=5'
+        assert result.stdout[0] == expected
 
 
 def test_melodic():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('melodic',)) as fsldir:
-        melodic  = op.join(fsldir, 'bin', 'melodic')
+    with testenv('melodic') as melodic:
         result   = fw.melodic('input', dim=50, mask='mask', Oall=True)
-        expected = (melodic + ' --in=input',
-                    ('--dim=50', '--mask=mask', '--Oall'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{melodic} --in=input --dim=50 --mask=mask --Oall'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_regfilt():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_regfilt',)) as fsldir:
-        regfilt  = op.join(fsldir, 'bin', 'fsl_regfilt')
+    with testenv('fsl_regfilt') as regfilt:
         result   = fw.fsl_regfilt('input', 'output', 'design',
-                                  filter=(1, 2, 3, 4), vn=True)
-        expected = (regfilt + ' --in=input --out=output --design=design',
-                    ('--filter=1,2,3,4', '--vn'))
-        assert checkResult(result.stdout[0], *expected)
+                                  filter=(1, 2, 3, 4), vn=True, a=True)
+        expected = f'{regfilt} --in=input --out=output --design=design ' \
+                    '--filter=1,2,3,4 --vn -a'
+        assert result.stdout[0] == expected
+
+
+def test_fsl_glm():
+    with testenv('fsl_glm') as fsl_glm:
+        exp = f'{fsl_glm} --in=in --out=out --design=des -m mask --demean --dof=7'
+        res = fw.fsl_glm('in', 'out', 'des', m='mask', demean=True, dof=7)
+        assert res.stdout[0] == exp
 
 
 def test_fslorient():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslorient',)) as fsldir:
-        fslo    = op.join(fsldir, 'bin', 'fslorient')
+    with testenv('fslorient') as fslo:
         result   = fw.fslorient('input', setsform=(-2, 0, 0, 90, 0, 2, 0, -126, 0, 0, 2, -72, 0, 0, 0, 1))
         expected = fslo + ' -setsform -2 0 0 90 0 2 0 -126 0 0 2 -72 0 0 0 1' + ' input'
         assert result.stdout[0] == expected
@@ -281,17 +247,14 @@ def test_fslorient():
 
 
 def test_fslreorient2std():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslreorient2std',)) as fsldir:
-        r2std    = op.join(fsldir, 'bin', 'fslreorient2std')
+    with testenv('fslreorient2std') as r2std:
         result   = fw.fslreorient2std('input', 'output')
         expected = r2std + ' input output'
         assert result.stdout[0] == expected
 
 
 def test_fslroi():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslroi',)) as fsldir:
-        fslroi   = op.join(fsldir, 'bin', 'fslroi')
-
+    with testenv('fslroi') as fslroi:
         result   = fw.fslroi('input', 'output', 1, 10)
         expected = fslroi + ' input output 1 10'
         assert result.stdout[0] == expected
@@ -306,27 +269,23 @@ def test_fslroi():
 
 
 def test_slicer():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('slicer',)) as fsldir:
-        slicer   = op.join(fsldir, 'bin', 'slicer')
+    with testenv('slicer') as slicer:
         result   = fw.slicer('input1', 'input2', i=(20, 100), x=(20, 'x.png'))
         expected = slicer + ' input1 input2 -i 20 100 -x 20 x.png'
         assert result.stdout[0] == expected
 
 
 def test_cluster():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('cluster',)) as fsldir:
-        cluster  = op.join(fsldir, 'bin', 'cluster')
+    with testenv('cluster') as cluster:
         result   = fw.cluster('input', 'thresh',
                               fractional=True, osize='osize')
-        expected = (cluster + ' --in=input --thresh=thresh',
-                    ('--fractional', '--osize=osize'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{cluster} --in=input --thresh=thresh --fractional --osize=osize'
+        assert result.stdout[0] == expected
 
 
 def test_fslmaths():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fslmaths',)) as fsldir:
-        cmd    = op.join(fsldir, 'bin', 'fslmaths')
-        result = fw.fslmaths('input') \
+    with testenv('fslmaths') as fslmaths:
+        result   = fw.fslmaths('input') \
             .abs().bin().binv().recip().Tmean().Tstd().Tmin().Tmax() \
             .fillh().ero().dilM().dilF().add('addim').sub('subim') \
             .mul('mulim').div('divim').mas('masim').rem('remim')   \
@@ -334,7 +293,7 @@ def test_fslmaths():
             .smooth(sigma=6).kernel('3D').fmeanu().roi(10, 3, 20, 21, 1, 5) \
             .run('output')
 
-        expected = [cmd, 'input',
+        expected = [fslmaths, 'input',
                     '-abs', '-bin', '-binv', '-recip', '-Tmean', '-Tstd',
                     '-Tmin', '-Tmax', '-fillh', '-ero', '-dilM', '-dilF',
                     '-add addim', '-sub subim', '-mul mulim', '-div divim',
@@ -366,109 +325,87 @@ def test_fslmaths():
 
 
 def test_fast():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fast',)) as fsldir:
-
-        cmd = op.join(fsldir, 'bin', 'fast')
-
+    with testenv('fast') as fast:
         result   = fw.fast('input', 'myseg', n_classes=3)
-        expected = [cmd, '--out=myseg', '--class=3', 'input']
-
-        assert result.stdout[0] == ' '.join(expected)
+        expected = f'{fast} --out=myseg --class=3 input'
+        assert result.stdout[0] == expected
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3)
-        expected = [cmd, '--out=myseg', '--class=3', 'in1', 'in2', 'in3']
-        assert result.stdout[0] == ' '.join(expected)
+        expected = f'{fast} --out=myseg --class=3 in1 in2 in3'
+        assert result.stdout[0] == expected
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3, verbose=True)
-        expected = [cmd, '--out=myseg', '--class=3', '--verbose', 'in1', 'in2', 'in3']
-        assert result.stdout[0] == ' '.join(expected)
+        expected = f'{fast} --out=myseg --class=3 --verbose in1 in2 in3'
+        assert result.stdout[0] == expected
 
         result   = fw.fast(('in1', 'in2', 'in3'), 'myseg', n_classes=3,
                            a='reg.mat', A=('csf', 'gm', 'wm'), Prior=True)
-        expected = [cmd, '--out=myseg', '--class=3', '-a', 'reg.mat',
-                    '-A', 'csf', 'gm', 'wm', '--Prior', 'in1', 'in2', 'in3']
-        assert result.stdout[0] == ' '.join(expected)
+        expected = f'{fast} --out=myseg --class=3 -a reg.mat '\
+                    '-A csf gm wm --Prior in1 in2 in3'
+
+        assert result.stdout[0] == expected
 
 
 def test_fsl_anat():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('fsl_anat',)) as fsldir:
-
-        cmd = op.join(fsldir, 'bin', 'fsl_anat')
-
+    with testenv('fsl_anat') as fsl_anat:
         result   = fw.fsl_anat('t1', out='fsl_anat', bias_smoothing=25)
-        expected = [cmd, '-i', 't1', '-o', 'fsl_anat', '-t', 'T1',
-                    '-s', '25']
-
-        assert result.stdout[0] == ' '.join(expected)
+        expected = f'{fsl_anat} -i t1 -o fsl_anat -t T1 -s 25'
+        assert result.stdout[0] == expected
 
 
 def test_gps():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('gps',)) as fsldir:
-        gps = op.join(fsldir, 'bin', 'gps')
-        result = fw.gps('bvecs', 128, optws=True, ranseed=123)
-        expected = (gps + ' --ndir=128 --out=bvecs',
-                    ('--optws', '--ranseed=123'))
-        assert checkResult(result.stdout[0], *expected)
+    with testenv('gps') as gps:
+        result   = fw.gps('bvecs', 128, optws=True, ranseed=123)
+        expected = f'{gps} --ndir=128 --out=bvecs --optws --ranseed=123'
+        assert result.stdout[0] == expected
 
 
 def test_tbss():
-    exes = {
-        'preproc'  : 'tbss_1_preproc',
-        'reg'      : 'tbss_2_reg',
-        'postreg'  : 'tbss_3_postreg',
-        'prestats' : 'tbss_4_prestats',
-        'non_FA'   : 'tbss_non_FA',
-        'fill'     : 'tbss_fill'
-    }
+    exes = ['tbss_1_preproc',
+            'tbss_2_reg',
+            'tbss_3_postreg',
+            'tbss_4_prestats',
+            'tbss_non_FA',
+            'tbss_fill']
 
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=exes.values()) as fsldir:
-        for k in exes:
-            exes[k] = op.join(fsldir, 'bin', exes[k])
-
-        assert fw.tbss.preproc('1', '2')[0] == ' '.join([exes['preproc'], '1', '2'])
-        assert fw.tbss.reg(T=True)[0]       == ' '.join([exes['reg'], '-T'])
-        assert fw.tbss.reg(n=True)[0]       == ' '.join([exes['reg'], '-n'])
-        assert fw.tbss.reg(t='target')[0]   == ' '.join([exes['reg'], '-t', 'target'])
-        assert fw.tbss.postreg(S=True)[0]   == ' '.join([exes['postreg'], '-S'])
-        assert fw.tbss.postreg(T=True)[0]   == ' '.join([exes['postreg'], '-T'])
-        assert fw.tbss.prestats(0.3)[0]     == ' '.join([exes['prestats'], '0.3'])
-        assert fw.tbss.non_FA('alt')[0]     == ' '.join([exes['non_FA'], 'alt'])
+    with testenv(*exes) as (preproc, reg, postreg, prestats, non_FA, fill):
+        assert fw.tbss.preproc('1', '2')[0] == f'{preproc} 1 2'
+        assert fw.tbss.reg(T=True)[0]       == f'{reg} -T'
+        assert fw.tbss.reg(n=True)[0]       == f'{reg} -n'
+        assert fw.tbss.reg(t='target')[0]   == f'{reg} -t target'
+        assert fw.tbss.postreg(S=True)[0]   == f'{postreg} -S'
+        assert fw.tbss.postreg(T=True)[0]   == f'{postreg} -T'
+        assert fw.tbss.prestats(0.3)[0]     == f'{prestats} 0.3'
+        assert fw.tbss.non_FA('alt')[0]     == f'{non_FA} alt'
         assert fw.tbss.fill('stat', 0.4, 'mean_fa', 'output', n=True).stdout[0] == \
-            ' '.join([exes['fill'], 'stat', '0.4', 'mean_fa', 'output', '-n'])
+            f'{fill} stat 0.4 mean_fa output -n'
+
 
 def test_fsl_prepare_fieldmap():
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=('fsl_prepare_fieldmap',)) as fsldir:
-        fpf = op.join(fsldir, 'bin', 'fsl_prepare_fieldmap')
+    with testenv('fsl_prepare_fieldmap') as fpf:
         result   = fw.fsl_prepare_fieldmap(phase_image='ph',
                                            magnitude_image='mag',
                                            out_image='out',
                                            deltaTE=2.46,
                                            nocheck=True)
-        expected = (fpf, ('SIEMENS', 'ph', 'mag', 'out', '2.46', '--nocheck'))
-        assert checkResult(result.stdout[0], *expected)
+        expected = f'{fpf} SIEMENS ph mag out 2.46 --nocheck'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_sub():
-    with run.dryrun(), mockFSLDIR(bin=('fsl_sub',)) as fsldir:
-        expected = [op.join(fsldir, 'bin', 'fsl_sub'),
+    with testenv('fsl_sub') as fsl_sub:
+        expected = [fsl_sub,
                     '--jobhold', '123',
                     '--queue', 'long.q',
                     'some_command', '--some_arg']
-
         result = fw.fsl_sub(
             'some_command', '--some_arg', jobhold='123', queue='long.q')
         assert shlex.split(result[0]) == expected
 
 
 def test_standard_space_roi():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('standard_space_roi',)) as fsldir:
-        expected = [op.join(fsldir, 'bin', 'standard_space_roi'),
+    with testenv('standard_space_roi') as ssr:
+        expected = [ssr,
                     'input',
                     'output',
                     '-maskFOV',
@@ -498,30 +435,18 @@ def test_standard_space_roi():
 
 
 def test_fslswapdim():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('fslswapdim',)) as fsldir:
-        expected = [op.join(fsldir, 'bin', 'fslswapdim'), 'input', 'a', 'b', 'c']
-        result   = fw.fslswapdim('input', 'a', 'b', 'c')
-        assert result.stdout[0] == ' '.join(expected)
-        expected = [op.join(fsldir, 'bin', 'fslswapdim'), 'input', 'a', 'b', 'c', 'output']
-        result   = fw.fslswapdim('input', 'a', 'b', 'c', 'output')
-        assert result.stdout[0] == ' '.join(expected)
-
+    with testenv('fslswapdim') as swapdim:
+        assert fw.fslswapdim('input', 'a', 'b', 'c').stdout[0] == \
+               f'{swapdim} input a b c'
+        assert fw.fslswapdim('input', 'a', 'b', 'c', 'output').stdout[0] == \
+               f'{swapdim} input a b c output'
 
 
 def test_first():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('first', 'first_flirt', 'run_first',
-                         'run_first_all', 'first_utils',
-                         'concat_bvars')) as fsldir:
-        first         = op.join(fsldir, 'bin', 'first')
-        first_flirt   = op.join(fsldir, 'bin', 'first_flirt')
-        run_first     = op.join(fsldir, 'bin', 'run_first')
-        run_first_all = op.join(fsldir, 'bin', 'run_first_all')
-        first_utils   = op.join(fsldir, 'bin', 'first_utils')
-        concat_bvars  = op.join(fsldir, 'bin', 'concat_bvars')
+    exes = ['first', 'first_flirt', 'run_first',
+            'run_first_all', 'first_utils', 'concat_bvars']
+    with testenv(*exes) as (first, first_flirt, run_first,
+                            run_first_all, first_utils, concat_bvars):
 
         expected = f'{first} --in=input --outputName=output ' \
                     '--inputModel=inmodel --flirtMatrix=flirtmat '\
@@ -564,11 +489,7 @@ def test_first():
 
 
 def test_fslmerge():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('fslmerge',)) as fsldir:
-
-        fslmerge = op.join(fsldir, 'bin', 'fslmerge')
+    with testenv('fslmerge') as fslmerge:
 
         expected = f'{fslmerge} -x out in1 in2 in3'
         result   = fw.fslmerge('x', 'out', 'in1', 'in2', 'in3')
@@ -583,20 +504,59 @@ def test_fslmerge():
         assert result.stdout[0] == expected
 
 
-def test_bianca():
-    with asrt.disabled(), \
-         run.dryrun(), \
-         mockFSLDIR(bin=('bianca',
-                         'bianca_cluster_stats',
-                         'bianca_overlap_measures',
-                         'bianca_perivent_deep',
-                         'make_bianca_mask')) as fsldir:
+def test_fslselectvols():
+    with testenv('fslselectvols') as fsv:
 
-        bianca                  = op.join(fsldir, 'bin', 'bianca')
-        bianca_cluster_stats    = op.join(fsldir, 'bin', 'bianca_cluster_stats')
-        bianca_overlap_measures = op.join(fsldir, 'bin', 'bianca_overlap_measures')
-        bianca_perivent_deep    = op.join(fsldir, 'bin', 'bianca_perivent_deep')
-        make_bianca_mask        = op.join(fsldir, 'bin', 'make_bianca_mask')
+        # vols can either be a sequence,
+        # comma-separated string, or
+        # string/path to a file
+        expected = f'{fsv} -i in -o out --vols=vols.txt'
+        result   = fw.fslselectvols('in', 'out', 'vols.txt')
+        assert result.stdout[0] == expected
+
+        absvols  = op.abspath('vols.txt')
+        expected = f'{fsv} -i in -o out --vols={absvols}'
+        result   = fw.fslselectvols('in', 'out', pathlib.Path('vols.txt'))
+        assert result.stdout[0] == expected
+
+        expected = f'{fsv} -i in -o out --vols=1,2,3'
+        result   = fw.fslselectvols('in', 'out', '1,2,3')
+        assert result.stdout[0] == expected
+
+        expected = f'{fsv} -i in -o out --vols=1,2,3'
+        result   = fw.fslselectvols('in', 'out', ['1', '2', '3'])
+        assert result.stdout[0] == expected
+
+        expected = f'{fsv} -i in -o out --vols=1,2,3'
+        result   = fw.fslselectvols('in', 'out', [1, 2, 3])
+        assert result.stdout[0] == expected
+
+
+def test_fslsplit():
+    with testenv('fslsplit') as fslsplit:
+        assert fw.fslsplit('src')                .stdout[0] == f'{fslsplit} src'
+        assert fw.fslsplit('src', 'out')         .stdout[0] == f'{fslsplit} src out'
+        assert fw.fslsplit('src',        dim='x').stdout[0] == f'{fslsplit} src -x'
+        assert fw.fslsplit('src', 'out', dim='t').stdout[0] == f'{fslsplit} src out -t'
+
+
+def test_fslcpgeom():
+    with testenv('fslcpgeom') as fslcpgeom:
+        assert fw.fslcpgeom('src', 'dest')        .stdout[0] == f'{fslcpgeom} src dest'
+        assert fw.fslcpgeom('src', 'dest', d=True).stdout[0] == f'{fslcpgeom} src dest -d'
+
+
+def test_bianca():
+    exes = ['bianca',
+            'bianca_cluster_stats',
+            'bianca_overlap_measures',
+            'bianca_perivent_deep',
+            'make_bianca_mask']
+    with testenv(*exes) as (bianca,
+                            bianca_cluster_stats,
+                            bianca_overlap_measures,
+                            bianca_perivent_deep,
+                            make_bianca_mask):
 
         expected = f'{bianca} --singlefile sfile --patch3d --querysubjectnum 3 -v'
         result   = fw.bianca('sfile', patch3d=True, querysubjectnum=3, v=True)
@@ -617,3 +577,80 @@ def test_bianca():
         expected = f'{make_bianca_mask} struc csf warp 1'
         result   = fw.make_bianca_mask('struc', 'csf', 'warp', True)
         assert result.stdout[0] == expected
+
+
+def test_feat():
+    with testenv('feat') as feat:
+        assert fw.feat('design.fsf')[0] == f'{feat} design.fsf'
+
+
+def test_dtifit():
+    with testenv('dtifit') as dtifit:
+        res    = fw.dtifit('data', 'out', 'mask', 'bvecs', 'bvals', kurt=True, z=2, xmax=6)
+        exp    = f'{dtifit} --data=data --out=out --mask=mask --bvecs=bvecs '\
+                  '--bvals=bvals --kurt -z 2 --xmax=6'
+        assert res.stdout[0] == exp
+
+
+def test_xfibres():
+    with testenv('xfibres') as xfibres:
+        res = fw.xfibres('data', 'mask', 'bvecs', 'bvals',
+                         f0=True, nf=20, V=True)
+        exp = f'{xfibres} --data=data --mask=mask --bvecs=bvecs ' \
+               '--bvals=bvals --f0 --nf=20 -V'
+        assert res.stdout[0] == exp
+
+
+def test_xfibres_gpu():
+    with testenv('xfibres_gpu') as xfibres_gpu:
+        res = fw.xfibres_gpu('data', 'mask', 'bvecs', 'bvals', 'subjdir',
+                             1, 10, 100, f0=True, nf=20)
+        exp = f'{xfibres_gpu} --data=data --mask=mask --bvecs=bvecs ' \
+               '--bvals=bvals --f0 --nf=20 subjdir 1 10 100'
+        assert res.stdout[0] == exp
+
+
+def test_split_parts_gpu():
+    with testenv('split_parts_gpu') as split_parts_gpu:
+        res = fw.split_parts_gpu('data', 'mask', 'bvals', 'bvecs', 10, 'out')
+        exp = f'{split_parts_gpu} data mask bvals bvecs None 0 10 out'
+        assert res.stdout[0] == exp
+        res = fw.split_parts_gpu('data', 'mask', 'bvals', 'bvecs', 10, 'out', 'grad')
+        exp = f'{split_parts_gpu} data mask bvals bvecs grad 1 10 out'
+        assert res.stdout[0] == exp
+
+
+def test_bedpostx_postproc_gpu():
+    with testenv('bedpostx_postproc_gpu.sh') as bpg:
+        res = fw.bedpostx_postproc_gpu('data', 'mask', 'bvecs', 'bvals',
+                                       100, 10, 'subdir', 'bindir', nf=20)
+        exp = f'{bpg} --data=data --mask=mask --bvecs=bvecs --bvals=bvals ' \
+               '--nf=20 100 10 subdir bindir'
+        assert res.stdout[0] == exp
+
+
+def test_probtrackx():
+    with testenv('probtrackx') as ptx:
+        res = fw.probtrackx('samples', 'mask', 'seed', rseed=20,
+                            usef=True, S=50, nsamples=50)
+        exp = f'{ptx} --samples=samples --mask=mask --seed=seed --rseed=20 ' \
+               '--usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp
+
+
+def test_probtrackx2():
+    with testenv('probtrackx2') as ptx2:
+        res = fw.probtrackx2('samples', 'mask', 'seed', rseed=20,
+                             usef=True, S=50, nsamples=50)
+        exp = f'{ptx2} --samples=samples --mask=mask --seed=seed --rseed=20 ' \
+               '--usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp
+
+
+def test_probtrackx2_gpu():
+    with testenv('probtrackx2_gpu') as ptx2gpu:
+        res = fw.probtrackx2_gpu('samples', 'mask', 'seed', rseed=20,
+                                 usef=True, S=50, nsamples=50)
+        exp = f'{ptx2gpu} --samples=samples --mask=mask --seed=seed ' \
+               '--rseed=20 --usef -S 50 --nsamples=50'
+        assert res.stdout[0] == exp

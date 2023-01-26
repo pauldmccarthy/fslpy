@@ -10,6 +10,7 @@
 """
 
 
+import pathlib
 import functools as ft
 
 import fsl.utils.assertions as asrt
@@ -69,3 +70,65 @@ def _fslmerge_n(n, output, *images):
 def _fslmerge_tr(tr, output, *images):
     """Calls ``fslmerge -tr output [image image ...] <tr>``. """
     return ['fslmerge', '-tr', output] + list(images) + [str(tr)]
+
+
+@wutils.fileOrImage('src', 'out')
+@wutils.fslwrapper
+def fslselectvols(src, out, vols, m=False, v=False):
+    """Wrapper for the ``fslselectvols`` command. ``vols`` may be a sequence,
+    or comma-separated string, or path to a file.
+
+    Refer to the ``fslselectvols`` command-line help for details on all
+    arguments.
+    """
+
+    asrt.assertIsNifti(src)
+
+    # vols can either be a sequence
+    # or a string/path to a file
+    if not isinstance(vols, (str, pathlib.Path)):
+        vols = ",".join([str(x) for x in vols])
+
+    cmd  = ['fslselectvols', '-i', src, '-o', out]
+    cmd += ['--vols=' + vols]
+
+    if m: cmd += ['-m']
+    if v: cmd += ['-v']
+
+    return cmd
+
+
+@wutils.fileOrImage('src', outprefix='out')
+@wutils.fslwrapper
+def fslsplit(src, out=None, dim=None):
+    """Wrapper for the ``fslsplit`` command.
+
+    Splits a file in different volumes / slices
+
+    :arg src: Input image
+    :arg out: Output basename
+    :arg dim: One of ``'t'``, ``'x'``, ``'y'``, or ``'z'``
+
+    Refer to the ``fslsplit`` command-line help for details on all arguments.
+    """
+
+    asrt.assertIsNifti(src)
+
+    cmd = ['fslsplit', src]
+
+    if out: cmd += [out]
+    if dim: cmd += [f'-{dim}']
+
+    return cmd
+
+
+@wutils.fileOrImage('src', 'out')
+@wutils.fslwrapper
+def fslcpgeom(src, dest, d=False):
+    """Wrapper for the ``fslcpgeom`` command. """
+
+    asrt.assertIsNifti(src)
+    cmd = ['fslcpgeom', src, dest]
+    if d:
+        cmd += ['-d']
+    return cmd

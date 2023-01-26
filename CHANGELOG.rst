@@ -10,11 +10,16 @@ Added
 ^^^^^
 
 
-* New :func:`.standard_space_roi` and :func:`.fslswapdim` wrapper functions
-  for the FSL commands (!351, !354).
+* New :func:`.standard_space_roi`, :func:`.fslswapdim`, :func:`.fslmerge`,
+  :func:`.fslsplit`, :func:`fslselectvols`, and :func:`.fslcpgeom` wrapper
+  functions (!351, !354, !364).
 * New :mod:`fsl.wrappers.first` wrapper functions (!355).
 * New :mod:`fsl.wrappers.bianca` and :mod:`fsl.wrappers.avwutils` wrapper
   functions (!358).
+* New :mod:`fsl.wrappers.bedpostx` and :mod:`~.wrappers.dtifit` wrapper
+  functions (!364).
+* New :func:`~fsl.wrappers.feat.feat`, :func:`~.melodic.fsl_regfilt` and
+  :func:`~.melodic.fsl_glm` wrapper functions (!364).
 * New :func:`.wrapperconfig` context manager function, which allows the
   default values for arguments passed by the :mod:`fsl.wrappers` functions to
   the :func:`fsl.utils.run.run` function to be changed (!352, !356).

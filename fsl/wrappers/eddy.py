@@ -6,6 +6,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Martin Craig <martin.craig@eng.ox.a.uk>
 # Author: Michiel Cottaar <michiel.cottaar@ndcn.ox.ac.uk>
+# Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
 """This module provides wrapper functions for the FSL `TOPUP
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup>`_ and `EDDY
@@ -15,6 +16,7 @@ estimation and eddy-current distortion correction.
 .. autosummary::
    :nosignatures:
 
+   eddy
    eddy_cuda
    topup
    applytopup
@@ -48,24 +50,29 @@ def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
         'estimate_move_by_susceptibility' : wutils.SHOW_IF_TRUE,
         'verbose'                         : wutils.SHOW_IF_TRUE,
         'very_verbose'                    : wutils.SHOW_IF_TRUE,
+        'sep_offs_move'                   : wutils.SHOW_IF_TRUE,
+        'rms'                             : wutils.SHOW_IF_TRUE,
     }
 
     asrt.assertFileExists(imain, mask, index, acqp, bvecs, bvals)
     asrt.assertIsNifti(imain, mask)
 
-    kwargs.update({'imain' : imain,
-                   'mask'  : mask,
-                   'index' : index,
-                   'acqp'  : acqp,
-                   'bvecs' : bvecs,
-                   'bvals' : bvals,
-                   'out'   : out})
-
-    cmd = ['eddy'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    cmd = ['eddy',
+           f'--imain={imain}',
+           f'--mask={mask}',
+           f'--index={index}',
+           f'--acqp={acqp}',
+           f'--bvecs={bvecs}',
+           f'--bvals={bvals}',
+           f'--out={out}']
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
     return cmd
 
 
-@deprecated("3.10", "4.0", "eddy_cuda has been deprecated in favour of eddy, which will call the appropriate GPU or CPU version of eddy automatically.")
+@deprecated('3.10', '4.0',
+            'eddy_cuda has been deprecated in favour of eddy, '
+            'which will call the appropriate GPU or CPU version '
+            'of eddy automatically.')
 def eddy_cuda(*args, **kwargs):
     eddy(*args, **kwargs)
 
@@ -74,9 +81,10 @@ def eddy_cuda(*args, **kwargs):
 @wutils.fileOrArray('datain', outprefix='out')
 @wutils.fslwrapper
 def topup(imain, datain, **kwargs):
-    """Wrapper for the ``topup`` command."""
+    """Wrapper for the ``topup`` command. """
 
     valmap = {
+        'v'       : wutils.SHOW_IF_TRUE,
         'verbose' : wutils.SHOW_IF_TRUE
     }
 
@@ -88,13 +96,15 @@ def topup(imain, datain, **kwargs):
 
     return cmd
 
-@wutils.fileOrImage('imain', 'out')
+
+@wutils.fileOrImage('imain', outprefix='out')
 @wutils.fileOrArray('datain')
 @wutils.fslwrapper
-def applytopup(imain, datain, index, **kwargs):
-    """Wrapper for the ``applytopup`` command."""
+def applytopup(imain, datain, index, topup, out, **kwargs):
+    """Wrapper for the ``applytopup`` command. """
 
     valmap = {
+        'v'       : wutils.SHOW_IF_TRUE,
         'verbose' : wutils.SHOW_IF_TRUE
     }
 
@@ -103,9 +113,12 @@ def applytopup(imain, datain, index, **kwargs):
         asrt.assertIsNifti(fn)
 
     cmd  = [
-        'applytopup', '--imain={}'.format(imain),
-        '--inindex={}'.format(index),
-        '--datain={}'.format(datain),
+        'applytopup',
+        f'--imain={imain}',
+        f'--inindex={index}',
+        f'--datain={datain}',
+        f'--topup={topup}',
+        f'--out={out}'
     ]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
