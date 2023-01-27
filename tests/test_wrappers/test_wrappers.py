@@ -674,3 +674,10 @@ def test_oxford_asl():
                '--region-analysis-atlas-labels=l2 ' \
                '--region-analysis-atlas-labels=l3'
         assert res.stdout[0] == exp
+
+
+def test_asl_file():
+    with testenv('asl_file') as asl_file:
+        res = fw.asl_file('in', 20, 'out', diff=True, iaf='ct')
+        exp = f'{asl_file} --data=in --ntis=20 --out=out --diff --iaf=ct'
+        assert res.stdout[0] == exp
