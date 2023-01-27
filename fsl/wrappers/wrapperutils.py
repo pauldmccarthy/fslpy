@@ -277,6 +277,21 @@ generated command line arguments.
 """
 
 
+EXPAND_LIST = object()
+"""Constant  to be used in the ``valmap`` passed to the :func:`applyArgStyle`
+function.
+
+``EXPAND_LIST`` argument values are expected to be sequences. Each element of
+the sequence will be added as a separate command line argument. For example::
+
+    applyArgStyle(argmap={'myarg' : EXPAND_LIST}, myarg=[1, 2, 3])
+
+will be transformed into::
+
+    --myarg 1 --myarg 2 --myarg 3
+"""
+
+
 def applyArgStyle(style=None,
                   valsep=None,
                   argmap=None,
@@ -342,6 +357,10 @@ def applyArgStyle(style=None,
                      - :data:`HIDE_IF_TRUE` - if the argument is present, and
                        ``False`` in ``kwargs``, the command line option
                        will be added (without any arguments).
+
+                     - :data:`EXPAND_LIST` - The argument value is assumed to
+                       be a sequence - each element will be added as a separate
+                       command-line option.
 
                      - Any other constant value. If the argument is present
                        in ``kwargs``, its command-line option will be
@@ -450,15 +469,18 @@ def applyArgStyle(style=None,
         else:           sty, sep = style,     valsep
 
         k    = maparg(k)
-        mapv = valmap.get(k, fmtval(v, sep))
+        mapv = valmap.get(k, None)
         k    = fmtarg(k, sty)
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
                (mapv is HIDE_IF_TRUE and not v):
                 args.append(k)
+        elif mapv == EXPAND_LIST:
+            for vi in v:
+                args.extend(fmtargval(k, fmtval(vi, sep), sty))
         else:
-            args.extend(fmtargval(k, mapv, sty))
+            args.extend(fmtargval(k, fmtval(v, sep), sty))
 
     return args
 
