@@ -162,5 +162,5 @@ from fsl.wrappers.bedpostx           import (xfibres,
                                              probtrackx,
                                              probtrackx2,
                                              probtrackx2_gpu)
-from fsl.wrappers.oxfordl_asl        import (oxford_asl, 
+from fsl.wrappers.oxford_asl         import (oxford_asl,
                                              asl_file)

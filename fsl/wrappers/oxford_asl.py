@@ -14,11 +14,9 @@
    oxford_asl
 """
 
+
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
-
-def argmap(arg):
-    return arg.replace('_', '-')
 
 
 @wutils.fileOrImage('data')
@@ -29,35 +27,44 @@ def oxford_asl(data, out, **kwargs):
     asrt.assertIsNifti(data)
 
     vmap = {
-        'reg-init-bbr'              : wutils.SHOW_IF_TRUE,
-        'casl'                      : wutils.SHOW_IF_TRUE,
-        'fixbolus'                  : wutils.SHOW_IF_TRUE,
-        'spatial'                   : wutils.SHOW_IF_TRUE,
-        'nofmapreg'                 : wutils.SHOW_IF_TRUE,
-        'qc-outout'                 : wutils.SHOW_IF_TRUE,
-        'region-analysis-save-rois' : wutils.SHOW_IF_TRUE,
+        'wp'                           : wutils.SHOW_IF_TRUE,
+        'mc'                           : wutils.SHOW_IF_TRUE,
+        'noiseprior'                   : wutils.SHOW_IF_TRUE,
+        'edgecorr'                     : wutils.SHOW_IF_TRUE,
+        'senscorr'                     : wutils.SHOW_IF_TRUE,
+        't2star'                       : wutils.SHOW_IF_TRUE,
+        'reg-init-bbr'                 : wutils.SHOW_IF_TRUE,
+        'finalreg'                     : wutils.SHOW_IF_TRUE,
+        'zblur'                        : wutils.SHOW_IF_TRUE,
+        'structout'                    : wutils.SHOW_IF_TRUE,
+        'advout'                       : wutils.SHOW_IF_TRUE,
+        'infert1'                      : wutils.SHOW_IF_TRUE,
+        'artoff'                       : wutils.SHOW_IF_TRUE,
+        'artonly'                      : wutils.SHOW_IF_TRUE,
+        'artsupp'                      : wutils.SHOW_IF_TRUE,
+        'fixbat'                       : wutils.SHOW_IF_TRUE,
+        'spatial'                      : wutils.SHOW_IF_TRUE,
+        'fixbolus'                     : wutils.SHOW_IF_TRUE,
+        'casl'                         : wutils.SHOW_IF_TRUE,
+        'pvcorr'                       : wutils.SHOW_IF_TRUE,
+        'fulldata'                     : wutils.SHOW_IF_TRUE,
+        'fast'                         : wutils.SHOW_IF_TRUE,
+        'nofmapreg'                    : wutils.SHOW_IF_TRUE,
+        'region-analysis'              : wutils.SHOW_IF_TRUE,
+        'region-analysis-save-rois'    : wutils.SHOW_IF_TRUE,
+        'qc-outout'                    : wutils.SHOW_IF_TRUE,
+        'debug'                        : wutils.SHOW_IF_TRUE,
+        'devel'                        : wutils.SHOW_IF_TRUE,
+        'region-analysis-atlas'        : wutils.EXPAND_LIST,
+        'region-analysis-atlas-labels' : wutils.EXPAND_LIST,
+        'region-analysis-psf'          : wutils.EXPAND_LIST,
     }
 
-    cmd = ['oxford_asl',
-           f'-i {data}',
-           f'-o {out}']
+    cmd = ['oxford_asl', '-i', data, '-o', out]
 
-    region_analysis_atlas        = kwargs.pop('region_analysis_atlas', None)
-    region_analysis_atlas_labels = kwargs.pop('region_analysis_atlas_labels', None)
-    region_analysis_psf          = kwargs.pop('region_analysis_psf', None)
 
-    if region_analysis_atlas is not None:
-        cmd += ['--region-analysis']
-        for r in region_analysis_atlas:
-            cmd += [f'--region-analysis-atlas={r}']
-
-    if region_analysis_atlas_labels is not None:
-        for r in region_analysis_atlas_labels:
-            cmd += [f'--region-analysis-atlas-labels={r}']
-
-    if region_analysis_psf is not None:
-        for r in region_analysis_psf:
-            cmd += [f'--region-analysis-psf={r}']
+    def argmap(arg):
+        return arg.replace('_', '-')
 
     cmd += wutils.applyArgStyle(valmap=vmap, **kwargs, argmap=argmap)
 
@@ -86,4 +93,3 @@ def asl_file(data, ntis, **kwargs):
     cmd += wutils.applyArgStyle('--=', valmap=vmap, **kwargs)
 
     return cmd
-
