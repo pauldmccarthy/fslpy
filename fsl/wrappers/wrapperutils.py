@@ -297,7 +297,6 @@ def applyArgStyle(style=None,
     for single-character/short arguments) control how key-value pairs are
     converted into command-line options:
 
-
     =========  ==========  ===========================
     ``style``  ``valsep``  Result
     =========  ==========  ===========================
@@ -327,7 +326,10 @@ def applyArgStyle(style=None,
 
     :arg argmap:    Dictionary of ``{kwarg-name : cli-name}`` mappings. This be
                     used if you want to use different argument names in your
-                    Python function for the command-line options.
+                    Python function for the command-line options. ``argmap``
+                    may also be a callable - in this case, every argument name
+                    will be passed to it, and its return value used as the
+                    command-line option.
 
     :arg valmap:    Dictionary of ``{cli-name : value}`` mappings. This can be
                     used to define specific semantics for some command-line
@@ -347,6 +349,8 @@ def applyArgStyle(style=None,
 
                     The argument for any options not specified in the
                     ``valmap`` will be converted into strings.
+                    The argument names used in ``valmap`` must be the names
+                    used *after* any rules in ``argmap`` are applied.
 
     :arg charstyle: Separate style specification for single-character
                     arguments. If ``style == '--='``, defaults to ``'-'``,
@@ -368,6 +372,9 @@ def applyArgStyle(style=None,
                  same as what ``shlex.split`` would generate for a properly
                  quoted string.
     """
+
+    if argmap is None: argmap = {}
+    if valmap is None: valmap = {}
 
     if style is None:
         style = '--='
@@ -404,8 +411,11 @@ def applyArgStyle(style=None,
         raise ValueError(f'Incompatible style {charstyle} '
                          'and valsep ({charsep})')
 
-    if argmap is None: argmap = {}
-    if valmap is None: valmap = {}
+    # apply argmap transform
+    def maparg(arg):
+        # argmap can either be a dictionary or a callable
+        if callable(argmap): return argmap(arg)
+        else:                return argmap.get(arg, arg)
 
     # Format the argument.
     def fmtarg(arg, style):
@@ -439,7 +449,7 @@ def applyArgStyle(style=None,
         if len(k) == 1: sty, sep = charstyle, charsep
         else:           sty, sep = style,     valsep
 
-        k    = argmap.get(k, k)
+        k    = maparg(k)
         mapv = valmap.get(k, fmtval(v, sep))
         k    = fmtarg(k, sty)
 
