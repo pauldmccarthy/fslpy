@@ -73,22 +73,26 @@ def oxford_asl(data, out, **kwargs):
 
 @wutils.fileOrImage('data')
 @wutils.fslwrapper
-def asl_file(data, ntis, **kwargs):
+def asl_file(data, ntis, out=None, **kwargs):
     """Wrapper for the ``asl_file`` command."""
 
     asrt.assertIsNifti(data)
 
     vmap = {
+        'pairs'       : wutils.SHOW_IF_TRUE,
+        'inpairs'     : wutils.SHOW_IF_TRUE,
+        'spairs'      : wutils.SHOW_IF_TRUE,
         'diff'        : wutils.SHOW_IF_TRUE,
         'surrdif'     : wutils.SHOW_IF_TRUE,
         'extrapolate' : wutils.SHOW_IF_TRUE,
-        'epoch'       : wutils.SHOW_IF_TRUE,
-        'deconv'      : wutils.SHOW_IF_TRUE
     }
 
     cmd = ['asl_file',
            '--data='  + data,
            '--ntis='  + str(ntis)]
+
+    if out is not None:
+        cmd += ['--out=' + out]
 
     cmd += wutils.applyArgStyle('--=', valmap=vmap, **kwargs)
 
