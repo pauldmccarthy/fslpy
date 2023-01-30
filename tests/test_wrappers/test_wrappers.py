@@ -654,3 +654,30 @@ def test_probtrackx2_gpu():
         exp = f'{ptx2gpu} --samples=samples --mask=mask --seed=seed ' \
                '--rseed=20 --usef -S 50 --nsamples=50'
         assert res.stdout[0] == exp
+
+
+def test_oxford_asl():
+    with testenv('oxford_asl') as oxford_asl:
+        res = fw.oxford_asl('in', 'out',
+                            S='T1',
+                            sbrain='T1_brain',
+                            regfrom_method='pwi',
+                            region_analysis=True,
+                            region_analysis_atlas=['a1', 'a2', 'a3'],
+                            region_analysis_atlas_labels=['l1', 'l2', 'l3'])
+        exp = f'{oxford_asl} -i in -o out -S T1 --sbrain=T1_brain ' \
+               '--regfrom-method=pwi --region-analysis '  \
+               '--region-analysis-atlas=a1 ' \
+               '--region-analysis-atlas=a2 ' \
+               '--region-analysis-atlas=a3 ' \
+               '--region-analysis-atlas-labels=l1 ' \
+               '--region-analysis-atlas-labels=l2 ' \
+               '--region-analysis-atlas-labels=l3'
+        assert res.stdout[0] == exp
+
+
+def test_asl_file():
+    with testenv('asl_file') as asl_file:
+        res = fw.asl_file('in', 20, 'out', diff=True, iaf='ct')
+        exp = f'{asl_file} --data=in --ntis=20 --out=out --diff --iaf=ct'
+        assert res.stdout[0] == exp
