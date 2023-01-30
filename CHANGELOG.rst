@@ -38,6 +38,11 @@ Changed
 * The :mod:`.dicom` module will now preferentially call
   ``$FSLDIR/bin/dcm2niix``, instead of calling the first ``dcm2niix`` on the
   ``$PATH`` (!365).
+* The :func:`.applyArgStyle` ``argmap`` argument can now be a callable which
+  defines a rule which will be applied to all argument names (!366).
+* The :func:`.applyArgStyle` ``valmap`` argument now accepts a new
+  ``EXPAND_LIST`` option, which allows sequences to be expanded as separate
+  command-line options (!366).
 
 
 Fixed

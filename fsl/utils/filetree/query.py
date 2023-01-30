@@ -131,7 +131,7 @@ class FileTreeQuery(object):
             # An ND array for this short
             # name. Each element is a
             # Match object, or nan.
-            matcharray    = np.zeros(tvarlens, dtype=np.object)
+            matcharray    = np.zeros(tvarlens, dtype=object)
             matcharray[:] = np.nan
 
             # indices into the match array

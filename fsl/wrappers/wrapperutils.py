@@ -277,6 +277,21 @@ generated command line arguments.
 """
 
 
+EXPAND_LIST = object()
+"""Constant  to be used in the ``valmap`` passed to the :func:`applyArgStyle`
+function.
+
+``EXPAND_LIST`` argument values are expected to be sequences. Each element of
+the sequence will be added as a separate command line argument. For example::
+
+    applyArgStyle(argmap={'myarg' : EXPAND_LIST}, myarg=[1, 2, 3])
+
+will be transformed into::
+
+    --myarg 1 --myarg 2 --myarg 3
+"""
+
+
 def applyArgStyle(style=None,
                   valsep=None,
                   argmap=None,
@@ -296,7 +311,6 @@ def applyArgStyle(style=None,
     The ``style`` and ``valsep`` options (and ``charstyle`` and ``charsep``,
     for single-character/short arguments) control how key-value pairs are
     converted into command-line options:
-
 
     =========  ==========  ===========================
     ``style``  ``valsep``  Result
@@ -327,7 +341,10 @@ def applyArgStyle(style=None,
 
     :arg argmap:    Dictionary of ``{kwarg-name : cli-name}`` mappings. This be
                     used if you want to use different argument names in your
-                    Python function for the command-line options.
+                    Python function for the command-line options. ``argmap``
+                    may also be a callable - in this case, every argument name
+                    will be passed to it, and its return value used as the
+                    command-line option.
 
     :arg valmap:    Dictionary of ``{cli-name : value}`` mappings. This can be
                     used to define specific semantics for some command-line
@@ -341,12 +358,18 @@ def applyArgStyle(style=None,
                        ``False`` in ``kwargs``, the command line option
                        will be added (without any arguments).
 
+                     - :data:`EXPAND_LIST` - The argument value is assumed to
+                       be a sequence - each element will be added as a separate
+                       command-line option.
+
                      - Any other constant value. If the argument is present
                        in ``kwargs``, its command-line option will be
                        added, with the constant value as its argument.
 
                     The argument for any options not specified in the
                     ``valmap`` will be converted into strings.
+                    The argument names used in ``valmap`` must be the names
+                    used *after* any rules in ``argmap`` are applied.
 
     :arg charstyle: Separate style specification for single-character
                     arguments. If ``style == '--='``, defaults to ``'-'``,
@@ -368,6 +391,9 @@ def applyArgStyle(style=None,
                  same as what ``shlex.split`` would generate for a properly
                  quoted string.
     """
+
+    if argmap is None: argmap = {}
+    if valmap is None: valmap = {}
 
     if style is None:
         style = '--='
@@ -404,8 +430,11 @@ def applyArgStyle(style=None,
         raise ValueError(f'Incompatible style {charstyle} '
                          'and valsep ({charsep})')
 
-    if argmap is None: argmap = {}
-    if valmap is None: valmap = {}
+    # apply argmap transform
+    def maparg(arg):
+        # argmap can either be a dictionary or a callable
+        if callable(argmap): return argmap(arg)
+        else:                return argmap.get(arg, arg)
 
     # Format the argument.
     def fmtarg(arg, style):
@@ -439,16 +468,19 @@ def applyArgStyle(style=None,
         if len(k) == 1: sty, sep = charstyle, charsep
         else:           sty, sep = style,     valsep
 
-        k    = argmap.get(k, k)
-        mapv = valmap.get(k, fmtval(v, sep))
+        k    = maparg(k)
+        mapv = valmap.get(k, None)
         k    = fmtarg(k, sty)
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
                (mapv is HIDE_IF_TRUE and not v):
                 args.append(k)
+        elif mapv == EXPAND_LIST:
+            for vi in v:
+                args.extend(fmtargval(k, fmtval(vi, sep), sty))
         else:
-            args.extend(fmtargval(k, mapv, sty))
+            args.extend(fmtargval(k, fmtval(v, sep), sty))
 
     return args
 

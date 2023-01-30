@@ -10,6 +10,7 @@ import            os
 import            shlex
 import            pathlib
 import            textwrap
+import functools as ft
 
 from unittest import mock
 
@@ -149,7 +150,7 @@ def test_applyArgStyle_argmap():
     assert wutils.applyArgStyle('-', argmap=argmap, **kwargs) in exp
 
 
-def test_applyArgStyle_valmap():
+def test_applyArgStyle_valmap_show_hide():
 
     valmap = {
         'a' : wutils.SHOW_IF_TRUE,
@@ -176,6 +177,27 @@ def test_applyArgStyle_valmap():
         assert wutils.applyArgStyle('-', valmap=valmap, **kwargs) in expected
 
 
+def test_applyArgStyle_valmap_unroll_list():
+
+    valmap = {
+        'a'  : wutils.EXPAND_LIST,
+        'aa' : wutils.EXPAND_LIST,
+    }
+
+    tests = [
+        ({ 'a' : [1, 2, 3], 'b' : [1, 2, 3]},
+         '-a 1 -a 2 -a 3 -b 1 2 3'),
+
+        ({ 'aa' : [1, 2, 3], 'bb' : [1, 2, 3]},
+         '--aa=1 --aa=2 --aa=3 --bb=1,2,3'),
+    ]
+
+    for kwargs, expected in tests:
+        expected = shlex.split(expected)
+        assert wutils.applyArgStyle(valmap=valmap, **kwargs) == expected
+
+
+
 def test_applyArgStyle_argmap_valmap():
 
     argmap = {'a1' : 'a', 'a2' : 'b'}
@@ -186,23 +208,39 @@ def test_applyArgStyle_argmap_valmap():
 
     # kwargs, expected
     tests = [
-        ({                            }, ['']),
-        ({ 'a1' : False,              }, ['']),
-        ({ 'a1' : True,               }, ['-a']),
-        ({               'a2' : False }, ['-b']),
-        ({               'a2' : True  }, ['']),
-        ({ 'a1' : False, 'a2' : True  }, ['']),
-        ({ 'a1' : True,  'a2' : True  }, ['-a']),
-        ({ 'a1' : False, 'a2' : False }, ['-b']),
-        ({ 'a1' : False, 'a2' : True  }, ['']),
-        ({ 'a1' : True,  'a2' : False }, ['-a -b', '-b -a']),
-        ({ 'a1' : True,  'a2' : True  }, ['-a']),
+        ({                            }, ''),
+        ({ 'a1' : False,              }, ''),
+        ({ 'a1' : True,               }, '-a'),
+        ({               'a2' : False }, '-b'),
+        ({               'a2' : True  }, ''),
+        ({ 'a1' : False, 'a2' : True  }, ''),
+        ({ 'a1' : True,  'a2' : True  }, '-a'),
+        ({ 'a1' : False, 'a2' : False }, '-b'),
+        ({ 'a1' : False, 'a2' : True  }, ''),
+        ({ 'a1' : True,  'a2' : False }, '-a -b'),
+        ({ 'a1' : True,  'a2' : True  }, '-a'),
     ]
 
     for kwargs, expected in tests:
-        expected = [shlex.split(e) for e in expected]
+        expected = shlex.split(expected)
         assert wutils.applyArgStyle(
-            '-', argmap=argmap, valmap=valmap, **kwargs) in expected
+            '-', argmap=argmap, valmap=valmap, **kwargs) == expected
+
+
+def test_applyArgStyle_callable_argmap():
+
+    def repl(s):
+        return s.replace('_', '-')
+
+    tests = [
+        ({'some_arg' : 'a_b_c', 'c' : 'd_e'},
+         ['--some-arg=a_b_c', '-c', 'd_e']),
+        ({'some_arg' : 'a', 'somearg' : 'b', 'c' : 'd'},
+         ['--some-arg=a', '--somearg=b', '-c', 'd']),
+    ]
+
+    for kwargs, expect in tests:
+        assert wutils.applyArgStyle(argmap=repl, **kwargs) == expect
 
 
 def test_namedPositionals():
