@@ -20,6 +20,7 @@ Added
   functions (!364).
 * New :func:`~fsl.wrappers.feat.feat`, :func:`~.melodic.fsl_regfilt` and
   :func:`~.melodic.fsl_glm` wrapper functions (!364).
+* New :func:`.oxford_asl` and :func:`asl_file` wrapper functions (!368).
 * New :func:`.wrapperconfig` context manager function, which allows the
   default values for arguments passed by the :mod:`fsl.wrappers` functions to
   the :func:`fsl.utils.run.run` function to be changed (!352, !356).
