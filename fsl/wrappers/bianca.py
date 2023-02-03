@@ -13,7 +13,10 @@ import fsl.wrappers.wrapperutils as wutils
 
 
 @wutils.fslwrapper
-def bianca(singlefile, **kwargs):
+def bianca(singlefile,
+           querysubjectnum=None,
+           brainmaskfeaturenum=None,
+           **kwargs):
     """Wrapper function for the FSL ``bianca`` command. """
 
     valmap = {
@@ -22,11 +25,14 @@ def bianca(singlefile, **kwargs):
         'transposefile' : wutils.SHOW_IF_TRUE,
         'debug'         : wutils.SHOW_IF_TRUE,
         'v'             : wutils.SHOW_IF_TRUE,
-        'h'             : wutils.SHOW_IF_TRUE,
-        'help'          : wutils.SHOW_IF_TRUE,
     }
 
-    cmd  = ['bianca', '--singlefile', singlefile]
+    cmd = ['bianca', '--singlefile', singlefile]
+    if querysubjectnum is not None:
+        cmd += ['--querysubjecthum', querysubjectnum]
+    if brainmaskfeaturenum is not None:
+        cmd += ['--brainmaskfeaturenum', brainmaskfeaturenum]
+
     cmd += wutils.applyArgStyle('--', charstyle='-', valmap=valmap, **kwargs)
 
     return cmd
