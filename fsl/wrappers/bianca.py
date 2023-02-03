@@ -29,7 +29,7 @@ def bianca(singlefile,
 
     cmd = ['bianca', '--singlefile', singlefile]
     if querysubjectnum is not None:
-        cmd += ['--querysubjecthum', str(querysubjectnum)]
+        cmd += ['--querysubjectnum', str(querysubjectnum)]
     if brainmaskfeaturenum is not None:
         cmd += ['--brainmaskfeaturenum', str(brainmaskfeaturenum)]
 
