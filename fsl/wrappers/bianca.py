@@ -29,9 +29,9 @@ def bianca(singlefile,
 
     cmd = ['bianca', '--singlefile', singlefile]
     if querysubjectnum is not None:
-        cmd += ['--querysubjecthum', querysubjectnum]
+        cmd += ['--querysubjecthum', str(querysubjectnum)]
     if brainmaskfeaturenum is not None:
-        cmd += ['--brainmaskfeaturenum', brainmaskfeaturenum]
+        cmd += ['--brainmaskfeaturenum', str(brainmaskfeaturenum)]
 
     cmd += wutils.applyArgStyle('--', charstyle='-', valmap=valmap, **kwargs)
 

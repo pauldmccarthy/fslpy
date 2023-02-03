@@ -558,8 +558,12 @@ def test_bianca():
                             bianca_perivent_deep,
                             make_bianca_mask):
 
-        expected = f'{bianca} --singlefile sfile --patch3d --querysubjectnum 3 -v'
-        result   = fw.bianca('sfile', patch3d=True, querysubjectnum=3, v=True)
+        expected = f'{bianca} --singlefile sfile --querysubjectnum 3 --brainmaskfeaturenum 4'
+        result   = fw.bianca('sfile', 3, 4)
+        assert result[0] == expected
+
+        expected = f'{bianca} --singlefile sfile --querysubjectnum 3 --patch3d -v'
+        result   = fw.bianca('sfile', 3, patch3d=True, v=True)
         assert result[0] == expected
 
         expected = f'{bianca_cluster_stats} out 9 5 mask'
