@@ -574,8 +574,8 @@ def test_bianca():
         result   = fw.bianca_overlap_measures('lesions', 9, 'mask', True)
         assert result.stdout[0] == expected
 
-        expected = f'{bianca_perivent_deep} wmh vent 2 out'
-        result   = fw.bianca_perivent_deep('wmh', 'vent', 'out', 2)
+        expected = f'{bianca_perivent_deep} wmh vent 10 2 out'
+        result   = fw.bianca_perivent_deep('wmh', 'vent', 10, 'out', 2)
         assert result.stdout[0] == expected
 
         expected = f'{make_bianca_mask} struc csf warp 1'

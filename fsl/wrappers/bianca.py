@@ -71,10 +71,14 @@ def bianca_overlap_measures(lesionmask,
 
 @wutils.fileOrImage('wmh_map', 'vent_mask')
 @wutils.fslwrapper
-def bianca_perivent_deep(wmh_map, vent_mask, outputdir, do_stats=1):
+def bianca_perivent_deep(wmh_map,
+                         vent_mask,
+                         minclustersize,
+                         outputdir,
+                         do_stats=1):
     """Wrapper function for the FSL ``bianca_perivent_deep`` command. """
     return ['bianca_perivent_deep', wmh_map, vent_mask,
-            str(do_stats), outputdir]
+            str(minclustersize), str(do_stats), outputdir]
 
 
 @wutils.fileOrImage('struc', 'csf_pve', 'mni2struc')
