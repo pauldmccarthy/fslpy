@@ -283,7 +283,7 @@ def _eval_mask_query(atlas, query, qtype, qin):
         rmask = resample.resample(
             mask, atlas.shape[:3], dtype=np.float32, order=0)[0]
 
-    rmask = np.array(rmask, dtype=np.bool)
+    rmask = np.array(rmask, dtype=bool)
 
     def evalLabel():
 
