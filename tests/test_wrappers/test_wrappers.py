@@ -97,6 +97,22 @@ def test_topup():
         assert result.stdout[0] == expected
 
 
+
+def test_applytopup():
+    with testenv('applytopup') as applytopup:
+        result   = fw.applytopup('imain', 'datain', '1,2,3', 'topup', 'out',
+                                  m='jac')
+        expected = f'{applytopup} --imain=imain --datain=datain ' \
+                    '--inindex=1,2,3 --topup=topup --out=out -m jac'
+        assert result.stdout[0] == expected
+
+        result   = fw.applytopup('imain', 'datain', [1, 2, 3], 'topup', 'out',
+                            method='jac')
+        expected = f'{applytopup} --imain=imain --datain=datain ' \
+                    '--inindex=1,2,3 --topup=topup --out=out --method=jac'
+        assert result.stdout[0] == expected
+
+
 def test_flirt():
     with testenv('flirt') as flirt:
         result   = fw.flirt('src', 'ref', usesqform=True, anglerep='euler')
@@ -286,21 +302,25 @@ def test_cluster():
 def test_fslmaths():
     with testenv('fslmaths') as fslmaths:
         result   = fw.fslmaths('input') \
+            .range() \
             .abs().bin().binv().recip().Tmean().Tstd().Tmin().Tmax() \
             .fillh().ero().dilM().dilF().add('addim').sub('subim') \
             .mul('mulim').div('divim').mas('masim').rem('remim')   \
             .thr('thrim').uthr('uthrim').inm('inmim').bptf(1, 10) \
             .smooth(sigma=6).kernel('3D').fmeanu().roi(10, 3, 20, 21, 1, 5) \
+            .sqr().sqrt().log().dilD(2).max('im').min('im2') \
+            .fmedian().kernel('3D').kernel('box', 3) \
             .run('output')
 
-        expected = [fslmaths, 'input',
+        expected = [fslmaths, 'input', '-range',
                     '-abs', '-bin', '-binv', '-recip', '-Tmean', '-Tstd',
                     '-Tmin', '-Tmax', '-fillh', '-ero', '-dilM', '-dilF',
                     '-add addim', '-sub subim', '-mul mulim', '-div divim',
                     '-mas masim', '-rem remim', '-thr thrim', '-uthr uthrim',
                     '-inm inmim', '-bptf 1 10', '-s 6', '-kernel 3D', '-fmeanu',
-                    '-roi 10 3 20 21 1 5 0 -1',
-                    'output']
+                    '-roi 10 3 20 21 1 5 0 -1', '-sqr', '-sqrt', '-log',
+                    '-dilD', '-dilD', '-max', 'im', '-min', 'im2', '-fmedian',
+                    '-kernel', '3D', '-kernel', 'box', '3', 'output']
         expected = ' '.join(expected)
 
         assert result.stdout[0] == expected

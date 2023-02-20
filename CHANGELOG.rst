@@ -44,6 +44,9 @@ Changed
 * The :func:`.applyArgStyle` ``valmap`` argument now accepts a new
   ``EXPAND_LIST`` option, which allows sequences to be expanded as separate
   command-line options (!366).
+* :class:`.Image` objects can now be created without passing a
+  ``nibabel.Nifti1Image`` (or similar) object, as long as a
+  ``nibabel.Nifti1Header`` and a :class:`.DataManager` are provided (!362).
 
 
 Fixed

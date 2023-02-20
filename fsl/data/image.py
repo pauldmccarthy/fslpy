@@ -117,6 +117,14 @@ class DataManager:
         raise NotImplementedError()
 
 
+    @property
+    def editable(self):
+        """Return ``True`` if the image data can be modified, ``False``
+        otherwise. The default implementation returns ``True``.
+        """
+        return True
+
+
     def __getitem__(self, slc):
         """Return data at ``slc``. """
         raise NotImplementedError()
@@ -1141,7 +1149,7 @@ class Image(Nifti):
 
 
     def __init__(self,
-                 image      : ImageSource,
+                 image      : ImageSource      = None,
                  name       : str              = None,
                  header     : nib.Nifti1Header = None,
                  xform      : np.ndarray       = None,
@@ -1157,7 +1165,8 @@ class Image(Nifti):
         :arg image:      A string containing the name of an image file to load,
                          or a Path object pointing to an image file, or a
                          :mod:`numpy` array, or a :mod:`nibabel` image object,
-                         or an ``Image`` object.
+                         or an ``Image`` object. If not provided, a ``header``
+                         and a ``dataMgr`` must be provided.
 
         :arg name:       A name for the image.
 
@@ -1200,7 +1209,7 @@ class Image(Nifti):
         """
 
         if threaded is not None:
-            deprecated.warn('Image(threadd)', vin='3.9.0', rin='4.0.0',
+            deprecated.warn('Image(threaded)', vin='3.9.0', rin='4.0.0',
                             msg='The threaded option has no effect')
         if loadData is not None:
             deprecated.warn('Image(loadData)', vin='3.9.0', rin='4.0.0',
@@ -1236,6 +1245,7 @@ class Image(Nifti):
         if isinstance(image, (str, Path)):
             image      = op.abspath(addExt(image))
             nibImage   = nib.load(image, **kwargs)
+            header     = nibImage.header
             dataSource = image
             saved      = True
 
@@ -1271,16 +1281,28 @@ class Image(Nifti):
                 ctr = nib.analyze.AnalyzeImage
 
             nibImage = ctr(image, xform, header=header)
+            header   = nibImage.header
 
         # If it's an Image object, we
         # just take the nibabel image
         elif isinstance(image, Image):
             nibImage = image.nibImage
+            header   = image.header
 
         # otherwise, we assume that
         # it is a nibabel image
-        else:
+        elif image is not None:
             nibImage = image
+            header   = nibImage.header
+
+        # If an image is not provided,
+        # a DataManager must be provided
+        elif dataMgr is None:
+            raise ValueError('A DataManager must be provided '
+                             'if an image is not provided')
+
+        if header is None:
+            raise ValueError('Could not identify/create NIfTI header')
 
         # Figure out the name of this image, if
         # it has not been explicitly passed in
@@ -1299,10 +1321,10 @@ class Image(Nifti):
             else:
                 name = 'Nibabel image'
 
-        Nifti.__init__(self, nibImage.header)
+        Nifti.__init__(self, header)
 
         self.name         = name
-        self.__lName      = '{}_{}'.format(id(self), self.name)
+        self.__lName      = f'{id(self)}_{self.name}'
         self.__dataSource = dataSource
         self.__nibImage   = nibImage
         self.__saveState  = saved
@@ -1479,6 +1501,16 @@ class Image(Nifti):
         return np.issubdtype(self.dtype, np.complexfloating)
 
 
+    @property
+    def editable(self):
+        """Return ``True`` if the image data can be modified, ``False``
+        otherwise. Delegates to :meth:`DataManager.editable` if a
+        :class:`DataManager` is in use.
+        """
+        if self.__dataMgr is not None: return self.__dataMgr.editable
+        else:                          return True
+
+
     @Nifti.voxToWorldMat.setter
     def voxToWorldMat(self, xform):
         """Overrides the :meth:`Nifti.voxToWorldMat` property setter.
@@ -1489,6 +1521,9 @@ class Image(Nifti):
         """
 
         Nifti.voxToWorldMat.fset(self, xform)
+
+        if self.__nibImage is None:
+            return
 
         xform =     self.voxToWorldMat
         code  = int(self.header['sform_code'])
@@ -1528,6 +1563,10 @@ class Image(Nifti):
 
         if self.__dataSource is None and filename is None:
             raise ValueError('A file name must be specified')
+
+        if self.__nibImage is None:
+            raise ValueError('Cannot save images without an '
+                             'associated nibabel object')
 
         if filename is None:
             filename = self.__dataSource
@@ -1657,6 +1696,10 @@ class Image(Nifti):
         .. note:: Modifying image data may force the entire image to be
                   loaded into memory if it has not already been loaded.
         """
+
+        if not self.editable:
+            raise RuntimeError('Image is not editable')
+
         values = np.array(values)
 
         if values.size == 0:

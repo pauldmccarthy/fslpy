@@ -318,6 +318,7 @@ def _test_Image_atts(imgtype):
             path = op.abspath(op.join(testdir, path))
             i    = fslimage.Image(path)
 
+            assert       i.editable
             assert not   i.iscomplex
             assert tuple(i.shape)                       == tuple(expdims)
             assert tuple(i.data.shape)                  == tuple(expdims)
