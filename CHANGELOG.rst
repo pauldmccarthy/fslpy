@@ -2,6 +2,25 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.11.1 (Friday 24th February 2023)
+----------------------------------
+
+
+Added
+
+
+* New :func:`.featquery` wrapper function (!374).
+
+
+Fixed
+^^^^^
+
+
+* fixed the :class:`.fslstats` wrapper to handle index masks (the ``-K``
+  option) with missing label values (!374).
+
+
+
 3.11.0 (Monday 20th February 2023)
 ----------------------------------
 

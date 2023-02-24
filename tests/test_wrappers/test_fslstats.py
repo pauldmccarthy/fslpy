@@ -3,6 +3,7 @@
 
 import os
 import os.path as op
+import textwrap as tw
 import sys
 import contextlib
 
@@ -35,10 +36,14 @@ np.savetxt(sys.stdout, data, fmt='%i')
 
 
 @contextlib.contextmanager
-def mockFSLDIR(shape):
+def mockFSLDIR(shape=None, fslstats=None):
     with mockFSLDIR_base() as fd:
         fname  = op.join(fd, 'bin', 'fslstats')
-        script = mock_fslstats.format(outshape=shape)
+
+        if shape is not None:
+            script = mock_fslstats.format(outshape=shape)
+        else:
+            script = fslstats
         with open(fname, 'wt') as f:
             f.write(script)
         os.chmod(fname, 0o755)
@@ -110,3 +115,22 @@ def test_fslstats_result():
 
             result = fw.fslstats('image', K='mask').run()
             assert result.shape == (4,)
+
+
+def test_fslstats_index_mask_missing_labels():
+    script = tw.dedent("""
+    #!/usr/bin/env bash
+
+    echo "1"
+    echo "missing label: 2"
+    echo "3"
+    echo "missing label: 4"
+    echo "5"
+    """).strip()
+    with tempdir.tempdir():
+        with mockFSLDIR(fslstats=script) as fsldir:
+            result = fw.fslstats('image', K='mask').p(50).run()
+            expect = np.array([1, np.nan, 3, np.nan, 5])
+            namask = np.isnan(expect)
+            assert np.all(result[~namask]  == expect[~namask])
+            assert np.all(np.isnan(expect) == np.isnan(result))
