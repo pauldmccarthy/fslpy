@@ -608,6 +608,30 @@ def test_feat():
         assert fw.feat('design.fsf')[0] == f'{feat} design.fsf'
 
 
+def test_featquery():
+    with testenv('featquery') as featquery:
+        expect = f'{featquery} 3 feat1 feat2 feat3 2 stat1 stat2 ' \
+                  'output -p -t 0.4 -w mask -vox 20 30 40'
+        result = fw.featquery(('feat1', 'feat2', 'feat3'),
+                              ('stat1', 'stat2'),
+                              'output', 'mask',
+                              vox=(20, 30, 40), t=0.4,
+                              p=True, w=True)
+        assert result.stdout[0] == expect
+
+        expect = f'{featquery} 2 feat1 feat2 3 stat1 stat2 stat3 ' \
+                  'output -a atlas -i 1.5 -s mask -mm 20 30 40'
+        result = fw.featquery(('feat1', 'feat2'),
+                              ('stat1', 'stat2', 'stat3'),
+                              'output', 'mask',
+                              w=False,
+                              s=True,
+                              a='atlas',
+                              mm=(20, 30, 40),
+                              i=1.5)
+        assert result.stdout[0] == expect
+
+
 def test_dtifit():
     with testenv('dtifit') as dtifit:
         res    = fw.dtifit('data', 'out', 'mask', 'bvecs', 'bvals', kurt=True, z=2, xmax=6)
