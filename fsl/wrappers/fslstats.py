@@ -224,7 +224,20 @@ class fslstats:
         if raw:
             return result.stdout
 
-        result  = np.genfromtxt(io.StringIO(result.stdout[0].strip()))
+        # If an index mask was used (-K), any
+        # missing labels will result in a line
+        # "missing label: <x>". Replace these
+        # lines with nan before passing the
+        # output to numpy for the conversion.
+        result = result.stdout[0]
+        result = result.split('\n')
+
+        for i, line in enumerate(result):
+            if 'missing label' in line: result[i] = 'nan'
+            else:                       result[i] = line
+
+        result  = '\n'.join(result).strip()
+        result  = np.genfromtxt(io.StringIO(result))
         sepvols = '-t' in self.__options
         lblmask = '-K' in self.__options
 
