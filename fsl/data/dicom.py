@@ -72,7 +72,7 @@ def dcm2niix() -> str:
     ]
 
     for c in candidates:
-        if op.exists(c):
+        if c is not None and op.exists(c):
             return c
 
     return 'dcm2niix'

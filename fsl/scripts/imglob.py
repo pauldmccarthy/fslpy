@@ -9,8 +9,9 @@ NIFTI/ANALYZE image files.
 """
 
 
-import                   sys
+import itertools      as it
 import                   glob
+import                   sys
 import fsl.utils.path as fslpath
 
 
@@ -67,10 +68,21 @@ def imglob(paths, output=None):
     # Depending on the way that imglob is
     # invoked, this may not get done by the
     # calling shell.
+    #
+    # We also have to handle incomplete
+    # wildcards, e.g. if the user provides
+    # "img_??", we need to add possible
+    # file suffixes before it can be
+    # expanded.
     expanded = []
     for path in paths:
         if any(c in path for c in '*?[]'):
-            expanded.extend(glob.glob(path))
+            if fslpath.hasExt(path, exts):
+                globs = [path]
+            else:
+                globs = [f'{path}{ext}' for ext in exts]
+            globs = [glob.glob(g) for g in globs]
+            expanded.extend(it.chain(*globs))
         else:
             expanded.append(path)
 
