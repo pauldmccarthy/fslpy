@@ -2,11 +2,23 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.11.2 (Monday 27th February 2023)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug in the :func:`.dcm2niix` function (!376)
+
+
 3.11.1 (Friday 24th February 2023)
 ----------------------------------
 
 
 Added
+^^^^^
 
 
 * New :func:`.featquery` wrapper function (!374).
