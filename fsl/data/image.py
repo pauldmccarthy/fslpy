@@ -1995,7 +1995,6 @@ def defaultExt():
     Otherwise, ``.nii.gz`` is returned.
     """
 
-    # TODO: Add analyze support.
     options = {
         'NIFTI'          : '.nii',
         'NIFTI2'         : '.nii',
