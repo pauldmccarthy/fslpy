@@ -33,6 +33,17 @@ def test_imrm():
 
         # files don't exist -> no problem
         ('a.nii', 'b',  'a.nii'),
+
+        # wildcards
+        ('img_a.nii img_b.nii', 'img_?',     ''),
+        ('img_a.nii img_b.nii', 'img_?.nii', ''),
+        ('img_a.nii img_b.nii', 'img_*',     ''),
+        ('img_a.nii img_b.nii', 'img_*.nii', ''),
+
+        ('img_a.nii img_b.nii img_cc.nii', 'img_?',     'img_cc.nii'),
+        ('img_a.nii img_b.nii img_cc.nii', 'img_?.nii', 'img_cc.nii'),
+        ('img_a.nii img_b.nii img_cc.nii', 'img_*',     ''),
+        ('img_a.nii img_b.nii img_cc.nii', 'img_*.nii', ''),
     ]
 
     for files, command, expected in tests:

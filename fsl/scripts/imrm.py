@@ -9,27 +9,15 @@ files.
 """
 
 
-import itertools      as it
-import os.path        as op
-import                   os
-import                   sys
-import fsl.utils.path as fslpath
+import os.path            as op
+import                       os
+import                       sys
+import fsl.scripts.imglob as imglob
 
 
 usage = """Usage: imrm <list of image names to remove>
 NB: filenames can be basenames or not
 """.strip()
-
-
-# This list is defined in the
-# fsl.data.image class, but are duplicated
-# here for performance (to avoid import of
-# nibabel/numpy/etc).
-exts = ['.nii.gz', '.nii',
-        '.img',    '.hdr',
-        '.img.gz', '.hdr.gz',
-        '.mnc',    '.mnc.gz']
-"""List of file extensions that are removed by ``imrm``. """
 
 
 def main(argv=None):
@@ -42,12 +30,9 @@ def main(argv=None):
         print(usage)
         return 1
 
-    prefixes = [fslpath.removeExt(p, exts) for p in argv]
+    paths = imglob.imglob(argv, 'all')
 
-    for prefix, ext in it.product(prefixes, exts):
-
-        path = f'{prefix}{ext}'
-
+    for path in paths:
         if op.exists(path):
             os.remove(path)
 
