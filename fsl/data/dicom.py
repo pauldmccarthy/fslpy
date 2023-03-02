@@ -66,10 +66,13 @@ def dcm2niix() -> str:
     """Tries to find an absolute path to the ``dcm2niix`` command. Returns
     ``'dcm2niix'`` (unqualified) if a specific executable cannot be found.
     """
+    fsldir     = fslplatform.platform.fsldir
     candidates = [
-        op.join(fslplatform.platform.fsldir, 'bin', 'dcm2niix'),
         shutil.which('dcm2niix')
     ]
+
+    if fsldir is not None:
+        candidates.insert(0, op.join(fsldir, 'bin', 'dcm2niix'))
 
     for c in candidates:
         if c is not None and op.exists(c):
