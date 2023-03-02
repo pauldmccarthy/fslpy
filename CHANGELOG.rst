@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.11.3 (Thursday 2nd March 2023)
+--------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed another bug in the :func:`.dcm2niix` function (!379).
+
+
 3.11.2 (Monday 27th February 2023)
 ----------------------------------
 
@@ -10,7 +22,7 @@ Fixed
 ^^^^^
 
 
-* Fixed a bug in the :func:`.dcm2niix` function (!376)
+* Fixed a bug in the :func:`.dcm2niix` function (!376).
 * Adjusted the :mod:`.imrm` and :mod:`.imglob` scripts to support incomplete
   wildcard patterns (e.g. ``img_??`` matching ``img_01.nii.gz``) (!377).
 
