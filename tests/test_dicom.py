@@ -22,6 +22,9 @@ import fsl.data.dicom    as fsldcm
 import fsl.utils.tempdir as tempdir
 
 
+from . import mockFSLDIR, touch
+
+
 datadir = op.join(op.dirname(__file__), 'testdata')
 
 
@@ -64,6 +67,31 @@ def test_disabled():
         with pytest.raises(RuntimeError):
             fsldcm.loadSeries({})
 
+
+def test_dcm2niix():
+    """
+    """
+    env = os.environ.copy()
+    env.pop('FSLDIR', None)
+    with tempdir.tempdir() as td:
+        env['PATH'] = td
+        with mock.patch('os.environ', env):
+            assert fsldcm.dcm2niix() == 'dcm2niix'
+
+        bindir   = op.join(td, 'bin')
+        dcm2niix = op.join(bindir, 'dcm2niix')
+        os.makedirs(bindir)
+        touch(dcm2niix)
+        os.chmod(dcm2niix, 0o755)
+        env['PATH'] = bindir
+        with mock.patch('os.environ', env):
+            assert fsldcm.dcm2niix() == dcm2niix
+
+        with mockFSLDIR(bin=['dcm2niix']) as fsldir:
+            env['FSLDIR'] = fsldir
+            dcm2niix      = op.join(fsldir, 'bin', 'dcm2niix')
+            with mock.patch('os.environ', env):
+                assert fsldcm.dcm2niix() == dcm2niix
 
 
 def test_installedVersion():
