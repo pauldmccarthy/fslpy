@@ -36,10 +36,13 @@ class fslmaths:
         output = fslmaths(input).thr(0.25).mul(-1).run()
     """
 
-    def __init__(self, input):
+    def __init__(self, input, dt=None):
         """Constructor."""
         self.__input = input
         self.__args  = []
+
+        if dt is not None:
+            self.__args.extend(('-dt',  dt))
 
     def abs(self):
         """Absolute value."""
@@ -221,7 +224,7 @@ class fslmaths:
                             zmin, zsize, tmin, tsize))
         return self
 
-    def run(self, output=None, **kwargs):
+    def run(self, output=None, odt=None, **kwargs):
         """Save output of operations to image. Set ``output`` to a filename to have
         the result saved to file, or omit ``output`` entirely to have the
         result returned as a ``nibabel`` image.
@@ -235,7 +238,11 @@ class fslmaths:
         if output is None:
             output = wutils.LOAD
 
-        cmd   += [output]
+        cmd += [output]
+
+        if odt is not None:
+            cmd.extend(('-odt', odt))
+
         result = self.__run(*cmd, **kwargs)
 
         # if output is LOADed, there
