@@ -242,21 +242,34 @@ def fslwrapper(func):
     return genxwrapper(func, run.runfsl)
 
 
-@contextlib.contextmanager
-def wrapperconfig(**kwargs):
+class wrapperconfig:
     """Context manager to be used when calling wrapper functions. Can modify
     the options/arguments that are passed to :func:`fsl.utils.run.run` when
     calling a command from a wrapper function. For example::
 
         with wrapperconfig(stdout=False):
             bet('struct', 'struct_brain')
+
+    The ``wrapperconfig`` class has a class-level attribute called
+    ``active`` which is set to ``True`` whenver any ``wrapperconfig``
+    call is in use.
     """
-    opts = dict(genxwrapper.run_options)
-    genxwrapper.run_options.update(kwargs)
-    try:
-        yield
-    finally:
-        genxwrapper.run_options = opts
+
+    active = False
+
+    def __init__(self, **opts):
+        self.newopts  = dict(opts)
+        self.oldopts  = dict(genxwrapper.run_options)
+        self.__active = None
+
+    def __enter__(self):
+        genxwrapper.run_options.update(self.newopts)
+        self.__active        = wrapperconfig.active
+        wrapperconfig.active = True
+
+    def __exit__(self, *_):
+        genxwrapper.run_options = self.oldopts
+        wrapperconfig.active    = self.__active
 
 
 SHOW_IF_TRUE = object()
