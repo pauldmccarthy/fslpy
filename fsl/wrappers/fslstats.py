@@ -218,8 +218,15 @@ class fslstats:
         # can disable this via the log argument
         # (but this can be overridden by the
         # caller).
-        log    = kwargs.pop('log', {'tee' : False})
-        result = self.__run('fslstats', *self.__options, log=log, **kwargs)
+        #
+        # We don't do this if being called
+        # whilst a wrapperconfig context is
+        # active, as we would otherwise
+        # potentially overwrite the log value
+        # passed to the wrapperconfig.
+        if not wutils.wrapperconfig.active:
+            kwargs['log'] = kwargs.pop('log', {'tee' : False})
+        result = self.__run('fslstats', *self.__options, **kwargs)
 
         if raw:
             return result.stdout
@@ -270,5 +277,5 @@ class fslstats:
     @wutils.fileOrImage()
     @wutils.fslwrapper
     def __run(self, *cmd):
-        """Run the given ``fslmaths`` command. """
+        """Run the given ``fslstats`` command. """
         return [str(c) for c in cmd]
