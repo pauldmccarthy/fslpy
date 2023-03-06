@@ -5,59 +5,13 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os.path   as op
-import itertools as it
-import textwrap  as tw
-import              os
-import              contextlib
-import              pathlib
-import              shlex
+import os.path as op
+import            pathlib
+import            shlex
 
-import numpy as np
+import fsl.wrappers as fw
 
-import fsl.wrappers                       as fw
-import fsl.utils.assertions               as asrt
-import fsl.utils.run                      as run
-from fsl.utils.tempdir import tempdir
-
-from .. import mockFSLDIR, make_random_image
-
-
-def checkResult(cmd, base, args, stripdir=None):
-    """Check that the generate dcommand matches the expected command.
-
-    Pre python 3.7, we couldn't control the order in which command
-    line args were generated, so we needed to test all possible orderings.
-
-    But for Python >= 3.7, the order in which kwargs are passed will
-    be the same as the order in which they are rendered, so this function
-    is not required.
-
-    :arg cmd:      Generated command
-    :arg base:     Beginning of expected command
-    :arg args:     Sequence of expected arguments
-    :arg stripdir: Sequence of indices indicating arguments
-                   for whihc any leading directory should be ignored.
-    """
-
-    if stripdir is not None:
-        cmd = list(cmd.split())
-        for si in stripdir:
-            cmd[si] = op.basename(cmd[si])
-        cmd = ' '.join(cmd)
-
-    permutations = it.permutations(args, len(args))
-    possible     = [' '.join([base] + list(p))  for p in permutations]
-
-    return any([cmd == p for p in possible])
-
-
-@contextlib.contextmanager
-def testenv(*fslexes):
-    with asrt.disabled(), run.dryrun(), mockFSLDIR(bin=fslexes) as fsldir:
-        fslexes = [op.join(fsldir, 'bin', e) for e in fslexes]
-        if len(fslexes) == 1: yield fslexes[0]
-        else:                 yield fslexes
+from . import checkResult, testenv
 
 
 def test_bet():
@@ -297,51 +251,6 @@ def test_cluster():
                               fractional=True, osize='osize')
         expected = f'{cluster} --in=input --thresh=thresh --fractional --osize=osize'
         assert result.stdout[0] == expected
-
-
-def test_fslmaths():
-    with testenv('fslmaths') as fslmaths:
-        result   = fw.fslmaths('input') \
-            .range() \
-            .abs().bin().binv().recip().Tmean().Tstd().Tmin().Tmax() \
-            .fillh().ero().dilM().dilF().add('addim').sub('subim') \
-            .mul('mulim').div('divim').mas('masim').rem('remim')   \
-            .thr('thrim').uthr('uthrim').inm('inmim').bptf(1, 10) \
-            .smooth(sigma=6).kernel('3D').fmeanu().roi(10, 3, 20, 21, 1, 5) \
-            .sqr().sqrt().log().dilD(2).max('im').min('im2') \
-            .fmedian().kernel('3D').kernel('box', 3) \
-            .run('output')
-
-        expected = [fslmaths, 'input', '-range',
-                    '-abs', '-bin', '-binv', '-recip', '-Tmean', '-Tstd',
-                    '-Tmin', '-Tmax', '-fillh', '-ero', '-dilM', '-dilF',
-                    '-add addim', '-sub subim', '-mul mulim', '-div divim',
-                    '-mas masim', '-rem remim', '-thr thrim', '-uthr uthrim',
-                    '-inm inmim', '-bptf 1 10', '-s 6', '-kernel 3D', '-fmeanu',
-                    '-roi 10 3 20 21 1 5 0 -1', '-sqr', '-sqrt', '-log',
-                    '-dilD', '-dilD', '-max', 'im', '-min', 'im2', '-fmedian',
-                    '-kernel', '3D', '-kernel', 'box', '3', 'output']
-        expected = ' '.join(expected)
-
-        assert result.stdout[0] == expected
-
-    # test LOAD output
-    with tempdir() as td, mockFSLDIR(bin=('fslmaths',)) as fsldir:
-        expect = make_random_image(op.join(td, 'output.nii.gz'))
-
-        with open(op.join(fsldir, 'bin', 'fslmaths'), 'wt') as f:
-            f.write(tw.dedent("""
-            #!/usr/bin/env python
-            import sys
-            import shutil
-            shutil.copy('{}', sys.argv[2])
-            """.format(op.join(td, 'output.nii.gz'))).strip())
-            os.chmod(op.join(fsldir, 'bin', 'fslmaths'), 0o755)
-
-        got = fw.fslmaths('input').run()
-        assert np.all(expect.dataobj[:] == got.dataobj[:])
-        got = fw.fslmaths('input').run(fw.LOAD)
-        assert np.all(expect.dataobj[:] == got.dataobj[:])
 
 
 def test_fast():
