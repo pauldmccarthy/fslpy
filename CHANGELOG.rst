@@ -3,6 +3,28 @@ order.
 
 
 
+3.12.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.fslmaths` wrapper function now allows the ``-dt`` and
+  ``-odt`` options to be set (!381).
+
+
+Fixed
+^^^^^
+
+
+* The :func:`.fslstats` wrapper no longer overwrites the ``log`` option that
+  is passed to :func:`.run`, if a :func:`.wrapperconfig` context is active
+  (!381).
+
+
+
 3.11.3 (Thursday 2nd March 2023)
 --------------------------------
 
