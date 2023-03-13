@@ -905,6 +905,7 @@ def test_fileOrThing_submit_cmdonly():
         assert func('input.nii.gz', 'output.nii.gz', submit=True)  == 'submitted!'
         assert func('input.nii.gz', 'output.nii.gz', cmdonly=True) == 'cmdonly!'
 
+        # submit cannot work with in-memory images
         with pytest.raises(ValueError):
             func(img, wutils.LOAD, submit=True)
         with pytest.raises(ValueError):
@@ -945,6 +946,10 @@ exit 0
 
 
 def _test_script_func(a, b):
+    # assertions should be disabled when
+    # a cmdwrapper function is called
+    # with cmdonly=True or submit=True
+    asrt.assertFileExists('some_file')
     return ['test_script', str(a), str(b)]
 
 
@@ -1022,7 +1027,9 @@ def test_cmdwrapper_fileorthing_cmdonly():
             f.write(_test_script)
         os.chmod('test_script', 0o755)
 
+        touch('some_file')
         ran = test_func('1', '2')
+        os.remove('some_file')
         cmd = test_func('1', '2', cmdonly=True)
         assert ran.stdout[0].strip() == 'test_script running: 1 2'
         assert cmd                   == ['test_script', '1', '2']
