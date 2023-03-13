@@ -201,7 +201,7 @@ def genxwrapper(func, runner):
         # - it may be dependent on another job that has
         # not yet been run, so assertions on input files
         # may not be valid.
-        with asrt.disabled(cmdonly and submit not in (None, False)):
+        with asrt.disabled(cmdonly or (submit not in (None, False))):
             cmd = func(*args, **kwargs)
 
         return runner(cmd,
