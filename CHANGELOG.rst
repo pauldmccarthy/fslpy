@@ -13,6 +13,9 @@ Changed
 
 * The :func:`.fslmaths` wrapper function now allows the ``-dt`` and
   ``-odt`` options to be set (!381).
+* Assertions (from the :mod:`.assertions` module) called within wrapper
+  functions are now disabled if the command is to be submitted via
+  ``fsl_sub``.
 
 
 Fixed
