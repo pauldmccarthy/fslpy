@@ -197,8 +197,11 @@ def genxwrapper(func, runner):
         # statements to check that input arguments are
         # valid. Disable these if the cmdonly argument is
         # being used to generate a command without running
-        # it.
-        with asrt.disabled(cmdonly):
+        # it, or if the call is to be submitted via fsl_sub
+        # - it may be dependent on another job that has
+        # not yet been run, so assertions on input files
+        # may not be valid.
+        with asrt.disabled(cmdonly and submit not in (None, False)):
             cmd = func(*args, **kwargs)
 
         return runner(cmd,
