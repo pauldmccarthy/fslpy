@@ -1243,6 +1243,8 @@ class Image(Nifti):
 
         # The image parameter may be the name of an image file
         if isinstance(image, (str, Path)):
+            # resolve path to source if it is a sym-link
+            image      = Path(image).resolve()
             image      = op.abspath(addExt(image))
             nibImage   = nib.load(image, **kwargs)
             header     = nibImage.header

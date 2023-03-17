@@ -89,11 +89,6 @@ def make_image(filename=None,
     return img
 
 
-
-# Need to test:
-#     - Create image from existing nibabel image
-#     - Create image from numpy array
-
 def test_load():
     """Create an Image from a file name. """
 
@@ -149,6 +144,35 @@ def test_load():
         for fname, exc in shouldRaise:
             with pytest.raises(exc):
                 fslimage.Image(op.join(testdir, fname))
+
+
+def test_load_from_symlink():
+
+    # (actual image file, symlink to image file)
+    tests = [
+        ('image.nii.gz',     'data'),
+        ('a/b/image.nii.gz', 'data'),
+        ('image.nii.gz',     'a/b/data'),
+        ('image.nii.gz',     'a/b/data.bin'),
+        ('image.nii.gz',     'a/b/data.nii'),
+    ]
+
+    for imagefile, symlink in tests:
+        with tempdir() as td:
+            fdir = op.dirname(imagefile) or '.'
+            sdir = op.dirname(symlink)   or '.'
+
+            os.makedirs(fdir, exist_ok=True)
+            os.makedirs(sdir, exist_ok=True)
+            make_random_image(imagefile)
+
+            os.symlink(op.relpath(imagefile, sdir), symlink)
+
+            i1 = fslimage.Image(symlink)
+            i2 = fslimage.Image(Path(symlink))
+
+            assert i1.dataSource == op.abspath(imagefile)
+            assert i2.dataSource == op.abspath(imagefile)
 
 
 def test_create():

@@ -15,7 +15,9 @@ Changed
   ``-odt`` options to be set (!381).
 * Assertions (from the :mod:`.assertions` module) called within wrapper
   functions are now disabled if the command is to be submitted via
-  ``fsl_sub``.
+  ``fsl_sub`` (!382).
+* The :class:`.Image` class will now resolve symlinks when loading images
+  from file (!383).
 
 
 Fixed
