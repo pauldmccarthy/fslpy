@@ -479,14 +479,16 @@ def applyArgStyle(style=None,
 
     for k, v in kwargs.items():
 
-        if v is None: continue
+        if v is None:
+            continue
+
+        k    = maparg(k)
+        mapv = valmap.get(k, None)
 
         if len(k) == 1: sty, sep = charstyle, charsep
         else:           sty, sep = style,     valsep
 
-        k    = maparg(k)
-        mapv = valmap.get(k, None)
-        k    = fmtarg(k, sty)
+        k = fmtarg(k, sty)
 
         if mapv in (SHOW_IF_TRUE, HIDE_IF_TRUE):
             if (mapv is SHOW_IF_TRUE and     v) or \
