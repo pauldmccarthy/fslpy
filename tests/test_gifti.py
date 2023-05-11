@@ -288,12 +288,12 @@ TEST_VERTS = np.array([
     [0, 0, 0],
     [1, 0, 0],
     [0, 1, 0],
-    [0, 0, 1]])
+    [0, 0, 1]], dtype=np.float32)
 TEST_IDXS = np.array([
     [0, 1, 2],
     [0, 3, 1],
     [0, 2, 3],
-    [1, 3, 2]])
+    [1, 3, 2]], dtype=np.int32)
 
 TEST_VERT_ARRAY = nib.gifti.GiftiDataArray(
     TEST_VERTS, intent='NIFTI_INTENT_POINTSET')
@@ -302,8 +302,8 @@ TEST_IDX_ARRAY  = nib.gifti.GiftiDataArray(
 
 def test_GiftiMesh_surface_and_data():
 
-    data1   = np.random.randint(0, 10, len(TEST_VERTS))
-    data2   = np.random.randint(0, 10, len(TEST_VERTS))
+    data1   = np.random.randint(0, 10, len(TEST_VERTS), dtype=np.int32)
+    data2   = np.random.randint(0, 10, len(TEST_VERTS), dtype=np.int32)
     expdata = np.vstack([data1, data2]).T
     verts   = TEST_VERT_ARRAY
     tris    = TEST_IDX_ARRAY
@@ -384,8 +384,8 @@ def test_GiftiMesh_needsFixing():
 
 
 def test_loadGiftiMesh_onetriangle():
-    verts = np.array([[0, 0, 0], [1, 1, 1], [0, 1, 0]])
-    idxs  = np.array([[0, 1, 2]])
+    verts = np.array([[0, 0, 0], [1, 1, 1], [0, 1, 0]], dtype=np.float32)
+    idxs  = np.array([[0, 1, 2]], dtype=np.int32)
     verts = nib.gifti.GiftiDataArray(verts, intent='NIFTI_INTENT_POINTSET')
     idxs  = nib.gifti.GiftiDataArray(idxs,  intent='NIFTI_INTENT_TRIANGLE')
     gimg  = nib.gifti.GiftiImage(darrays=[verts, idxs])

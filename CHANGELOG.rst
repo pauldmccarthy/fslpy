@@ -7,6 +7,13 @@ order.
 --------------------------
 
 
+Added
+^^^^^
+
+
+* New :func:`.randomise` wraper function.
+
+
 Changed
 ^^^^^^^
 

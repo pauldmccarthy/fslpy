@@ -165,3 +165,4 @@ from fsl.wrappers.bedpostx           import (xfibres,
                                              probtrackx2_gpu)
 from fsl.wrappers.oxford_asl         import (oxford_asl,
                                              asl_file)
+from fsl.wrappers.randomise          import  randomise

@@ -20,7 +20,7 @@ import numpy        as np
 import numpy.linalg as npla
 import nibabel      as nib
 
-from nibabel.spatialimages import ImageFileError
+from nibabel.filebasedimages import ImageFileError
 
 import fsl.data.constants   as constants
 import fsl.data.image       as fslimage
