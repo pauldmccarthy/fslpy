@@ -23,6 +23,7 @@
    fsl.wrappers.fugue
    fsl.wrappers.melodic
    fsl.wrappers.misc
+   fsl.wrappers.randomise
    fsl.wrappers.tbss
    fsl.wrappers.wrapperutils
 
