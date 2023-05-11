@@ -638,3 +638,11 @@ def test_asl_file():
         res = fw.asl_file('in', 20, 'out', diff=True, iaf='ct')
         exp = f'{asl_file} --data=in --ntis=20 --out=out --diff --iaf=ct'
         assert res.stdout[0] == exp
+
+
+def test_randomise():
+    with testenv('randomise') as randomise:
+        res = fw.randomise('input', 'outbase', T=True, T2=True, fonly=True,
+                           d='design.mat', one=True)
+        exp = f'{randomise} -i input -o outbase -T --T2 --fonly -d design.mat -1'
+        assert res[0] == exp
