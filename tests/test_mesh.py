@@ -27,7 +27,7 @@ CUBE_VERTICES = np.array([
     [ 1, -1,  1],
     [ 1,  1, -1],
     [ 1,  1,  1],
-])
+], dtype=np.float32)
 
 # triangles
 # cw  == clockwise, when facing outwards
@@ -39,7 +39,7 @@ CUBE_TRIANGLES_CW = np.array([
     [2, 6, 7], [2, 7, 3],
     [0, 2, 1], [1, 2, 3],
     [4, 5, 7], [4, 7, 6],
-])
+], dtype=np.int32)
 
 # ccw == counter-clockwise
 CUBE_TRIANGLES_CCW = np.array(CUBE_TRIANGLES_CW)
@@ -52,9 +52,9 @@ CUBE_CCW_FACE_NORMALS = np.array([
     [ 0,  1,  0], [ 0,  1,  0],
     [-1,  0,  0], [-1,  0,  0],
     [ 1,  0,  0], [ 1,  0,  0],
-])
+], dtype=np.float32)
 
-CUBE_CCW_VERTEX_NORMALS = np.zeros((8, 3))
+CUBE_CCW_VERTEX_NORMALS = np.zeros((8, 3), dtype=np.float32)
 for i in range(8):
     faces = np.where(CUBE_TRIANGLES_CCW == i)[0]
     CUBE_CCW_VERTEX_NORMALS[i] = CUBE_CCW_FACE_NORMALS[faces].sum(axis=0)
