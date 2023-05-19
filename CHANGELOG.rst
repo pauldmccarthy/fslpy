@@ -3,15 +3,15 @@ order.
 
 
 
-3.12.0 (Under development)
---------------------------
+3.12.0 (Friday 19th May 2023)
+-----------------------------
 
 
 Added
 ^^^^^
 
 
-* New :func:`.randomise` wraper function.
+* New :func:`.randomise` wrapper function.
 
 
 Changed
