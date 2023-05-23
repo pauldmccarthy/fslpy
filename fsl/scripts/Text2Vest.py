@@ -30,7 +30,7 @@ def main(argv=None):
         return 0
 
     infile, outfile = argv
-    data            = np.loadtxt(infile)
+    data            = np.loadtxt(infile, ndmin=2)
     vest            = fslvest.generateVest(data)
 
     with open(outfile, 'wt') as f:
