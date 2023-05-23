@@ -40,9 +40,9 @@ def tempdir(root=None, changeto=True, override=None):
 
     if override is None:
         testdir = tempfile.mkdtemp(dir=root)
-        prevdir = os.getcwd()
     else:
         testdir = override
+    prevdir = os.getcwd()
 
     try:
         if changeto:
@@ -51,6 +51,6 @@ def tempdir(root=None, changeto=True, override=None):
 
     finally:
         if override is None:
-            if changeto:
-                os.chdir(prevdir)
             shutil.rmtree(testdir)
+        if changeto:
+            os.chdir(prevdir)
