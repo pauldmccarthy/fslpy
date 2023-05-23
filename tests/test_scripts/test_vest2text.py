@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import textwrap as tw
 import numpy as np
 
 import fsl.data.vest         as fslvest
@@ -45,3 +46,30 @@ def test_Text2Vest():
         got = fslvest.loadVestFile('data.vest', ignoreHeader=False)
 
         assert np.all(np.isclose(data, got))
+
+        # make sure that 1D files are treated correctly (fsl/fslpy!387)
+        with open('colvec.txt', 'wt') as f:
+            f.write('1\n2\n3\n')
+        with open('rowvec.txt', 'wt') as f:
+            f.write('1 2 3\n')
+
+        colexp = tw.dedent("""
+        /NumWaves 1
+        /NumPoints 3
+        /Matrix
+        1.000000000000
+        2.000000000000
+        3.000000000000
+        """).strip()
+        rowexp = tw.dedent("""
+        /NumWaves 3
+        /NumPoints 1
+        /Matrix
+        1.000000000000 2.000000000000 3.000000000000
+        """).strip()
+
+        assert Text2Vest.main(['colvec.txt', 'colvec.vest']) == 0
+        assert Text2Vest.main(['rowvec.txt', 'rowvec.vest']) == 0
+
+        assert open('colvec.vest', 'rt').read().strip() == colexp
+        assert open('rowvec.vest', 'rt').read().strip() == rowexp

@@ -11,19 +11,6 @@ twine check dist/*
 sdist=`find dist -maxdepth 1 -name *.tar.gz`
 wheel=`find dist -maxdepth 1 -name *.whl`
 
-# pip < 10 will not install wheels
-# with an invalid name. So we can
-# generate builds from non-releases
-# (e.g. master master branch),
-# we hack the wheel file name here
-# so that pip will accept it.
-#
-# This will no longer be necessary
-# when pip 10 is available.
-nwheel=`echo -n $wheel | sed -e 's/fslpy-/fslpy-0/g'`
-mv $wheel $nwheel
-wheel=$nwheel
-
 for target in $sdist $wheel; do
     python -m venv test.venv
     . test.venv/bin/activate

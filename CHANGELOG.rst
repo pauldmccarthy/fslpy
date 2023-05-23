@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.12.1 ( Tuesday 23rd May 2023)
+-------------------------------
+
+
+Fixed
+^^^^^
+
+
+* The :mod:`fsl.scripts.Text2Vest` now handles column vector inputs
+  correctly (!387, !388).
+* The :func:`.tempdir` function was not changing back to the original
+  working directory when the ``override`` argument was used (!388).
+
+
 
 3.12.0 (Friday 19th May 2023)
 -----------------------------
