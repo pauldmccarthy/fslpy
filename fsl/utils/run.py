@@ -70,11 +70,17 @@ def dryrun(*_):
     not executed. See the :data:`DRY_RUN` flag.
 
     The returned standard output will be equal to ``' '.join(args)``.
+
+    After this function returns, each command that was executed while the
+    dryrun is active, along with any submission parameters, will be accessible
+    within a list which is stored as an attribute of this function called
+    ``commands``.
     """
     global DRY_RUN  # pylint: disable=global-statement
 
-    oldval  = DRY_RUN
-    DRY_RUN = True
+    oldval          = DRY_RUN
+    DRY_RUN         = True
+    dryrun.commands = []
 
     try:
         yield
@@ -254,6 +260,10 @@ def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
     """Used by the :func:`run` function when the :attr:`DRY_RUN` flag is
     active.
     """
+
+    # Save command/submit parameters -
+    # see the dryrun ctx manager
+    getattr(dryrun, 'commands', []).append((args, submit))
 
     if submit:
         return ('0',)
@@ -571,17 +581,18 @@ def wslcmd(cmdpath, *args):
         return None
 
 
-def hold(job_ids, hold_filename=None):
+def hold(job_ids, hold_filename=None, timeout=10):
     """Waits until all specified cluster jobs have finished.
 
-    :param job_ids:       Possibly nested sequence of job ids. The job ids
-                          themselves should be strings.
+    :arg job_ids:       Possibly nested sequence of job ids. The job ids
+                        themselves should be strings.
 
-    :param hold_filename: filename to use as a hold file.  The containing
-                          directory should exist, but the file itself should
-                          not.  Defaults to a ./.<random characters>.hold in
-                          the current directory.  :return: only returns when
-                          all the jobs have finished
+    :arg hold_filename: Filename to use as a hold file.  The containing
+                        directory should exist, but the file itself should
+                        not.  Defaults to a ./.<random characters>.hold in
+                        the current directory.
+
+    :arg timeout:       Number of seconds to sleep between  status checks.
     """
 
     # Returns a potentially nested sequence of
@@ -599,17 +610,23 @@ def hold(job_ids, hold_filename=None):
                 return res
         return ','.join(sorted(unpack(job_ids)))
 
+    if hold_filename is not None:
+        if op.exists(hold_filename):
+            raise IOError(f"Hold file ({hold_filename}) already exists")
+        elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
+            raise IOError(f"Hold file ({hold_filename}) can not be created "
+                          "in non-existent directory")
+
+    # Generate a random file name to use as
+    # the hold file. Reduce likelihood of
+    # naming collision by storing file in
+    # cwd.
     if hold_filename is None:
         handle, hold_filename = tempfile.mkstemp(prefix='.',
                                                  suffix='.hold',
                                                  dir='.')
-        handle.close()
-
-    if op.exists(hold_filename):
-        raise IOError(f"Hold file ({hold_filename}) already exists")
-    elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
-        raise IOError(f"Hold file ({hold_filename}) can not be created "
-                      "in non-existent directory")
+        os.remove(hold_filename)
+        os.close(handle)
 
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
@@ -620,7 +637,7 @@ def hold(job_ids, hold_filename=None):
     run(f'touch {hold_filename}', submit=submit)
 
     while not op.exists(hold_filename):
-        time.sleep(10)
+        time.sleep(timeout)
 
     os.remove(hold_filename)
 
@@ -640,12 +657,12 @@ def job_output(job_id, logdir='.', command=None, name=None):
     :returns:     A tuple containing the standard output and standard error.
     """
 
-    stdout = list(glob.glob(op.join(logdir, '*.o{}'.format(job_id))))
-    stderr = list(glob.glob(op.join(logdir, '*.e{}'.format(job_id))))
+    stdout = list(glob.glob(op.join(logdir, f'*.o{job_id}')))
+    stderr = list(glob.glob(op.join(logdir, f'*.e{job_id}')))
 
     if len(stdout) != 1 or len(stderr) != 1:
-        raise ValueError('No/too many error/output files for job {}: stdout: '
-                         '{}, stderr: {}'.format(job_id, stdout, stderr))
+        raise ValueError('No/too many error/output files for job '
+                         f'{job_id}: stdout: {stdout}, stderr: {stderr}')
 
     stdout = stdout[0]
     stderr = stderr[0]
