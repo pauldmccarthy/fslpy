@@ -6,10 +6,12 @@
 #
 
 
-import os.path as op
-import            os
-import            shutil
-import            textwrap
+import os.path  as op
+import             os
+import             shutil
+import             threading
+import             time
+import textwrap as tw
 
 from unittest import mock
 
@@ -20,7 +22,7 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.utils.fslsub                   as fslsub
 
-from . import make_random_image, mockFSLDIR, CaptureStdout
+from . import make_random_image, mockFSLDIR, CaptureStdout, touch
 
 
 pytestmark = pytest.mark.unixtest
@@ -45,7 +47,7 @@ def test_prepareArgs():
 
 def test_run():
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/bin/bash
 
     echo "standard output - arguments: $@"
@@ -103,7 +105,7 @@ def test_run():
 
 
 def test_run_tee():
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/bin/bash
 
     echo "standard output - arguments: $@"
@@ -169,7 +171,7 @@ def test_run_tee():
 
 def test_run_passthrough():
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/bin/bash
 
     echo "env: $RUN_TEST_ENV_VAR"
@@ -195,7 +197,7 @@ def test_cmdonly():
 
 def test_dryrun():
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/bin/bash
     touch foo
     """).strip()
@@ -217,7 +219,7 @@ def test_dryrun():
 # test runfsl with/without $FSLDIR
 def test_runfsl():
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/bin/bash
     echo {}
     exit 0
@@ -307,7 +309,7 @@ def test_run_submit():
             f.write(contents)
         os.chmod(path, 0o755)
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/usr/bin/env bash
     echo test_script running
     exit 0
@@ -351,7 +353,7 @@ def test_run_streams():
     """
     """
 
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/usr/bin/env bash
     echo standard output
     echo standard error >&2
@@ -399,7 +401,7 @@ def test_run_streams():
 
 
 def test_run_logcmd():
-    test_script = textwrap.dedent("""
+    test_script = tw.dedent("""
     #!/usr/bin/env bash
     echo output $@
     exit 0
@@ -435,3 +437,80 @@ def test_run_logcmd():
         stdout = run.run('./script.sh 1 2 3', log={'cmd' : logfunc})
         assert stdout    == expstdout
         assert logged[1] == expcmd
+
+
+def test_hold():
+
+    with tempdir.tempdir():
+
+        holdfile = 'holdfile'
+
+        def create_holdfile():
+            time.sleep(3)
+            touch(holdfile)
+
+        with run.dryrun():
+            threading.Thread(target=create_holdfile).start()
+            run.hold([1, 2, 3], holdfile, timeout=1)
+
+        cmds = list(run.dryrun.commands)
+
+    # dryrun gathers all executed commands
+    # in a list of (cmd, submit) tuples,
+    # so we do a very simple check here
+    assert len(cmds) == 1
+    cmd, submit = cmds[0]
+    assert cmd               == ('touch', 'holdfile')
+    assert submit['jobhold'] == '1,2,3'
+
+
+def _good_func():
+    print('hello')
+
+def _bad_func():
+    1/0
+
+def test_runfunc():
+    assert run.runfunc(_good_func, clean='always') == 'hello\n'
+    with pytest.raises(Exception):
+        assert run.runfunc(_bad_func, clean='always')
+
+
+def test_func_to_cmd():
+    cwd = os.getcwd()
+    with tempdir.tempdir():
+        for tmp_dir in (None, '.'):
+            for clean in ('never', 'on_success', 'always'):
+                for verbose in (False, True):
+                    cmd = fslsub.func_to_cmd(_good_func, clean=clean, tmp_dir=tmp_dir, verbose=verbose)
+                    fn = cmd.split()[-1]
+                    assert op.exists(fn)
+                    stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
+                                                       env={"PYTHONPATH": cwd})
+                    assert exitcode == 0
+                    if clean == 'never':
+                        assert op.exists(fn), "Successful job got removed, even though this was not requested"
+                    else:
+                        assert not op.exists(fn), f"Successful job did not get removed after run for clean = {clean}"
+                    if verbose:
+                        assert stdout.strip() == f'running "{fn}"\nhello'
+                    else:
+                        assert stdout.strip() == 'hello'
+
+                cmd = fslsub.func_to_cmd(_bad_func, clean=clean, tmp_dir=tmp_dir)
+                fn = cmd.split()[-1]
+                assert op.exists(fn)
+                stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
+                                                   env={'PYTHONPATH': cwd})
+                assert exitcode != 0
+                if clean == 'always':
+                    assert not op.exists(fn), "Failing job should always be removed if requested"
+                else:
+                    assert op.exists(fn), f"Failing job got removed even with clean = {clean}"
+
+
+def test_job_output():
+    with tempdir.tempdir() as td:
+        with open('12345.e', 'wt') as f: f.write('error')
+        with open('12345.o', 'wt') as f: f.write('output')
+        assert run,job_output(12345, td) == ('output', 'error')

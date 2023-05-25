@@ -267,7 +267,7 @@ def test_func_to_cmd():
                     else:
                         assert not op.exists(fn), f"Successful job did not get removed after run for clean = {clean}"
                     if verbose:
-                        assert stdout.strip() == f'running {fn}\nhello'
+                        assert stdout.strip() == f'running "{fn}"\nhello'
                     else:
                         assert stdout.strip() == 'hello'
 
