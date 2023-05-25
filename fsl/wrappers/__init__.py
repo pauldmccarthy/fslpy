@@ -98,8 +98,10 @@ decorators.
 
 
 from fsl.wrappers.wrapperutils       import (LOAD,
-                                             wrapperconfig)
-from fsl.wrappers                    import  tbss
+                                             wrapperconfig,
+                                             cmdwrapper,
+                                             fslwrapper,
+                                             funcwrapper)
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
 from fsl.wrappers.eddy               import (eddy,

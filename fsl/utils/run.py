@@ -521,8 +521,9 @@ def func_to_cmd(func,
 
     with open(filename, 'w') as f:
         f.write(python_cmd)
+    os.chmod(filename, 0o755)
 
-    return f'{sys.executable} {filename}'
+    return f'{filename}'
 
 
 def wslcmd(cmdpath, *args):
