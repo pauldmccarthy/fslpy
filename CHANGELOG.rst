@@ -2,8 +2,37 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.12.1 ( Tuesday 23rd May 2023)
--------------------------------
+3.13.0 (Under development)
+--------------------------
+
+
+Added
+^^^^^
+
+* New :func:`.runfunc` function which can be used to execute a Python function
+  in a separate process (or as a submitted cluster job), via the
+  :func:`.func_to_cmd` function (!
+
+
+Changed
+^^^^^^^
+
+
+* The :func:`.run.func_to_cmd`, :func:`.run.hold`, and :func:`.run.job_output`
+  functions have been moved from :mod:`fsl.utils.fslsub` to the
+  :mod:`fsl.utils.run` module.
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* The :mod:`fsl.utils.fslsub`  module has been deprecated, and scheduled for
+  removal in ``fslpy 4.0.0``.
+
+
+3.12.1 (Tuesday 23rd May 2023)
+------------------------------
 
 
 Fixed
