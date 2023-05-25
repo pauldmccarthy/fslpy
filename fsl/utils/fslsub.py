@@ -7,6 +7,13 @@
 """This module submits jobs to a computing cluster using FSL's fsl_sub command
 line tool. It is assumed that the computing cluster is managed by SGE.
 
+.. note:: All of the functionality in this module is deprecated and will be
+          removed in a future version of fslpy. Equivalent functionality is
+          available in the :ref:`fsl_sub
+          <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ project, and the
+          :mod:`fsl.utils.run` module and :mod:`.wrappers.fsl_sub` wrapper
+          function.
+
 Example usage, building a short pipeline::
 
     from fsl.utils.fslsub import submit
@@ -54,13 +61,14 @@ import os
 
 
 import fsl.utils.deprecated as deprecated
+import fsl.utils.run        as run
 
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
-class SubmitParams(object):
+class SubmitParams:
     """Represents the fsl_sub parameters
 
     The ``SubmitParams`` class is deprecated - you should use
@@ -159,7 +167,7 @@ class SubmitParams(object):
         return 'SubmitParams({})'.format(" ".join(self.as_flags()))
 
     @deprecated.deprecated('3.7.0', '4.0.0',
-                           'Use fsl.wrappers.fsl_sub instead')
+                           'Use fsl_sub or fsl.wrappers.fsl_sub instead')
     def __call__(self, *command, **kwargs):
         """
         Submits the command to the cluster.
@@ -258,6 +266,8 @@ class SubmitParams(object):
         return cls(verbose=args._sub_verbose, flags=args._sub_flags, **as_dict)
 
 
+@deprecated.deprecated('3.7.0', '4.0.0',
+                       'Use fsl_sub or fsl.wrappers.fsl_sub instead')
 def submit(*command, **kwargs):
     """
     Submits a given command to the cluster
@@ -363,6 +373,8 @@ def _parse_qstat(job_ids_string, qstat_stdout):
     return res
 
 
+@deprecated.deprecated('3.13.0', '4.0.0',
+                       'Use fsl.utils.run.job_output instead')
 def output(job_id, logdir='.', command=None, name=None):
     """Returns the output of the given job.
 
@@ -373,30 +385,7 @@ def output(job_id, logdir='.', command=None, name=None):
     :arg name:    Job name if it was specified. Not currently used.
     :returns:     A tuple containing the standard output and standard error.
     """
-
-    stdout = list(glob.glob(op.join(logdir, '*.o{}'.format(job_id))))
-    stderr = list(glob.glob(op.join(logdir, '*.e{}'.format(job_id))))
-
-    if len(stdout) != 1 or len(stderr) != 1:
-        raise ValueError('No/too many error/output files for job {}: stdout: '
-                         '{}, stderr: {}'.format(job_id, stdout, stderr))
-
-    stdout = stdout[0]
-    stderr = stderr[0]
-
-    if op.exists(stdout):
-        with open(stdout, 'rt') as f:
-            stdout = f.read()
-    else:
-        stdout = None
-
-    if op.exists(stderr):
-        with open(stderr, 'rt') as f:
-            stderr = f.read()
-    else:
-        stderr = None
-
-    return stdout, stderr
+    return run.job_output(job_id, logdir, command, name)
 
 
 def _flatten_job_ids(job_ids):
@@ -421,6 +410,7 @@ def _flatten_job_ids(job_ids):
     return ','.join(sorted(unpack(job_ids)))
 
 
+@deprecated.deprecated('3.13.0', '4.0.0', 'Use fsl.utils.run.hold instead')
 def hold(job_ids, hold_filename=None):
     """
     Waits until all jobs have finished
@@ -436,37 +426,12 @@ def hold(job_ids, hold_filename=None):
         Defaults to a ./.<random characters>.hold in the current directory.
     :return: only returns when all the jobs have finished
     """
-    if hold_filename is None:
-        with tempfile.NamedTemporaryFile(prefix='.', suffix='.hold', dir='.') as f:
-            hold_filename = f.name
-    if op.exists(hold_filename):
-        raise IOError(f"Hold file ({hold_filename}) already exists")
-    elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
-        raise IOError(f"Hold file ({hold_filename}) can not be created in non-existent directory")
-
-    submit(('touch', hold_filename), wait_for=job_ids, minutes=1, job_name='.hold')
-
-    while not op.exists(hold_filename):
-        time.sleep(10)
-
-    os.remove(hold_filename)
+    run.hold(job_ids, hold_filename)
 
 
-_external_job = ("""#!{}
-# This is a temporary file designed to run the python function {},
-# so that it can be submitted to the cluster
-import dill
-from io import BytesIO
-from importlib import import_module
-{}
-dill_bytes = BytesIO({})
-func, args, kwargs = dill.load(dill_bytes)
-
-{}
-
-""")
-
-
+@deprecated.deprecated('3.13.0', '4.0.0',
+                      'Use fsl.utils.run.func_to_cmd or '
+                      'fsl.utils.run.runfunc instead')
 def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbose=False):
     """Defines the command needed to run the function from the command line
 
@@ -487,38 +452,4 @@ def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbo
     :arg verbose: If set to True, the script will print its own filename before running
     :return:      string which will run the function
     """
-    if clean not in ('never', 'always', 'on_success'):
-        raise ValueError(f"Clean should be one of 'never', 'always', or 'on_success', not {clean}")
-    if args is None:
-        args = ()
-    if kwargs is None:
-        kwargs = {}
-    dill_bytes = BytesIO()
-    dill.dump((func, args, kwargs), dill_bytes, recurse=True)
-
-    handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
-                                        suffix='.py',
-                                        dir=tmp_dir)
-    os.close(handle)
-
-    verbose_script = f'\nprint("running {filename}")\n' if verbose else ''
-    if clean == 'never':
-        run_script = "res = func(*args, **kwargs)"
-    elif clean == 'always':
-        run_script = f"""try:
-    res = func(*args, **kwargs)
-finally:
-    import os; os.remove("{filename}")"""
-    elif clean == 'on_success':
-        run_script = f"""res = func(*args, **kwargs)
-import os; os.remove("{filename}")"""
-    python_cmd = _external_job.format(sys.executable,
-                                      func.__name__,
-                                      verbose_script,
-                                      dill_bytes.getvalue(),
-                                      run_script)
-
-    with open(filename, 'w') as python_file:
-        python_file.write(python_cmd)
-
-    return sys.executable + " " + filename
+    return run.func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose)
