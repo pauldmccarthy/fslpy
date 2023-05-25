@@ -480,6 +480,7 @@ def func_to_cmd(func,
     except Exception as e:
         if clean == 'on_success':
             clean = 'never'
+        raise e
     finally:
         if clean in ('on_success', 'always'):
             os.remove({filename})
