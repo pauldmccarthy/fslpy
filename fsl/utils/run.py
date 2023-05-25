@@ -15,20 +15,30 @@
 
    run
    runfsl
+   runfunc
+   func_to_cmd
    dryrun
    hold
+   job_output
 """
 
 
+import                    io
 import                    sys
+import                    glob
+import                    time
 import                    shlex
 import                    logging
+import                    tempfile
 import                    threading
 import                    contextlib
 import collections.abc as abc
 import subprocess      as sp
 import os.path         as op
 import                    os
+import textwrap        as tw
+
+import                    dill
 
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.tempdir                  as tempdir
@@ -397,6 +407,113 @@ def runfsl(*args, **kwargs):
     return run(*args, **kwargs)
 
 
+def runfunc(func,
+            args=None,
+            kwargs=None,
+            tmp_dir=None,
+            clean="never",
+            verbose=False,
+            **run_kwargs):
+    """Run the given python function as a shell command. See
+    :func:`func_to_cmd` for details on the arguments.
+
+    The remaining ``run_kwargs`` arguments are passed through to the
+    :func:`run` function.
+    """
+    cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose)
+    return run(cmd, **run_kwargs)
+
+
+def func_to_cmd(func,
+                args=None,
+                kwargs=None,
+                tmp_dir=None,
+                clean="never",
+                verbose=False):
+    """Save the given python function to an executable file. Return a string
+    containing a command that can be used to run the function.
+
+    ..warning:: If submitting a function defined in the ``__main__`` script,
+                the script will be run again to retrieve this function. Make
+                sure there is a ``if __name__ == '__main__'`` guard to prevent
+                the full script from being re-run.
+
+    :arg func:    function to be run
+
+    :arg args:    positional arguments
+
+    :arg kwargs:  keyword arguments
+
+    :arg tmp_dir: directory where to store the temporary file (default: the
+                  system temporary directory)
+
+    :arg clean:   Whether the script should be removed after running. There are
+                  three options:
+                    - ``"never"``:      (default) Script is kept
+                    - ``"on_success"``: only remove if script successfully
+                                        finished (i.e., no error is raised)
+                    - ``"always"``:     always remove the script, even if it
+                                        raises an error
+
+    :arg verbose: If set to True, the script will print its own filename
+                  before running
+    """
+    script_template = tw.dedent("""
+    #!{executable}
+    # This is a temporary file designed to run the python function {funcname},
+    # so that it can be submitted to the cluster
+    import os
+    import dill
+    from io import BytesIO
+    from importlib import import_module
+
+    if {verbose}:
+        print('running {filename}')
+
+    dill_bytes = BytesIO({dill_bytes})
+    func, args, kwargs = dill.load(dill_bytes)
+
+    clean = {clean}
+
+    try:
+        res = func(*args, **kwargs)
+    except Exception as e:
+        if clean == 'on_success':
+            clean = 'never'
+    finally:
+        if clean in ('on_success', 'always'):
+            os.remove({filename})
+    """).strip()
+
+    if clean not in ('never', 'always', 'on_success'):
+        raise ValueError("Clean should be one of 'never', 'always', "
+                         f"or 'on_success', not {clean}")
+
+    if args   is None: args   = ()
+    if kwargs is None: kwargs = {}
+
+    dill_bytes = io.BytesIO()
+    dill.dump((func, args, kwargs), dill_bytes, recurse=True)
+
+    handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
+                                        suffix='.py',
+                                        dir=tmp_dir)
+    os.close(handle)
+
+    python_cmd = script_template.format(
+        executable=sys.executable,
+        funcname=func.__name__,
+        filename=f'"{filename}"',
+        verbose=verbose,
+        clean=f'"{clean}"',
+        dill_bytes=dill_bytes.getvalue())
+
+    with open(filename, 'w') as f:
+        f.write(python_cmd)
+
+    return f'{sys.executable} {filename}'
+
+
 def wslcmd(cmdpath, *args):
     """Convert a command + arguments into an equivalent set of arguments that
     will run the command under Windows Subsystem for Linux
@@ -454,17 +571,94 @@ def wslcmd(cmdpath, *args):
 
 
 def hold(job_ids, hold_filename=None):
-    """Waits until all jobs have finished
+    """Waits until all specified cluster jobs have finished.
 
-    :param job_ids: possibly nested sequence of job ids. The job ids
-                    themselves should be strings.
+    :param job_ids:       Possibly nested sequence of job ids. The job ids
+                          themselves should be strings.
 
-    :param hold_filename: filename to use as a hold file.  The
-                          containing directory should exist, but the
-                          file itself should not.  Defaults to a
-                          ./.<random characters>.hold in the current
-                          directory.  :return: only returns when all
-                          the jobs have finished
+    :param hold_filename: filename to use as a hold file.  The containing
+                          directory should exist, but the file itself should
+                          not.  Defaults to a ./.<random characters>.hold in
+                          the current directory.  :return: only returns when
+                          all the jobs have finished
     """
-    import fsl.utils.fslsub as fslsub  # pylint: disable=import-outside-toplevel  # noqa: E501
-    fslsub.hold(job_ids, hold_filename)
+
+    # Returns a potentially nested sequence of
+    # job ids as a single comma-separated string
+    def _flatten_job_ids(job_ids):
+        def unpack(job_ids):
+            if isinstance(job_ids, str):
+                return {job_ids}
+            elif isinstance(job_ids, int):
+                return {str(job_ids)}
+            else:
+                res = set()
+                for job_id in job_ids:
+                    res.update(unpack(job_id))
+                return res
+        return ','.join(sorted(unpack(job_ids)))
+
+    if hold_filename is None:
+        handle, hold_filename = tempfile.mkstemp(prefix='.',
+                                                 suffix='.hold',
+                                                 dir='.')
+        handle.close()
+
+    if op.exists(hold_filename):
+        raise IOError(f"Hold file ({hold_filename}) already exists")
+    elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
+        raise IOError(f"Hold file ({hold_filename}) can not be created "
+                      "in non-existent directory")
+
+    submit = {
+        'jobhold'  : _flatten_job_ids(job_ids),
+        'minutes'  : 1,
+        'job_name' : '.hold'
+    }
+
+    run(f'touch {hold_filename}', submit=submit)
+
+    while not op.exists(hold_filename):
+        time.sleep(10)
+
+    os.remove(hold_filename)
+
+
+def job_output(job_id, logdir='.', command=None, name=None):
+    """Returns the output of the given cluster-submitted job.
+
+    On SGE cluster systems, the standard output and error streams of a
+    submitted job are saved to files named ``<job_id>.o`` and ``<job_id>.e``.
+    This function simply reads those files and returns their content.
+
+    :arg job_id:  String containing job ID.
+    :arg logdir:  Directory containing the log - defaults to
+                  the current directory.
+    :arg command: Command that was run. Not currently used.
+    :arg name:    Job name if it was specified. Not currently used.
+    :returns:     A tuple containing the standard output and standard error.
+    """
+
+    stdout = list(glob.glob(op.join(logdir, '*.o{}'.format(job_id))))
+    stderr = list(glob.glob(op.join(logdir, '*.e{}'.format(job_id))))
+
+    if len(stdout) != 1 or len(stderr) != 1:
+        raise ValueError('No/too many error/output files for job {}: stdout: '
+                         '{}, stderr: {}'.format(job_id, stdout, stderr))
+
+    stdout = stdout[0]
+    stderr = stderr[0]
+
+    if op.exists(stdout):
+        with open(stdout, 'rt') as f:
+            stdout = f.read()
+    else:
+        stdout = None
+
+    if op.exists(stderr):
+        with open(stderr, 'rt') as f:
+            stderr = f.read()
+    else:
+        stderr = None
+
+    return stdout, stderr
