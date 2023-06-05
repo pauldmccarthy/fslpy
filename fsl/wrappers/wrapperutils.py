@@ -86,6 +86,7 @@ and returned::
 """
 
 
+import functools       as ft
 import itertools       as it
 import os.path         as op
 import collections.abc as abc
@@ -101,8 +102,7 @@ import                    inspect
 import                    logging
 import                    tempfile
 import                    warnings
-import                    functools
-import                    contextlib
+
 
 import nibabel as nib
 import numpy   as np
@@ -125,7 +125,7 @@ def _update_wrapper(wrapper, wrapped, *args, **kwargs):
     This custom function is only needed in Python versions < 3.4.
     """
 
-    wrapper = functools.update_wrapper(wrapper, wrapped, *args, **kwargs)
+    wrapper = ft.update_wrapper(wrapper, wrapped, *args, **kwargs)
 
     # Python >= 3.4 does things right
     if (sys.version_info[0] * 10 + sys.version_info[1]) < 34:
@@ -149,7 +149,7 @@ def _unwrap(func):
     return func
 
 
-def genxwrapper(func, runner):
+def genxwrapper(func, runner, funccmd=False):
     """This function is used by :func:`cmdwrapper` and :func:`fslwrapper`.
     It is not intended to be used in any other circumstances.
 
@@ -180,8 +180,10 @@ def genxwrapper(func, runner):
     changed directly, but rather can be temporarily modified via the
     :func:`wrapperconfig` context manager function.
 
-    :arg func:   A function which generates a command line.
-    :arg runner: Either :func:`.run.run` or :func:`.run.runfsl`.
+    :arg func:    A function which generates a command line.
+    :arg runner:  Either :func:`.run.run` or :func:`.run.runfsl`.
+    :arg funccmd: Used by :func:`funcwrapper`. If ``True``, `func` is
+                  passed through :func:`.run.func_to_cmd`.
     """
 
     def wrapper(*args, **kwargs):
@@ -193,6 +195,10 @@ def genxwrapper(func, runner):
         cmdonly  = kwargs.pop('cmdonly',  opts['cmdonly'])
         logg     = kwargs.pop('log',      opts['log'])
 
+        if funccmd:
+            cmd = run.func_to_cmd(func, args=args, kwargs=kwargs,
+                                  clean='always')
+
         # many wrapper functions use fsl.utils.assertions
         # statements to check that input arguments are
         # valid. Disable these if the cmdonly argument is
@@ -201,8 +207,9 @@ def genxwrapper(func, runner):
         # - it may be dependent on another job that has
         # not yet been run, so assertions on input files
         # may not be valid.
-        with asrt.disabled(cmdonly or (submit not in (None, False))):
-            cmd = func(*args, **kwargs)
+        else:
+            with asrt.disabled(cmdonly or (submit not in (None, False))):
+                cmd = func(*args, **kwargs)
 
         return runner(cmd,
                       stderr=stderr,
@@ -243,6 +250,48 @@ def fslwrapper(func):
     See the :func:`genxwrapper` function for details.
     """
     return genxwrapper(func, run.runfsl)
+
+
+def funcwrapper(always=False):
+    """This decorator can be used on Python functions which may need to be
+    executed as shell commands via :func:`.run.func_to_cmd`.
+
+    This decorator **must** be called when applied, i.e.::
+
+        @funcwrapper()
+        def somefunc():
+            ...
+
+    and not::
+
+        @funcwrapper
+        def somefunc():
+            ...
+
+    With the default behaviour (``always=False``), if the function is called
+    *without* a ``submit`` parameter, the function will just be called as a
+    normal Python function. If the function is called with ``submit=True`` (or
+    similar), or if this decorator is applied with ``always=True``, the
+    function will be executed in a separate process via
+    :func:`.run.func_to_cmd`.
+
+    See the :func:`genxwrapper` function for details.
+    """
+
+    def decorator(func):
+        def wrapped_func(*args, **kwargs):
+
+            # submit as a shell command
+            if always or kwargs.get('submit', None) not in (None, False):
+                return genxwrapper(func, run.run, funccmd=True)(*args, **kwargs)
+
+            # run directly as regular function
+            else:
+                return func(*args, **kwargs)
+
+        return wrapped_func
+
+    return decorator
 
 
 class wrapperconfig:
