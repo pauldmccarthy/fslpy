@@ -146,3 +146,22 @@ def test_lru():
     c[3]
     c[4]
     assert len(c) == 3
+
+
+
+def test_accessors():
+    c = cache.Cache(maxsize=3)
+
+    c[0] = '0'
+    c[1] = '1'
+    c[2] = '2'
+    c[3] = '3'
+
+    assert list(c.keys())   == [ 1,        2,        3]
+    assert list(c.values()) == ['1',      '2',      '3']
+    assert list(c.items())  == [(1, '1'), (2, '2'), (3, '3')]
+
+    assert 0 not in c
+    assert 1     in c
+    assert 2     in c
+    assert 3     in c

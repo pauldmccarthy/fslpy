@@ -11,7 +11,9 @@ Added
 
 * New :func:`.runfunc` function which can be used to execute a Python function
   in a separate process (or as a submitted cluster job), via the
-  :func:`.func_to_cmd` function (!
+  :func:`.func_to_cmd` function (!390).
+* New ``keys()``, ``values()``, and ``items()`` methods on the :class:`.Cache`
+  class (!391).
 
 
 Changed
@@ -20,7 +22,7 @@ Changed
 
 * The :func:`.run.func_to_cmd`, :func:`.run.hold`, and :func:`.run.job_output`
   functions have been moved from :mod:`fsl.utils.fslsub` to the
-  :mod:`fsl.utils.run` module.
+  :mod:`fsl.utils.run` module (!390).
 
 
 Deprecated
@@ -28,7 +30,7 @@ Deprecated
 
 
 * The :mod:`fsl.utils.fslsub`  module has been deprecated, and scheduled for
-  removal in ``fslpy 4.0.0``.
+  removal in ``fslpy 4.0.0`` (!390).
 
 
 3.12.1 (Tuesday 23rd May 2023)
