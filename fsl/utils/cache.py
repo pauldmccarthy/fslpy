@@ -16,10 +16,9 @@ class Expired(Exception):
     """``Exception`` raised by the :meth:`Cache.get` metho when an attempt is
     made to access a cache item that has expired.
     """
-    pass
 
 
-class CacheItem(object):
+class CacheItem:
     """Internal container class used to store :class:`Cache` items. """
 
     def __init__(self, key, value, expiry=0):
@@ -29,7 +28,7 @@ class CacheItem(object):
         self.storetime = time.time()
 
 
-class Cache(object):
+class Cache:
     """The ``Cache`` is a simple in-memory cache built on a
     ``collections.OrderedDict``. The ``Cache`` class has the following
     features:
@@ -148,6 +147,23 @@ class Cache(object):
         be in the cache, but it may be expired.
         """
         return key in self.__cache
+
+
+    def keys(self):
+        """Return all keys in the cache. """
+        return self.__cache.keys()
+
+
+    def values(self):
+        """Return all values in the cache. """
+        for item in self.__cache.values():
+            yield item.value
+
+
+    def items(self):
+        """Return all (key, value) pairs in the cache. """
+        for key, item in self.__cache.items():
+            yield key, item.value
 
 
     def __parseDefault(self, *args, **kwargs):
