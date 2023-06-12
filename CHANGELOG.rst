@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.13.0 (Under development)
---------------------------
+3.13.0 (Monday 12th June 2023)
+------------------------------
 
 
 Added
