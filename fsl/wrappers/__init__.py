@@ -102,6 +102,7 @@ from fsl.wrappers.wrapperutils       import (LOAD,
                                              cmdwrapper,
                                              fslwrapper,
                                              funcwrapper)
+from fsl.wrappers                    import (tbss,)
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
 from fsl.wrappers.eddy               import (eddy,
