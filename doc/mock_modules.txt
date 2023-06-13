@@ -1,4 +1,5 @@
 deprecation
+dill
 h5py
 nibabel
 nibabel.cifti2
