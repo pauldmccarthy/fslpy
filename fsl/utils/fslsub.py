@@ -9,10 +9,9 @@ line tool. It is assumed that the computing cluster is managed by SGE.
 
 .. note:: All of the functionality in this module is deprecated and will be
           removed in a future version of fslpy. Equivalent functionality is
-          available in the :ref:`fsl_sub
-          <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ project, and the
-          :mod:`fsl.utils.run` module and :mod:`.wrappers.fsl_sub` wrapper
-          function.
+          available in the `fsl_sub <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_
+          project, and the :mod:`fsl.utils.run` module and
+          :mod:`.wrappers.fsl_sub` wrapper function.
 
 Example usage, building a short pipeline::
 
