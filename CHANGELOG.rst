@@ -11,7 +11,7 @@ Added
 
 * New :func:`.runfunc` function which can be used to execute a Python function
   in a separate process (or as a submitted cluster job), via the
-  :func:`.func_to_cmd` function (!390).
+  :func:`~fsl.utils.run.func_to_cmd` function (!390).
 * New ``keys()``, ``values()``, and ``items()`` methods on the :class:`.Cache`
   class (!391).
 
@@ -77,8 +77,8 @@ Fixed
 
 
 * The :func:`.fslstats` wrapper no longer overwrites the ``log`` option that
-  is passed to :func:`.run`, if a :func:`.wrapperconfig` context is active
-  (!381).
+  is passed to :func:`~.run.run`, if a :func:`.wrapperconfig` context is
+  active (!381).
 
 
 
@@ -255,7 +255,7 @@ Fixed
 ^^^^^
 
 
-* Fixed an issue in the :func:`.func_to_cmd` function (!339).
+* Fixed an issue in the :func:`~.fslsub.func_to_cmd` function (!339).
 
 
 3.9.2 (Friday 20th May 2022)
@@ -308,7 +308,7 @@ Changed
   object (and so remains on disk by default). Image data can be loaded into
   memory by accessing the :meth:`.Image.data` property, or by modifying the
   data through :meth:`.Image.__setitem__` (!327).
-* The :func:`.func_to_cmd` function now uses `dill
+* The :func:`~.fslsub.func_to_cmd` function now uses `dill
   <https://dill.readthedocs.io/en/latest/>`_ instead of ``pickle`` for
   serialisation (!328).
 
@@ -540,9 +540,8 @@ Fixed
 
 * Fixed an edge-case in the :mod:`.gifti` module, where a surface with a
   single triangle was being loaded incorrectly (!288).
-* Fixed an issue in the :func:`.func_to_cmd` function, where it was
+* Fixed an issue in the :func:`~.fslsub.func_to_cmd` function, where it was
   unintentionally leaving flie handles open (!291).
-
 
 
 3.5.3 (Tuesday 9th February 2021)
