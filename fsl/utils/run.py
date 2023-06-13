@@ -459,6 +459,7 @@ def func_to_cmd(func,
 
     :arg clean:   Whether the script should be removed after running. There are
                   three options:
+
                     - ``"never"``:      (default) Script is kept
                     - ``"on_success"``: only remove if script successfully
                                         finished (i.e., no error is raised)
