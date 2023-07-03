@@ -121,21 +121,29 @@ def scaleOffsetXform(scales, offsets):
     return xform
 
 
-def compose(scales, offsets, rotations, origin=None, shears=None):
+def compose(scales, offsets, rotations, origin=None, shears=None,
+            scaleAtOrigin=False):
     """Compose a transformation matrix out of the given scales, offsets
     and axis rotations.
 
-    :arg scales:    Sequence of three scale values.
+    :arg scales:        Sequence of three scale values.
 
-    :arg offsets:   Sequence of three offset values.
+    :arg offsets:       Sequence of three offset values.
 
-    :arg rotations: Sequence of three rotation values, in radians, or
-                    a rotation matrix of shape ``(3, 3)``.
+    :arg rotations:     Sequence of three rotation values, in radians, or
+                        a rotation matrix of shape ``(3, 3)``.
 
-    :arg origin:    Origin of rotation - must be scaled by the ``scales``.
-                    If not provided, the rotation origin is ``(0, 0, 0)``.
+    :arg origin:        Origin of rotation - must be scaled by the ``scales``.
+                        If not provided, the rotation origin is ``(0, 0, 0)``.
 
-    :arg shears:    Sequence of three shear values
+    :arg shears:        Sequence of three shear values
+
+    :arg scaleAtOrigin: If ``True``, the scaling parameters are applied with
+                        respect to the ``origin``, i.e. so that the location
+                        of ``origin`` is unchanged after scaling.  If
+                        ``False`` (the default), the scaling parameters are
+                        applied with respect to the centre of the field of
+                        view.
     """
 
     preRotate  = np.eye(4)
@@ -173,7 +181,10 @@ def compose(scales, offsets, rotations, origin=None, shears=None):
         shear[0, 2] = shears[1]
         shear[1, 2] = shears[2]
 
-    return concat(offset, postRotate, rotate, preRotate, scale, shear)
+    if scaleAtOrigin:
+        return concat(offset, postRotate, rotate, scale, preRotate, shear)
+    else:
+        return concat(offset, postRotate, rotate, preRotate, scale, shear)
 
 
 def decompose(xform, angles=True, shears=False):
