@@ -133,8 +133,8 @@ def compose(scales, offsets, rotations, origin=None, shears=None,
     :arg rotations:     Sequence of three rotation values, in radians, or
                         a rotation matrix of shape ``(3, 3)``.
 
-    :arg origin:        Origin of rotation - must be scaled by the ``scales``.
-                        If not provided, the rotation origin is ``(0, 0, 0)``.
+    :arg origin:        Origin of rotation.  If not provided, the rotation
+                        origin is ``(0, 0, 0)``.
 
     :arg shears:        Sequence of three shear values
 
@@ -142,8 +142,7 @@ def compose(scales, offsets, rotations, origin=None, shears=None,
                         respect to the ``origin``, i.e. so that the location
                         of ``origin`` is unchanged after scaling.  If
                         ``False`` (the default), the scaling parameters are
-                        applied with respect to the centre of the field of
-                        view.
+                        applied with respect to location ``(0, 0, 0)``.
     """
 
     preRotate  = np.eye(4)
