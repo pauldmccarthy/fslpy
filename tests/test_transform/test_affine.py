@@ -276,6 +276,16 @@ def test_compose_and_decompose():
     assert np.all(np.isclose(rot,   rots))
 
 
+def test_compose_scaleAtOrigin():
+
+    for _ in range(100):
+        origin = np.random.randint(-50, 50, 3)
+        rots   = -np.pi + 2  * np.pi * np.random.random(3)
+        scales = -10    + 20 *         np.random.random(3)
+        xform  = affine.compose(scales, [0, 0, 0], rots, origin=origin,
+                                scaleAtOrigin=True)
+
+        assert np.all(np.isclose(affine.transform(origin, xform), origin))
 
 
 def test_rotMatToAxisAngles(seed):

@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.13.2 (Monday 3rd July 2023)
+-----------------------------
+
+
+Added
+^^^^^
+
+
+* New ``scaleAtOrigin`` option to the :func:`.affine.compose` function, which
+  allows the origin to be preserved by scaling parameters (!398).
+
+
+
 3.13.1 (Tuesday 13th June 2023)
 -------------------------------
 
