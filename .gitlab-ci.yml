@@ -111,11 +111,6 @@ variables:
     - tags@fsl/fslpy
 
 
-.except_releases: &except_releases
-  except:
-    - tags
-
-
 .setup_ssh: &setup_ssh
   before_script:
     - bash ./.ci/setup_ssh.sh
@@ -138,13 +133,19 @@ variables:
 # Test stage
 ############
 
+# TODO Option to skip tests via env var
+
 
 .test: &test_template
   <<: *setup_ssh
 
   # Releases are just tags on a release
   # branch, so we don't need to test them.
-  <<: *except_releases
+  except:
+    refs:
+      - tags
+    variables:
+      - $SKIP_TESTS != null
 
   tags:
     - docker
@@ -180,7 +181,8 @@ test:3.11:
 test:build-pypi-dist:
   stage: test
   image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
-  <<: *except_releases
+  except:
+    - tags
 
   tags:
     - docker
