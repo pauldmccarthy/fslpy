@@ -20,20 +20,25 @@ def test_normal_usage():
 
     default_called = []
     topic_called   = []
+    noargs_called  = []
 
     def default_callback(thing, topic, value):
         default_called.append((thing, topic, value))
-    
+
     def topic_callback(thing, topic, value):
-        topic_called.append((thing, topic, value)) 
+        topic_called.append((thing, topic, value))
+
+    def noargs_callback():
+        noargs_called.append('called')
 
     t.register('default_callback', default_callback)
     t.register('topic_callback',   topic_callback, topic='topic')
+    t.register('noargs_callback',  noargs_callback)
 
     with pytest.raises(notifier.Registered):
         t.register('default_callback', default_callback)
     with pytest.raises(notifier.Registered):
-        t.register('topic_callback',   topic_callback, topic='topic') 
+        t.register('topic_callback',   topic_callback, topic='topic')
 
     t.notify()
     t.notify(value='value')
@@ -45,14 +50,16 @@ def test_normal_usage():
     t.deregister('default_callback')
     t.deregister('topic_callback', topic='topic')
     t.deregister('topic_callback', topic='topic')
+    t.deregister('noargs_callback')
 
     t.notify()
     t.notify(value='value')
     t.notify(topic='topic')
-    t.notify(topic='topic', value='value') 
+    t.notify(topic='topic', value='value')
 
     assert len(default_called) == 4
     assert len(topic_called)   == 2
+    assert len(noargs_called)  == 4
 
     assert default_called[0] == (t,  None,    None)
     assert default_called[1] == (t,  None,   'value')
@@ -63,24 +70,24 @@ def test_normal_usage():
 
 
 def test_enable_disable():
-    
+
     class Thing(notifier.Notifier):
         pass
 
     t = Thing()
-    
+
     default_called = [0]
     topic_called   = [0]
 
     def default_callback(*a):
         default_called[0] += 1
-    
+
     def topic_callback(*a):
         topic_called[0] += 1
 
     t.register('default_callback', default_callback)
     t.register('topic_callback',   topic_callback, topic='topic')
-    
+
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 2
@@ -93,7 +100,7 @@ def test_enable_disable():
     t.notify(topic='topic')
     t.enable('default_callback')
     assert default_called[0] == 2
-    assert topic_called[  0] == 2 
+    assert topic_called[  0] == 2
 
     t.disable('topic_callback', topic='topic')
     assert not t.isEnabled('topic_callback', topic='topic')
@@ -105,7 +112,7 @@ def test_enable_disable():
     assert topic_called[  0] == 2
 
     assert t.isEnabled('topic_callback', topic='topic')
-    assert t.isEnabled('default_callback') 
+    assert t.isEnabled('default_callback')
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 6
@@ -117,7 +124,7 @@ def test_enable_disable():
     t.notify(topic='topic')
     t.enableAll()
     assert default_called[0] == 6
-    assert topic_called[  0] == 3 
+    assert topic_called[  0] == 3
 
     t.disableAll('topic')
     assert not t.isAllEnabled('topic')
@@ -125,11 +132,11 @@ def test_enable_disable():
     t.notify(topic='topic')
     t.enableAll()
     assert default_called[0] == 8
-    assert topic_called[  0] == 3 
+    assert topic_called[  0] == 3
 
 
 def test_skip():
-    
+
     class Thing(notifier.Notifier):
         pass
 
@@ -140,13 +147,13 @@ def test_skip():
 
     def default_callback(*a):
         default_called[0] += 1
-    
+
     def topic_callback(*a):
         topic_called[0] += 1
- 
+
     t.register('default_callback', default_callback)
     t.register('topic_callback',   topic_callback, topic='topic')
-    
+
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 2
@@ -155,14 +162,14 @@ def test_skip():
     with t.skip('default_callback'):
         t.notify()
         t.notify(topic='topic')
-        
+
     assert default_called[0] == 2
     assert topic_called[  0] == 2
 
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 4
-    assert topic_called[  0] == 3 
+    assert topic_called[  0] == 3
 
     with t.skip('topic_callback', 'topic'):
         t.notify()
@@ -173,26 +180,26 @@ def test_skip():
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 8
-    assert topic_called[  0] == 4 
- 
+    assert topic_called[  0] == 4
+
     with t.skipAll():
         t.notify()
         t.notify(topic='topic')
     assert default_called[0] == 8
     assert topic_called[  0] == 4
-    
+
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 10
     assert topic_called[  0] == 5
 
- 
+
     with t.skipAll('topic'):
         t.notify()
         t.notify(topic='topic')
     assert default_called[0] == 12
     assert topic_called[  0] == 5
-    
+
     t.notify()
     t.notify(topic='topic')
     assert default_called[0] == 14
