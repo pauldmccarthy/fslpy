@@ -33,7 +33,7 @@ class Registered(Exception):
     pass
 
 
-class _Listener(object):
+class _Listener:
     """This class is used internally by the :class:`.Notifier` class to
     store references to callback functions.
     """
@@ -58,15 +58,36 @@ class _Listener(object):
         return self.__callback.function()
 
 
+    @property
+    def expectsArguments(self):
+        """Returns ``True`` if the listener function needs to be passed
+        arguments, ``False`` otherwise.  Listener functions can
+        be defined to accept either zero arguments, or a set of
+        positional arguments - see :meth:`Notifier.register` for details.
+        """
+
+        func    = self.callback
+        spec    = inspect.signature(func)
+        posargs = 0
+        varargs = False
+        for param in spec.parameters.values():
+            if param.kind in (inspect.Parameter.POSITIONAL_ONLY,
+                              inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                posargs += 1
+            elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+                varargs = True
+
+        return varargs or ((not varargs) and (posargs == 3))
+
+
     def __str__(self):
 
         cb = self.callback
 
-        if cb is not None: cbName = getattr(cb, '__name__', '<callable>')
-        else:              cbName = '<deleted>'
+        if cb is not None: name = getattr(cb, '__name__', '<callable>')
+        else:              name = '<deleted>'
 
-        return 'Listener {} [topic: {}] [function: {}]'.format(
-            self.name, self.topic, cbName)
+        return f'Listener {self.name} [topic: {self.topic}] [function: {name}]'
 
 
     def __repr__(self):
@@ -116,8 +137,8 @@ class Notifier:
 
         :arg name:      A unique name for the listener.
 
-        :arg callback:  The function to call - must accept two positional
-                        arguments:
+        :arg callback:  The function to call - must accept either zero
+                        arguments, or three positional arguments:
 
                           - this ``Notifier`` instance.
 
@@ -144,12 +165,12 @@ class Notifier:
         listener = _Listener(name, callback, topic, runOnIdle)
 
         if name in self.__listeners[topic]:
-            raise Registered('Listener {} is already registered'.format(name))
+            raise Registered(f'Listener {name} is already registered')
 
         self.__listeners[topic][name] = listener
         self.__enabled[  topic]       = self.__enabled.get(topic, True)
 
-        log.debug('{}: Registered {}'.format(type(self).__name__, listener))
+        log.debug('%s: Registered %s', type(self).__name__, listener)
 
 
     def deregister(self, name, topic=None):
@@ -183,8 +204,8 @@ class Notifier:
             self.__listeners.pop(topic)
             self.__enabled  .pop(topic)
 
-        log.debug('{}: De-registered listener {}'.format(
-            type(self).__name__, listener))
+        log.debug('%s: De-registered listener %s',
+            type(self).__name__, listener)
 
 
     def enable(self, name, topic=None, enable=True):
@@ -344,31 +365,34 @@ class Notifier:
             srcMod  = '...{}'.format(frame[1][-20:])
             srcLine = frame[2]
 
-            log.debug('{}: Notifying {} listeners (topic: {}) [{}:{}]'.format(
+            log.debug('%s: Notifying %s listeners (topic: %s) [%s:%s]',
                 type(self).__name__,
                 len(listeners),
                 topic,
                 srcMod,
-                srcLine))
+                srcLine)
 
         for listener in listeners:
 
             callback = listener.callback
             name     = listener.name
 
+            if listener.expectsArguments: args = (self, topic, value)
+            else:                         args = ()
+
             # The callback, or the owner of the
             # callback function may have been
             # gc'd - remove it if this is the case.
             if callback is None:
-                log.debug('Listener {} has been gc\'d - '
-                          'removing from list'.format(name))
+                log.debug('Listener %s has been gc\'d - '
+                          'removing from list', name)
                 self.__listeners[listener.topic].pop(name)
 
             elif not listener.enabled:
                 continue
 
-            elif listener.runOnIdle: idle.idle(callback, self, topic, value)
-            else:                    callback(           self, topic, value)
+            elif listener.runOnIdle: idle.idle(callback, *args)
+            else:                    callback(           *args)
 
 
     def __getListeners(self, topic):

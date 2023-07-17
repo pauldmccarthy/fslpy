@@ -3,6 +3,18 @@ order.
 
 
 
+3.13.3 (Monday 17th July 2023)
+------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Callback functions registered with :class:`.Notifier` instances no longer
+  need to accept three arguments (!400).
+
+
 3.13.2 (Monday 3rd July 2023)
 -----------------------------
 
