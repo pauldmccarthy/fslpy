@@ -82,10 +82,11 @@ fsl_apply_x5   = "fsl.scripts.fsl_apply_x5:main"
 
 [tool.setuptools.packages.find]
 include = ["fsl*"]
+exclude = ["fsl.tests*"]
 
 
 [tool.setuptools.package-data]
-fsl = ["fsl/tests/testdata/*", "utils/filetree/trees/*"]
+fsl = ["fsl/filetree/trees/*"]
 
 
 [tool.setuptools.dynamic]
