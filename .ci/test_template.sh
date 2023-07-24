@@ -24,9 +24,9 @@ TEST_OPTS="--cov-report= --cov-append"
 # We run some tests under xvfb-run
 # because they invoke wx. Sleep in
 # between, otherwise xvfb gets upset.
-xvfb-run -a python setup.py test --addopts="$TEST_OPTS tests/test_idle.py"
+xvfb-run -a pytest --addopts="$TEST_OPTS tests/test_idle.py"
 sleep 5
-xvfb-run -a python setup.py test --addopts="$TEST_OPTS tests/test_platform.py"
+xvfb-run -a pytest --addopts="$TEST_OPTS tests/test_platform.py"
 
 # We run the immv/imcp tests as the nobody
 # user because some tests expect permission
@@ -40,11 +40,11 @@ cmd="$cmd --addopts='$TEST_OPTS tests/test_scripts/test_immv_imcp.py tests/test_
 su -s /bin/bash -c "$cmd" nobody
 
 # All other tests can be run as normal.
-python setup.py test --addopts="$TEST_OPTS -m 'not longtest' --ignore=tests/test_idle.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py --ignore=tests/test_scripts/test_immv_imcp.py"
+pytest --addopts="$TEST_OPTS -m 'not longtest' --ignore=tests/test_idle.py --ignore=tests/test_platform.py --ignore=tests/test_immv_imcp.py --ignore=tests/test_scripts/test_immv_imcp.py"
 
 # Long tests are only run on release branches
 if [[ $CI_COMMIT_REF_NAME == v* ]]; then
-    python setup.py test --addopts="$TEST_OPTS -m 'longtest'"
+    pytest --addopts="$TEST_OPTS -m 'longtest'"
 fi
 
 python -m coverage report -i
