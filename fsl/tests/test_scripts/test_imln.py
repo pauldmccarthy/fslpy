@@ -15,7 +15,7 @@ from   fsl.utils.tempdir import tempdir
 import fsl.utils.path    as     fslpath
 import fsl.scripts.imln  as     imln
 
-from tests import touch
+from fsl.tests import touch
 
 
 def test_usage():

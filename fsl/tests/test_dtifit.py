@@ -10,7 +10,7 @@ import numpy   as np
 
 import pytest
 
-import tests
+import fsl.tests       as tests
 import fsl.data.dtifit as dtifit
 import fsl.data.image  as fslimage
 

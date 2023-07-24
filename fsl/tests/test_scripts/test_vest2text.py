@@ -12,7 +12,7 @@ import fsl.data.vest         as fslvest
 import fsl.scripts.Text2Vest as Text2Vest
 import fsl.scripts.Vest2Text as Vest2Text
 
-from tests import tempdir
+from fsl.tests import tempdir
 
 
 def test_usage():

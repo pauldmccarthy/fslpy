@@ -3,7 +3,7 @@ import os.path as op
 import numpy as np
 import nibabel as nib
 from numpy import testing
-import tests
+import fsl.tests as tests
 from nibabel.cifti2 import cifti2_axes
 
 

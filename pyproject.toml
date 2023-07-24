@@ -85,7 +85,7 @@ include = ["fsl*"]
 
 
 [tool.setuptools.package-data]
-fsl = ["utils/filetree/trees/*"]
+fsl = ["fsl/tests/testdata/*", "utils/filetree/trees/*"]
 
 
 [tool.setuptools.dynamic]
@@ -94,11 +94,11 @@ version = {attr = "fsl.version.__version__"}
 
 [tool.coverage.run]
 include = ["fsl/*"]
-omit    = ["fsl/data/imagewrapper.py"]
+omit    = ["fsl/tests/*", "fsl/data/imagewrapper.py"]
 
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["fsl/tests"]
 addopts   = "-v --cov=fsl --showlocals"
 markers   = [
   "fsltest:    Requires FSL",

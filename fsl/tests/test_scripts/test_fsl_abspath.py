@@ -10,7 +10,7 @@ import os.path as op
 
 import fsl.scripts.fsl_abspath as fsl_abspath
 
-from tests import tempdir, CaptureStdout
+from fsl.tests import tempdir, CaptureStdout
 
 
 def test_usage():

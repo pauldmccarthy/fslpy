@@ -14,7 +14,7 @@ import nibabel as nib
 
 import pytest
 
-import tests
+import fsl.tests                as tests
 import fsl.data.image           as fslimage
 import fsl.data.melodicimage    as meli
 import fsl.data.melodicanalysis as mela
