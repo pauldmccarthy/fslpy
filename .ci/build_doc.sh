@@ -2,7 +2,8 @@
 
 set -e
 
-pip install -r requirements-dev.txt
-python setup.py doc
-mkdir -p public
-mv doc/html/* public/
+source /test.env/bin/activate
+
+pip install ".[doc]"
+
+sphinx build doc public

@@ -2,34 +2,14 @@
 
 set -e
 
-# Temporary: this should be done
-# in docker image definition
-apt install -y locales
-locale-gen en_US.UTF-8
-locale-gen en_GB.UTF-8
-update-locale
-
-# If running on a fork repository, we merge in the
-# upstream/master branch. This is done so that merge
-# requests from fork to the parent repository will
-# have unit tests run on the merged code, something
-# which gitlab CE does not currently do for us.
-if [[ "$CI_PROJECT_PATH" != "$UPSTREAM_PROJECT" ]]; then
-  git fetch upstream;
-  git merge --no-commit --no-ff -s recursive -X ours upstream/master;
-fi;
-
 source /test.venv/bin/activate
 
-pip install --retries 10 -r requirements.txt
-pip install --retries 10 -r requirements-extra.txt
-pip install --retries 10 -r requirements-dev.txt
+pip install ".[extra,test,style]"
 
 # style stage
-if [ "$TEST_STYLE"x != "x" ]; then pip install --retries 10 pylint flake8; fi;
 if [ "$TEST_STYLE"x != "x" ]; then flake8                           fsl || true; fi;
 if [ "$TEST_STYLE"x != "x" ]; then pylint --output-format=colorized fsl || true; fi;
-if [ "$TEST_STYLE"x != "x" ]; then exit 0; fi
+if [ "$TEST_STYLE"x != "x" ]; then exit 0;                                       fi;
 
 # We need the FSL atlases for the atlas
 # tests, and need $FSLDIR to be defined
@@ -37,7 +17,8 @@ export FSLDIR=/fsl/
 mkdir -p $FSLDIR/data/
 rsync -rv "fsldownload:$FSL_ATLAS_DIR" "$FSLDIR/data/atlases/"
 
-# Finally, run the damned tests.
+# Run the tests. Suppress coverage
+# reporting until after we're finished.
 TEST_OPTS="--cov-report= --cov-append"
 
 # We run some tests under xvfb-run
