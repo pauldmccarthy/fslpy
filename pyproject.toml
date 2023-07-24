@@ -94,6 +94,7 @@ version = {attr = "fsl.version.__version__"}
 
 [tool.coverage.run]
 include = ["fsl/*"]
+omit    = ["fsl/data/imagewrapper.py"]
 
 
 [tool.pytest.ini_options]
