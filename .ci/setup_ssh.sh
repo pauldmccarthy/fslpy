@@ -43,12 +43,10 @@ if [[ -f /.dockerenv ]]; then
  eval $(ssh-agent -s);
  mkdir -p $HOME/.ssh;
 
- echo "$SSH_PRIVATE_KEY_GIT"          > $HOME/.ssh/id_git;
  echo "$SSH_PRIVATE_KEY_FSL_DOWNLOAD" > $HOME/.ssh/id_fsl_download;
 
  chmod go-rwx $HOME/.ssh/id_*;
 
- ssh-add $HOME/.ssh/id_git;
  ssh-add $HOME/.ssh/id_fsl_download;
 
  if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
