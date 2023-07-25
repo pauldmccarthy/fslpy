@@ -3,7 +3,5 @@
 set -e
 
 source /test.env/bin/activate
-
 pip install ".[doc]"
-
-sphinx build doc public
+sphinx-build doc public
