@@ -86,7 +86,7 @@ exclude = ["fsl.tests*"]
 
 
 [tool.setuptools.package-data]
-fsl = ["fsl/utils/filetree/trees/*"]
+fsl = ["utils/filetree/trees/*"]
 
 
 [tool.setuptools.dynamic]
