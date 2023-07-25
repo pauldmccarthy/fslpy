@@ -100,7 +100,7 @@ omit    = ["fsl/tests/*", "fsl/data/imagewrapper.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["fsl/tests"]
-addopts   = "-v --cov=fsl --showlocals"
+addopts   = "-v --cov=fsl --showlocals --import-mode=importlib"
 markers   = [
   "fsltest:    Requires FSL",
   "wxtest:     Requires wxPython",
