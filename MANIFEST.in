@@ -1,12 +1,8 @@
 include           AUTHOR
-include           LICENSE
-include           COPYRIGHT
 include           CHANGELOG.rst
+include           COPYRIGHT
+include           LICENSE
 include           README.rst
-include           requirements.txt
-include           requirements-dev.txt
-include           requirements-extra.txt
-include           setup.cfg
-recursive-include doc      *
-recursive-exclude doc/html *
-recursive-include tests    *
+include           conftest.py
+recursive-include doc       *
+recursive-include fsl/tests *

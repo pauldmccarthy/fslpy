@@ -12,7 +12,7 @@ import itertools as it
 import numpy     as np
 import pytest
 
-import tests
+import fsl.tests                as tests
 import fsl.utils.path           as fslpath
 import fsl.data.melodicanalysis as mela
 

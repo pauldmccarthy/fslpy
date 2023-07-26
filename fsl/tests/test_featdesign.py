@@ -108,7 +108,7 @@ import numpy   as np
 
 import pytest
 
-import tests
+import fsl.tests             as     tests
 from   fsl.utils.tempdir     import tempdir
 import fsl.data.featdesign   as     featdesign
 import fsl.data.featanalysis as     featanalysis

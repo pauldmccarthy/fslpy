@@ -18,7 +18,7 @@ import             pytest
 
 import fsl.data.vest as vest
 
-from tests import tempdir
+from fsl.tests import tempdir
 
 
 testfile1 = """%!VEST-LUT

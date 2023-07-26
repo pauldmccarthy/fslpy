@@ -16,7 +16,7 @@ import unittest.mock as mock
 
 import pytest
 
-import tests
+import fsl.tests          as tests
 import fsl.utils.settings as settings
 import fsl.utils.tempdir  as tempdir
 

@@ -10,7 +10,7 @@ import os
 from fsl.utils.tempdir import tempdir
 import fsl.scripts.imrm as imrm
 
-from tests import touch
+from fsl.tests import touch
 
 def test_imrm_usage():
     assert imrm.main([]) != 0

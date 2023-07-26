@@ -1,0 +1,113 @@
+[build-system]
+requires      = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name            = "fslpy"
+dynamic         = ["version"]
+description     = "FSL Python library"
+readme          = {file = "README.rst", content-type="text/x-rst"}
+license         = {text = "Apache License Version 2.0"}
+requires-python = ">=3.8"
+authors         = [{name = "Paul McCarthy", email = "pauldmccarthy@gmail.com"}]
+
+dependencies = [
+ "dill",
+ "h5py >=2.9",
+ "nibabel >=2.4",
+ "numpy >=1",
+ "scipy >=0.18"
+]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+
+[project.urls]
+"Repository"    = "https://git.fmrib.ox.ac.uk/fsl/fslpy/"
+"Documentation" = "https://open.win.ox.ac.uk/pages/fsl/fslpy/"
+
+
+[project.optional-dependencies]
+extra = [
+  "indexed_gzip >=0.7",
+  "wxpython >=4",
+  "trimesh >=2.37.29",
+  "rtree >=0.8.3",
+  "Pillow >=3.2.0"
+]
+doc = [
+  "sphinx",
+  "sphinx_rtd_theme"
+]
+test = [
+  "pytest",
+  "coverage",
+  "pytest-cov",
+  "tomli; python_version < \"3.11\""
+]
+style = [
+  "pylint",
+  "flake8"
+]
+
+
+[project.scripts]
+imcp           = "fsl.scripts.imcp:main"
+imln           = "fsl.scripts.imln:main"
+immv           = "fsl.scripts.immv:main"
+imrm           = "fsl.scripts.imrm:main"
+imglob         = "fsl.scripts.imglob:main"
+imtest         = "fsl.scripts.imtest:main"
+remove_ext     = "fsl.scripts.remove_ext:main"
+fsl_abspath    = "fsl.scripts.fsl_abspath:main"
+Text2Vest      = "fsl.scripts.Text2Vest:main"
+Vest2Text      = "fsl.scripts.Vest2Text:main"
+atlasq         = "fsl.scripts.atlasq:main"
+atlasquery     = "fsl.scripts.atlasq:atlasquery_emulation"
+fsl_ents       = "fsl.scripts.fsl_ents:main"
+resample_image = "fsl.scripts.resample_image:main"
+fsl_convert_x5 = "fsl.scripts.fsl_convert_x5:main"
+fsl_apply_x5   = "fsl.scripts.fsl_apply_x5:main"
+
+
+[tool.setuptools.packages.find]
+include = ["fsl*"]
+exclude = ["fsl.tests*"]
+
+
+[tool.setuptools.package-data]
+fsl = ["utils/filetree/trees/*"]
+
+
+[tool.setuptools.dynamic]
+version = {attr = "fsl.version.__version__"}
+
+
+[tool.coverage.run]
+include = ["fsl/*"]
+omit    = ["fsl/tests/*", "fsl/data/imagewrapper.py"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["fsl/tests"]
+addopts   = "-v --cov=fsl --showlocals --import-mode=importlib"
+markers   = [
+  "fsltest:    Requires FSL",
+  "wxtest:     Requires wxPython",
+  "dicomtest:  Requires dcm2niix",
+  "meshtest:   Requires trimesh and rtree",
+  "igziptest:  Requires indexed_gzip",
+  "piltest:    Requires Pillow",
+  "noroottest: Need to be executed as non-root user (will fail otherwise)",
+  "longtest:   Takes a long time",
+  "unixtest:   Only works on *nix systems"]

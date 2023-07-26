@@ -16,7 +16,7 @@ import numpy   as np
 
 import pytest
 
-import tests
+import fsl.tests             as tests
 import fsl.data.featimage    as featimage
 import fsl.data.featdesign   as featdesign
 import fsl.data.featanalysis as featanalysis
@@ -138,7 +138,7 @@ def test_FEATImage_imageAccessors():
 
         shape = TEST_ANALYSES[featdir]['shape']
         xform = TEST_ANALYSES[featdir]['xform']
-        
+
         with tests.testdir() as testdir:
 
             if 'realdata' not in featdir:

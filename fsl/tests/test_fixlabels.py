@@ -10,7 +10,7 @@ import            textwrap
 
 import pytest
 
-import tests
+import fsl.tests          as tests
 import fsl.data.fixlabels as fixlabels
 
 goodfiles = []

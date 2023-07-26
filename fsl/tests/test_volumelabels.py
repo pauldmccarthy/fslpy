@@ -11,29 +11,29 @@ import              textwrap
 
 import pytest
 
-import tests
+import fsl.tests             as tests
 import fsl.data.fixlabels    as fixlbls
 import fsl.data.volumelabels as vollbls
 
 
 def test_add_get_hasLabel():
-    
+
     ncomps = 5
     labels = ['Label {}'.format(i) for i in range(ncomps)]
     lowers = [lbl.lower()          for lbl in labels]
     lblobj = vollbls.VolumeLabels(ncomps)
 
     called = [False]
-    
+
     def labelAdded(lo, topic, value):
         called[0] = True
 
     lblobj.register('callback', labelAdded, topic='added')
 
     for i in range(ncomps):
-        
+
         called[0] = False
-        
+
         assert lblobj.addLabel(i, labels[i])
         assert called[0]
         assert lblobj.getLabels(i)              == [lowers[i]]
@@ -47,7 +47,7 @@ def test_add_get_hasLabel():
         called[0] = False
         assert not lblobj.addLabel(i, labels[i])
         assert not called[0]
-        
+
         # Labels are case insensitive
         assert not lblobj.addLabel(i, lowers[i])
         assert not called[0]
@@ -56,7 +56,7 @@ def test_add_get_hasLabel():
 
 
 def test_removeLabel():
-    
+
     ncomps = 5
     labels = ['Label {}'.format(i) for i in range(ncomps)]
     lowers = [lbl.lower()          for lbl in labels]
@@ -66,7 +66,7 @@ def test_removeLabel():
         lblobj.addLabel(i, labels[i])
 
     called = [False]
-    
+
     def removed(*a):
         called[0] = True
 
@@ -80,14 +80,14 @@ def test_removeLabel():
 
         called[0] = False
         assert lblobj.removeLabel(i, labels[i])
-        assert called[0] 
-        
+        assert called[0]
+
         assert lblobj.getLabels(i) == []
         assert sorted(lblobj.getAllLabels()) == lowers[i + 1:]
 
 
 def test_clearLabels():
-    
+
     ncomps = 5
     labels = [('Label {}'.format(i), 'Label b')
               for i in range(ncomps)]
@@ -99,7 +99,7 @@ def test_clearLabels():
             lblobj.addLabel(i, l)
 
     calledValue = []
-    
+
     def removed(lo, topic, value):
         calledValue.append(value)
 
@@ -125,14 +125,14 @@ def test_add_get_hasComponents():
     lblobj = vollbls.VolumeLabels(ncomps)
 
     called = [False]
-    
+
     def labelAdded(lo, topic, value):
         called[0] = True
 
     lblobj.register('callback', labelAdded, topic='added')
 
     for i in range(ncomps):
-        
+
         called[0] = False
         assert lblobj.addComponent(labels[i], i)
         assert called[0]
@@ -167,8 +167,8 @@ def test_removeComponent():
 
         called[0] = False
         assert lblobj.removeComponent(labels[i], i)
-        assert called[0] 
-        
+        assert called[0]
+
         assert lblobj.getComponents(labels[i]) == []
         assert sorted(lblobj.getAllLabels()) == labels[i + 1:]
 
@@ -184,7 +184,7 @@ def test_clearComponents():
             lblobj.addLabel(i, l)
 
     calledValue = []
-    
+
     def removed(lo, topic, value):
         calledValue.append(value)
 
@@ -199,11 +199,11 @@ def test_clearComponents():
     labels = [l[0] for l in labels]
 
     for i in range(ncomps):
-        
+
         calledValue = []
-        
+
         lblobj.clearComponents(labels[i])
-        
+
         assert calledValue[0]                  == [(i, labels[i])]
         assert lblobj.getComponents(labels[i]) == []
         assert lblobj.getLabels(i)             == []
@@ -250,7 +250,7 @@ def test_load_fixfile_long():
         lblobj = vollbls.VolumeLabels(4)
         lblobj.load(fname)
         for i in range(4):
-            assert lblobj.getLabels(i) == expected[i] 
+            assert lblobj.getLabels(i) == expected[i]
 
 
 def test_load_fixfile_short():
@@ -285,7 +285,7 @@ def test_load_fixfile_short():
         lblobj = vollbls.VolumeLabels(5)
         lblobj.load(fname)
         for i in range(4):
-            assert lblobj.getLabels(i) == expected[i] 
+            assert lblobj.getLabels(i) == expected[i]
 
 
 def test_load_aromafile():
@@ -320,7 +320,7 @@ def test_load_aromafile():
         lblobj = vollbls.VolumeLabels(5)
         lblobj.load(fname)
         for i in range(4):
-            assert lblobj.getLabels(i) == expected[i] 
+            assert lblobj.getLabels(i) == expected[i]
 
 
 def test_save():
@@ -341,15 +341,15 @@ def test_save():
     lbls.addLabel(3, 'Movement')
 
     with tests.testdir() as testdir:
-        
+
         fname = op.join(testdir, 'labels.txt')
 
         # Test saving without dirname
         lbls.save(fname)
-        exp = '.\n{}'.format(expected) 
+        exp = '.\n{}'.format(expected)
         with open(fname, 'rt') as f:
             assert f.read().strip() == exp.strip()
- 
+
         # And with dirname
         lbls.save(fname, 'path/to/analysis.ica')
         exp = 'path/to/analysis.ica\n{}'.format(expected)

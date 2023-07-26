@@ -8,7 +8,7 @@
 
 import fsl.scripts.remove_ext as remove_ext
 
-from tests import CaptureStdout
+from fsl.tests import CaptureStdout
 
 def test_usage():
     assert remove_ext.main([]) != 0

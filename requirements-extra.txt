@@ -1,5 +1,0 @@
-indexed_gzip>=0.7.0
-wxpython==4.*
-trimesh>=2.37.29
-rtree>=0.8.3
-Pillow>=3.2.0

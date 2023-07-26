@@ -13,7 +13,7 @@ from   fsl.utils.tempdir  import tempdir
 
 import fsl.scripts.imtest as imtest
 
-from tests import CaptureStdout, touch
+from fsl.tests import CaptureStdout, touch
 
 
 def test_wrongargs():

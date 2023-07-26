@@ -17,7 +17,7 @@ import numpy     as np
 from unittest import mock
 import pytest
 
-import tests
+import fsl.tests                as tests
 import fsl.utils.image.resample as resample
 import fsl.data.atlases         as atlases
 import fsl.data.image           as fslimage

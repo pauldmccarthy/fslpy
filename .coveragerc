@@ -1,4 +1,0 @@
-[run]
-source = fsl
-omit =
-    fsl/data/imagewrapper.py
