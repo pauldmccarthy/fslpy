@@ -2,9 +2,21 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.14.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+* The ``sform``/``qform`` fields of a :class:`.DeformationField` instance are
+  automatically set from the reference image if they are not already set (!402).
+* Replaced ``setup.py``-based build system with ``pyproject.toml`` (!402).
+* Tests have been moved into the ``fsl/tests/`` package (!402).
+
 
 3.13.3 (Monday 17th July 2023)
--------------------=----------
+------------------------------
 
 
 Changed
