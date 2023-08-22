@@ -13,6 +13,7 @@ transformations. The following functions are available:
    transform
    scaleOffsetXform
    invert
+   flip
    concat
    compose
    decompose
@@ -79,7 +80,41 @@ def normalise(vec):
     return n
 
 
-def scaleOffsetXform(scales, offsets):
+def flip(shape, xform, *axes):
+    """Applies a flip/inversion to an affine transform along specified axes.
+
+    :arg shape: The ``(x, y, z)`` shape of the data.
+    :arg xform: Transformation matrix which transforms voxel coordinates
+                to a world coordinate system.
+    :arg axes:  Indices of axes to flip
+    """
+
+    if len(axes) == 0:
+        return xform
+
+    axes = sorted(set(axes))
+    if any(a not in (0, 1, 2) for a in axes):
+        raise ValueError(f'Invalid axis: {axes}')
+
+    los, his = axisBounds(shape, xform, axes)
+    scales   = [1, 1, 1]
+    pre      = [0, 0, 0]
+    post     = [0, 0, 0]
+
+    for ax, lo, hi in zip(axes, los, his):
+        mid        = lo + (hi - lo) / 2
+        scales[ax] = -1
+        pre[   ax] = -mid
+        post[  ax] =  mid
+
+    pre    = scaleOffsetXform(None, pre)
+    post   = scaleOffsetXform(None, post)
+    scales = scaleOffsetXform(scales)
+
+    return concat(post, scales, pre, xform)
+
+
+def scaleOffsetXform(scales=None, offsets=None):
     """Creates and returns an affine transformation matrix which encodes
     the specified scale(s) and offset(s).
 
@@ -94,6 +129,9 @@ def scaleOffsetXform(scales, offsets):
 
     :returns:     A ``numpy.float32`` array of size :math:`4 \\times 4`.
     """
+
+    if scales  is None: scales  = [1, 1, 1]
+    if offsets is None: offsets = [0, 0, 0]
 
     oktypes = (abc.Sequence, np.ndarray)
 
