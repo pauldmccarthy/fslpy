@@ -41,11 +41,10 @@ Dependencies
 
 
 All of the core dependencies of ``fslpy`` are listed in the
-`requirements.txt <requirements.txt>`_ file.
+`pyproject.toml <pyproject.toml>`_ file.
 
-Some extra dependencies are listed in
-`requirements-extra.txt <requirements-extra.txt>`_
-which provide addditional functionality:
+Some optional dependencies (labelled ``extra`` in ``pyproject.toml``) provide
+addditional functionality:
 
 - ``wxPython``: The `fsl.utils.idle <fsl/utils/idle.py>`_ module has
   functionality  to schedule functions on the ``wx`` idle loop.
@@ -70,13 +69,13 @@ specific platform::
 
 
 Once wxPython has been installed, you can type the following to install the
-rest of the extra dependencies::
+remaining optional dependencies::
 
-    pip install fslpy[extras]
+    pip install "fslpy[extra]"
 
 
-Dependencies for testing and documentation are listed in the
-`requirements-dev.txt <requirements-dev.txt>`_ file.
+Dependencies for testing and documentation are also listed in ``pyproject.toml``,
+and are respectively labelled as ``test`` and ``doc``.
 
 
 Non-Python dependencies
@@ -104,10 +103,10 @@ https://open.win.ox.ac.uk/pages/fsl/fslpy/.
 ``fslpy`` is documented using `sphinx <http://http://sphinx-doc.org/>`_. You
 can build the API documentation by running::
 
-    pip install -r requirements-dev.txt
-    python setup.py doc
+    pip install ".[doc]"
+    sphinx-build doc html
 
-The HTML documentation will be generated and saved in the ``doc/html/``
+The HTML documentation will be generated and saved in the ``html/``
 directory.
 
 
@@ -116,11 +115,15 @@ Tests
 
 Run the test suite via::
 
-    pip install -r requirements-dev.txt
-    python setup.py test
+    pip install ".[test]"
+    pytest
 
-A test report will be generated at ``report.html``, and a code coverage report
-will be generated in ``htmlcov/``.
+
+Some tests will only pass if the test environment meets certain criteria -
+refer to the ``tool.pytest.init_options`` section of
+[``pyproject.toml``](pyproject.toml) for a list of [pytest
+marks](https://docs.pytest.org/en/7.1.x/example/markers.html) which can be
+selectively enabled or disabled.
 
 
 Contributing
