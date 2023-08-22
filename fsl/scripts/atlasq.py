@@ -569,10 +569,10 @@ def parseArgs(args):
     usages = {
         'main'    : 'usage: atlasq [-h] command [options]',
         'ohi'     : textwrap.dedent("""
-                     usage: atlasq ohi -h
-                            atlasq ohi --dumpatlases
-                            atlasq ohi -a atlas -c X,Y,Z
-                            atlasq ohi -a atlas -m mask
+                     usage: atlasquery -h
+                            atlasquery --dumpatlases
+                            atlasquery -a atlas -c X,Y,Z
+                            atlasquery -a atlas -m mask
         """).strip(),
         'list'    : 'usage: atlasq list [-e]',
         'summary' : 'usage: atlasq summary atlas',
