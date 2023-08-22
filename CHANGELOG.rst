@@ -6,6 +6,14 @@ order.
 --------------------------
 
 
+Added
+^^^^^
+
+
+* New :func:`.affine.flip` function, for applying a flip/inversion to the
+  axes of an affine transformation (!403).
+
+
 Changed
 ^^^^^^^
 
