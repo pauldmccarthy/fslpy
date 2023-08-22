@@ -96,7 +96,7 @@ def flip(shape, xform, *axes):
     if any(a not in (0, 1, 2) for a in axes):
         raise ValueError(f'Invalid axis: {axes}')
 
-    los, his = axisBounds(shape, xform, axes)
+    los, his = axisBounds(shape, xform, axes, boundary=None)
     scales   = [1, 1, 1]
     pre      = [0, 0, 0]
     post     = [0, 0, 0]
