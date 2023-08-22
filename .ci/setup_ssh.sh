@@ -43,15 +43,12 @@ if [[ -f /.dockerenv ]]; then
  eval $(ssh-agent -s);
  mkdir -p $HOME/.ssh;
 
+ # for downloading FSL atlases/standards
  echo "$SSH_PRIVATE_KEY_FSL_DOWNLOAD" > $HOME/.ssh/id_fsl_download;
 
  chmod go-rwx $HOME/.ssh/id_*;
 
  ssh-add $HOME/.ssh/id_fsl_download;
-
- if [[ "$CI_PROJECT_PATH" == "$UPSTREAM_PROJECT" ]]; then
-   ssh-add $HOME/.ssh/id_doc_deploy;
- fi
 
  ssh-keyscan ${FSL_HOST##*@} >> $HOME/.ssh/known_hosts;
 
