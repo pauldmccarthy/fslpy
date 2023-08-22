@@ -147,6 +147,24 @@ def test_normalise(seed):
     assert np.all(pars)
 
 
+def test_flip():
+
+    shape        = [5, 5, 5]
+    xform        = np.diag([2, 2, 2, 1])
+    xform[:3, 3] = [-4.5, -4.5, -4.5]
+
+    allaxes = list(it.chain(
+        it.combinations([0, 1, 2], 1),
+        it.combinations([0, 1, 2], 2),
+        it.combinations([0, 1, 2], 3)))
+
+    for axes in allaxes:
+        flipped  = affine.flip(shape, xform, *axes)
+        flo, fhi = affine.axisBounds(shape, flipped, boundary=None)
+        assert np.all(np.isclose(flo, [-5, -5, -5]))
+        assert np.all(np.isclose(fhi, [ 5,  5,  5]))
+
+
 def test_scaleOffsetXform():
 
     # Test numerically
@@ -208,6 +226,17 @@ def test_scaleOffsetXform():
         expected = np.array(expected).reshape(4, 4)
         result   = affine.scaleOffsetXform(1, offset)
         assert np.all(np.isclose(result, expected))
+
+    # both args are optional
+    assert np.all(np.isclose(
+        affine.scaleOffsetXform(), np.eye(4)))
+    assert np.all(np.isclose(
+        affine.scaleOffsetXform([1, 2, 3]), np.diag([1, 2, 3, 1])))
+
+    exp = np.eye(4)
+    exp[:3, 3] = [1, 2, 3]
+    assert np.all(np.isclose(
+        affine.scaleOffsetXform(None, [1, 2, 3]), exp))
 
 
 def test_compose_and_decompose():
