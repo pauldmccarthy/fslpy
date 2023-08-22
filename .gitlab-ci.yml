@@ -96,9 +96,9 @@ variables:
     - branches@fsl/fslpy
 
 
-.only_master: &only_master
+.only_main: &only_main
   only:
-    - master@fsl/fslpy
+    - main@fsl/fslpy
 
 
 .only_release_branches: &only_release_branches
@@ -210,7 +210,7 @@ style:
 #############
 
 # I would like to have separate doc deploys for
-# both the master and latest release branches,
+# both the main and latest release branches,
 # but this is awkward with gitlab pages. So
 # currently the most recently executed pages
 # job is the one that gets deployed.
