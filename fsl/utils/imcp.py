@@ -57,7 +57,7 @@ def imcp(src,
 
     # special case - non-existent directory
     if dest.endswith('/') and not op.isdir(dest):
-        raise fslpath.PathError('Directory does not exist: {}'.format(dest))
+        raise fslpath.PathError(f'Directory does not exist: {dest}')
 
     if op.isdir(dest):
         dest = op.join(dest, op.basename(src))
@@ -87,7 +87,7 @@ def imcp(src,
 
     if not op.exists(src):
         raise fslpath.PathError('imcp error - source path '
-                                'does not exist: {}'.format(src))
+                                f'does not exist: {src}')
 
     # Figure out the destination file
     # extension/type. If useDefaultExt
@@ -116,10 +116,10 @@ def imcp(src,
 
     # Give up if we don't have permission.
     if          not os.access(op.dirname(dest), os.W_OK | os.X_OK):
-        raise fslpath.PathError('imcp error - cannot write to {}'.format(dest))
+        raise fslpath.PathError(f'imcp error - cannot write to {dest}')
 
     if move and not os.access(op.dirname(src),  os.W_OK | os.X_OK):
-        raise fslpath.PathError('imcp error - cannot move from {}'.format(src))
+        raise fslpath.PathError(f'imcp error - cannot move from {src}')
 
     # If the source file type does not
     # match the destination file type,
@@ -132,8 +132,8 @@ def imcp(src,
     if srcExt != destExt:
 
         if not overwrite and op.exists(dest):
-            raise fslpath.PathError('imcp error - destination already '
-                                    'exists ({})'.format(dest))
+            raise fslpath.PathError('imcp error - destination '
+                                    f'already exists ({dest})')
 
         img = nib.load(src)
         nib.save(img, dest)
@@ -193,7 +193,7 @@ def imcp(src,
     # paths already exist
     if not overwrite and any([op.exists(d) for d in copyDests]):
         raise fslpath.PathError('imcp error - a destination path already '
-                                'exists ({})'.format(', '.join(copyDests)))
+                                f'exists ({', '.join(copyDests)})')
 
     # Do the copy/move
     for src, dest in zip(copySrcs, copyDests):
