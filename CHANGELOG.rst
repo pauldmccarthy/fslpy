@@ -21,6 +21,8 @@ Changed
   automatically set from the reference image if they are not already set (!402).
 * Replaced ``setup.py``-based build system with ``pyproject.toml`` (!402).
 * Tests have been moved into the ``fsl/tests/`` package (!402).
+* Updated the ```immv``/``imcp`` scripts to support ``FSLOUTPUTTYPE=ANALYZE``
+  (!405).
 
 
 3.13.3 (Monday 17th July 2023)
