@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.14.0 (Under development)
---------------------------
+3.14.0 (Wednesday 30th August 2023)
+-----------------------------------
 
 
 Added
@@ -16,6 +16,7 @@ Added
 
 Changed
 ^^^^^^^
+
 
 * The ``sform``/``qform`` fields of a :class:`.DeformationField` instance are
   automatically set from the reference image if they are not already set (!402).
