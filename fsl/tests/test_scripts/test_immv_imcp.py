@@ -434,3 +434,102 @@ def test_immv_badExt():
         assert op.exists('dest.nii.gz')
         checkImageHash('dest.nii.gz', ihash)
 
+
+
+def _make_file(prefix, ftype, dtype):
+
+    mapping = {
+        fslimage.FileType.NIFTI          : (nib.Nifti1Image,  'nii'),
+        fslimage.FileType.NIFTI2         : (nib.Nifti2Image,  'nii'),
+        fslimage.FileType.ANALYZE        : (nib.AnalyzeImage, 'img'),
+        fslimage.FileType.NIFTI_PAIR     : (nib.Nifti1Pair,   'img'),
+        fslimage.FileType.NIFTI2_PAIR    : (nib.Nifti2Pair,   'img'),
+        fslimage.FileType.ANALYZE_GZ     : (nib.AnalyzeImage, 'img.gz'),
+        fslimage.FileType.NIFTI_GZ       : (nib.Nifti1Image,  'nii.gz'),
+        fslimage.FileType.NIFTI2_GZ      : (nib.Nifti2Image,  'nii.gz'),
+        fslimage.FileType.NIFTI_PAIR_GZ  : (nib.Nifti1Pair,   'img.gz'),
+        fslimage.FileType.NIFTI2_PAIR_GZ : (nib.Nifti2Pair,   'img.gz'),
+    }
+
+    if np.issubdtype(dtype, np.complex64):
+        data = np.random.random((20, 20, 20)).astype(np.float32) + \
+               np.random.random((20, 20, 20)).astype(np.float32) * 1j
+    else:
+        data = np.random.random((20, 20, 20)).astype(dtype)
+
+    cls, suffix = mapping[ftype]
+    filename    = f'{prefix}.{suffix}'
+
+    cls(data, None).to_filename(filename)
+
+    return filename
+
+
+def _is_gzip(filename):
+    try:
+        with gzip.GzipFile(filename, 'rb') as f:
+            f.read()
+        return True
+    except Exception:
+        return False
+
+
+def _is_pair(imgfile):
+    prefix, suffix = fslimage.splitExt(imgfile)
+    hdrfile        = imgfile
+    if   suffix == '.hdr':    imgfile = f'{prefix}.img'
+    elif suffix == '.hdr.gz': imgfile = f'{prefix}.img.gz'
+    elif suffix == '.img':    hdrfile = f'{prefix}.hdr'
+    elif suffix == '.img.gz': hdrfile = f'{prefix}.hdr.gz'
+    return op.exists(imgfile) and op.exists(hdrfile)
+
+
+def _is_analyze(filename):
+    img = nib.load(filename)
+    return  _is_pair(filename)                                     and \
+            isinstance(img, (nib.AnalyzeImage, nib.AnalyzeHeader)) and \
+        not isinstance(img, (nib.Nifti1Image,  nib.Nifti1Header, nib.Nifti1Pair))
+
+
+def _is_nifti1(filename):
+    img = nib.load(filename)
+    return  isinstance(img, (nib.Nifti1Image, nib.Nifti1Header, nib.Nifti1Pair)) and \
+        not isinstance(img, (nib.Nifti2Image, nib.Nifti2Header, nib.Nifti2Pair))
+
+
+def _is_nifti2(filename):
+    img = nib.load(filename)
+    return isinstance(img, (nib.Nifti2Image, nib.Nifti2Header, nib.Nifti2Pair))
+
+
+def _check_file(prefix, expftype, dtype):
+    filename = fslimage.addExt(prefix)
+    if   'NIFTI2'  in expftype.name: assert _is_nifti2( filename)
+    elif 'NIFTI'   in expftype.name: assert _is_nifti1( filename)
+    elif 'ANALYZE' in expftype.name: assert _is_analyze(filename)
+    if   'GZ'      in expftype.name: assert _is_gzip(   filename)
+    if   'PAIR'    in expftype.name: assert _is_pair(   filename)
+
+    img = nib.load(filename)
+    assert np.issubdtype(img.get_data_dtype(), dtype)
+
+
+def test_imcp_script_correct_output_type(move=False):
+
+    # only testing dtypes supported by ANALYZE
+    dtypes = [np.uint8, np.int16, np.float32, np.float64, np.complex64]
+
+    # from, to
+    for from_, to_, dtype in it.product(fslimage.FileType, fslimage.FileType, dtypes):
+        with tempdir():
+
+            fname = f'f{from_.name}'
+            tname = f't{to_.name}'
+
+            _make_file(fname, from_, dtype)
+
+            with mock.patch.dict(os.environ, {'FSLOUTPUTTYPE' : to_.name}):
+                if move: immv_script.main([fname, tname])
+                else:    imcp_script.main([fname, tname])
+
+            _check_file(tname, to_, dtype)
