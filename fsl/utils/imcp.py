@@ -18,6 +18,7 @@ import                   os
 import os.path        as op
 import                   shutil
 
+import numpy          as np
 import nibabel        as nib
 
 import fsl.utils.path as fslpath
@@ -44,10 +45,10 @@ def imcp(src,
                         already exist. Defaults to ``False``.
 
     :arg useDefaultExt: Defaults to ``False``. If ``True``, the destination
-                        file type will be set according to the default
-                        extension, specified by
-                        :func:`~fsl.data.image.defaultExt`. If the source
-                        file does not have the same type as the default
+                        file type will be set according to the default file
+                        type, specified by
+                        :func:`~fsl.data.image.defaultOutputType`. If the
+                        source file does not have the same type as the default
                         extension, it will be converted. If ``False``, the
                         source file type is not changed.
 
@@ -89,15 +90,20 @@ def imcp(src,
         raise fslpath.PathError('imcp error - source path '
                                 f'does not exist: {src}')
 
-    # Figure out the destination file
-    # extension/type. If useDefaultExt
-    # is True, we use the default
-    # extension. Otherwise, if no
-    # destination file extension is
-    # provided, we use the source
-    # extension.
-    if   useDefaultExt: destExt = fslimage.defaultExt()
-    elif destExt == '': destExt = srcExt
+    # Infer the image type of the source image. We
+    # can't just look at the extension, as e.g. an
+    # .img file can be any of ANALYZE/NIFTI1/NIFTI2
+    srcType = fslimage.fileType(src)
+
+    # Figure out the destination file extension/type.
+    # If useDefaultExt is True, we use the default
+    # extension. Otherwise we use the source type
+    if useDefaultExt:
+        destType = fslimage.defaultOutputType()
+        destExt  = fslimage.defaultExt()
+    else:
+        destType = srcType
+        destExt  = srcExt
 
     # Resolve any file group differences
     # e.g. we don't care if the src is
@@ -129,14 +135,29 @@ def imcp(src,
     # io and cpu, but programmatically
     # very easy - nibabel does all the
     # hard work.
-    if srcExt != destExt:
+    if srcType != destType:
 
         if not overwrite and op.exists(dest):
             raise fslpath.PathError('imcp error - destination '
                                     f'already exists ({dest})')
 
         img = nib.load(src)
+
+        # Force conversion to specific data type if
+        # necessary.  The file format (pair, gzipped
+        # or not) is taken care of automatically by
+        # nibabel
+        if   'ANALYZE' in destType.name: cls = nib.AnalyzeImage
+        elif 'NIFTI2'  in destType.name: cls = nib.Nifti2Image
+        elif 'NIFTI'   in destType.name: cls = nib.Nifti1Image
+
+        img = cls(np.asanyarray(img.dataobj), None, header=img.header)
         nib.save(img, dest)
+
+        # Make sure the image reference is cleared, and
+        # hopefully GC'd, as otherwise we sometimes get
+        # errors on Windows (mostly in unit tests) w.r.t.
+        # attempts to delete files which are still open
         img = None
 
         if move:
@@ -193,7 +214,7 @@ def imcp(src,
     # paths already exist
     if not overwrite and any([op.exists(d) for d in copyDests]):
         raise fslpath.PathError('imcp error - a destination path already '
-                                f'exists ({', '.join(copyDests)})')
+                                f'exists ({",".join(copyDests)})')
 
     # Do the copy/move
     for src, dest in zip(copySrcs, copyDests):

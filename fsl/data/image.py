@@ -36,6 +36,7 @@ import                    os
 import os.path         as op
 import itertools       as it
 import collections.abc as abc
+import                    enum
 import                    json
 import                    string
 import                    logging
@@ -75,7 +76,7 @@ functions, or the :func:`looksLikeImage` function.
 
 EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
                           'NIFTI images',
-                          'ANALYZE75 images',
+                          'NIFTI/ANALYZE75 images',
                           'NIFTI/ANALYZE75 headers',
                           'Compressed NIFTI/ANALYZE75 images',
                           'Compressed NIFTI/ANALYZE75 headers']
@@ -1263,9 +1264,9 @@ class Image(Nifti):
             # default to NIFTI1 if FSLOUTPUTTYPE
             # is not set, just to be safe.
             if header is None:
-                outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')
-                if 'NIFTI2' in outputType: ctr = nib.Nifti2Image
-                else:                      ctr = nib.Nifti1Image
+                outputType = defaultOutputType()
+                if 'NIFTI2' in outputType.name: ctr = nib.Nifti2Image
+                else:                           ctr = nib.Nifti1Image
 
             # make sure that the data type is correct,
             # in case this header was passed in from
@@ -1990,7 +1991,72 @@ def fixExt(filename, **kwargs):
         return addExt(removeExt(filename), **kwargs)
 
 
-def defaultExt():
+class FileType(enum.Enum):
+    """Enumeration of supported image file types. The values for each type
+    are the same as defined in the FSL ``newimage/newimage.h`` header file.
+    """
+    NIFTI          = 1
+    NIFTI2         = 2
+    ANALYZE        = 10
+    NIFTI_PAIR     = 11
+    NIFTI2_PAIR    = 12
+    ANALYZE_GZ     = 100
+    NIFTI_GZ       = 101
+    NIFTI2_GZ      = 102
+    NIFTI_PAIR_GZ  = 111
+    NIFTI2_PAIR_GZ = 112
+
+
+def fileType(filename) -> FileType:
+    """Infer an image file type. """
+
+    filename  = addExt(  filename)
+    extension = getExt(  filename)
+    img       = nib.load(filename)
+
+    # Mappings between (image type, file extension), and type code.
+    # Order is important due to the nibabel class hierarchy - we
+    # must test in order NIFTI2, NIFTI1, ANALYZE
+    anlz     = (nib.AnalyzeImage, nib.AnalyzeHeader)
+    nii1     = (nib.Nifti1Image, nib.Nifti1Pair, nib.Nifti1Header)
+    nii2     = (nib.Nifti2Image, nib.Nifti2Pair, nib.Nifti2Header)
+    mappings = [
+        (nii2, '.nii',    FileType.NIFTI2),
+        (nii2, '.nii.gz', FileType.NIFTI2_GZ),
+        (nii2, '.hdr',    FileType.NIFTI2_PAIR),
+        (nii2, '.img',    FileType.NIFTI2_PAIR),
+        (nii2, '.hdr.gz', FileType.NIFTI2_PAIR_GZ),
+        (nii2, '.img.gz', FileType.NIFTI2_PAIR_GZ),
+        (nii1, '.nii',    FileType.NIFTI),
+        (nii1, '.nii.gz', FileType.NIFTI_GZ),
+        (nii1, '.hdr',    FileType.NIFTI_PAIR),
+        (nii1, '.img',    FileType.NIFTI_PAIR),
+        (nii1, '.hdr.gz', FileType.NIFTI_PAIR_GZ),
+        (nii1, '.img.gz', FileType.NIFTI_PAIR_GZ),
+        (anlz, '.hdr',    FileType.ANALYZE),
+        (anlz, '.img',    FileType.ANALYZE),
+        (anlz, '.hdr.gz', FileType.ANALYZE_GZ),
+        (anlz, '.img.gz', FileType.ANALYZE_GZ),
+    ]
+
+    for ftype, ext, code in mappings:
+        if isinstance(img, ftype) and extension == ext:
+            return code
+
+    raise ValueError(f'Could not infer image type: {filename}')
+
+
+def defaultOutputType() -> FileType:
+    """Return the default output file type. This is based on the
+    ``$FSLOUTPUTTYPE`` environment variable.
+    """
+    fsloutputtype = os.environ.get('FSLOUTPUTTYPE', None)
+    if fsloutputtype not in FileType.__members__:
+        fsloutputtype = 'NIFTI_GZ'
+    return FileType[fsloutputtype]
+
+
+def defaultExt() -> str:
     """Returns the default NIFTI file extension that should be used.
 
     If the ``$FSLOUTPUTTYPE`` variable is set, its value is used.
@@ -1998,16 +2064,16 @@ def defaultExt():
     """
 
     options = {
-        'NIFTI'          : '.nii',
-        'NIFTI2'         : '.nii',
-        'NIFTI_GZ'       : '.nii.gz',
-        'NIFTI2_GZ'      : '.nii.gz',
-        'NIFTI_PAIR'     : '.img',
-        'NIFTI2_PAIR'    : '.img',
-        'NIFTI_PAIR_GZ'  : '.img.gz',
-        'NIFTI2_PAIR_GZ' : '.img.gz',
+        FileType.ANALYZE        : '.img',
+        FileType.NIFTI          : '.nii',
+        FileType.NIFTI2         : '.nii',
+        FileType.NIFTI_GZ       : '.nii.gz',
+        FileType.NIFTI2_GZ      : '.nii.gz',
+        FileType.NIFTI_PAIR     : '.img',
+        FileType.NIFTI2_PAIR    : '.img',
+        FileType.ANALYZE_GZ     : '.img.gz',
+        FileType.NIFTI_PAIR_GZ  : '.img.gz',
+        FileType.NIFTI2_PAIR_GZ : '.img.gz',
     }
 
-    outputType = os.environ.get('FSLOUTPUTTYPE', 'NIFTI_GZ')
-
-    return options.get(outputType, '.nii.gz')
+    return options[defaultOutputType()]
