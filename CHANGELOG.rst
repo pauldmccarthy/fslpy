@@ -26,6 +26,15 @@ Changed
   (!405).
 
 
+Fixed
+^^^^^
+
+
+* Updated the ```immv``/``imcp`` scripts to honour the ``$FSLOUTPUTTYPE``
+  environment variable more closely - conversions between NIFTI1 and
+  NIFTI2 were not being performed correctly (!405).
+
+
 3.13.3 (Monday 17th July 2023)
 ------------------------------
 
