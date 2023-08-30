@@ -16,12 +16,8 @@ import            warnings
 
 import numpy   as np
 
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-
-    import fsl.data.fixlabels       as fixlabels
-    import fsl.data.melodicanalysis as melanalysis
+import fsl.data.fixlabels       as fixlabels
+import fsl.data.melodicanalysis as melanalysis
 
 
 DTYPE = np.float64

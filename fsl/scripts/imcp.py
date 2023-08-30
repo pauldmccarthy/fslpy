@@ -14,15 +14,11 @@ The :func:`main` function is essentially a wrapper around the
 
 import os.path        as op
 import                   sys
-import                   warnings
+import                   logging
 
 import fsl.utils.path as fslpath
-
-# See atlasq.py for explanation
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import fsl.utils.imcp as imcp
-    import fsl.data.image as fslimage
+import fsl.utils.imcp as imcp
+import fsl.data.image as fslimage
 
 
 usage = """Usage:
@@ -56,6 +52,11 @@ def main(argv=None):
     if len(srcs) > 1 and not op.isdir(dest):
         print(usage)
         return 1
+
+    # When converting to NIFTI2, nibabel
+    # emits an annoying message via log.warning:
+    #   sizeof_hdr should be 540; set sizeof_hdr to 540
+    logging.getLogger('nibabel').setLevel(logging.ERROR)
 
     try:
         srcs = [fslimage.fixExt(s) for s in srcs]
