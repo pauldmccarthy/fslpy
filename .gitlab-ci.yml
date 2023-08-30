@@ -180,7 +180,7 @@ test:3.11:
 
 test:build-pypi-dist:
   stage: test
-  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
+  image: python:3.10
   except:
     - tags
 
@@ -188,7 +188,6 @@ test:build-pypi-dist:
     - docker
 
   script:
-   - source /test.venv/bin/activate
    - bash ./.ci/build_pypi_dist.sh
 
 
