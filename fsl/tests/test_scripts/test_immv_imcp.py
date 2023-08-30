@@ -6,8 +6,12 @@ import os.path    as op
 import itertools  as it
 import subprocess as sp
 import               os
+import               glob
+import               gzip
 import               shutil
 import               tempfile
+
+from unittest import mock
 
 import               pytest
 
@@ -17,18 +21,10 @@ import nibabel as nib
 from   fsl.utils.tempdir import tempdir
 import fsl.scripts.imcp      as imcp_script
 import fsl.scripts.immv      as immv_script
+import fsl.data.image        as fslimage
 
 from .. import cleardir
 from ..test_immv_imcp import makeImage, checkImageHash, checkFilesToExpect
-
-
-real_print = print
-
-def print(*args, **kwargs):
-    pass
-
-
-
 
 
 def test_imcp_script_shouldPass(move=False):
@@ -234,80 +230,67 @@ def test_imcp_script_shouldPass(move=False):
 
         for outputType, reldir in it.product(outputTypes, reldirs):
 
-            os.environ['FSLOUTPUTTYPE'] = outputType
+            with mock.patch.dict(os.environ, {'FSLOUTPUTTYPE' : outputType}):
 
-            for files_to_create, imcp_args, files_to_expect in tests:
+                for files_to_create, imcp_args, files_to_expect in tests:
 
-                imageHashes = []
+                    imageHashes = []
 
-                print()
-                print('files_to_create: ', files_to_create)
-                print('imcp_args:       ', imcp_args)
-                print('files_to_expect: ', files_to_expect)
+                    for i, fname in enumerate(files_to_create.split()):
+                        imageHashes.append(makeImage(op.join(indir, fname)))
 
-                for i, fname in enumerate(files_to_create.split()):
-                    imageHashes.append(makeImage(op.join(indir, fname)))
+                    imcp_args = imcp_args.split()
 
-                imcp_args = imcp_args.split()
+                    tindir  = indir
+                    toutdir = outdir
 
-                tindir  = indir
-                toutdir = outdir
+                    if   reldir == 'neutral': reldir = startdir
+                    elif reldir == 'indir':   reldir = tindir
+                    elif reldir == 'outdir':  reldir = toutdir
+                    elif reldir == 'samedir':
+                        reldir  = tindir
+                        toutdir = tindir
 
-                if   reldir == 'neutral': reldir = startdir
-                elif reldir == 'indir':   reldir = tindir
-                elif reldir == 'outdir':  reldir = toutdir
-                elif reldir == 'samedir':
-                    reldir  = tindir
-                    toutdir = tindir
+                        if not move:
 
-                    if not move:
+                            infiles = os.listdir(tindir)
 
+                            files_to_expect = files_to_expect +  ' ' + \
+                                              ' '.join(infiles)
+
+                            for inf in infiles:
+                                img     = nib.load(op.join(tindir, inf),
+                                                   mmap=False)
+                                imghash = hash(np.asanyarray(img.dataobj).tobytes())
+                                img = None
+                                imageHashes.append(imghash)
+
+                    os.chdir(reldir)
+
+                    imcp_args[:-1] = [op.join(tindir, a) for a in imcp_args[:-1]]
+                    imcp_args[ -1] =  op.join(toutdir, imcp_args[-1])
+
+                    for i, a in enumerate(imcp_args):
+                        if op.splitdrive(a)[0] == op.splitdrive(reldir)[0]:
+                            imcp_args[i] = op.relpath(a, reldir)
+
+                    if move: result = immv_script.main(imcp_args)
+                    else:    result = imcp_script.main(imcp_args)
+
+                    assert result == 0
+
+                    checkFilesToExpect(
+                        files_to_expect, toutdir, outputType, imageHashes)
+
+                    # too hard if indir == outdir
+                    if move and tindir != toutdir:
                         infiles = os.listdir(tindir)
+                        infiles = [f for f in infiles if op.isfile(f)]
+                        infiles = [f for f in infiles if op.isfile(f)]
+                        assert len(infiles) == 0
 
-                        files_to_expect = files_to_expect +  ' ' + \
-                                          ' '.join(infiles)
-
-                        for inf in infiles:
-                            img     = nib.load(op.join(tindir, inf),
-                                               mmap=False)
-                            imghash = hash(np.asanyarray(img.dataobj).tobytes())
-                            img = None
-                            imageHashes.append(imghash)
-
-                print('adj files_to_expect: ', files_to_expect)
-
-                os.chdir(reldir)
-
-                imcp_args[:-1] = [op.join(tindir, a) for a in imcp_args[:-1]]
-                imcp_args[ -1] =  op.join(toutdir, imcp_args[-1])
-
-                for i, a in enumerate(imcp_args):
-                    if op.splitdrive(a)[0] == op.splitdrive(reldir)[0]:
-                        imcp_args[i] = op.relpath(a, reldir)
-
-                print('indir before:    ', os.listdir(tindir))
-                print('outdir before:   ', os.listdir(toutdir))
-
-                if move: result = immv_script.main(imcp_args)
-                else:    result = imcp_script.main(imcp_args)
-
-                print('indir after:     ', os.listdir(tindir))
-                print('outdir after:    ', os.listdir(toutdir))
-
-                assert result == 0
-
-                checkFilesToExpect(
-                    files_to_expect, toutdir, outputType, imageHashes)
-
-                # too hard if indir == outdir
-                if move and tindir != toutdir:
-                    infiles = os.listdir(tindir)
-                    infiles = [f for f in infiles if op.isfile(f)]
-                    infiles = [f for f in infiles if op.isfile(f)]
-                    assert len(infiles) == 0
-
-                cleardir(indir)
-                cleardir(outdir)
+                    cleardir(indir)
+                    cleardir(outdir)
 
     finally:
         os.chdir(startdir)
@@ -397,17 +380,8 @@ def test_imcp_script_shouldFail(move=False):
                     cmd = cmd.replace('indir', indir).replace('outdir', outdir)
                     sp.call(cmd.split())
 
-            print('calling {} {}'.format('immv' if move else 'imcp',
-                                         ' '.join(imcp_args)))
-
-            print('indir before:   {}'.format(os.listdir(indir)))
-            print('out dir before: {}'.format(os.listdir(outdir)))
-
             if move: result = immv_script.main(imcp_args)
             else:    result = imcp_script.main(imcp_args)
-
-            print('indir after:   {}'.format(os.listdir(indir)))
-            print('out dir after: {}'.format(os.listdir(outdir)))
 
             assert result != 0
 
@@ -430,7 +404,6 @@ def test_imcp_script_shouldFail(move=False):
     else:    assert imcp_script.main(['wa']) != 0
 
 
-
 def test_immv_script_shouldPass():
     test_imcp_script_shouldPass(move=True)
 
@@ -440,27 +413,123 @@ def test_immv_script_shouldFail():
     test_imcp_script_shouldFail(move=True)
 
 
-
 def test_imcp_badExt():
     with tempdir():
 
-        with open('file.nii.gz', 'wt') as f:
-            f.write('1')
-
+        ihash  = makeImage('file.nii.gz')
         result = imcp_script.main(['file.nii', 'dest'])
 
         assert result == 0
         assert op.exists('dest.nii.gz')
-
+        checkImageHash('dest.nii.gz', ihash)
 
 
 def test_immv_badExt():
     with tempdir():
 
-        with open('file.nii.gz', 'wt') as f:
-            f.write('1')
-
+        ihash  = makeImage('file.nii.gz')
         result = immv_script.main(['file.nii', 'dest'])
 
         assert result == 0
         assert op.exists('dest.nii.gz')
+        checkImageHash('dest.nii.gz', ihash)
+
+
+
+def _make_file(prefix, ftype, dtype):
+
+    mapping = {
+        fslimage.FileType.NIFTI          : (nib.Nifti1Image,  'nii'),
+        fslimage.FileType.NIFTI2         : (nib.Nifti2Image,  'nii'),
+        fslimage.FileType.ANALYZE        : (nib.AnalyzeImage, 'img'),
+        fslimage.FileType.NIFTI_PAIR     : (nib.Nifti1Pair,   'img'),
+        fslimage.FileType.NIFTI2_PAIR    : (nib.Nifti2Pair,   'img'),
+        fslimage.FileType.ANALYZE_GZ     : (nib.AnalyzeImage, 'img.gz'),
+        fslimage.FileType.NIFTI_GZ       : (nib.Nifti1Image,  'nii.gz'),
+        fslimage.FileType.NIFTI2_GZ      : (nib.Nifti2Image,  'nii.gz'),
+        fslimage.FileType.NIFTI_PAIR_GZ  : (nib.Nifti1Pair,   'img.gz'),
+        fslimage.FileType.NIFTI2_PAIR_GZ : (nib.Nifti2Pair,   'img.gz'),
+    }
+
+    if np.issubdtype(dtype, np.complex64):
+        data = np.random.random((20, 20, 20)).astype(np.float32) + \
+               np.random.random((20, 20, 20)).astype(np.float32) * 1j
+    else:
+        data = np.random.random((20, 20, 20)).astype(dtype)
+
+    cls, suffix = mapping[ftype]
+    filename    = f'{prefix}.{suffix}'
+
+    cls(data, None).to_filename(filename)
+
+    return filename
+
+
+def _is_gzip(filename):
+    try:
+        with gzip.GzipFile(filename, 'rb') as f:
+            f.read()
+        return True
+    except Exception:
+        return False
+
+
+def _is_pair(imgfile):
+    prefix, suffix = fslimage.splitExt(imgfile)
+    hdrfile        = imgfile
+    if   suffix == '.hdr':    imgfile = f'{prefix}.img'
+    elif suffix == '.hdr.gz': imgfile = f'{prefix}.img.gz'
+    elif suffix == '.img':    hdrfile = f'{prefix}.hdr'
+    elif suffix == '.img.gz': hdrfile = f'{prefix}.hdr.gz'
+    return op.exists(imgfile) and op.exists(hdrfile)
+
+
+def _is_analyze(filename):
+    img = nib.load(filename)
+    return  _is_pair(filename)                                     and \
+            isinstance(img, (nib.AnalyzeImage, nib.AnalyzeHeader)) and \
+        not isinstance(img, (nib.Nifti1Image,  nib.Nifti1Header, nib.Nifti1Pair))
+
+
+def _is_nifti1(filename):
+    img = nib.load(filename)
+    return  isinstance(img, (nib.Nifti1Image, nib.Nifti1Header, nib.Nifti1Pair)) and \
+        not isinstance(img, (nib.Nifti2Image, nib.Nifti2Header, nib.Nifti2Pair))
+
+
+def _is_nifti2(filename):
+    img = nib.load(filename)
+    return isinstance(img, (nib.Nifti2Image, nib.Nifti2Header, nib.Nifti2Pair))
+
+
+def _check_file(prefix, expftype, dtype):
+    filename = fslimage.addExt(prefix)
+    if   'NIFTI2'  in expftype.name: assert _is_nifti2( filename)
+    elif 'NIFTI'   in expftype.name: assert _is_nifti1( filename)
+    elif 'ANALYZE' in expftype.name: assert _is_analyze(filename)
+    if   'GZ'      in expftype.name: assert _is_gzip(   filename)
+    if   'PAIR'    in expftype.name: assert _is_pair(   filename)
+
+    img = nib.load(filename)
+    assert np.issubdtype(img.get_data_dtype(), dtype)
+
+
+def test_imcp_script_correct_output_type(move=False):
+
+    # only testing dtypes supported by ANALYZE
+    dtypes = [np.uint8, np.int16, np.float32, np.float64, np.complex64]
+
+    # from, to
+    for from_, to_, dtype in it.product(fslimage.FileType, fslimage.FileType, dtypes):
+        with tempdir():
+
+            fname = f'f{from_.name}'
+            tname = f't{to_.name}'
+
+            _make_file(fname, from_, dtype)
+
+            with mock.patch.dict(os.environ, {'FSLOUTPUTTYPE' : to_.name}):
+                if move: immv_script.main([fname, tname])
+                else:    imcp_script.main([fname, tname])
+
+            _check_file(tname, to_, dtype)
