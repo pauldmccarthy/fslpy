@@ -424,3 +424,50 @@ def test_expectedShape():
 
         assert explen     == gotlen
         assert tuple(exp) == tuple(got)
+
+
+def test_edit_notify():
+    # fsl/fslpy!413
+    # Notifier listeners should be passed
+    # the _normalised_ slice object, with
+    # trailing dimensions of length 1
+    # removed
+    testShapes = [
+        (10, 10, 1),
+        (10, 10, 1, 1),
+        (10, 10, 10),
+        (10, 10, 10, 1),
+        (10, 10, 10, 1, 1),
+        (10, 10, 10, 10),
+        (10, 10, 10, 10, 1),
+        (10, 10, 10, 10, 1, 1)
+    ]
+
+    def genSlice(shape):
+        slc   = []
+        shape = fslimage.canonicalShape(shape)
+        for sz in shape:
+
+            if sz == 1:
+                slc.append(slice(None))
+            else:
+                start = np.random.randint(0,         sz - 1)
+                end   = np.random.randint(start + 1, sz + 1)
+                slc.append(slice(start, end))
+        return tuple(slc)
+
+    callbackValue = [None]
+    def imageEdited(i, topic, value):
+        callbackValue[0] = value
+
+    for shape in testShapes:
+        data  = np.random.randint(1, 10, shape, dtype=np.int16)
+        image = fslimage.Image(data)
+        slc   = genSlice(shape)
+
+        image.register('listener', imageEdited, 'data')
+
+        image[slc] = np.full(fslimage.expectedShape(slc, image.shape)[1], -1)
+
+        assert callbackValue[0] == slc
+        callbackValue[0] = None
