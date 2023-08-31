@@ -1711,7 +1711,8 @@ class Image(Nifti):
         log.debug('%s: __setitem__ [%s = %s]', self.name, slc, values.shape)
 
         realShape = self.realShape
-        slc       = canonicalSliceObj(slc, realShape)
+        origslc   = slc
+        slc       = canonicalSliceObj(origslc, realShape)
 
         # If the image shape does not match its
         # 'display' shape (either less three
@@ -1757,7 +1758,7 @@ class Image(Nifti):
             self.__dataRange = None
 
         # Notify that data has changed/image is not saved
-        self.notify(topic='data', value=slc)
+        self.notify(topic='data', value=origslc)
         if self.__saveState:
             self.__saveState = False
             self.notify(topic='saveState')
