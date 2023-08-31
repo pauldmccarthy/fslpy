@@ -91,16 +91,6 @@ variables:
 ####################################
 
 
-.only_upstream: &only_upstream
-  only:
-    - branches@fsl/fslpy
-
-
-.only_main: &only_main
-  only:
-    - main@fsl/fslpy
-
-
 .only_release_branches: &only_release_branches
   only:
     - /^v.+$/@fsl/fslpy
@@ -133,19 +123,31 @@ variables:
 # Test stage
 ############
 
-# TODO Option to skip tests via env var
+.test_rules: &test_rules
+  # We only run tests on MRs, and on release branches
+  # (a more substantial test suite is run on release
+  # branches - see .ci/test_template.sh). We don't run
+  # on upstream/main, as all merges are fast-forwards,
+  # so the tests will have already been run on the MR
+  # branch. We also allow manually running a pipeline
+  # via the web interface.
+  rules:
+    - if:   $SKIP_TESTS != null
+      when: never
+    - if:   $CI_COMMIT_MESSAGE =~ /skip-tests/
+      when: never
+    - if:   $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+    - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT && $CI_COMMIT_BRANCH =~ /^v.+$/
+      when: on_success
+    - if:   $CI_PIPELINE_SOURCE == "web"
+      when: on_success
+    - when: never
 
 
 .test: &test_template
   <<: *setup_ssh
-
-  # Releases are just tags on a release
-  # branch, so we don't need to test them.
-  except:
-    refs:
-      - tags
-    variables:
-      - $SKIP_TESTS != null
+  <<: *test_rules
 
   tags:
     - docker
@@ -181,8 +183,7 @@ test:3.11:
 test:build-pypi-dist:
   stage: test
   image: python:3.10
-  except:
-    - tags
+  <<: *test_rules
 
   tags:
     - docker

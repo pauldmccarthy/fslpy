@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.14.1 (Thursday 31st August 2023)
+----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed a bug in :meth:`.Image.__setitem__` - change listeners were being
+  passed an un-normalised ``slice`` object (with slices for trailing
+  dimensions of length 1 present) (!414).
+
+
 3.14.0 (Wednesday 30th August 2023)
 -----------------------------------
 
