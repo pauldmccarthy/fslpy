@@ -440,11 +440,12 @@ class BrainStructure(object):
         secondary_str = 'AnatomicalStructureSecondary'
         primary = "other"
         secondary = None
-        for meta in [gifti_obj] + gifti_obj.darrays:
-            if primary_str in meta.meta.metadata:
-                primary = meta.meta.metadata[primary_str]
-            if secondary_str in meta.meta.metadata:
-                secondary = meta.meta.metadata[secondary_str]
+
+        for obj in [gifti_obj] + gifti_obj.darrays:
+            if primary_str in obj.meta:
+                primary = obj.meta[primary_str]
+            if secondary_str in obj.meta:
+                secondary = obj.meta[secondary_str]
         anatomy = cls.from_string(primary, issurface=True)
         anatomy.secondary = None if secondary is None else secondary.lower()
         return anatomy

@@ -7,12 +7,9 @@
 """This module provides the :class:`Meta` class. """
 
 
-import collections
-
-
-class Meta(object):
-    """The ``Meta`` class is intended to be used as a mixin for other classes. It
-    is simply a wrapper for a dictionary of key-value pairs.
+class Meta:
+    """The ``Meta`` class is intended to be used as a mixin for other classes.
+    It is simply a wrapper for a dictionary of key-value pairs.
 
     It has a handful of methods allowing you to add and access additional
     metadata associated with an object.
@@ -20,6 +17,7 @@ class Meta(object):
     .. autosummary::
        :nosignatures:
 
+       meta
        metaKeys
        metaValues
        metaItems
@@ -32,9 +30,15 @@ class Meta(object):
         """Initialises a ``Meta`` instance. """
 
         new        = super(Meta, cls).__new__(cls)
-        new.__meta = collections.OrderedDict()
+        new.__meta = {}
 
         return new
+
+
+    @property
+    def meta(self):
+        """Return a reference to the metadata dictionary. """
+        return self.__meta
 
 
     def metaKeys(self):
