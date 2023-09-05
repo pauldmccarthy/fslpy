@@ -101,7 +101,7 @@ class GiftiMesh(fslmesh.Mesh):
 
         for i, v in enumerate(vertices):
             if i == 0: key = infile
-            else:      key = '{}_{}'.format(infile, i)
+            else:      key = f'{infile}_{i}'
             self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
         self.setMeta(infile, surfimg)
 
@@ -154,7 +154,7 @@ class GiftiMesh(fslmesh.Mesh):
 
         for i, v in enumerate(vertices):
             if i == 0: key = infile
-            else:      key = '{}_{}'.format(infile, i)
+            else:      key = f'{infile}_{i}'
             vertices[i] = self.addVertices(v, key, *args, **kwargs)
 
         self.setMeta(infile, surfimg)
@@ -221,12 +221,12 @@ def loadGiftiMesh(filename):
     vdata     = [d for d in gimg.darrays if d.intent not in (pscode, tricode)]
 
     if len(triangles) != 1:
-        raise ValueError('{}: GIFTI surface files must contain '
-                         'exactly one triangle array'.format(filename))
+        raise ValueError(f'{filename}: GIFTI surface files must '
+                         'contain exactly one triangle array')
 
     if len(pointsets) == 0:
-        raise ValueError('{}: GIFTI surface files must contain '
-                         'at least one pointset array'.format(filename))
+        raise ValueError(f'{filename}: GIFTI surface files must '
+                         'contain at least one pointset array')
 
     vertices = [ps.data for ps in pointsets]
     indices  = np.atleast_2d(triangles[0].data)
@@ -276,14 +276,14 @@ def prepareGiftiVertexData(darrays, filename=None):
     intents = {d.intent for d in darrays}
 
     if len(intents) != 1:
-        raise ValueError('{} contains multiple (or no) intents'
-                         ': {}'.format(filename, intents))
+        raise ValueError(f'{filename} contains multiple '
+                         f'(or no) intents: {intents}')
 
     intent = intents.pop()
 
     if intent in (constants.NIFTI_INTENT_POINTSET,
                   constants.NIFTI_INTENT_TRIANGLE):
-        raise ValueError('{} contains surface data'.format(filename))
+        raise ValueError(f'{filename} contains surface data')
 
     # Just a single array - return it as-is.
     # n.b. Storing (M, N) data in a single
@@ -298,8 +298,8 @@ def prepareGiftiVertexData(darrays, filename=None):
     vdata = [d.data for d in darrays]
 
     if any([len(d.shape) != 1 for d in vdata]):
-        raise ValueError('{} contains one or more non-vector '
-                         'darrays'.format(filename))
+        raise ValueError(f'{filename} contains one or '
+                         'more non-vector darrays')
 
     vdata = np.vstack(vdata).T
     vdata = vdata.reshape(vdata.shape[0], -1)
@@ -374,7 +374,7 @@ def relatedFiles(fname, ftypes=None):
 
     def searchhcp(match, ftype):
         prefix, space = match
-        template      = '{}.*.{}{}'.format(prefix, space, ftype)
+        template      = f'{prefix}.*.{space}{ftype}'
         return glob.glob(op.join(dirname, template))
 
     # BIDS style - extract all entities (kv
