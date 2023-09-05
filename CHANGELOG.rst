@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.15.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* All metadata stored in GIfTI files is now copied by :class:`.GiftiMesh`
+  instances into their :class:`.Meta` store (!416).
+
 
 3.14.1 (Thursday 31st August 2023)
 ----------------------------------
