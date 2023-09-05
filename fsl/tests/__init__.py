@@ -147,6 +147,8 @@ def testdir(contents=None, suffix=""):
             shutil.rmtree(self.testdir)
 
     return ctx(contents)
+testdir.__test__ = False
+
 
 def make_dummy_files(paths):
     """Creates dummy files for all of the given paths. """
