@@ -103,22 +103,22 @@ class GiftiMesh(fslmesh.Mesh):
             if i == 0: key = infile
             else:      key = f'{infile}_{i}'
             self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
-        self.setMeta(infile, surfimg)
+        self.meta[infile] = surfimg
 
         # Copy all metadata entries for the GIFTI image
         for k, v in surfimg.meta.items():
-            self.setMeta(k, v)
+            self.meta[k] = v
 
         # and also for each GIFTI data array - triangles
         # are stored under "faces", and pointsets are
         # stored under "vertices"/[0,1,2...] (as there may
         # be multiple pointsets in a file)
-        self.setMeta('vertices', {})
+        self.meta['vertices'] = {}
         for i, arr in enumerate(surfimg.darrays):
             if arr.intent == constants.NIFTI_INTENT_POINTSET:
-                self.getMeta('vertices')[i] = dict(arr.meta)
+                self.meta['vertices'][i] = dict(arr.meta)
             elif arr.intent == constants.NIFTI_INTENT_TRIANGLE:
-                self.setMeta('faces', dict(arr.meta))
+                self.meta['faces'] = dict(arr.meta)
 
         if vdata is not None:
             self.addVertexData(infile, vdata)
@@ -145,7 +145,7 @@ class GiftiMesh(fslmesh.Mesh):
                     continue
 
                 self.addVertices(vertices[0], sfile, select=False)
-                self.setMeta(sfile, surfimg)
+                self.meta[sfile] = surfimg
 
 
     def loadVertices(self, infile, key=None, *args, **kwargs):
@@ -172,7 +172,7 @@ class GiftiMesh(fslmesh.Mesh):
             else:      key = f'{infile}_{i}'
             vertices[i] = self.addVertices(v, key, *args, **kwargs)
 
-        self.setMeta(infile, surfimg)
+        self.meta[infile] = surfimg
 
         return vertices
 
