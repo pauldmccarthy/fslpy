@@ -105,6 +105,21 @@ class GiftiMesh(fslmesh.Mesh):
             self.addVertices(v, key, select=(i == 0), fixWinding=fixWinding)
         self.setMeta(infile, surfimg)
 
+        # Copy all metadata entries for the GIFTI image
+        for k, v in surfimg.meta.items():
+            self.setMeta(k, v)
+
+        # and also for each GIFTI data array - triangles
+        # are stored under "faces", and pointsets are
+        # stored under "vertices"/[0,1,2...] (as there may
+        # be multiple pointsets in a file)
+        self.setMeta('vertices', {})
+        for i, arr in enumerate(surfimg.darrays):
+            if arr.intent == constants.NIFTI_INTENT_POINTSET:
+                self.getMeta('vertices')[i] = dict(arr.meta)
+            elif arr.intent == constants.NIFTI_INTENT_TRIANGLE:
+                self.setMeta('faces', dict(arr.meta))
+
         if vdata is not None:
             self.addVertexData(infile, vdata)
 

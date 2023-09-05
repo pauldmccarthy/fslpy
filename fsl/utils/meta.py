@@ -10,9 +10,9 @@
 import collections
 
 
-class Meta(object):
-    """The ``Meta`` class is intended to be used as a mixin for other classes. It
-    is simply a wrapper for a dictionary of key-value pairs.
+class Meta:
+    """The ``Meta`` class is intended to be used as a mixin for other classes.
+    It is simply a wrapper for a dictionary of key-value pairs.
 
     It has a handful of methods allowing you to add and access additional
     metadata associated with an object.
