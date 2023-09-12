@@ -59,7 +59,7 @@ def _cluster(infile, thresh, **kwargs):
         'voxuncthresh'   : wutils.SHOW_IF_TRUE,
     }
 
-    cmd  = ['fsl-cluster', '-i', infile, '-t', int(thresh)]
+    cmd  = ['fsl-cluster', '-i', infile, '-t', str(thresh)]
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
