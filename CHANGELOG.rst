@@ -6,6 +6,12 @@ order.
 --------------------------
 
 
+Added
+^^^^^
+
+* New :func:`.cluster` wrapper function for the FSL ``cluster`` /
+  ``fsl-cluster`` command (!417).
+
 Changed
 ^^^^^^^
 

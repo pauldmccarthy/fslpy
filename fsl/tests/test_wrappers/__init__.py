@@ -46,3 +46,4 @@ def testenv(*fslexes):
         fslexes = [op.join(fsldir, 'bin', e) for e in fslexes]
         if len(fslexes) == 1: yield fslexes[0]
         else:                 yield fslexes
+testenv.__test__ = False
