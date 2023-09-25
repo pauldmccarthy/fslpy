@@ -38,7 +38,7 @@ def test_cluster_wrapper():
 
 mock_titles  = 'ABCDEFGHIJ'
 mock_cluster = f"""
-#!{sys.executable}
+#!/usr/bin/env python
 
 import numpy as np
 
