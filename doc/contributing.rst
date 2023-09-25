@@ -9,10 +9,10 @@ Development model
 -----------------
 
 
-- The master branch should always be stable and ready to release. All
-  development occurs on the master branch.
+- The main branch should always be stable and ready to release. All
+  development occurs on the main branch.
 
-- All changes to the master branch occur via merge requests. Individual
+- All changes to the main branch occur via merge requests. Individual
   developers are free to choose their own development workflow in their own
   repositories.
 
@@ -66,7 +66,7 @@ numbers::
   backwards-incompatible changes.
 
 
-The version number in the ``master`` branch should be of the form
+The version number in the ``main`` branch should be of the form
 ``major.minor.patch.dev0``, to indicate that any releases made from this
 branch are development releases (although development releases are not part of
 the release model).
@@ -83,7 +83,7 @@ name for minor release ``1.0`` would be ``v1.0``.
 
 
 Patches and bugfixes may be added to these release branches as ``patch``
-releases.  These changes should be made on the master branch like any other
+releases.  These changes should be made on the main branch like any other
 change (i.e. via merge requests), and then cherry-picked onto the relevant
 release branch(es).
 
@@ -99,17 +99,17 @@ Major/minor releases
 
 
 Follow this process for major and minor releases. Steps 1 and 2 should be
-performed via a merge request onto the master branch, and step 4 via a merge
+performed via a merge request onto the main branch, and step 4 via a merge
 request onto the relevant minor branch.
 
 
-1. Update the changelog on the master branch to include the new version number
+1. Update the changelog on the main branch to include the new version number
    and release date.
-2. On the master branch, update the version number in ``fsl/version.py`` to
+2. On the main branch, update the version number in ``fsl/version.py`` to
    a development version of **the next** minor release number. For example,
-   if you are about to release version ``1.3.0``, the version in the master
+   if you are about to release version ``1.3.0``, the version in the main
    branch should be ``1.4.0.dev0``.
-3. Create the new minor release branch off the master branch.
+3. Create the new minor release branch off the main branch.
 4. Update the version number on the release branch. If CI tests fail on the
    release branch, postpone the release until they are fixed.
 5. Tag the new release on the minor release branch.
@@ -120,13 +120,13 @@ Bugfix/patch releases
 
 
 Follow this process for patch releases. Step 1 should be performed via
-a merge request onto the master branch, and step 2 via a merge request onto
+a merge request onto the main branch, and step 2 via a merge request onto
 the relevant minor branch.
 
 
-1. Add the fix to the master branch, along with an updated changelog including
+1. Add the fix to the main branch, along with an updated changelog including
    the version number and date for the bugfix release.
-2. Cherry-pick the relevant commit(s) from the master branch onto the minor
+2. Cherry-pick the relevant commit(s) from the main branch onto the minor
    release branch, and update the version number on the minor release branch.
    If CI tests fail on the release branch, go back to step 1.
 3. Tag the new release on the minor release branch.
