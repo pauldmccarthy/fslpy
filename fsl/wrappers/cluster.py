@@ -28,6 +28,9 @@ def cluster(infile, thres, load=True, **kwargs):
     If ``load is False``, only the dictionary is returned.
     """
 
+    # Suppress stdout unless otherwise instructed
+    kwargs['log'] = kwargs.get('log', {'tee' : False})
+
     result = _cluster(infile, thres, **kwargs)
 
     if load:
