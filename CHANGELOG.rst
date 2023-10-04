@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.15.2 (Wednesday 4th October 2023)
+-----------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Removed the obsolete :func:`fsl.wrappers.misc.cluster` wrapper function
+  (!422).
+
+
 3.15.1 (Monday 25th September 2023)
 -----------------------------------
 
