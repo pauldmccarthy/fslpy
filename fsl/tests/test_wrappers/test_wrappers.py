@@ -245,14 +245,6 @@ def test_slicer():
         assert result.stdout[0] == expected
 
 
-def test_cluster():
-    with testenv('cluster') as cluster:
-        result   = fw.cluster('input', 'thresh',
-                              fractional=True, osize='osize')
-        expected = f'{cluster} --in=input --thresh=thresh --fractional --osize=osize'
-        assert result.stdout[0] == expected
-
-
 def test_fast():
     with testenv('fast') as fast:
         result   = fw.fast('input', 'myseg', n_classes=3)
