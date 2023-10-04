@@ -104,30 +104,6 @@ def slicer(input, input2=None, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('input', 'cope', 'oindex', 'othresh', 'olmaxim', 'osize',
-                    'omax', 'omean', 'opvals', 'stdvol', 'warpvol',
-                    'empiricalNull')
-@wutils.fileOrArray('xfm')
-@wutils.fslwrapper
-def cluster(input, thresh, **kwargs):
-    """Wrapper for the ``cluster`` command. """
-
-    valmap = {
-        'fractional'     : wutils.SHOW_IF_TRUE,
-        'mm'             : wutils.SHOW_IF_TRUE,
-        'min'            : wutils.SHOW_IF_TRUE,
-        'no_table'       : wutils.SHOW_IF_TRUE,
-        'minclustersize' : wutils.SHOW_IF_TRUE,
-        'verbose'        : wutils.SHOW_IF_TRUE,
-        'voxthresh'      : wutils.SHOW_IF_TRUE,
-        'voxuncthresh'   : wutils.SHOW_IF_TRUE,
-    }
-
-    cmd  = ['cluster', '--in={}'.format(input), '--thresh={}'.format(thresh)]
-    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
-
-    return cmd
-
 @wutils.fileOrArray('out', 'init')
 @wutils.fslwrapper
 def gps(out, ndir, **kwargs):

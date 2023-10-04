@@ -150,7 +150,6 @@ from fsl.wrappers.misc               import (fslreorient2std,
                                              fslswapdim,
                                              fslroi,
                                              slicer,
-                                             cluster,
                                              gps)
 from fsl.wrappers.bianca             import (bianca,
                                              bianca_cluster_stats,
