@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.16.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Adjusted the :func:`.loadLabelFile` function to accept files with missing
+  entries (!424).
+
 
 3.15.2 (Wednesday 4th October 2023)
 -----------------------------------

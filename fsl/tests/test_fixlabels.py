@@ -134,6 +134,37 @@ path/to/analysis.ica
  ['Signal', 'Blob']],
 [1]))
 
+# Missing component line
+goodfiles.append(("""
+path/to/analysis.ica
+2, Unclassified noise, True
+3, Signal, False
+[2]
+""",
+'path/to/analysis.ica',
+[['Unknown'],
+ ['Unclassified noise'],
+ ['Signal']],
+[2]))
+
+
+# Missing component line (again)
+goodfiles.append(("""
+path/to/analysis.ica
+1, Unclassified noise, True
+2, Unclassified noise, True
+5, Signal, False
+[1, 2]
+""",
+'path/to/analysis.ica',
+[['Unclassified noise'],
+ ['Unclassified noise'],
+ ['Unknown'],
+ ['Unknown'],
+ ['Signal']],
+[1, 2]))
+
+
 def test_loadLabelFile_good():
 
     for filecontents, expMelDir, expLabels, expIdxs in goodfiles:
@@ -214,24 +245,6 @@ path/to/analysis.ica
 1, Unclassified noise, True
 1, Unclassified noise, True
 [1]
-""")
-
-# Missing component line
-badfiles.append("""
-path/to/analysis.ica
-2, Unclassified noise, True
-3, Signal, False
-[2]
-""")
-
-
-# Missing component line (again)
-badfiles.append("""
-path/to/analysis.ica
-1, Unclassified noise, True
-2, Unclassified noise, True
-5, Signal, False
-[1, 2]
 """)
 
 
