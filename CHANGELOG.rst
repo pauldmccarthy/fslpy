@@ -11,7 +11,8 @@ Changed
 
 
 * Adjusted the :func:`.loadLabelFile` function to accept files with missing
-  entries (!424).
+  entries, and files which only contain the MELODIC directory path and list of
+  noisy components (!424, !425).
 
 
 3.15.2 (Wednesday 4th October 2023)
