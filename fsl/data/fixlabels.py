@@ -131,13 +131,16 @@ def loadLabelFile(filename,
     lines = [l.strip() for l in lines]
     lines = [l for l in lines if l != '']
 
-    # If the file contains a single
-    # line, we assume that it is just
-    # a comma-separated list of noise
-    # components.
-    if len(lines) == 1:
+    # If the file contains one or two lines, we
+    # assume that it is just a comma-separated list
+    # of noise components (possibly preceeded by
+    # the MELODIC directory path)
+    if len(lines) <= 2:
 
-        line = lines[0]
+        noisyComps = lines[-1]
+
+        if len(lines) == 2: melDir = lines[0]
+        else:               melDir = None
 
         # if the list is contained in
         # square brackets, we assume
@@ -153,21 +156,19 @@ def loadLabelFile(filename,
         # to motion, and excluded
         # components unclassified.
         if includeLabel is None:
-            if line[0] == '[': includeLabel = 'Unclassified noise'
-            else:              includeLabel = 'Movement'
+            if noisyComps[0] == '[': includeLabel = 'Unclassified noise'
+            else:                    includeLabel = 'Movement'
 
         if excludeLabel is None:
-            if line[0] == '[': excludeLabel = 'Signal'
-            else:              excludeLabel = 'Unknown'
+            if noisyComps[0] == '[': excludeLabel = 'Signal'
+            else:                    excludeLabel = 'Unknown'
         else:
             signalLabels = [excludeLabel]
 
         # Remove any leading/trailing
         # whitespace or brackets.
-        line = lines[0].strip(' []')
-
-        melDir     = None
-        noisyComps = [int(i) for i in line.split(',')]
+        noisyComps = noisyComps.strip(' []')
+        noisyComps = [int(i) for i in noisyComps.split(',')]
         allLabels  = []
 
         for i in range(max(noisyComps)):
@@ -182,21 +183,6 @@ def loadLabelFile(filename,
         noisyComps = lines[-1].strip(' []').split(',')
         noisyComps = [c      for c in noisyComps if c != '']
         noisyComps = [int(c) for c in noisyComps]
-
-        # There's no way to validate
-        # the melodic directory path,
-        # but let's try anyway.
-        if len(melDir.split(',')) >= 3:
-               raise InvalidLabelFileError(
-                   f'{filename}: First line does not look like '
-                   f'a MELODIC directory path: {melDir}')
-
-        # The melodic directory path should
-        # either be an absolute path, or
-        # be specified relative to the location
-        # of the label file.
-        if not op.isabs(melDir):
-            melDir = op.join(op.dirname(filename), melDir)
 
         # Parse the labels for every component.
         # Initially store as a {comp : [labels]} dict.
@@ -234,6 +220,22 @@ def loadLabelFile(filename,
         for i in range(max(it.chain(allLabels.keys(), noisyComps))):
             allLabelsList.append(allLabels.get(i + 1, [missingLabel]))
         allLabels = allLabelsList
+
+    # There's no way to validate
+    # the melodic directory path,
+    # but let's try anyway.
+    if melDir is not None:
+        if len(melDir.split(',')) >= 3:
+               raise InvalidLabelFileError(
+                   f'{filename}: First line does not look like '
+                   f'a MELODIC directory path: {melDir}')
+
+        # The melodic directory path should
+        # either be an absolute path, or
+        # be specified relative to the location
+        # of the label file.
+        if not op.isabs(melDir):
+            melDir = op.join(op.dirname(filename), melDir)
 
     # Validate the labels against
     # the noisy list - all components
