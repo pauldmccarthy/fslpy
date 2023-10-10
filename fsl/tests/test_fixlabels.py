@@ -110,6 +110,20 @@ None,
 [2, 5, 6, 7]))
 
 goodfiles.append(("""
+path/to/analysis.ica
+[2, 3, 5, 7]
+""",
+'path/to/analysis.ica',
+[['Signal'],
+ ['Unclassified noise'],
+ ['Unclassified noise'],
+ ['Signal'],
+ ['Unclassified noise'],
+ ['Signal'],
+ ['Unclassified noise']],
+[2, 3, 5, 7]))
+
+goodfiles.append(("""
 2, 5, 6, 7
 """,
 None,
