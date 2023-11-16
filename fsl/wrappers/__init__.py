@@ -19,14 +19,12 @@ For example, you can call BET like so::
 If you would like a command to be submitted as a cluster job, all wrappers
 accept a ``submit`` keyword argument, which may be given a value of ``True``
 indicating that the job should be submitted with default settings, or a
-dictionary with submission settings::
+dictionary with submission settings, which will be passed through to the
+``fsl_sub`` command (run ``fsl_sub --help`` for details on all options)::
 
     from fsl.wrappers import fnirt
     fnirt('srf', 'ref', 'out', submit=True)
-    fnirt('srf', 'ref', 'out', submit={'queue' : 'long.q', 'ram' : '4GB'})
-
-
-See the :mod:`.fslsub` module for more details.
+    fnirt('srf', 'ref', 'out', submit={'queue' : 'long.q', 'jobram' : '4'})
 
 
 Most of these wrapper functions strive to provide an interface which is as
