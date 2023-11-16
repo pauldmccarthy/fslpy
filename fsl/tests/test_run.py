@@ -138,6 +138,13 @@ def test_run_tee():
         assert stdout         == expstdout
         assert capture.stdout == ''
 
+
+        # disable forwarding via silent=True
+        with capture.reset():
+            stdout = run.run('./script.sh 1 2 3', silent=True)
+        assert stdout         == expstdout
+        assert capture.stdout == ''
+
         with capture.reset():
             stdout, stderr = run.run('./script.sh 1 2 3', stderr=True,
                                      log={'tee' : True})
