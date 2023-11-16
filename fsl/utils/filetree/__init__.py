@@ -1,5 +1,9 @@
-"""
-Easy format to define input/output files in a python pipeline.
+"""Easy format to define input/output files in a python pipeline.
+
+.. warning::
+    File-tree is now an independent Python library, and will eventually be
+    removed from ``fslpy`` - visit the `file-tree` :ref:`API documentation
+    <https://open.win.ox.ac.uk/pages/fsl/file-tree/>`_ for more details.
 
 The goal is to separate the definition of the input/output filenames from the actual code
 by defining a directory tree (i.e., FileTree) in a separate file from the code.

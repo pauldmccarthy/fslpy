@@ -110,6 +110,20 @@ None,
 [2, 5, 6, 7]))
 
 goodfiles.append(("""
+path/to/analysis.ica
+[2, 3, 5, 7]
+""",
+'path/to/analysis.ica',
+[['Signal'],
+ ['Unclassified noise'],
+ ['Unclassified noise'],
+ ['Signal'],
+ ['Unclassified noise'],
+ ['Signal'],
+ ['Unclassified noise']],
+[2, 3, 5, 7]))
+
+goodfiles.append(("""
 2, 5, 6, 7
 """,
 None,
@@ -133,6 +147,37 @@ path/to/analysis.ica
 [['Unclassified noise'],
  ['Signal', 'Blob']],
 [1]))
+
+# Missing component line
+goodfiles.append(("""
+path/to/analysis.ica
+2, Unclassified noise, True
+3, Signal, False
+[2]
+""",
+'path/to/analysis.ica',
+[['Unknown'],
+ ['Unclassified noise'],
+ ['Signal']],
+[2]))
+
+
+# Missing component line (again)
+goodfiles.append(("""
+path/to/analysis.ica
+1, Unclassified noise, True
+2, Unclassified noise, True
+5, Signal, False
+[1, 2]
+""",
+'path/to/analysis.ica',
+[['Unclassified noise'],
+ ['Unclassified noise'],
+ ['Unknown'],
+ ['Unknown'],
+ ['Signal']],
+[1, 2]))
+
 
 def test_loadLabelFile_good():
 
@@ -214,24 +259,6 @@ path/to/analysis.ica
 1, Unclassified noise, True
 1, Unclassified noise, True
 [1]
-""")
-
-# Missing component line
-badfiles.append("""
-path/to/analysis.ica
-2, Unclassified noise, True
-3, Signal, False
-[2]
-""")
-
-
-# Missing component line (again)
-badfiles.append("""
-path/to/analysis.ica
-1, Unclassified noise, True
-2, Unclassified noise, True
-5, Signal, False
-[1, 2]
 """)
 
 
