@@ -632,8 +632,8 @@ def hold(job_ids, hold_filename=None, timeout=10):
 
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
-        'minutes'  : 1,
-        'job_name' : '.hold'
+        'jobtime'  : 1,
+        'name'     : '.hold'
     }
 
     run(f'touch {hold_filename}', submit=submit)
