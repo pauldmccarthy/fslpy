@@ -20,7 +20,6 @@ import pytest
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
-import fsl.utils.fslsub                   as fslsub
 
 from . import make_random_image, mockFSLDIR, CaptureStdout, touch
 
@@ -135,6 +134,13 @@ def test_run_tee():
         # disable forwarding
         with capture.reset():
             stdout = run.run('./script.sh 1 2 3', log={'tee' : False})
+        assert stdout         == expstdout
+        assert capture.stdout == ''
+
+
+        # disable forwarding via silent=True
+        with capture.reset():
+            stdout = run.run('./script.sh 1 2 3', silent=True)
         assert stdout         == expstdout
         assert capture.stdout == ''
 
@@ -289,6 +295,8 @@ def mock_fsl_sub(*cmd, **kwargs):
 
     name = op.basename(name)
 
+    kwargs.pop('log', None)
+
     jid = '12345'
     output = run.run(cmd)
 
@@ -323,7 +331,7 @@ def test_run_submit():
 
         jid = run.run('fsltest', submit=True)
         assert jid == '12345'
-        stdout, stderr = fslsub.output(jid)
+        stdout, stderr = run.job_output(jid)
         assert stdout == 'test_script running\n'
         assert stderr == ''
 
@@ -331,7 +339,7 @@ def test_run_submit():
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
         jid = run.run('fsltest', submit=kwargs)
         assert jid == '12345'
-        stdout, stderr = fslsub.output(jid)
+        stdout, stderr = run.job_output(jid)
         experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
                             for k in sorted(kwargs.keys())]) + '\n'
         assert stdout == 'test_script running\n'
@@ -341,7 +349,7 @@ def test_run_submit():
         kwargs = {'name' : 'abcde', 'ram' : '4GB'}
         jid = run.run('fsltest', submit=True, **kwargs)
         assert jid == '12345'
-        stdout, stderr = fslsub.output(jid)
+        stdout, stderr = run.job_output(jid)
         experr = '\n'.join(['{}: {}'.format(k, kwargs[k])
                             for k in sorted(kwargs.keys())]) + '\n'
         assert stdout == 'test_script running\n'
@@ -482,7 +490,7 @@ def test_func_to_cmd():
         for tmp_dir in (None, '.'):
             for clean in ('never', 'on_success', 'always'):
                 for verbose in (False, True):
-                    cmd = fslsub.func_to_cmd(_good_func, clean=clean, tmp_dir=tmp_dir, verbose=verbose)
+                    cmd = run.func_to_cmd(_good_func, clean=clean, tmp_dir=tmp_dir, verbose=verbose)
                     fn = cmd.split()[-1]
                     assert op.exists(fn)
                     stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
@@ -497,7 +505,7 @@ def test_func_to_cmd():
                     else:
                         assert stdout.strip() == 'hello'
 
-                cmd = fslsub.func_to_cmd(_bad_func, clean=clean, tmp_dir=tmp_dir)
+                cmd = run.func_to_cmd(_bad_func, clean=clean, tmp_dir=tmp_dir)
                 fn = cmd.split()[-1]
                 assert op.exists(fn)
                 stdout, stderr, exitcode = run.run(cmd, exitcode=True, stdout=True, stderr=True,
