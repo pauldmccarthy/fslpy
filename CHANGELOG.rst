@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.16.0 (Under development)
---------------------------
+3.15.3 (Thursday 16th November 2023)
+------------------------------------
 
 
 Changed
@@ -13,6 +13,12 @@ Changed
 * Adjusted the :func:`.loadLabelFile` function to accept files with missing
   entries, and files which only contain the MELODIC directory path and list of
   noisy components (!424, !425).
+
+
+Fixed
+^^^^^
+
+* Fixed a bug in the :func:`.run.hold` function (!426).
 
 
 3.15.2 (Wednesday 4th October 2023)
