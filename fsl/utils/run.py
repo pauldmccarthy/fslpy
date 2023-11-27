@@ -645,7 +645,11 @@ def hold(job_ids, hold_filename=None, timeout=10):
     while not op.exists(hold_filename):
         time.sleep(timeout)
 
+    # remove the hold file and the
+    # fsl_sub job stdout/err files
     os.remove(hold_filename)
+    for outfile in glob.glob('.hold.[o,e]*'):
+        os.remove(outfile)
 
 
 def job_output(job_id, logdir='.', command=None, name=None):
