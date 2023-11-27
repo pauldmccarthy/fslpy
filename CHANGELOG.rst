@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.16.0 (Under development)
---------------------------
+3.15.4 (Monday 27th November 2023)
+----------------------------------
 
 
 Added
@@ -11,6 +11,8 @@ Added
 
 * New `silent` option to the :func:`.run` function = passing ``silent=True`` is
   equivalent to passing ``log={'tee':False}`` (!428).
+* New `prefix` option to the :func:`.tempdir` function, which is passed through
+  to ``tempfile.mkdtemp`` (!429).
 
 
 3.15.3 (Thursday 16th November 2023)
