@@ -193,7 +193,16 @@ def genxwrapper(func, runner, funccmd=False):
         exitcode = kwargs.pop('exitcode', opts['exitcode'])
         submit   = kwargs.pop('submit',   opts['submit'])
         cmdonly  = kwargs.pop('cmdonly',  opts['cmdonly'])
-        logg     = kwargs.pop('log',      opts['log'])
+        silent   = kwargs.pop('silent',   False)
+
+        # If silent=True, we need to explicitly set
+        # log, as the run function will otherwise
+        # ignore silent and preferentially use the
+        # value we pass for log.
+        if silent:
+            logg = kwargs.pop('log', {'tee' : False})
+        else:
+            logg = kwargs.pop('log', opts['log'])
 
         if funccmd:
             cmd = run.func_to_cmd(func, args=args, kwargs=kwargs,

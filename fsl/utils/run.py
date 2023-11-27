@@ -188,6 +188,9 @@ def run(*args, **kwargs):
                      - cmd:    Optional file-like or callable to which
                                the command itself is logged.
 
+    :arg silent:   Suppress standard output/error. Equivalent to passing
+                   ``log={'tee' : False}``. Ignored if `log` is also passed.
+
     All other keyword arguments are passed through to the ``subprocess.Popen``
     object (via :func:`_realrun`), unless ``submit=True``, in which case they
     are passed through to the :func:`.fsl_sub` function.
@@ -204,10 +207,11 @@ def run(*args, **kwargs):
     submit         = kwargs.pop('submit',   {})
     cmdonly        = kwargs.pop('cmdonly',  False)
     logg           = kwargs.pop('log',      None)
+    silent         = kwargs.pop('silent',   False)
     args           = prepareArgs(args)
 
     if logg is None:
-        logg = {}
+        logg = {'tee' : not silent}
 
     tee       = logg.get('tee',    True)
     logStdout = logg.get('stdout', None)
@@ -237,7 +241,7 @@ def run(*args, **kwargs):
     # but harmless, as we've popped the "submit" arg above.
     if submit is not None:
         from fsl.wrappers import fsl_sub  # pylint: disable=import-outside-toplevel  # noqa: E501
-        return fsl_sub(*args, **submit, **kwargs)[0].strip()
+        return fsl_sub(*args, log=logg, **submit, **kwargs)[0].strip()
 
     # Run directly - delegate to _realrun
     stdout, stderr, exitcode = _realrun(
@@ -633,15 +637,19 @@ def hold(job_ids, hold_filename=None, timeout=10):
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
         'jobtime'  : 1,
-        'name'     : '.hold'
+        'name'     : '.hold',
     }
 
-    run(f'touch {hold_filename}', submit=submit)
+    run(f'touch {hold_filename}', submit=submit, silent=True)
 
     while not op.exists(hold_filename):
         time.sleep(timeout)
 
+    # remove the hold file and the
+    # fsl_sub job stdout/err files
     os.remove(hold_filename)
+    for outfile in glob.glob('.hold.[o,e]*'):
+        os.remove(outfile)
 
 
 def job_output(job_id, logdir='.', command=None, name=None):

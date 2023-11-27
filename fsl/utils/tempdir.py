@@ -21,7 +21,7 @@ import contextlib
 
 
 @contextlib.contextmanager
-def tempdir(root=None, changeto=True, override=None):
+def tempdir(root=None, changeto=True, override=None, prefix=None):
     """Returns a context manager which creates and returns a temporary
     directory, and then deletes it on exit.
 
@@ -36,12 +36,19 @@ def tempdir(root=None, changeto=True, override=None):
     :arg override: Don't create a temporary directory, but use this one
                    instead. This allows ``tempdir`` to be used as a context
                    manager when a temporary directory already exists.
+
+    :arg prefix:   Create the temporary directory with a name starting with
+                   this prefix.
     """
 
+    if root is not None:
+        root = os.path.abspath(root)
+
     if override is None:
-        testdir = tempfile.mkdtemp(dir=root)
+        testdir = tempfile.mkdtemp(dir=root, prefix=prefix)
     else:
         testdir = override
+
     prevdir = os.getcwd()
 
     try:
