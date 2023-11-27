@@ -6,6 +6,7 @@
 #
 
 
+import glob
 import os
 import os.path as op
 
@@ -51,6 +52,15 @@ def test_tempdir_changeto():
         assert op.realpath(os.getcwd()) == cwd
 
     assert op.realpath(os.getcwd()) == cwd
+
+
+def test_tempdir_prefix():
+    with tempdir.tempdir(prefix='mytempdirtest') as tdir:
+        assert op.basename(tdir).startswith('mytempdirtest')
+
+    with tempdir.tempdir() as parent:
+        with tempdir.tempdir(prefix='mytempdirtest', root='.') as tdir:
+            assert list(glob.glob(op.join(parent, 'mytempdirtest*'))) == [tdir]
 
 
 def test_tempdir_override():
