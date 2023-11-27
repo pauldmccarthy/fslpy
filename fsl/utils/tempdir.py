@@ -41,10 +41,14 @@ def tempdir(root=None, changeto=True, override=None, prefix=None):
                    this prefix.
     """
 
+    if root is not None:
+        root = os.path.abspath(root)
+
     if override is None:
         testdir = tempfile.mkdtemp(dir=root, prefix=prefix)
     else:
         testdir = override
+
     prevdir = os.getcwd()
 
     try:
