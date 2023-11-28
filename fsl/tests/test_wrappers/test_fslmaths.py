@@ -44,6 +44,36 @@ def test_fslmaths():
 
         assert result.stdout[0] == expected
 
+def test_fslmaths2():
+    with testenv('fslmaths') as fslmaths:
+        result  = fw.fslmaths('input') \
+            .thrp(20).thrP(50).uthrp(75).uthrP(90).seed(1234).restart('input2') \
+            .save('temp').exp().log().sin().cos().tan().asin().acos().atan() \
+            .recip().fillh26().index().grid(1, 2).edge().dog_edge(1, 2) \
+            .tfce(1, 2, 3).tfceS(1, 2, 3, 4, 5, 6, 7).nan().nanm().rand() \
+            .randn().ing('ingim').tensor_decomp().dilD(3).eroF(2).fmedian() \
+            .fmean().s(5).subsamp2().subsamp2offc().run('output')
+        expected = f'{fslmaths} input -thrp 20 -thrP 50 -uthrp 75 -uthrP 90 ' \
+                   '-seed 1234 -restart input2 -save temp -exp -log -sin ' \
+                   '-cos -tan -asin -acos -atan -recip -fillh26 -index '  \
+                   '-grid 1 2 -edge -dog_edge 1 2 -tfce 1 2 3 -tfceS 1 2 3 4 ' \
+                   '5 6 7 -nan -nanm -rand -randn -ing ingim -tensor_decomp ' \
+                   '-dilD -dilD -dilD -eroF -eroF -fmedian -fmean -s 5 ' \
+                   '-subsamp2 -subsamp2offc output'
+        assert result.stdout[0] == expected
+
+
+def test_fslmaths3():
+    with testenv('fslmaths') as fslmaths:
+        result  = fw.fslmaths('input') \
+            .Tmean().Tstd().Tmin().Tmax().Tmaxn().Tmedian().Tperc(50).Tar1() \
+            .pval().pval0().cpval().ztop().ptoz().rank().ranknorm() \
+            .run('output')
+        expected = f'{fslmaths} input -Tmean -Tstd -Tmin -Tmax -Tmaxn ' \
+                   '-Tmedian -Tperc 50 -Tar1 -pval -pval0 -cpval -ztop ' \
+                   '-ptoz -rank -ranknorm output'
+        assert result.stdout[0] == expected
+
 
 def test_fslmaths_load():
     with testenv('fslmaths') as fslmaths:
