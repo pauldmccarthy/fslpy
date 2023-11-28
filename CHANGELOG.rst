@@ -2,12 +2,24 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.16.0 (Under development)
+--------------------------
+
+
+Added
+^^^^^
+
+
+* Added more functions to the :class:`.fslmaths` wrapper (!431).
+
+
 3.15.4 (Monday 27th November 2023)
 ----------------------------------
 
 
 Added
 ^^^^^
+
 
 * New `silent` option to the :func:`.run` function = passing ``silent=True`` is
   equivalent to passing ``log={'tee':False}`` (!428).
