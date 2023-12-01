@@ -66,3 +66,59 @@ def _cluster(infile, thresh, **kwargs):
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
+
+
+def smoothest(inimg=None, **kwargs):
+    """Wrapper for the ``smoothest`` command.
+
+    The residual or zstatistic image may be passed as the first positional
+    argument (``inimg``) - its type is inferred from the image file name if
+    possible.  If this is not possible (e.g. non-standard file names or
+    in-memory images), you must specify residual images via ``res``, or
+    zstatistic images via ``zstat``.
+
+    Returns a dictionary containing the parameters estimated by ``smoothest``,
+    e.g.::
+
+        {
+            'DLH'       : 1.25903,
+            'VOLUME'    : 239991,
+            'RESELS'    : 3.69574,
+            'FWHMvoxel' : [1.57816, 1.64219, 1.42603],
+            'FWHMmm'    : [3.15631, 3.28437, 2.85206]
+        }
+    """
+    result = _smoothest(**kwargs)
+    result = result.stdout[0]
+    result = result.strip().split('\n')[-5:]
+    values = {}
+
+    for line in result:
+        key, vals = line.split(maxsplit=1)
+        vals      = [float(v) for v in vals.split()]
+
+        if len(vals) == 1:
+            vals = vals[0]
+
+        values[key] = vals
+
+    return values
+
+
+@wutils.fileOrImage('inimg', 'r', 'res', 'z', 'zstat', 'm', 'mask')
+@wutils.fslwrapper
+def _smoothest(inimg=None, **kwargs):
+    """Actual wrapper for the ``smoothest`` command."""
+
+    if inimg is not None:
+        if   'res4d' in inimg: kwargs['res']   = inimg
+        elif 'zstat' in inimg: kwargs['zstat'] = inimg
+        else: raise RuntimeError('Cannot infer type of input '
+                                 f'image {inimg.name}')
+
+    valmap = {
+        'V'       : wutils.SHOW_IF_TRUE,
+        'verbose' : wutils.SHOW_IF_TRUE,
+    }
+
+    return ['smoothest'] + wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
