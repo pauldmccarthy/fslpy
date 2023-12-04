@@ -641,6 +641,6 @@ def test_randomise():
 
 
 def test_get_standard():
-    with testenv('get_standard') as exe:
+    with testenv('fsl_get_standard') as exe:
         assert fw.get_standard('brain', 'T1')     == f'{exe} brain T1'
         assert fw.get_standard('whole_head', r=2) == f'{exe} whole_head -r 2'
