@@ -12,6 +12,7 @@ Added
 
 * Added more functions to the :class:`.fslmaths` wrapper (!431).
 * New :func:`.smoothest` wrapper function (!432).
+* New :func:`.get_standard` wrapper function (!433).
 
 
 3.15.4 (Monday 27th November 2023)

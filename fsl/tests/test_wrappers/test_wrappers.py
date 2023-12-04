@@ -638,3 +638,9 @@ def test_randomise():
                            d='design.mat', one=True)
         exp = f'{randomise} -i input -o outbase -T --T2 --fonly -d design.mat -1'
         assert res[0] == exp
+
+
+def test_get_standard():
+    with testenv('fsl_get_standard') as exe:
+        assert fw.get_standard('brain', 'T1')     == f'{exe} brain T1'
+        assert fw.get_standard('whole_head', r=2) == f'{exe} whole_head -r 2'
