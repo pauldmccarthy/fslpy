@@ -12,11 +12,69 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import glob
+import itertools as it
 import os
+import os.path as op
 import sys
 import datetime
 
 date = datetime.date.today()
+
+
+def check_for_missing_stubs():
+
+    docdir  = op.dirname(__file__)
+    basedir = op.join(docdir, '..')
+    modules = []
+
+    def tomodname(f):
+        if f.endswith('.py'):
+            f = f[:-3]
+        return op.relpath(op.join(dirpath, f), basedir).replace(op.sep, '.')
+
+    for dirpath, dirnames, filenames in os.walk(op.join(basedir, 'fsl')):
+        for d in dirnames:
+            if d == '__pycache__':
+                continue
+            if len(glob.glob(op.join(dirpath, d, '**', '*.py'), recursive=True)) == 0:
+                continue
+            modules.append(tomodname(d))
+
+        for f in filenames:
+            if not f.endswith('.py'):
+                continue
+            if f in ('__init__.py', '__main__.py'):
+                continue
+            modules.append(tomodname(f))
+
+    modules = [m for m in modules if not m.startswith('fsl.tests')]
+
+    # import fsl
+    # modules = recurse(fsl)
+    # modules = [m.name for m in modules]
+
+    # print()
+    # print()
+    # print()
+
+    for mod in modules:
+
+        docfile = op.join(docdir, f'{mod}.rst')
+
+        if not op.exists(docfile):
+            print(f'No doc file found for module: {mod}')
+
+    for docfile in glob.glob(op.join(docdir, '*.rst')):
+        docfile = op.relpath(docfile, basedir)
+        mod     = op.splitext(op.basename(docfile))[0]
+        if mod not in modules:
+            print(f'No module found for doc file: {docfile}')
+
+
+if __name__ == '__main__':
+    check_for_missing_stubs()
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

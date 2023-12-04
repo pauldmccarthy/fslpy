@@ -32,8 +32,13 @@ def fnirt(src, **kwargs):
 
     asrt.assertIsNifti(src)
 
+    valmap = {
+        'v'       : wutils.SHOW_IF_TRUE,
+        'verbose' : wutils.SHOW_IF_TRUE,
+    }
+
     cmd  = ['fnirt', '--in={}'.format(src)]
-    cmd += wutils.applyArgStyle('--=', **kwargs)
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
 

@@ -8,6 +8,7 @@
    fsl.wrappers.bedpostx
    fsl.wrappers.bet
    fsl.wrappers.bianca
+   fsl.wrappers.cluster_commands
    fsl.wrappers.dtifit
    fsl.wrappers.eddy
    fsl.wrappers.epi_reg
@@ -23,6 +24,7 @@
    fsl.wrappers.fugue
    fsl.wrappers.melodic
    fsl.wrappers.misc
+   fsl.wrappers.oxford_asl
    fsl.wrappers.randomise
    fsl.wrappers.tbss
    fsl.wrappers.wrapperutils

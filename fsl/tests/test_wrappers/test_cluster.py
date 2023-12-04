@@ -9,10 +9,17 @@ import contextlib
 import os
 import os.path as op
 import sys
+import textwrap as tw
+
+from unittest import mock
 
 import numpy as np
 
-from fsl.wrappers.cluster import cluster, _cluster
+from fsl.wrappers import wrapperutils as wutils
+from fsl.wrappers.cluster_commands import (cluster,
+                                           _cluster,
+                                           smoothest,
+                                           _smoothest)
 
 from .  import testenv
 from .. import mockFSLDIR
@@ -67,3 +74,56 @@ def test_cluster():
     assert np.all(np.isclose(data, expected))
     assert ''.join(titles) == mock_titles
     assert result1.stdout == result2.stdout
+
+
+def test_smoothest_wrapper():
+    with testenv('smoothest') as smoothest_exe:
+        result   = _smoothest(res='res', zstat='zstat', d=5, V=True)
+        expected = f'{smoothest_exe} --res=res --zstat=zstat -d 5 -V'
+        assert result.stdout[0] == expected
+
+        # auto detect residuals vs zstat
+        result   = _smoothest('res4d.nii.gz', d=5, V=True)
+        expected = f'{smoothest_exe} -d 5 -V --res=res4d.nii.gz'
+        assert result.stdout[0] == expected
+
+        result   = _smoothest('zstat1.nii.gz', d=5, V=True)
+        expected = f'{smoothest_exe} -d 5 -V --zstat=zstat1.nii.gz'
+        assert result.stdout[0] == expected
+
+
+def test_smoothest():
+
+    result = tw.dedent("""
+    FWHMx = 4.763 mm, FWHMy = 5.06668 mm, FWHMz = 4.71527 mm
+    DLH 0.324569 voxels^-3
+    VOLUME 244531 voxels
+    RESELS 14.224 voxels per resel
+    DLH 0.324569
+    VOLUME 244531
+    RESELS 14.224
+    FWHMvoxel 2.3815 2.53334 2.35763
+    FWHMmm 4.763 5.06668 4.71527
+    """)
+
+    result = wutils.FileOrThing.Results((result, ''))
+
+    expect = {
+        'DLH'       : 0.324569,
+        'VOLUME'    : 244531,
+        'RESELS'    : 14.224,
+        'FWHMvoxel' : [2.3815, 2.53334, 2.35763],
+        'FWHMmm'    : [4.763,  5.06668, 4.71527]
+    }
+
+    with mock.patch('fsl.wrappers.cluster_commands._smoothest',
+                    return_value=result):
+
+        result = smoothest('inimage')
+
+        assert result.keys() == expect.keys()
+        assert        np.isclose(result['DLH'],       expect['DLH'])
+        assert        np.isclose(result['VOLUME'],    expect['VOLUME'])
+        assert        np.isclose(result['RESELS'],    expect['RESELS'])
+        assert np.all(np.isclose(result['FWHMvoxel'], expect['FWHMvoxel']))
+        assert np.all(np.isclose(result['FWHMmm'],    expect['FWHMmm']))

@@ -101,7 +101,8 @@ from fsl.wrappers.wrapperutils       import (LOAD,
                                              fslwrapper,
                                              funcwrapper)
 from fsl.wrappers                    import (tbss,)
-from fsl.wrappers.cluster            import (cluster,)
+from fsl.wrappers.cluster_commands   import (cluster,
+                                             smoothest)
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
 from fsl.wrappers.eddy               import (eddy,

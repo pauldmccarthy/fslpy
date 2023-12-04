@@ -31,20 +31,28 @@ class fslstats:
                  present in older versions.
 
 
+    This ``fslstats`` command::
+
+        fslstats image -r -p 95 -R
+
+
+    is equivalent to this function call::
+
+        fslstats('image').r.p(95).R.run()
+
+
     Any ``fslstats`` command-line option which does not require any arguments
     (e.g. ``-r``) can be set by accessing an attribute on a ``fslstats``
     object, e.g.::
 
-        stats = fslstats('image.nii.gz')
-        stats.r
+        fslstats('image.nii.gz').r.run()
 
 
     ``fslstats`` command-line options which do require additional arguments
     (e.g. ``-k``) can be set by calling a method on an ``fslstats`` object,
     e.g.::
 
-        stats = fslstats('image.nii.gz')
-        stats.k('mask.nii.gz')
+        stats = fslstats('image.nii.gz').k('mask.nii.gz').run()
 
 
     The ``fslstats`` command can be executed via the :meth:`run` method.
