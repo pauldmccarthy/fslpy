@@ -141,6 +141,7 @@ from fsl.wrappers.fugue              import (fugue,
                                              prelude,
                                              sigloss,
                                              fsl_prepare_fieldmap)
+from fsl.wrappers.get_standard       import (get_standard,)
 from fsl.wrappers.melodic            import (melodic,
                                              fsl_regfilt,
                                              fsl_glm)
