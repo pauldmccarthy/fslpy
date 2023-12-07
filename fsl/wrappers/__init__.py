@@ -158,7 +158,8 @@ from fsl.wrappers.bianca             import (bianca,
                                              make_bianca_mask)
 from fsl.wrappers.feat               import (feat,
                                              featquery)
-from fsl.wrappers.dtifit             import  dtifit
+from fsl.wrappers.fdt                import (dtifit,
+                                             vecreg)
 from fsl.wrappers.bedpostx           import (xfibres,
                                              xfibres_gpu,
                                              split_parts_gpu,

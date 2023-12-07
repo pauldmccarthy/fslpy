@@ -1,16 +1,27 @@
 #!/usr/bin/env python
 #
-# dtifit.py - Wrapper for dtifit.
+# fdt.py - Wrappers for FDT commands.
 #
-# Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
+# Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides wrapper functions for the FSL `dtifit
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT>`_ command.
-"""
+"""This module contains wrapper functions for various FDT commands. """
 
-import fsl.utils.assertions as asrt
 
-from . import wrapperutils  as wutils
+import fsl.utils.assertions      as asrt
+import fsl.wrappers.wrapperutils as wutils
+
+
+@wutils.fileOrImage('input', 'output', 'ref', 'warpfield',
+                    'rotwarp', 'mask', 'refmask')
+@wutils.fileOrArray('affine', 'premat', 'postmat', 'rotmat')
+@wutils.fslwrapper
+def vecreg(input, output, ref, **kwargs):
+    """Wrapper for the ``vecreg`` command. """
+
+    cmd  = ['vecreg', '-i', input, '-o', output, '-r', ref]
+    cmd += wutils.applyArgStyle('--=', **kwargs)
+
+    return cmd
 
 
 @wutils.fileOrImage('data', 'mask', 'field', outprefix='out')
