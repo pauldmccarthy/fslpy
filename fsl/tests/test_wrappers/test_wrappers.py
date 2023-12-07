@@ -541,6 +541,15 @@ def test_dtifit():
         assert res.stdout[0] == exp
 
 
+def test_vecreg():
+    with testenv('vecreg') as vecreg:
+        res    = fw.vecreg('in', 'out', 'ref', warpfield='warp',
+                           premat='premat.mat', interp='sinc', m='mask')
+        exp    = f'{vecreg} -i in -o out -r ref --warpfield=warp ' \
+                  '--premat=premat.mat --interp=sinc -m mask'
+        assert res.stdout[0] == exp
+
+
 def test_xfibres():
     with testenv('xfibres') as xfibres:
         res = fw.xfibres('data', 'mask', 'bvecs', 'bvals',
