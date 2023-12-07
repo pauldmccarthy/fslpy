@@ -7,12 +7,13 @@
 """This module contains wrapper functions for various FDT commands. """
 
 
+import fsl.utils.assertions      as asrt
 import fsl.wrappers.wrapperutils as wutils
 
 
 @wutils.fileOrImage('input', 'output', 'ref', 'warpfield',
                     'rotwarp', 'mask', 'refmask')
-@wutils.fileOrArray('premat', 'postmat', 'rotmat')
+@wutils.fileOrArray('affine', 'premat', 'postmat', 'rotmat')
 @wutils.fslwrapper
 def vecreg(input, output, ref, **kwargs):
     """Wrapper for the ``vecreg`` command. """
