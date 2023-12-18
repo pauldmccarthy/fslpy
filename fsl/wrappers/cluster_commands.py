@@ -88,6 +88,10 @@ def smoothest(inimg=None, **kwargs):
             'FWHMmm'    : [3.15631, 3.28437, 2.85206]
         }
     """
+
+    # Suppress stdout unless otherwise instructed
+    kwargs['log'] = kwargs.get('log', {'tee' : False})
+
     result = _smoothest(**kwargs)
     result = result.stdout[0]
     result = result.strip().split('\n')[-5:]
