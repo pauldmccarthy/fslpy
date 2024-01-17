@@ -179,13 +179,15 @@ def run(*args, **kwargs):
                                the output streams of this process, in addition
                                to being captured and returned.
 
-                     - stdout: Optional file-like object to which the command's
-                               standard output stream can be forwarded.
+                     - stdout: Optional callable or file-like object to which
+                               the command's standard output stream can be
+                               forwarded.
 
-                     - stderr: Optional file-like object to which the command's
-                               standard error stream can be forwarded.
+                     - stderr: Optional callable or file-like object to which
+                               the command's standard error stream can be
+                               forwarded.
 
-                     - cmd:    Optional file-like or callable to which
+                     - cmd:    Optional callable or file-like object to which
                                the command itself is logged.
 
     :arg silent:   Suppress standard output/error. Equivalent to passing
@@ -293,14 +295,14 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
                     streams are forwarded to this process' standard output/
                     error.
 
-    :arg logStdout: Optional file-like object to which the command's standard
-                    output stream can be forwarded.
+    :arg logStdout: Optional callable or file-like object to which the
+                    command's standard output stream can be forwarded.
 
-    :arg logStderr: Optional file-like object to which the command's standard
-                    error stream can be forwarded.
+    :arg logStderr: Optional callable or file-like object to which the
+                    command's standard error stream can be forwarded.
 
-    :arg logCmd:    Optional file-like or callable to which the command itself
-                    is logged.
+    :arg logCmd:    Optional  callable or file-like to which the command
+                    itself is logged.
 
     :arg args:      Command to run
 
@@ -338,10 +340,14 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
                 outstreams.append(sys.stdout)
                 errstreams.append(sys.stderr)
 
-            # And we also duplicate to caller-
-            # provided streams if they're given.
-            if logStdout is not None: outstreams.append(logStdout)
-            if logStderr is not None: errstreams.append(logStderr)
+            # And we also duplicate to caller-provided
+            # streams if they are file-likes (if they're
+            # callables, we call them after the process
+            # has completed)
+            if logStdout is not None and not callable(logStdout):
+                outstreams.append(logStdout)
+            if logStderr is not None and not callable(logStderr):
+                errstreams.append(logStderr)
 
             # log the command if requested.
             # logCmd can be a callable, or
@@ -372,6 +378,10 @@ def _realrun(tee, logStdout, logStderr, logCmd, *args, **kwargs):
     exitcode = proc.returncode
     stdout   = stdout.decode('utf-8')
     stderr   = stderr.decode('utf-8')
+
+    # Send stdout/error to logStdout/err callables
+    if logStdout is not None and callable(logStdout): logStdout(stdout)
+    if logStderr is not None and callable(logStderr): logStderr(stderr)
 
     return stdout, stderr, exitcode
 

@@ -387,7 +387,6 @@ def test_run_streams():
         assert open('my_stdout', 'rt').read() == expstdout
         assert open('my_stderr', 'rt').read() == expstderr
 
-
         capture = CaptureStdout()
 
         with open('my_stdout', 'wt') as stdout, \
@@ -406,6 +405,25 @@ def test_run_streams():
         assert capture.stderr                 == expstderr
         assert open('my_stdout', 'rt').read() == expstdout
         assert open('my_stderr', 'rt').read() == expstderr
+
+        # logstdout/err can also be callables
+        gotstdout = []
+        gotstderr = []
+        def logstdout(stdout):
+            gotstdout.append(stdout)
+        def logstderr(stderr):
+            gotstderr.append(stderr)
+
+        run.run('./script.sh',
+                stdout=False,
+                stderr=False,
+                log={'tee'    : False,
+                     'stdout' : logstdout,
+                     'stderr' : logstderr})
+
+        assert gotstdout == [expstdout]
+        assert gotstderr == [expstderr]
+
 
 
 def test_run_logcmd():

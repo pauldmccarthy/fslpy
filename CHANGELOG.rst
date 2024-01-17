@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.16.1 (Wednesday 17th January 2024)
+------------------------------------
+
+
+Added
+^^^^^
+
+
+* The :func:`run` function now allows the ``log{'stdout']`` and
+  ``log{'stderr'}`` options (used for capturing the standard output/error
+  streams of a called process) to be either file-likes or callables (!438).
+
+
 3.16.0 (Thursday 21st December 2023)
 ------------------------------------
 
