@@ -24,17 +24,17 @@ utility functions are also available:
 """
 
 
-import                                logging
-import itertools                   as it
+import                             logging
+import itertools                as it
 
-import numpy                       as np
-import scipy.ndimage.interpolation as ndinterp
+import numpy                    as np
+import scipy.ndimage            as ndimage
 
-import fsl.utils.memoize           as memoize
-import fsl.data.image              as fslimage
-import fsl.data.constants          as fslconstants
-import fsl.utils.image.resample    as resample
-from . import                         affine
+import fsl.utils.memoize        as memoize
+import fsl.data.image           as fslimage
+import fsl.data.constants       as fslconstants
+import fsl.utils.image.resample as resample
+from . import                      affine
 
 
 log = logging.getLogger(__name__)
@@ -810,11 +810,11 @@ def applyDeformation(image,
         field = field.reshape(shape)
 
     field = field.transpose((3, 0, 1, 2))
-    return ndinterp.map_coordinates(image.data,
-                                    field,
-                                    order=order,
-                                    mode=mode,
-                                    cval=cval)
+    return ndimage.map_coordinates(image.data,
+                                   field,
+                                   order=order,
+                                   mode=mode,
+                                   cval=cval)
 
 
 def coefficientFieldToDeformationField(field, defType='relative', premat=True):
