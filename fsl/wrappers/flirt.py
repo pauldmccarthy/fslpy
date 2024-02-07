@@ -228,14 +228,7 @@ def makerot(theta, **kwargs):
     """Wrapper for the ``makerot`` command."""
 
     valmap = {'verbose' : wutils.SHOW_IF_TRUE}
-    argmap = {
-        'axis'    : 'a',
-        'centre'  : 'c',
-        'out'     : 'o',
-        'verbose' : 'v'
-    }
-
-    cmd  = ['makerot', '-t', str(theta)]
-    cmd += wutils.applyArgStyle('--=', argmap=argmap, valmap=valmap, **kwargs)
+    cmd    = ['makerot', '-t', str(theta)]
+    cmd   += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
