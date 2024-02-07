@@ -128,7 +128,8 @@ from fsl.wrappers.flirt              import (flirt,
                                              concatxfm,
                                              fixscaleskew,
                                              mcflirt,
-                                             standard_space_roi)
+                                             standard_space_roi,
+                                             makerot)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,

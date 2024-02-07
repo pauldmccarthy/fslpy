@@ -14,6 +14,7 @@ tools.
    :nosignatures:
 
    flirt
+   makerot
    applyxfm
    applyxfm4D
    invxfm
@@ -216,5 +217,23 @@ def standard_space_roi(input, output, **kwargs):
 
     cmd  = ['standard_space_roi', input, output]
     cmd += wutils.applyArgStyle('-', argmap=argmap, valmap=valmap, **kwargs)
+
+    return cmd
+
+
+@wutils.fslwrapper
+def makerot(theta, **kwargs):
+    """Wrapper for the ``makerot`` command."""
+
+    valmap = {'verbose' : wutils.SHOW_IF_TRUE}
+    argmap = {
+        'axis'    : 'a',
+        'centre'  : 'c',
+        'out'     : 'o',
+        'verbose' : 'v'
+    }
+
+    cmd  = ['makerot', '-t', str(theta)]
+    cmd += wutils.applyArgStyle('--=', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd
