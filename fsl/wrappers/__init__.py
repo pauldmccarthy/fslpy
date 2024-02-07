@@ -171,3 +171,9 @@ from fsl.wrappers.bedpostx           import (xfibres,
 from fsl.wrappers.oxford_asl         import (oxford_asl,
                                              asl_file)
 from fsl.wrappers.randomise          import  randomise
+from fsl.wrappers.fslio              import (imcp,
+                                             imglob,
+                                             imln,
+                                             immv,
+                                             imrm,
+                                             imtest)

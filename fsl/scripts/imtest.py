@@ -29,6 +29,27 @@ groups = [('.hdr', '.img'), ('.hdr.gz', '.img.gz')]
 """List of known image file groups (image/header file pairs). """
 
 
+def imtest(path):
+    """Returns ``True`` if the given image path exists, False otherwise. """
+
+    path = fslpath.removeExt(path, exts)
+    path = op.realpath(path)
+
+    # getFileGroup will raise an error
+    # if the image (including all
+    # components - i.e. header and
+    # image) does not exist
+    try:
+        fslpath.getFileGroup(path,
+                             allowedExts=exts,
+                             fileGroups=groups,
+                             unambiguous=True)
+        return True
+
+    except fslpath.PathError:
+        return False
+
+
 def main(argv=None):
     """Test if an image path exists, and prints ``'1'`` if it does or ``'0'``
     if it doesn't.
@@ -42,20 +63,9 @@ def main(argv=None):
         print('0')
         return 0
 
-    path = fslpath.removeExt(argv[0], exts)
-    path = op.realpath(path)
-
-    # getFileGroup will raise an error
-    # if the image (including all
-    # components - i.e. header and
-    # image) does not exist
-    try:
-        fslpath.getFileGroup(path,
-                             allowedExts=exts,
-                             fileGroups=groups,
-                             unambiguous=True)
+    if imtest(argv[0]):
         print('1')
-    except fslpath.PathError:
+    else:
         print('0')
 
     return 0
