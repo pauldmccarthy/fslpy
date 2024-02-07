@@ -221,6 +221,8 @@ def standard_space_roi(input, output, **kwargs):
     return cmd
 
 
+@wutils.fileOrImage('cov')
+@wutils.fileOrArray('out')
 @wutils.fslwrapper
 def makerot(theta, **kwargs):
     """Wrapper for the ``makerot`` command."""
