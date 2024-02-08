@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.17.0 (Friday 9th February 2024)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Added
+
+* New wrapper function for the FLIRT `makerot` command (!441).
+* New wrapper functions for the `imcp`, `immv`, `imrm`, `imln`, `imglob` and
+  `imtest` commands. These are all implemented within fslpy, so the wrapper
+  functions invoke them directly (i.e. within the same process) (!441).
+
 
 3.16.1 (Wednesday 17th January 2024)
 ------------------------------------

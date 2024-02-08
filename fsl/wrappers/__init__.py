@@ -128,7 +128,8 @@ from fsl.wrappers.flirt              import (flirt,
                                              concatxfm,
                                              fixscaleskew,
                                              mcflirt,
-                                             standard_space_roi)
+                                             standard_space_roi,
+                                             makerot)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,
@@ -170,3 +171,9 @@ from fsl.wrappers.bedpostx           import (xfibres,
 from fsl.wrappers.oxford_asl         import (oxford_asl,
                                              asl_file)
 from fsl.wrappers.randomise          import  randomise
+from fsl.wrappers.fslio              import (imcp,
+                                             imglob,
+                                             imln,
+                                             immv,
+                                             imrm,
+                                             imtest)

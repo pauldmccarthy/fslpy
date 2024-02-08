@@ -25,7 +25,7 @@ from io import StringIO
 from unittest import mock
 
 import fsl.data.image                     as fslimage
-from   fsl.utils.tempdir import              tempdir
+from   fsl.utils.tempdir  import             tempdir
 from   fsl.utils.platform import platform as fslplatform
 
 
