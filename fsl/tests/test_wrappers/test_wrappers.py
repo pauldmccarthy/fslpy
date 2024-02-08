@@ -657,6 +657,6 @@ def test_get_standard():
 
 def test_makerot():
     with testenv('makerot') as exe:
-        assert fw.makerot(90) == f'{exe} -t 90'
-        assert fw.makerot(90, cov='cov', centre=[10, 10, 10) == \
+        assert fw.makerot(90).stdout[0] == f'{exe} -t 90'
+        assert fw.makerot(90, cov='cov', centre=[10, 10, 10]).stdout[0] == \
                           f'{exe} -t 90 --cov=cov --centre=10,10,10'
