@@ -232,3 +232,21 @@ def makerot(theta, **kwargs):
     cmd   += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
 
     return cmd
+
+
+@wutils.fileOrArray('output', 'transforms', outprefix='separate')
+@wutils.fileOrImage('template')
+@wutils.fslwrapper
+def midtrans(output, *transforms, **kwargs):
+    """Wrapper for the ``midtrans`` command. """
+
+    valmap = {
+        'verbose' : wutils.SHOW_IF_TRUE,
+        'debug'   : wutils.SHOW_IF_TRUE
+    }
+
+    cmd  = ['midtrans']
+    cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
+    cmd += ['-o', output] + list(transforms)
+
+    return cmd

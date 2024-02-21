@@ -129,7 +129,8 @@ from fsl.wrappers.flirt              import (flirt,
                                              fixscaleskew,
                                              mcflirt,
                                              standard_space_roi,
-                                             makerot)
+                                             makerot,
+                                             midtrans)
 from fsl.wrappers.fnirt              import (fnirt,
                                              applywarp,
                                              invwarp,
