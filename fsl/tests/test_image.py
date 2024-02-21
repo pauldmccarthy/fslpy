@@ -225,6 +225,27 @@ def test_create():
             assert np.all(np.isclose(img.pixdim, (2, 3, 4)))
 
 
+def test_create_niftiversion():
+
+    data = np.random.random((10, 10, 10))
+
+    with mock.patch.dict(os.environ, FSLOUTPUTTYPE='NIFTI_GZ'):
+        img = fslimage.Image(data)
+        assert img.niftiVersion == 1
+        img = fslimage.Image(data, version=1)
+        assert img.niftiVersion == 1
+        img = fslimage.Image(data, version=2)
+        assert img.niftiVersion == 2
+
+    with mock.patch.dict(os.environ, FSLOUTPUTTYPE='NIFTI2_GZ'):
+        img = fslimage.Image(data)
+        assert img.niftiVersion == 2
+        img = fslimage.Image(data, version=1)
+        assert img.niftiVersion == 1
+        img = fslimage.Image(data, version=2)
+        assert img.niftiVersion == 2
+
+
 def test_name_dataSource():
     with tempdir():
 

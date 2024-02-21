@@ -2,11 +2,25 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.17.0 (Friday 9th February 2024)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3.18.0 (Under development)
+--------------------------
 
 
 Added
+^^^^^
+
+* New wrapper function for the FLIRT `midtrans` command (!443).
+* The :class:`.Image` class now accepts a ``version`` parameter, as an
+  easy way of specifying the NIfTI file format version (!443).
+
+
+3.17.0 (Friday 9th February 2024)
+---------------------------------
+
+
+
+Added
+^^^^^
 
 * New wrapper function for the FLIRT `makerot` command (!441).
 * New wrapper functions for the `imcp`, `immv`, `imrm`, `imln`, `imglob` and

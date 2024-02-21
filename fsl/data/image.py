@@ -1160,6 +1160,7 @@ class Image(Nifti):
                  dataSource : PathLike         = None,
                  loadMeta   : bool             = False,
                  dataMgr    : DataManager      = None,
+                 version    : int              = None,
                  **kwargs):
         """Create an ``Image`` object with the given image data or file name.
 
@@ -1205,6 +1206,12 @@ class Image(Nifti):
         :arg dataMgr:    Object implementing the :class:`DataManager`
                          interface, for managing access to the image data.
 
+
+        :arg version:    NIfTI version - either 1 or 2. Only used when creating
+                         an image from a numpy array, and when a ``header`` is
+                         not provided. Defaults to the value dictated by the
+                         ``FSLOUTPUTTYPE`` environment variable.
+
         All other arguments are passed through to the ``nibabel.load`` function
         (if it is called).
         """
@@ -1218,6 +1225,10 @@ class Image(Nifti):
         if calcRange is not None:
             deprecated.warn('Image(calcRange)', vin='3.9.0', rin='4.0.0',
                             msg='The calcRange option has no effect')
+
+        if version not in (None, 1, 2):
+            raise ValueError('Invalid value for version - only NIfTI '
+                             'versions 1 and 2 are supported')
 
         nibImage = None
         saved    = False
@@ -1261,12 +1272,15 @@ class Image(Nifti):
                 if header is not None: xform = header.get_best_affine()
                 else:                  xform = np.identity(4)
 
-            # default to NIFTI1 if FSLOUTPUTTYPE
-            # is not set, just to be safe.
+            # NIfTI1 or NIfTI2 - if version was provided,
+            # use that, otherwise use the FSLOUTPUTTYPE
+            # environment variable
             if header is None:
                 outputType = defaultOutputType()
-                if 'NIFTI2' in outputType.name: ctr = nib.Nifti2Image
-                else:                           ctr = nib.Nifti1Image
+                if   version == 2:                ctr = nib.Nifti2Image
+                elif version == 1:                ctr = nib.Nifti1Image
+                elif 'NIFTI2' in outputType.name: ctr = nib.Nifti2Image
+                else:                             ctr = nib.Nifti1Image
 
             # make sure that the data type is correct,
             # in case this header was passed in from
