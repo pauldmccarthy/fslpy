@@ -660,3 +660,9 @@ def test_makerot():
         assert fw.makerot(90).stdout[0] == f'{exe} -t 90'
         assert fw.makerot(90, cov='cov', centre=[10, 10, 10]).stdout[0] == \
                           f'{exe} -t 90 --cov=cov --centre=10,10,10'
+
+
+def test_midtrans():
+    with testenv('midtrans') as exe:
+        assert fw.midtrans('out', 'xfm1', 'xfm2', 'xfm3').stdout[0] == \
+            f'{exe} -o out xfm1 xfm2 xfm3'
