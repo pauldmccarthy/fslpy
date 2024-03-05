@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.18.1 (Tuesday 5th March 2024)
+-------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed an issue which could cause :mod:`fsl.wrappers` functions to crash
+  when being executed concurrently (!446).
+
+
 3.18.0 (Thursdday 22nd February 2024)
 -------------------------------------
 
