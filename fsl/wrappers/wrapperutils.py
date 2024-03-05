@@ -89,6 +89,7 @@ and returned::
 import functools       as ft
 import itertools       as it
 import os.path         as op
+import multiprocessing as mp
 import collections.abc as abc
 import                    os
 import                    re
@@ -101,8 +102,8 @@ import                    fnmatch
 import                    inspect
 import                    logging
 import                    tempfile
+import                    threading
 import                    warnings
-
 
 import nibabel as nib
 import numpy   as np
@@ -147,6 +148,16 @@ def _unwrap(func):
         return _unwrap(func.__wrapped__)
 
     return func
+
+
+def _thread_id():
+    """Returns a unique identifier for the current process and thread.  Used by
+    :class:`FileOrThing` instances to differentiate independent threads of
+    execution.
+    """
+    t = threading.current_thread()
+    p = mp.current_process()
+    return f'{p.ident}_{t.ident}'
 
 
 def genxwrapper(func, runner, funccmd=False):
@@ -893,8 +904,14 @@ class FileOrThing:
         # sneakily, by setting an attribute on
         # the wrapped function which stores the
         # current working directory.
+        #
+        # We use a unique identifier for this
+        # thread of execution, in case multiple
+        # wrapped functions are being invoked
+        # simultaneously.
         wrapped     = _unwrap(func)
-        fot_workdir = getattr(wrapped, '_fot_workdir', None)
+        ident       = _thread_id()
+        fot_workdir = getattr(wrapped, f'_fot_workdir_{ident}', None)
         parent      = fot_workdir is None
 
         # Create a tempdir to store any temporary
@@ -912,8 +929,8 @@ class FileOrThing:
 
             # The prefix/patterns may be
             # overridden by a parent FoT
-            outprefix = getattr(wrapped, '_fot_outprefix', outprefix)
-            prefixes  = getattr(wrapped, '_fot_prefixes',  prefixes)
+            outprefix = getattr(wrapped, f'_fot_outprefix_{ident}', outprefix)
+            prefixes  = getattr(wrapped, f'_fot_prefixes_{ident}',  prefixes)
 
             # if there are any other FileOrThings
             # in the decorator chain, get them to
@@ -921,9 +938,9 @@ class FileOrThing:
             # prefixes, instead of creating their
             # own.
             if parent:
-                setattr(wrapped, '_fot_workdir',   td)
-                setattr(wrapped, '_fot_outprefix', outprefix)
-                setattr(wrapped, '_fot_prefixes',  prefixes)
+                setattr(wrapped, f'_fot_workdir_{ident}',   td)
+                setattr(wrapped, f'_fot_outprefix_{ident}', outprefix)
+                setattr(wrapped, f'_fot_prefixes_{ident}',  prefixes)
 
             # Call the function
             try:
@@ -934,9 +951,9 @@ class FileOrThing:
                 # decorator, remove the attributes we
                 # added above.
                 if parent:
-                    delattr(wrapped, '_fot_workdir')
-                    delattr(wrapped, '_fot_outprefix')
-                    delattr(wrapped, '_fot_prefixes')
+                    delattr(wrapped, f'_fot_workdir_{ident}')
+                    delattr(wrapped, f'_fot_outprefix_{ident}')
+                    delattr(wrapped, f'_fot_prefixes_{ident}')
 
             return self.__generateResult(
                 td, result, outprefix, outfiles, prefixes)
