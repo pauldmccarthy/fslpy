@@ -20,6 +20,7 @@ import pytest
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
+import fsl.wrappers                       as wrappers
 
 from . import make_random_image, mockFSLDIR, CaptureStdout, touch
 
@@ -533,6 +534,11 @@ def test_func_to_cmd():
                     assert not op.exists(fn), "Failing job should always be removed if requested"
                 else:
                     assert op.exists(fn), f"Failing job got removed even with clean = {clean}"
+
+def test_wrapper_to_cmd():
+    fn = run.func_to_cmd(wrappers.bet)
+    assert op.exists(fn)
+    assert op.basename(fn) == "bet.py"
 
 
 def test_job_output():
