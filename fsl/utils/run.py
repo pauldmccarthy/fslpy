@@ -53,7 +53,7 @@ DRY_RUN = False
 execute them.
 """
 
-DRY_RUN_COMMANDS = []
+DRY_RUN_COMMANDS = None
 """Contains the commands that got logged during a dry run.
 
 Commands will be logged if :data:`DRY_RUN` is true, which can be set using :func:`dryrun`.
@@ -112,7 +112,6 @@ def prepareArgs(args):
     return list(args)
 
 
-real_stdout = sys.stdout
 def _forwardStream(in_, *outs):
     """Creates and starts a daemon thread which forwards the given input stream
     to one or more output streams. Used by the :func:`run` function to redirect
@@ -275,7 +274,8 @@ def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
 
     # Save command/submit parameters -
     # see the dryrun ctx manager
-    DRY_RUN_COMMANDS.append((args, submit))
+    if DRY_RUN_COMMANDS is not None:
+        DRY_RUN_COMMANDS.append((args, submit))
 
     if submit:
         return ('0',)
