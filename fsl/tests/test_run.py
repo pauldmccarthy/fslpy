@@ -480,7 +480,7 @@ def test_hold():
             threading.Thread(target=create_holdfile).start()
             run.hold([1, 2, 3], holdfile, timeout=1)
 
-        cmds = list(run.dryrun.commands)
+        cmds = list(run.DRY_RUN_COMMANDS)
 
     # dryrun gathers all executed commands
     # in a list of (cmd, submit) tuples,
@@ -538,7 +538,7 @@ def test_func_to_cmd():
 def test_wrapper_to_cmd():
     fn = run.func_to_cmd(wrappers.bet)
     assert op.exists(fn)
-    assert op.basename(fn) == "bet.py"
+    assert op.basename(fn).startswith("bet_")
 
 
 def test_job_output():
