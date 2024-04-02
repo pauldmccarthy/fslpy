@@ -53,6 +53,12 @@ DRY_RUN = False
 execute them.
 """
 
+DRY_RUN_COMMANDS = []
+"""Contains the commands that got logged during a dry run.
+
+Commands will be logged if :data:`DRY_RUN` is true, which can be set using :func:`dryrun`.
+"""
+
 
 FSL_PREFIX = None
 """Global override for the FSL executable location used by :func:`runfsl`. """
@@ -73,14 +79,14 @@ def dryrun(*_):
 
     After this function returns, each command that was executed while the
     dryrun is active, along with any submission parameters, will be accessible
-    within a list which is stored as an attribute of this function called
-    ``commands``.
+    within a list which is stored as :data:`DRY_RUN_COMMANDS`.
     """
-    global DRY_RUN  # pylint: disable=global-statement
+    global DRY_RUN, DRY_RUN_COMMANDS  # pylint: disable=global-statement
 
     oldval          = DRY_RUN
     DRY_RUN         = True
-    dryrun.commands = []
+    DRY_RUN_COMMANDS = []
+
 
     try:
         yield
@@ -269,7 +275,7 @@ def _dryrun(submit, returnStdout, returnStderr, returnExitcode, *args):
 
     # Save command/submit parameters -
     # see the dryrun ctx manager
-    getattr(dryrun, 'commands', []).append((args, submit))
+    DRY_RUN_COMMANDS.append((args, submit))
 
     if submit:
         return ('0',)
