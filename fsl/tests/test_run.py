@@ -537,6 +537,6 @@ def test_func_to_cmd():
 
 def test_job_output():
     with tempdir.tempdir() as td:
-        with open('12345.e', 'wt') as f: f.write('error')
-        with open('12345.o', 'wt') as f: f.write('output')
-        assert run,job_output(12345, td) == ('output', 'error')
+        with open('test.e12345', 'wt') as f: f.write('error')
+        with open('test.o12345', 'wt') as f: f.write('output')
+        assert run.job_output(12345, td) == ('output', 'error')
