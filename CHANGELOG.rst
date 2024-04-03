@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.18.2 (Wednesday 3rd April 2024)
+---------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Made some changes to the :mod:`fsl.utils.run` module to improve
+  compatibility with [`dill`](https://github.com/uqfoundation/dill/) (!449).
+
+
+
 3.18.1 (Tuesday 5th March 2024)
 -------------------------------
 

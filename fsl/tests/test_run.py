@@ -20,6 +20,7 @@ import pytest
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
+import fsl.wrappers                       as wrappers
 
 from . import make_random_image, mockFSLDIR, CaptureStdout, touch
 
@@ -479,7 +480,7 @@ def test_hold():
             threading.Thread(target=create_holdfile).start()
             run.hold([1, 2, 3], holdfile, timeout=1)
 
-        cmds = list(run.dryrun.commands)
+        cmds = list(run.DRY_RUN_COMMANDS)
 
     # dryrun gathers all executed commands
     # in a list of (cmd, submit) tuples,
@@ -534,9 +535,14 @@ def test_func_to_cmd():
                 else:
                     assert op.exists(fn), f"Failing job got removed even with clean = {clean}"
 
+def test_wrapper_to_cmd():
+    fn = run.func_to_cmd(wrappers.bet)
+    assert op.exists(fn)
+    assert op.basename(fn).startswith("bet_")
+
 
 def test_job_output():
     with tempdir.tempdir() as td:
-        with open('12345.e', 'wt') as f: f.write('error')
-        with open('12345.o', 'wt') as f: f.write('output')
-        assert run,job_output(12345, td) == ('output', 'error')
+        with open('test.e12345', 'wt') as f: f.write('error')
+        with open('test.o12345', 'wt') as f: f.write('output')
+        assert run.job_output(12345, td) == ('output', 'error')
