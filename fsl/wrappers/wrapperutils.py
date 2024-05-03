@@ -1268,7 +1268,8 @@ def fileOrImage(*args, **kwargs):
         return infile
 
     def prepOut(workdir, name, val):
-        return op.join(workdir, '{}.nii.gz'.format(name))
+        return op.join(workdir, f'{name}{fslimage.defaultExt()}')
+
 
     def load(name, path):
 
