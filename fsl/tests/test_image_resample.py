@@ -12,7 +12,7 @@ import fsl.data.image           as     fslimage
 import fsl.transform.affine     as     affine
 import fsl.utils.image.resample as     resample
 
-from . import make_random_image
+from fsl.tests import make_random_image
 
 def random_affine():
     return affine.compose(

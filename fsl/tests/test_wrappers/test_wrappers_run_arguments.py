@@ -16,7 +16,7 @@ import fsl.utils.tempdir         as tempdir
 import fsl.wrappers              as wrappers
 import fsl.wrappers.wrapperutils as wutils
 
-from .. import CaptureStdout
+from fsl.tests import CaptureStdout
 
 
 mock_command = """

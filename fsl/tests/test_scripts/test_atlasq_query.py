@@ -21,9 +21,9 @@ import fsl.utils.image.resample as resample
 import fsl.data.image           as fslimage
 import fsl.scripts.atlasq       as fslatlasq
 
-from .. import (tempdir,
-                make_random_mask,
-                CaptureStdout)
+from fsl.tests import (tempdir,
+                       make_random_mask,
+                       CaptureStdout)
 
 
 pytestmark = pytest.mark.fsltest

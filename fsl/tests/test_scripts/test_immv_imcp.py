@@ -23,8 +23,8 @@ import fsl.scripts.imcp      as imcp_script
 import fsl.scripts.immv      as immv_script
 import fsl.data.image        as fslimage
 
-from .. import cleardir
-from ..test_immv_imcp import makeImage, checkImageHash, checkFilesToExpect
+from fsl.tests import cleardir
+from fsl.tests.test_immv_imcp import makeImage, checkImageHash, checkFilesToExpect
 
 
 def test_imcp_script_shouldPass(move=False):

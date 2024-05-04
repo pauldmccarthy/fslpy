@@ -20,7 +20,7 @@ import fsl.transform.affine    as affine
 import fsl.transform.nonlinear as nonlinear
 import fsl.transform.fnirt     as fnirt
 
-from .test_nonlinear import _random_affine_field
+from fsl.tests.test_nonlinear import _random_affine_field
 
 
 datadir = op.join(op.dirname(__file__), 'testdata', 'nonlinear')

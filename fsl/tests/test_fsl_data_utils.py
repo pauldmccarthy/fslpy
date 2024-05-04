@@ -26,10 +26,10 @@ import fsl.data.dtifit          as dtifit
 import fsl.data.melodicanalysis as melanalysis
 import fsl.data.featanalysis    as featanalysis
 
-from . import (touch,
-               make_mock_feat_analysis,
-               make_mock_melodic_analysis,
-               make_mock_dtifit_analysis)
+from fsl.tests import (touch,
+                       make_mock_feat_analysis,
+                       make_mock_melodic_analysis,
+                       make_mock_dtifit_analysis)
 
 
 def test_guessType():

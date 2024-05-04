@@ -22,7 +22,7 @@ import fsl.data.dicom    as fsldcm
 import fsl.utils.tempdir as tempdir
 
 
-from . import mockFSLDIR, touch
+from fsl.tests import mockFSLDIR, touch
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
