@@ -15,9 +15,9 @@ import fsl.transform.flirt  as flirt
 import fsl.transform.affine as affine
 import fsl.utils.tempdir    as tempdir
 
-from .test_affine import readlines
+from fsl.tests.test_affine import readlines
 
-from .. import make_random_image
+from fsl.tests import make_random_image
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')

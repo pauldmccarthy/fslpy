@@ -20,9 +20,9 @@ import nibabel as nib
 import fsl.utils.imcp        as imcp
 import fsl.data.image        as fslimage
 
-from . import make_random_image
-from . import make_dummy_file
-from . import looks_like_image
+from fsl.tests import make_random_image
+from fsl.tests import make_dummy_file
+from fsl.tests import looks_like_image
 
 
 real_print = print

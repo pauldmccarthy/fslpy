@@ -18,7 +18,7 @@ import pytest
 import fsl.utils.path as fslpath
 import fsl.data.image as fslimage
 
-from . import testdir
+from fsl.tests import testdir
 
 
 def make_dummy_file(path):

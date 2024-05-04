@@ -12,7 +12,7 @@ import fsl.transform.affine as affine
 from fsl.utils.tempdir import tempdir
 from fsl.data.image    import Image
 
-from .. import make_random_image
+from fsl.tests import make_random_image
 
 
 

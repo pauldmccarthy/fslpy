@@ -8,7 +8,7 @@ import itertools as it
 import fsl.utils.assertions as asrt
 import fsl.utils.run        as run
 
-from .. import mockFSLDIR
+from fsl.tests import mockFSLDIR
 
 
 def checkResult(cmd, base, args, stripdir=None):

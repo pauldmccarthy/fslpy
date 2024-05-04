@@ -10,7 +10,7 @@ import            textwrap
 
 import pytest
 
-from . import testdir
+from fsl.tests import testdir
 
 import fsl.version as fslversion
 

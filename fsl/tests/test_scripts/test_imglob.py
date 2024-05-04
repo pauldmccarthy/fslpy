@@ -7,8 +7,8 @@ import pytest
 
 import fsl.scripts.imglob as imglob
 
-from .. import testdir
-from .. import CaptureStdout
+from fsl.tests import testdir
+from fsl.tests import CaptureStdout
 
 
 def test_imglob_shouldPass1():

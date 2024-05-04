@@ -13,7 +13,7 @@ import contextlib
 import textwrap as tw
 import itertools as it
 
-from .. import testdir
+from fsl.tests import testdir
 
 import fsl.utils.filetree       as filetree
 import fsl.utils.filetree.query as ftquery

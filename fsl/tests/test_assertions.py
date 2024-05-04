@@ -14,8 +14,8 @@ import pytest
 import fsl.utils.assertions as assertions
 import fsl.utils.tempdir    as tempdir
 
-from . import make_random_image
-from . import testdir
+from fsl.tests import make_random_image
+from fsl.tests import testdir
 
 
 def test_assertFileExists():
