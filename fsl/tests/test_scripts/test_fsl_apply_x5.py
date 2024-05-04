@@ -13,7 +13,7 @@ import fsl.transform.x5         as x5
 import fsl.transform.affine     as affine
 import fsl.utils.tempdir        as tempdir
 
-from ..test_transform.test_nonlinear import _affine_field
+from fsl.tests.test_transform.test_nonlinear import _affine_field
 
 
 def _random_affine():

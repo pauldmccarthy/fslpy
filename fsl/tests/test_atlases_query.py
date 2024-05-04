@@ -17,7 +17,7 @@ import fsl.transform.affine     as affine
 import fsl.utils.image.resample as resample
 import fsl.utils.cache          as cache
 
-from . import (testdir, make_random_mask)
+from fsl.tests import (testdir, make_random_mask)
 
 
 pytestmark = pytest.mark.fsltest

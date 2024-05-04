@@ -19,7 +19,7 @@ import fsl.version as fv
 from fsl.utils         import fslsub, run
 from fsl.utils.tempdir import tempdir
 
-from . import mockFSLDIR
+from fsl.tests import mockFSLDIR
 
 
 mock_fsl_sub = """

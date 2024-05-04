@@ -15,7 +15,7 @@ import fsl.utils.run as run
 import fsl.utils.tempdir as tempdir
 import fsl.wrappers  as fw
 
-from .. import mockFSLDIR as mockFSLDIR_base, make_random_image
+from fsl.tests import mockFSLDIR as mockFSLDIR_base, make_random_image
 
 
 mock_fslstats = """

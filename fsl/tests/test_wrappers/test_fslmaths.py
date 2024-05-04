@@ -14,8 +14,8 @@ from fsl.utils.tempdir import tempdir
 
 import fsl.wrappers as fw
 
-from .. import mockFSLDIR, make_random_image
-from .  import testenv
+from fsl.tests import mockFSLDIR, make_random_image
+from fsl.tests.test_wrappers import testenv
 
 
 def test_fslmaths():

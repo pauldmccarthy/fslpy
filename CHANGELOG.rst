@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.18.3 (Saturday 4th May 2024)
+------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Fixed an issue with :mod:``fsl.wrappers`` functions not finding output files
+  when ``$FSLOUTPUTTYPE`` is set to something other than ``NIFTI_GZ`` (!452).
+
 
 3.18.2 (Wednesday 3rd April 2024)
 ---------------------------------

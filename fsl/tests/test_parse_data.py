@@ -13,7 +13,7 @@ from fsl.data.gifti import GiftiMesh
 from fsl.data.image import Image
 from fsl.data.atlases import Atlas
 from pytest import raises
-from .test_image import make_image
+from fsl.tests.test_image import make_image
 import os
 import pytest
 

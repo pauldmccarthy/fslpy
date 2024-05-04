@@ -20,7 +20,7 @@ import fsl.transform.fnirt     as fnirt
 import fsl.transform.nonlinear as nonlinear
 import fsl.transform.x5        as x5
 
-from .. import make_random_image
+from fsl.tests import make_random_image
 
 
 def _check_metadata(group):

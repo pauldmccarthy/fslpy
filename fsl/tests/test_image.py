@@ -29,8 +29,8 @@ import fsl.transform.affine as affine
 
 from fsl.utils.tempdir import tempdir
 
-from . import make_random_image
-from . import make_dummy_file
+from fsl.tests import make_random_image
+from fsl.tests import make_dummy_file
 
 from unittest import mock
 
