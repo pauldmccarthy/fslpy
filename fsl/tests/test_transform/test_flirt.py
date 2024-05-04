@@ -15,7 +15,7 @@ import fsl.transform.flirt  as flirt
 import fsl.transform.affine as affine
 import fsl.utils.tempdir    as tempdir
 
-from fsl.tests.test_affine import readlines
+from fsl.tests.test_transform.test_affine import readlines
 
 from fsl.tests import make_random_image
 
