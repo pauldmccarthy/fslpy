@@ -27,8 +27,8 @@ import fsl.data.image            as fslimage
 import fsl.wrappers.wrapperutils as wutils
 
 
-from .. import mockFSLDIR, cleardir, checkdir, testdir, touch
-from ..test_run import mock_fsl_sub
+from fsl.tests import mockFSLDIR, cleardir, checkdir, testdir, touch
+from fsl.tests.test_run import mock_fsl_sub
 
 
 def test_applyArgStyle_default():
@@ -405,6 +405,54 @@ def test_fileOrImage():
         result = func(img1, img2=img2, output=wutils.LOAD)['output']
         assert isinstance(result, nib.nifti1.Nifti1Image)
         assert np.all(np.asanyarray(result.dataobj)[:] == expected)
+
+
+
+# fsl/fslpy!452
+def test_fileOrImage_FSLOUTPUTTYPE():
+
+    @wutils.fileOrImage('img', 'output')
+    def func(img, output):
+        img = np.asanyarray(nib.load(img).dataobj)
+
+        # Save without specifying file suffix,
+        # so the Image object uses $FSLOUTPUTTYPE
+        fslimage.Image(img * 5, xform=np.eye(4)).save(fslimage.removeExt(output))
+
+    fsloutputtypes = [fslimage.FileType.NIFTI,
+                      fslimage.FileType.NIFTI2,
+                      fslimage.FileType.NIFTI_GZ,
+                      fslimage.FileType.NIFTI2_GZ]
+
+    for fsloutputtype in fsloutputtypes:
+        with tempdir.tempdir(), \
+             mock.patch.dict(os.environ, FSLOUTPUTTYPE=fsloutputtype.name):
+
+            img = fslimage.Image(
+                np.array([[[1,  2], [ 3,  4]]], dtype=np.int32), xform=np.eye(4))
+            expected = np.array([[[5, 10], [15, 20]]], dtype=np.int32)
+
+            imgfname = op.join(os.getcwd(), f'image{fslimage.defaultExt()}')
+
+            img.save(imgfname)
+
+            result1 = func(imgfname, wutils.LOAD)
+            result2 = func(img,      wutils.LOAD)
+
+            r1data = np.asanyarray(result1['output'].dataobj)
+            r2data = result2['output'].data
+
+            # first call will return a nibabel image,
+            # second a fsl Image
+            assert np.all(r1data == expected)
+            assert np.all(r2data == expected)
+
+            for inarg in (img, imgfname):
+                with tempdir.tempdir():
+                    func(inarg, 'output')
+                    assert op.exists(f'output{fslimage.defaultExt()}')
+                    out = fslimage.Image('output')
+                    assert np.all(out.data == expected.data)
 
 
 def test_fileOrThing_sequence():

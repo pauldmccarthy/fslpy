@@ -13,7 +13,7 @@ import              pytest
 import fsl.data.atlases   as fslatlases
 import fsl.scripts.atlasq as fslatlasq
 
-from .. import CaptureStdout
+from fsl.tests import CaptureStdout
 
 
 pytestmark = pytest.mark.fsltest

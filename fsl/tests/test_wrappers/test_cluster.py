@@ -21,8 +21,8 @@ from fsl.wrappers.cluster_commands import (cluster,
                                            smoothest,
                                            _smoothest)
 
-from .  import testenv
-from .. import mockFSLDIR
+from fsl.tests.test_wrappers import testenv
+from fsl.tests import mockFSLDIR
 
 
 @contextlib.contextmanager

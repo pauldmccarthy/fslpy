@@ -18,9 +18,9 @@ import numpy as np
 import fsl.scripts.atlasq as fslatlasq
 import fsl.data.atlases   as fslatlases
 
-from .. import (tempdir,
-                make_random_mask,
-                CaptureStdout)
+from fsl.tests import (tempdir,
+                       make_random_mask,
+                       CaptureStdout)
 
 
 pytestmark = pytest.mark.fsltest

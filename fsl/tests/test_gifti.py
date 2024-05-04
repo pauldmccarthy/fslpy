@@ -16,7 +16,8 @@ import pytest
 
 import fsl.data.gifti as gifti
 
-from . import tempdir
+from fsl.tests import tempdir
+from fsl.tests import test_mesh
 
 
 def test_GiftiMesh_create():
@@ -364,7 +365,6 @@ def test_GiftiMesh_multiple_vertices():
 
 
 def test_GiftiMesh_needsFixing():
-    from . import test_mesh
 
     verts      = test_mesh.CUBE_VERTICES
     idxs       = test_mesh.CUBE_TRIANGLES_CW

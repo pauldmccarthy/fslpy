@@ -13,7 +13,7 @@ import nibabel as nib
 import fsl.utils.tempdir as tempdir
 import fsl.utils.ensure  as ensure
 
-from . import make_random_image
+from fsl.tests import make_random_image
 
 
 def test_ensureIsImage():

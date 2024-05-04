@@ -19,9 +19,9 @@ import pytest
 import fsl.version         as fslver
 import fsl.data.freesurfer as fslfs
 
-from .test_mesh import (CUBE_VERTICES, CUBE_TRIANGLES_CCW)
+from fsl.tests.test_mesh import (CUBE_VERTICES, CUBE_TRIANGLES_CCW)
 
-from . import tempdir, touch
+from fsl.tests import tempdir, touch
 
 
 def gen_freesurfer_geometry(fname, verts, tris):

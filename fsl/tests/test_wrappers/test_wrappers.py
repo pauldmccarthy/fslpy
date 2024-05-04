@@ -11,7 +11,7 @@ import            shlex
 
 import fsl.wrappers as fw
 
-from . import checkResult, testenv
+from fsl.tests.test_wrappers import checkResult, testenv
 
 
 def test_bet():

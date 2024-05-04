@@ -14,7 +14,7 @@ import                 pytest
 import fsl.transform.affine as affine
 import fsl.data.mesh        as fslmesh
 
-from . import tempdir
+from fsl.tests import tempdir
 
 
 # vertices of a cube

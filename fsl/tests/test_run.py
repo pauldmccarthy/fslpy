@@ -22,7 +22,7 @@ from   fsl.utils.platform import platform as fslplatform
 import fsl.utils.run                      as run
 import fsl.wrappers                       as wrappers
 
-from . import make_random_image, mockFSLDIR, CaptureStdout, touch
+from fsl.tests import make_random_image, mockFSLDIR, CaptureStdout, touch
 
 
 pytestmark = pytest.mark.unixtest
