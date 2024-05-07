@@ -14,6 +14,7 @@ commands.
    xfibres
    xfibres_gpu
    split_parts_gpu
+   bedpostx_postproc
    bedpostx_postproc_gpu
    probtrackx
    probtrackx2
@@ -150,6 +151,27 @@ def bedpostx_postproc_gpu(data, mask, bvecs, bvals, TotalNumVoxels,
     asrt.assertIsNifti(mask)
 
     cmd = ['bedpostx_postproc_gpu.sh',
+           '--data='  + data,
+           '--mask='  + mask,
+           '--bvecs=' + bvecs,
+           '--bvals=' + bvals]
+
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
+    return cmd
+
+
+@wutils.fileOrImage('data', 'mask',)
+@wutils.fileOrArray('bvecs', 'bvals')
+@wutils.fslwrapper
+def bedpostx_postproc(data, mask, bvecs, bvals, TotalNumVoxels,
+                      TotalNumParts, SubjectDir, bindir, **kwargs):
+    """Wrapper for the ``bedpostx_postproc`` command."""
+
+    asrt.assertFileExists(data, bvecs, bvals)
+    asrt.assertIsNifti(mask)
+
+    cmd = ['bedpostx_postproc.sh',
            '--data='  + data,
            '--mask='  + mask,
            '--bvecs=' + bvecs,
