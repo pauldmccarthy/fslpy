@@ -160,6 +160,27 @@ def bedpostx_postproc_gpu(data, mask, bvecs, bvals, TotalNumVoxels,
     return cmd
 
 
+@wutils.fileOrImage('data', 'mask',)
+@wutils.fileOrArray('bvecs', 'bvals')
+@wutils.fslwrapper
+def bedpostx_postproc(data, mask, bvecs, bvals, TotalNumVoxels,
+                      TotalNumParts, SubjectDir, bindir, **kwargs):
+    """Wrapper for the ``bedpostx_postproc`` command."""
+
+    asrt.assertFileExists(data, bvecs, bvals)
+    asrt.assertIsNifti(mask)
+
+    cmd = ['bedpostx_postproc.sh',
+           '--data='  + data,
+           '--mask='  + mask,
+           '--bvecs=' + bvecs,
+           '--bvals=' + bvals]
+
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
+    return cmd
+
+
 @wutils.fileOrImage('mask', 'seed')
 @wutils.fslwrapper
 def probtrackx(samples, mask, seed, **kwargs):

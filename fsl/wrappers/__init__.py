@@ -166,6 +166,7 @@ from fsl.wrappers.bedpostx           import (xfibres,
                                              xfibres_gpu,
                                              split_parts_gpu,
                                              bedpostx_postproc_gpu,
+                                             bedpostx_postproc,
                                              probtrackx,
                                              probtrackx2,
                                              probtrackx2_gpu)
