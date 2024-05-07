@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.19.0 (Under development)
+--------------------------
+
+
+Added
+^^^^^
+
+
+* New :func:`.bedpostx_postproc` wrapper function (!454).
+
+
 3.18.3 (Saturday 4th May 2024)
 ------------------------------
 
