@@ -14,6 +14,7 @@ commands.
    xfibres
    xfibres_gpu
    split_parts_gpu
+   bedpostx_postproc
    bedpostx_postproc_gpu
    probtrackx
    probtrackx2
