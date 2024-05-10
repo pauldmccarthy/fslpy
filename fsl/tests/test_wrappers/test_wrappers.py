@@ -578,13 +578,18 @@ def test_split_parts_gpu():
         assert res.stdout[0] == exp
 
 
-def test_bedpostx_postproc():
-    with testenv('bedpostx_postproc.sh') as bpg:
-        res = fw.bedpostx_postproc('data', 'mask', 'bvecs', 'bvals',
-                                   100, 10, 'subdir', 'bindir', nf=20)
-        exp = f'{bpg} --data=data --mask=mask --bvecs=bvecs --bvals=bvals ' \
-               '--nf=20 100 10 subdir bindir'
-        assert res.stdout[0] == exp
+def test_bedpostx():
+    with testenv('bedpostx') as bpx:
+        res = fw.bedpostx('data', noard=True, nf=2)
+        exp = f'{bpx} data --noard --nf=2'
+        assert res[0] == exp
+
+
+def test_bedpostx_gpu():
+    with testenv('bedpostx_gpu') as bpx:
+        res = fw.bedpostx_gpu('data', noard=True, nf=2)
+        exp = f'{bpx} data --noard --nf=2'
+        assert res[0] == exp
 
 
 def test_bedpostx_postproc_gpu():
