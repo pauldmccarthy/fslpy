@@ -78,6 +78,36 @@ by the corresponding wrapper functions.
 """
 
 
+@wutils.fileOrImage('data_dir')
+@wutils.fslwrapper
+def bedpostx(data_dir, **kwargs):
+    """Wrapper for the ``bedpostx`` command."""
+
+    asrt.assertFileExists(data_dir)
+
+    cmd = ['bedpostx',
+           data_dir]
+
+    # Uses same VALMAP as xfibres
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    return cmd
+
+
+@wutils.fileOrImage('data_dir')
+@wutils.fslwrapper
+def bedpostx_gpu(data_dir, **kwargs):
+    """Wrapper for the ``bedpostx_gpu`` command."""
+
+    asrt.assertFileExists(data_dir)
+
+    cmd = ['bedpostx_gpu',
+           data_dir]
+
+    # Uses same VALMAP as xfibres
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    return cmd
+
+
 @wutils.fileOrImage('data', 'mask',)
 @wutils.fileOrArray('bvecs', 'bvals')
 @wutils.fslwrapper
@@ -172,10 +202,10 @@ def bedpostx_postproc(data, mask, bvecs, bvals, TotalNumVoxels,
     asrt.assertIsNifti(mask)
 
     cmd = ['bedpostx_postproc.sh',
-           '--data='  + data,
-           '--mask='  + mask,
-           '--bvecs=' + bvecs,
-           '--bvals=' + bvals]
+           data,
+           mask,
+           bvecs,
+           bvals]
 
     cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
     cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
