@@ -156,12 +156,6 @@ variables:
     - bash ./.ci/test_template.sh
 
 
-test:3.8:
-  stage: test
-  image: pauldmccarthy/fsleyes-py38-wxpy4-gtk3
-  <<: *test_template
-
-
 test:3.9:
   stage: test
   image: pauldmccarthy/fsleyes-py39-wxpy4-gtk3
@@ -177,6 +171,12 @@ test:3.10:
 test:3.11:
   stage: test
   image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+  <<: *test_template
+
+
+test:3.12:
+  stage: test
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
   <<: *test_template
 
 
