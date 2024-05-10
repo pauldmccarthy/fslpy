@@ -14,14 +14,14 @@ commands.
    xfibres
    xfibres_gpu
    split_parts_gpu
-   bedpostx_postproc
-   bedpostx_postproc_gpu
+   bedpostx
+   bedpostx_gpu
    probtrackx
    probtrackx2
    probtrackx2_gpu
 """
 
-
+import fsl.utils.deprecated as deprecated
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
 
@@ -76,6 +76,50 @@ PROBTRACKX2_VALMAP = {
 """Boolean options for the ``probtrackx2``/``probtrackx2_gpu`` commands, used
 by the corresponding wrapper functions.
 """
+
+
+@wutils.fslwrapper
+def bedpostx(data_dir, **kwargs):
+    """Wrapper for the ``bedpostx`` command."""
+
+    cmd = ['bedpostx', data_dir]
+
+    # Uses same VALMAP as xfibres
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    return cmd
+
+
+@wutils.fslwrapper
+def bedpostx_gpu(data_dir, **kwargs):
+    """Wrapper for the ``bedpostx_gpu`` command."""
+
+    cmd = ['bedpostx_gpu', data_dir]
+
+    # Uses same VALMAP as xfibres
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    return cmd
+
+
+@wutils.fileOrImage('data', 'mask',)
+@wutils.fileOrArray('bvecs', 'bvals')
+@wutils.fslwrapper
+@deprecated.deprecated('3.19.0', '4.0.0', 'Use bedpostx_gpu directly')
+def bedpostx_postproc_gpu(data, mask, bvecs, bvals, TotalNumVoxels,
+                          TotalNumParts, SubjectDir, bindir, **kwargs):
+    """Wrapper for the ``bedpostx_postproc_gpu`` command."""
+
+    asrt.assertFileExists(data, bvecs, bvals)
+    asrt.assertIsNifti(mask)
+
+    cmd = ['bedpostx_postproc_gpu.sh',
+           '--data='  + data,
+           '--mask='  + mask,
+           '--bvecs=' + bvecs,
+           '--bvals=' + bvals]
+
+    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
+    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
+    return cmd
 
 
 @wutils.fileOrImage('data', 'mask',)
@@ -137,48 +181,6 @@ def split_parts_gpu(Datafile, Maskfile, Bvalsfile, Bvecsfile, TotalNumParts,
 
     cmd  = ['split_parts_gpu', Datafile, Maskfile, Bvalsfile, Bvecsfile,
              str(Gradfile), Use_grad_file, str(TotalNumParts), OutputDirectory]
-    return cmd
-
-
-@wutils.fileOrImage('data', 'mask',)
-@wutils.fileOrArray('bvecs', 'bvals')
-@wutils.fslwrapper
-def bedpostx_postproc_gpu(data, mask, bvecs, bvals, TotalNumVoxels,
-                          TotalNumParts, SubjectDir, bindir, **kwargs):
-    """Wrapper for the ``bedpostx_postproc_gpu`` command."""
-
-    asrt.assertFileExists(data, bvecs, bvals)
-    asrt.assertIsNifti(mask)
-
-    cmd = ['bedpostx_postproc_gpu.sh',
-           '--data='  + data,
-           '--mask='  + mask,
-           '--bvecs=' + bvecs,
-           '--bvals=' + bvals]
-
-    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
-    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
-    return cmd
-
-
-@wutils.fileOrImage('data', 'mask',)
-@wutils.fileOrArray('bvecs', 'bvals')
-@wutils.fslwrapper
-def bedpostx_postproc(data, mask, bvecs, bvals, TotalNumVoxels,
-                      TotalNumParts, SubjectDir, bindir, **kwargs):
-    """Wrapper for the ``bedpostx_postproc`` command."""
-
-    asrt.assertFileExists(data, bvecs, bvals)
-    asrt.assertIsNifti(mask)
-
-    cmd = ['bedpostx_postproc.sh',
-           '--data='  + data,
-           '--mask='  + mask,
-           '--bvecs=' + bvecs,
-           '--bvals=' + bvals]
-
-    cmd += wutils.applyArgStyle('--=', valmap=XFIBRES_VALMAP, **kwargs)
-    cmd += [str(TotalNumVoxels), str(TotalNumParts), SubjectDir, bindir]
     return cmd
 
 

@@ -10,7 +10,16 @@ Added
 ^^^^^
 
 
-* New :func:`.bedpostx_postproc` wrapper function (!454).
+* New :func:`.bedpostx` and :func:`.bedpostx_gpu` wrapper functions (!455).
+
+
+Deprecated
+^^^^^^^^^^
+
+
+* Deprecated the :func:`.bedpostx_postproc_gpu` wrapper function - the
+  ``bedpostx_postproc_gpu.sh`` and ``bedpostx_postproc.sh`` scripts are not
+  intended to be called directly (!455).
 
 
 3.18.3 (Saturday 4th May 2024)
