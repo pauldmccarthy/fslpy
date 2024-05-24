@@ -28,13 +28,17 @@ def test_atts():
     p.haveGui
     p.canHaveGui
     p.inSSHSession
+    p.inVNCession
     p.wxPlatform
     p.wxFlavour
     p.fsldir
+    p.fsldevdir
     p.fslVersion
     p.glVersion
     p.glRenderer
     p.glIsSoftwareRenderer
+    p.wsl
+    p.fslwsl
 
 
 @pytest.mark.wxtest
