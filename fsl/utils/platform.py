@@ -322,6 +322,15 @@ class Platform(notifier.Notifier):
 
 
     @property
+    def wsl(self):
+        """Boolean flag indicating whether we are running under Windows
+        Subsystem for Linux.
+        """
+        plat = builtin_platform.platform().lower()
+        return 'microsoft' in plat
+
+
+    @property
     def fslwsl(self):
         """Boolean flag indicating whether FSL is installed in Windows
         Subsystem for Linux
