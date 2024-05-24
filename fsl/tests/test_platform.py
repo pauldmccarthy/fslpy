@@ -28,7 +28,7 @@ def test_atts():
     p.haveGui
     p.canHaveGui
     p.inSSHSession
-    p.inVNCession
+    p.inVNCSession
     p.wxPlatform
     p.wxFlavour
     p.fsldir
