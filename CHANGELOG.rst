@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.19.0 (Under development)
---------------------------
+3.19.0 (Friday 24th May 2024)
+-----------------------------
 
 
 Added
@@ -11,6 +11,8 @@ Added
 
 
 * New :func:`.bedpostx` and :func:`.bedpostx_gpu` wrapper functions (!455).
+* New :meth:`.Platform.wsl` property for detecting whether we are running
+  under Microsoft WSL (!456).
 
 
 Deprecated
