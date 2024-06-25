@@ -89,7 +89,7 @@ def test_concat():
 def test_veclength(seed):
 
     def l(v):
-        v = np.array(v, copy=False).reshape((-1, 3))
+        v = np.asarray(v).reshape((-1, 3))
         x = v[:, 0]
         y = v[:, 1]
         z = v[:, 2]
