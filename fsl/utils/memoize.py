@@ -242,8 +242,8 @@ def skipUnchanged(func):
             isarray    = oldIsArray or newIsArray
 
             if isarray:
-                a = np.array(oldVal, copy=False)
-                b = np.array(value,  copy=False)
+                a = np.asarray(oldVal)
+                b = np.asarray(value)
 
                 nochange = (a.shape == b.shape) and np.allclose(a, b)
             else:
