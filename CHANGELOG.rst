@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.19.1 (Wednesday 26th June 2024)
+---------------------------------
+
+
+Fixed
+^^^^^
+
+
+* Minor Updates for compatibility with ``numpy`` 2.0 (!458).
+
+
 3.19.0 (Friday 24th May 2024)
 -----------------------------
 
