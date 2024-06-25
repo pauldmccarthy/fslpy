@@ -88,6 +88,7 @@ class Platform(notifier.Notifier):
        frozen
        fsldir
        fsldevdir
+       fslVersion
        haveGui
        canHaveGui
        inSSHSession
@@ -354,19 +355,13 @@ class Platform(notifier.Notifier):
 
         if value is None:
             os.environ.pop('FSLDIR', None)
+
         else:
             os.environ['FSLDIR'] = value
 
-            # Set the FSL version field if we can
-            versionFile = op.join(value, 'etc', 'fslversion')
-
-            if op.exists(versionFile):
-                with open(versionFile, 'rt') as f:
-                    # split string at colon for new hash style versions
-                    # first object in list is the non-hashed version string
-                    # (e.g. 6.0.2) if no ":hash:" then standard FSL version
-                    # string is still returned
-                    self.__fslVersion = f.read().strip().split(":")[0]
+            # clear fslversion - it will
+            # be re-read on next access
+            self.__fslVersion = None
 
         self.notify(value=value)
 
@@ -396,6 +391,23 @@ class Platform(notifier.Notifier):
         """Returns the FSL version as a string, e.g. ``'5.0.9'``. Returns
         ``None`` if a FSL installation could not be found.
         """
+        if self.__fslVersion is not None:
+            return self.__fslVersion
+
+        if self.fsldir is None:
+            return None
+
+        # Set the FSL version field if we can
+        versionFile = op.join(self.fsldir, 'etc', 'fslversion')
+
+        if op.exists(versionFile):
+            with open(versionFile, 'rt') as f:
+                # split string at colon for new hash style versions
+                # first object in list is the non-hashed version string
+                # (e.g. 6.0.2) if no ":hash:" then standard FSL version
+                # string is still returned
+                self.__fslVersion = f.read().strip().split(":")[0]
+
         return self.__fslVersion
 
 
