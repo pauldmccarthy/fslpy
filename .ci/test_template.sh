@@ -21,6 +21,11 @@ rsync -rv "fsldownload:$FSL_ATLAS_DIR" "$FSLDIR/data/atlases/"
 # reporting until after we're finished.
 TEST_OPTS="--cov-report= --cov-append"
 
+# pytest struggles with my organisation of
+# the fslpy package, where all tests are in
+# fsl.tests, and fsl is a namespace package
+touch fsl/__init__.py
+
 # We run some tests under xvfb-run
 # because they invoke wx. Sleep in
 # between, otherwise xvfb gets upset.
