@@ -190,7 +190,7 @@ def resample(image,
     if origin not in ('centre', 'corner'):
         raise ValueError('Invalid value for origin: {}'.format(origin))
 
-    data = np.array(image[sliceobj], dtype=dtype, copy=False)
+    data = np.asarray(image[sliceobj], dtype=dtype)
 
     if len(data.shape) != len(newShape):
         raise ValueError('Data dimensions do not match new shape: '

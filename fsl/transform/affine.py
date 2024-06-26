@@ -62,7 +62,7 @@ def veclength(vec):
 
     Multiple vectors may be passed in, with a shape of ``(n, 3)``.
     """
-    vec = np.array(vec, copy=False).reshape(-1, 3)
+    vec = np.asarray(vec).reshape(-1, 3)
     return np.sqrt(np.einsum('ij,ij->i', vec, vec))
 
 
@@ -71,7 +71,7 @@ def normalise(vec):
 
     Multiple vectors may be passed in, with a shape of ``(n, 3)``.
     """
-    vec = np.array(vec, copy=False).reshape(-1, 3)
+    vec = np.asarray(vec).reshape(-1, 3)
     n   = (vec.T / veclength(vec)).T
 
     if n.size == 3:

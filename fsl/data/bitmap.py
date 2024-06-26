@@ -179,7 +179,7 @@ class Bitmap(object):
             for ci, ch in enumerate(dtype.names):
                 data[ch] = self.data[..., ci]
 
-        data = np.array(data, order='F', copy=False)
+        data = np.asarray(data, order='F')
 
         return fslimage.Image(data,
                               name=self.name,
