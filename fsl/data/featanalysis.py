@@ -22,10 +22,12 @@ following functions are provided:
    isFirstLevelAnalysis
    loadDesign
    loadContrasts
+   loadFTests
    loadFsf
    loadSettings
    getThresholds
    loadClusterResults
+   loadFEATDesignFile
 
 
 The following functions return the names of various files of interest:
@@ -39,11 +41,13 @@ The following functions return the names of various files of interest:
    getPEFile
    getCOPEFile
    getZStatFile
+   getZFStatFile
    getClusterMaskFile
 """
 
 
 import                   collections
+import                   io
 import                   logging
 import os.path        as op
 import numpy          as np
@@ -166,55 +170,69 @@ def loadContrasts(featdir):
     :arg featdir: A FEAT directory.
     """
 
-    matrix       = None
-    numContrasts = 0
-    names        = {}
-    designcon    = op.join(featdir, 'design.con')
+    filename = op.join(featdir, 'design.con')
 
-    log.debug('Loading FEAT contrasts from {}'.format(designcon))
+    log.debug('Loading FEAT contrasts from %s', filename)
 
-    with open(designcon, 'rt') as f:
+    try:
+        designcon    = loadFEATDesignFile(filename)
+        contrasts    = np.genfromtxt(io.StringIO(designcon['Matrix']), ndmin=2)
+        numContrasts = int(designcon['NumContrasts'])
+        names        = []
 
-        while True:
-            line = f.readline().strip()
+        if numContrasts != contrasts.shape[0]:
+            raise RuntimeError(f'Matrix shape {contrasts.shape} does not '
+                               f'match number of contrasts {numContrasts}')
 
-            if line.startswith('/ContrastName'):
-                tkns       = line.split(None, 1)
-                num        = [c for c in tkns[0] if c.isdigit()]
-                num        = int(''.join(num))
+        contrasts = [list(row) for row in contrasts]
 
-                # The /ContrastName field may not
-                # actually have a name specified
-                if len(tkns) > 1:
-                    name       = tkns[1].strip()
-                    names[num] = name
-
-            elif line.startswith('/NumContrasts'):
-                numContrasts = int(line.split()[1])
-
-            elif line == '/Matrix':
-                break
-
-        matrix = np.loadtxt(f, ndmin=2)
-
-    if matrix       is None             or \
-       numContrasts != matrix.shape[0]:
-        raise RuntimeError('{} does not appear to be a '
-                           'valid design.con file'.format(designcon))
-
-    # Fill in any missing contrast names
-    if len(names) != numContrasts:
         for i in range(numContrasts):
-            if i + 1 not in names:
-                names[i + 1] = str(i + 1)
+            cname = designcon.get(f'ContrastName{i + 1}', '')
+            if cname == '':
+                cname = f'{i + 1}'
+            names.append(cname)
 
-    names     = [names[c + 1] for c in range(numContrasts)]
-    contrasts = []
-
-    for row in matrix:
-        contrasts.append(list(row))
+    except Exception as e:
+        log.debug('Error reading %s: %s', filename, e, exc_info=True)
+        raise RuntimeError(f'{filename} does not appear '
+                           'to be a valid design.con file') from e
 
     return names, contrasts
+
+
+def loadFTests(featdir):
+    """Loads F-tests from a FEAT directory. Returns a list of f-test vectors
+    (each of which is a list itself), where each vector contains a 1 or a 0
+    denoting the contrasts included in the F-test.
+
+    :arg featdir: A FEAT directory.
+    """
+
+    filename = op.join(featdir, 'design.fts')
+
+    if not op.exists(filename):
+        return []
+
+    log.debug('Loading FEAT F-tests from %s', filename)
+
+    try:
+        desfts = loadFEATDesignFile(filename)
+        ftests = np.genfromtxt(io.StringIO(desfts['Matrix']), ndmin=2)
+        ncols  = int(desfts['NumWaves'])
+        nrows  = int(desfts['NumContrasts'])
+
+        if ftests.shape != (nrows, ncols):
+            raise RuntimeError(f'Matrix shape {ftests.shape} does not match '
+                               f'number of EVs/FTests ({ncols}, {nrows})')
+
+        ftests = [list(row) for row in ftests]
+
+    except Exception as e:
+        log.debug('Error reading %s: %s', filename, e, exc_info=True)
+        raise RuntimeError(f'{filename} does not appear '
+                           'to be a valid design.fts file') from e
+
+    return ftests
 
 
 def loadFsf(designfsf):
@@ -228,7 +246,7 @@ def loadFsf(designfsf):
 
     settings  = collections.OrderedDict()
 
-    log.debug('Loading FEAT settings from {}'.format(designfsf))
+    log.debug('Loading FEAT settings from %s', designfsf)
 
     with open(designfsf, 'rt') as f:
 
@@ -357,8 +375,7 @@ def loadClusterResults(featdir, settings, contrast):
     # the ZMax/COG etc coordinates
     # are usually in voxel coordinates
     coordXform  = np.eye(4)
-    clusterFile = op.join(
-        featdir, 'cluster_zstat{}.txt'.format(contrast + 1))
+    clusterFile = op.join(featdir, f'cluster_zstat{contrast + 1}.txt')
 
     if not op.exists(clusterFile):
 
@@ -367,8 +384,7 @@ def loadClusterResults(featdir, settings, contrast):
         # the cluster file will instead be called
         # 'cluster_zstatX_std.txt', so we'd better
         # check for that too.
-        clusterFile = op.join(
-            featdir, 'cluster_zstat{}_std.txt'.format(contrast + 1))
+        clusterFile = op.join(featdir, f'cluster_zstat{contrast + 1}_std.txt')
 
         if not op.exists(clusterFile):
             return None
@@ -379,8 +395,8 @@ def loadClusterResults(featdir, settings, contrast):
         # later on.
         coordXform = fslimage.Image(getDataFile(featdir)).worldToVoxMat
 
-    log.debug('Loading cluster results for contrast {} from {}'.format(
-        contrast, clusterFile))
+    log.debug('Loading cluster results for contrast %s from %s',
+              contrast, clusterFile)
 
     # The cluster.txt file is converted
     # into a list of Cluster objects,
@@ -489,6 +505,35 @@ def loadClusterResults(featdir, settings, contrast):
     return clusters
 
 
+def loadFEATDesignFile(filename):
+    """Load a FEAT design file, e.g. ``design.mat``, ``design.con``, ``design.fts``.
+
+    These files contain key-value pairs, and are formatted according to an
+    undocumented structure where each key is of the form "/KeyName", and is
+    followed immediately by a whitespace character, and then the value.
+
+    :arg filename: File to load
+    :returns:      A dictionary of key-value pairs. The values are all left
+                   as strings.
+    """
+
+    fields = {}
+
+    with open(filename, 'rt') as f:
+        content = f.read()
+
+    content = content.split('/')
+    for line in content:
+        line = line.strip()
+        if line == '':
+            continue
+
+        name, value  = line.split(maxsplit=1)
+        fields[name] = value
+
+    return fields
+
+
 def getDataFile(featdir):
     """Returns the name of the file in the FEAT directory which contains
     the model input data (typically called ``filtered_func_data.nii.gz``).
@@ -532,7 +577,7 @@ def getPEFile(featdir, ev):
     :arg featdir: A FEAT directory.
     :arg ev:      The EV number (0-indexed).
     """
-    pefile = op.join(featdir, 'stats', 'pe{}'.format(ev + 1))
+    pefile = op.join(featdir, 'stats', f'pe{ev + 1}')
     return fslimage.addExt(pefile, mustExist=True)
 
 
@@ -544,7 +589,7 @@ def getCOPEFile(featdir, contrast):
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed).
     """
-    copefile = op.join(featdir, 'stats', 'cope{}'.format(contrast + 1))
+    copefile = op.join(featdir, 'stats', f'cope{contrast + 1}')
     return fslimage.addExt(copefile, mustExist=True)
 
 
@@ -556,8 +601,20 @@ def getZStatFile(featdir, contrast):
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed).
     """
-    zfile = op.join(featdir, 'stats', 'zstat{}'.format(contrast + 1))
+    zfile = op.join(featdir, 'stats', f'zstat{contrast + 1}')
     return fslimage.addExt(zfile, mustExist=True)
+
+
+def getZFStatFile(featdir, ftest):
+    """Returns the path of the Z-statistic file for the specified F-test.
+
+    Raises a :exc:`~fsl.utils.path.PathError` if the file does not exist.
+
+    :arg featdir: A FEAT directory.
+    :arg ftest:   The F-test number (0-indexed).
+    """
+    zffile = op.join(featdir, 'stats', f'zfstat{ftest + 1}')
+    return fslimage.addExt(zffile, mustExist=True)
 
 
 def getClusterMaskFile(featdir, contrast):
@@ -568,5 +625,5 @@ def getClusterMaskFile(featdir, contrast):
     :arg featdir:  A FEAT directory.
     :arg contrast: The contrast number (0-indexed).
     """
-    mfile = op.join(featdir, 'cluster_mask_zstat{}'.format(contrast + 1))
+    mfile = op.join(featdir, f'cluster_mask_zstat{contrast + 1}')
     return fslimage.addExt(mfile, mustExist=True)
