@@ -63,8 +63,8 @@ class FEATImage(fslimage.Image):
             path = op.join(path, 'filtered_func_data')
 
         if not featanalysis.isFEATImage(path):
-            raise ValueError('{} does not appear to be data '
-                             'from a FEAT analysis'.format(path))
+            raise ValueError(f'{path} does not appear to be '
+                             'data from a FEAT analysis')
 
         featDir     = op.dirname(path)
         settings    = featanalysis.loadSettings( featDir)
@@ -92,7 +92,7 @@ class FEATImage(fslimage.Image):
         self.__clustMasks    = [None] * self.numContrasts()
 
         if 'name' not in kwargs:
-            self.name = '{}: {}'.format(self.__analysisName, self.name)
+            self.name = f'{self.__analysisName}: {self.name}'
 
 
     def __del__(self):
@@ -229,12 +229,10 @@ class FEATImage(fslimage.Image):
 
         if self.__pes[ev] is None:
             pefile = featanalysis.getPEFile(self.__featDir, ev)
+            evname = self.evNames()[ev]
             self.__pes[ev] = fslimage.Image(
                 pefile,
-                name='{}: PE{} ({})'.format(
-                    self.__analysisName,
-                    ev + 1,
-                    self.evNames()[ev]))
+                name=f'{self.__analysisName}: PE{ev + 1} ({evname})')
 
         return self.__pes[ev]
 
@@ -246,7 +244,7 @@ class FEATImage(fslimage.Image):
             resfile = featanalysis.getResidualFile(self.__featDir)
             self.__residuals = fslimage.Image(
                 resfile,
-                name='{}: residuals'.format(self.__analysisName))
+                name=f'{self.__analysisName}: residuals')
 
         return self.__residuals
 
@@ -256,12 +254,10 @@ class FEATImage(fslimage.Image):
 
         if self.__copes[con] is None:
             copefile = featanalysis.getCOPEFile(self.__featDir, con)
+            conname  = self.contrastNames()[con]
             self.__copes[con] = fslimage.Image(
                 copefile,
-                name='{}: COPE{} ({})'.format(
-                    self.__analysisName,
-                    con + 1,
-                    self.contrastNames()[con]))
+                name=f'{self.__analysisName}: COPE{con + 1} ({conname})')
         return self.__copes[con]
 
 
@@ -270,15 +266,11 @@ class FEATImage(fslimage.Image):
         """
 
         if self.__zstats[con] is None:
-            zfile = featanalysis.getZStatFile(self.__featDir, con)
-
+            zfile   = featanalysis.getZStatFile(self.__featDir, con)
+            conname = self.contrastNames()[con]
             self.__zstats[con] = fslimage.Image(
                 zfile,
-                name='{}: zstat{} ({})'.format(
-                    self.__analysisName,
-                    con + 1,
-                    self.contrastNames()[con]))
-
+                name=f'{self.__analysisName}: zstat{con + 1} ({conname})')
         return self.__zstats[con]
 
 
@@ -287,14 +279,12 @@ class FEATImage(fslimage.Image):
         """
 
         if self.__clustMasks[con] is None:
-            mfile = featanalysis.getClusterMaskFile(self.__featDir, con)
-
+            mfile   = featanalysis.getClusterMaskFile(self.__featDir, con)
+            conname = self.contrastNames()[con]
             self.__clustMasks[con] = fslimage.Image(
                 mfile,
-                name='{}: cluster mask for zstat{} ({})'.format(
-                    self.__analysisName,
-                    con + 1,
-                    self.contrastNames()[con]))
+                name=f'{self.__analysisName}: cluster mask '
+                     f'for zstat{con + 1} ({conname})')
 
         return self.__clustMasks[con]
 
