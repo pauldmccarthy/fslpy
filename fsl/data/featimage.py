@@ -72,9 +72,11 @@ class FEATImage(fslimage.Image):
         if featanalysis.hasStats(featDir):
             design      = featanalysis.loadDesign(   featDir, settings)
             names, cons = featanalysis.loadContrasts(featDir)
+            ftests      = featanalysis.loadFTests(   featDir)
         else:
             design      = None
             names, cons = [], []
+            ftests      = []
 
         fslimage.Image.__init__(self, path, **kwargs)
 
@@ -83,12 +85,14 @@ class FEATImage(fslimage.Image):
         self.__design        = design
         self.__contrastNames = names
         self.__contrasts     = cons
+        self.__ftests        = ftests
         self.__settings      = settings
 
         self.__residuals     =  None
         self.__pes           = [None] * self.numEVs()
         self.__copes         = [None] * self.numContrasts()
         self.__zstats        = [None] * self.numContrasts()
+        self.__zfstats       = [None] * self.numFTests()
         self.__clustMasks    = [None] * self.numContrasts()
 
         if 'name' not in kwargs:
@@ -102,6 +106,7 @@ class FEATImage(fslimage.Image):
         self.__pes        = None
         self.__copes      = None
         self.__zstats     = None
+        self.__zfstats    = None
         self.__clustMasks = None
 
 
@@ -191,6 +196,11 @@ class FEATImage(fslimage.Image):
         return len(self.__contrasts)
 
 
+    def numFTests(self):
+        """Returns the number of f-tests in the analysis."""
+        return len(self.__ftests)
+
+
     def contrastNames(self):
         """Returns a list containing the name of each contrast in the analysis.
         """
@@ -272,6 +282,17 @@ class FEATImage(fslimage.Image):
                 zfile,
                 name=f'{self.__analysisName}: zstat{con + 1} ({conname})')
         return self.__zstats[con]
+
+
+    def getZFStats(self, ftest):
+        """Returns the Z statistic image for the given f-test (0-indexed). """
+
+        if self.__zfstats[ftest] is None:
+            zfile = featanalysis.getZFStatFile(self.__featDir, ftest)
+            self.__zstats[con] = fslimage.Image(
+                zfile,
+                name=f'{self.__analysisName}: zfstat{con + 1}')
+        return self.__zfstats[ftest]
 
 
     def getClusterMask(self, con):
