@@ -210,6 +210,77 @@ def test_loadContrasts():
                 featanalysis.loadContrasts(featdir)
 
 
+def test_loadFTests():
+
+    goodtests = [
+        ("""
+         /NumWaves 4
+         /NumContrasts 3
+         /Matrix
+         0 1 0 1
+         0 0 1 1
+         1 1 1 1
+         """,
+         [[0, 1, 0, 1],
+          [0, 0, 1, 1],
+          [1, 1, 1, 1]]),
+        ("""
+         /NumWaves 10
+         /NumContrasts 2
+         /Matrix
+         0 1 0 1 0 1 1 0 0 1
+         0 0 1 1 1 0 0 1 0 0
+         """,
+         [[0, 1, 0, 1, 0, 1, 1, 0, 0, 1],
+          [0, 0, 1, 1, 1, 0, 0, 1, 0, 0]]),
+    ]
+    badtests  = [
+        """
+        /NumWaves 10
+        /NumContrasts 2
+        """,
+        """
+        /NumContrasts 2
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /NumWaves Burgers
+        /NumContrasts 2
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /NumWaves  4
+        /NumContrasts 3
+        /Matrix
+        1 0 0 0 1 0 0
+        0 1 0 0 1 0 0
+        """,
+    ]
+
+    with tests.testdir() as testdir:
+        featdir = op.join(testdir, 'analysis.feat')
+        for contents, expect in goodtests:
+            designcon = op.join(featdir, 'design.fts')
+            tests.make_dummy_file(designcon, textwrap.dedent(contents).strip())
+            assert featanalysis.loadFTests(featdir) == expect
+
+        for contents in badtests:
+            designcon = op.join(featdir, 'design.fts')
+            tests.make_dummy_file(designcon, textwrap.dedent(contents).strip())
+            with pytest.raises(Exception):
+                featanalysis.loadFTests(featdir)
+
+
+
 def test_loadSettings():
 
     contents = """
@@ -496,6 +567,53 @@ def test_getZStatFile():
                 else:
                     with pytest.raises(fslpath.PathError):
                         featanalysis.getZStatFile(featdir, zi)
+
+
+def test_getZStatFile():
+    testcases = [
+        (['analysis.feat/stats/zstat1.nii.gz',
+          'analysis.feat/stats/zstat2.nii.gz'], True),
+        (['analysis.feat/stats/zstat1.nii.gz'], True),
+        (['analysis.feat/stats/zstat0.nii.gz'], False),
+        (['analysis.feat/stats/zstat1.txt'],    False),
+    ]
+
+    for paths, shouldPass in testcases:
+        with tests.testdir(paths) as testdir:
+            featdir = op.join(testdir, 'analysis.feat')
+
+            for zi in range(len(paths)):
+                expect = op.join(
+                    featdir, 'stats', 'zstat{}.nii.gz'.format(zi + 1))
+
+                if shouldPass:
+                    assert featanalysis.getZStatFile(featdir, zi) == expect
+                else:
+                    with pytest.raises(fslpath.PathError):
+                        featanalysis.getZStatFile(featdir, zi)
+
+
+def test_getZFStatFile():
+    testcases = [
+        (['analysis.feat/stats/zfstat1.nii.gz',
+          'analysis.feat/stats/zfstat2.nii.gz'], True),
+        (['analysis.feat/stats/zfstat1.nii.gz'], True),
+        (['analysis.feat/stats/zfstat0.nii.gz'], False),
+        (['analysis.feat/stats/zfstat1.txt'],    False),
+    ]
+    for paths, shouldPass in testcases:
+        with tests.testdir(paths) as testdir:
+            featdir = op.join(testdir, 'analysis.feat')
+
+            for zi in range(len(paths)):
+                expect = op.join(
+                    featdir, 'stats', 'zfstat{}.nii.gz'.format(zi + 1))
+
+                if shouldPass:
+                    assert featanalysis.getZFStatFile(featdir, zi) == expect
+                else:
+                    with pytest.raises(fslpath.PathError):
+                        featanalysis.getZFStatFile(featdir, zi)
 
 
 def test_getClusterMaskFile():
