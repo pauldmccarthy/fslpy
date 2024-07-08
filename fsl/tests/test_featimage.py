@@ -88,7 +88,8 @@ def test_FEATImage_attributes():
                     copes=False,
                     zstats=False,
                     residuals=False,
-                    clustMasks=False)
+                    clustMasks=False,
+                    zfstats=False)
             else:
                 featdir = op.join(datadir, featdir)
 
@@ -100,6 +101,7 @@ def test_FEATImage_attributes():
             design   = featdesign.FEATFSFDesign(featdir, settings)
             desmat   = design.getDesign()
             evnames  = [ev.title for ev in design.getEVs()]
+            ftests   = featanalysis.loadFTests(featdir)
             contrastnames, contrasts = featanalysis.loadContrasts(featdir)
 
             assert np.all(np.isclose(fi.shape,         shape))
@@ -115,8 +117,10 @@ def test_FEATImage_attributes():
             assert fi.numEVs()                 == desmat.shape[1]
             assert fi.evNames()                == evnames
             assert fi.numContrasts()           == len(contrasts)
+            assert fi.numFTests()              == len(ftests)
             assert fi.contrastNames()          == contrastnames
             assert fi.contrasts()              == contrasts
+            assert fi.ftests()                 == ftests
             assert np.all(np.isclose(fi.getDesign(), desmat))
 
             assert fi.thresholds() == featanalysis.getThresholds(settings)
@@ -153,9 +157,10 @@ def test_FEATImage_imageAccessors():
             shape4D = shape
             shape   = shape4D[:3]
 
-            fi    = featimage.FEATImage(featdir)
-            nevs  = fi.numEVs()
-            ncons = fi.numContrasts()
+            fi      = featimage.FEATImage(featdir)
+            nevs    = fi.numEVs()
+            ncons   = fi.numContrasts()
+            nftests = fi.numFTests()
 
             # Testing the FEATImage internal cache
             for i in range(2):
@@ -166,6 +171,9 @@ def test_FEATImage_imageAccessors():
                     assert fi.getCOPE(       con).shape == shape
                     assert fi.getZStats(     con).shape == shape
                     assert fi.getClusterMask(con).shape == shape
+                for ft in range(nftests):
+                    assert fi.getZFStats(     ft).shape == shape
+                    assert fi.getFClusterMask(ft).shape == shape
             del fi
             fi = None
 
