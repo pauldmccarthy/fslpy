@@ -218,6 +218,15 @@ class FEATImage(fslimage.Image):
         return [list(c) for c in self.__contrasts]
 
 
+    def ftests(self):
+        """Returns a list containing the analysis f-test vectors.
+
+        See :func:`.featanalysis.loadFTests`
+
+        """
+        return [list(f) for f in self.__ftests]
+
+
     def thresholds(self):
         """Returns the statistical thresholds used in the analysis.
 
