@@ -94,6 +94,7 @@ class FEATImage(fslimage.Image):
         self.__zstats        = [None] * self.numContrasts()
         self.__zfstats       = [None] * self.numFTests()
         self.__clustMasks    = [None] * self.numContrasts()
+        self.__fclustMasks   = [None] * self.numFTests()
 
         if 'name' not in kwargs:
             self.name = f'{self.__analysisName}: {self.name}'
@@ -101,13 +102,14 @@ class FEATImage(fslimage.Image):
 
     def __del__(self):
         """Clears references to any loaded images."""
-        self.__design     = None
-        self.__residuals  = None
-        self.__pes        = None
-        self.__copes      = None
-        self.__zstats     = None
-        self.__zfstats    = None
-        self.__clustMasks = None
+        self.__design      = None
+        self.__residuals   = None
+        self.__pes         = None
+        self.__copes       = None
+        self.__zstats      = None
+        self.__zfstats     = None
+        self.__clustMasks  = None
+        self.__fclustMasks = None
 
 
     def getFEATDir(self):
@@ -224,14 +226,16 @@ class FEATImage(fslimage.Image):
         return featanalysis.getThresholds(self.__settings)
 
 
-    def clusterResults(self, contrast):
-        """Returns the clusters found in the analysis.
+    def clusterResults(self, contrast, ftest=False):
+        """Returns the clusters found in the analysis for the specified
+        contrast or f-test.
 
         See :func:.featanalysis.loadClusterResults`
         """
         return featanalysis.loadClusterResults(self.__featDir,
                                                self.__settings,
-                                               contrast)
+                                               contrast,
+                                               ftest)
 
 
     def getPE(self, ev):
@@ -289,9 +293,9 @@ class FEATImage(fslimage.Image):
 
         if self.__zfstats[ftest] is None:
             zfile = featanalysis.getZFStatFile(self.__featDir, ftest)
-            self.__zstats[con] = fslimage.Image(
+            self.__zfstats[ftest] = fslimage.Image(
                 zfile,
-                name=f'{self.__analysisName}: zfstat{con + 1}')
+                name=f'{self.__analysisName}: zfstat{ftest + 1}')
         return self.__zfstats[ftest]
 
 
@@ -308,6 +312,20 @@ class FEATImage(fslimage.Image):
                      f'for zstat{con + 1} ({conname})')
 
         return self.__clustMasks[con]
+
+
+    def getFClusterMask(self, ftest):
+        """Returns the cluster mask image for the given f-test (0-indexed).
+        """
+
+        if self.__fclustMasks[ftest] is None:
+            mfile = featanalysis.getFClusterMaskFile(self.__featDir, ftest)
+            self.__fclustMasks[ftest] = fslimage.Image(
+                mfile,
+                name=f'{self.__analysisName}: cluster mask '
+                     f'for zfstat{ftest + 1}')
+
+        return self.__fclustMasks[ftest]
 
 
     def fit(self, contrast, xyz):
