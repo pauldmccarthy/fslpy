@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.20.0 (Monday 8th July 2024)
+-----------------------------
+
+
+Added
+^^^^^
+
+
+* New functions/methods in the :mod:`.featanalysis` module and
+  :class:`.FEATImage` class for accessing F-test results (!460).
+
+
 3.19.1 (Wednesday 26th June 2024)
 ---------------------------------
 
