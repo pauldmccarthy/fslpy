@@ -43,6 +43,7 @@ The following functions return the names of various files of interest:
    getZStatFile
    getZFStatFile
    getClusterMaskFile
+   getFClusterMaskFile
 """
 
 
@@ -328,19 +329,22 @@ def isFirstLevelAnalysis(settings):
     return settings['level'] == '1'
 
 
-def loadClusterResults(featdir, settings, contrast):
+def loadClusterResults(featdir, settings, contrast, ftest=False):
     """If cluster thresholding was used in the FEAT analysis, this function
     will load and return the cluster results for the specified (0-indexed)
-    contrast number.
+    contrast or f-test.
 
-    If there are no cluster results for the given contrast, ``None`` is
-    returned.
+    If there are no cluster results for the given contrast/f-test, ``None``
+    is returned.
 
     An error will be raised if the cluster file cannot be parsed.
 
     :arg featdir:  A FEAT directory.
     :arg settings: A FEAT settings dictionary.
-    :arg contrast: 0-indexed contrast number.
+    :arg contrast: 0-indexed contrast or f-test number.
+    :arg ftest:    If ``False`` (default), return cluster results for
+                   the contrast numbered ``contrast``. Otherwise, return
+                   cluster results for the f-test numbered ``contrast``.
 
     :returns:      A list of ``Cluster`` instances, each of which contains
                    information about one cluster. A ``Cluster`` object has the
@@ -361,11 +365,16 @@ def loadClusterResults(featdir, settings, contrast):
                                   gravity.
                      ``zcogz``    Z voxel coordinate of cluster centre of
                                   gravity.
-                     ``copemax``  Maximum COPE value in cluster.
-                     ``copemaxx`` X voxel coordinate of maximum COPE value.
+                     ``copemax``  Maximum COPE value in cluster (not
+                                  present for f-tests).
+                     ``copemaxx`` X voxel coordinate of maximum COPE value
+                                  (not present for f-tests).
                      ``copemaxy`` Y voxel coordinate of maximum COPE value.
+                                  (not present for f-tests).
                      ``copemaxz`` Z voxel coordinate of maximum COPE value.
+                                  (not present for f-tests).
                      ``copemean`` Mean COPE of all voxels in the cluster.
+                                  (not present for f-tests).
                      ============ =========================================
     """
 
@@ -375,7 +384,11 @@ def loadClusterResults(featdir, settings, contrast):
     # the ZMax/COG etc coordinates
     # are usually in voxel coordinates
     coordXform  = np.eye(4)
-    clusterFile = op.join(featdir, f'cluster_zstat{contrast + 1}.txt')
+
+    if ftest: prefix = 'cluster_zfstat'
+    else:     prefix = 'cluster_zstat'
+
+    clusterFile = op.join(featdir, f'{prefix}{contrast + 1}.txt')
 
     if not op.exists(clusterFile):
 
@@ -384,7 +397,7 @@ def loadClusterResults(featdir, settings, contrast):
         # the cluster file will instead be called
         # 'cluster_zstatX_std.txt', so we'd better
         # check for that too.
-        clusterFile = op.join(featdir, f'cluster_zstat{contrast + 1}_std.txt')
+        clusterFile = op.join(featdir, f'{prefix}{contrast + 1}_std.txt')
 
         if not op.exists(clusterFile):
             return None
@@ -394,9 +407,6 @@ def loadClusterResults(featdir, settings, contrast):
         # space. We transform them to voxel coordinates.
         # later on.
         coordXform = fslimage.Image(getDataFile(featdir)).worldToVoxMat
-
-    log.debug('Loading cluster results for contrast %s from %s',
-              contrast, clusterFile)
 
     # The cluster.txt file is converted
     # into a list of Cluster objects,
@@ -414,9 +424,16 @@ def loadClusterResults(featdir, settings, contrast):
 
             # if cluster thresholding was not used,
             # the cluster table will not contain
-            # P valuse.
+            # P values.
             if not hasattr(self, 'p'):    self.p    = 1.0
             if not hasattr(self, 'logp'): self.logp = 0.0
+
+            # F-test cluster results will not have
+            # COPE-* results
+            if not hasattr(self, 'copemaxx'): self.copemaxx = np.nan
+            if not hasattr(self, 'copemaxy'): self.copemaxy = np.nan
+            if not hasattr(self, 'copemaxz'): self.copemaxz = np.nan
+            if not hasattr(self, 'copemean'): self.copemean = np.nan
 
     # This dict provides a mapping between
     # Cluster object attribute names, and
@@ -449,10 +466,9 @@ def loadClusterResults(featdir, settings, contrast):
         'COPE-MAX Z (mm)'  : 'copemaxz',
         'COPE-MEAN'        : 'copemean'}
 
-    # An error will be raised if the
-    # cluster file does not exist (e.g.
-    # if the specified contrast index
-    # is invalid)
+    log.debug('Loading cluster results for contrast %s from %s',
+              contrast, clusterFile)
+
     with open(clusterFile, 'rt') as f:
 
         # Get every line in the file,
@@ -474,12 +490,11 @@ def loadClusterResults(featdir, settings, contrast):
     colNames     =  colNames.split('\t')
     clusterLines = [cl      .split('\t') for cl in clusterLines]
 
-    # Turn each cluster line into a
-    # Cluster instance. An error will
-    # be raised if the columm names
-    # are unrecognised (i.e. not in
-    # the colmap above), or if the
-    # file is poorly formed.
+    # Turn each cluster line into a Cluster
+    # instance. An error will be raised if the
+    # columm names are unrecognised (i.e. not
+    # in the colmap above), or if the file is
+    # poorly formed.
     clusters = [Cluster(**dict(zip(colNames, cl))) for cl in clusterLines]
 
     # Make sure all coordinates are in voxels -
@@ -626,4 +641,16 @@ def getClusterMaskFile(featdir, contrast):
     :arg contrast: The contrast number (0-indexed).
     """
     mfile = op.join(featdir, f'cluster_mask_zstat{contrast + 1}')
+    return fslimage.addExt(mfile, mustExist=True)
+
+
+def getFClusterMaskFile(featdir, ftest):
+    """Returns the path of the cluster mask file for the specified f-test.
+
+    Raises a :exc:`~fsl.utils.path.PathError` if the file does not exist.
+
+    :arg featdir:  A FEAT directory.
+    :arg contrast: The f-test number (0-indexed).
+    """
+    mfile = op.join(featdir, f'cluster_mask_zfstat{ftest + 1}')
     return fslimage.addExt(mfile, mustExist=True)
