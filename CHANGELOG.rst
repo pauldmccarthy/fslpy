@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.20.0 (Monday 8th July 2024)
------------------------------
+3.20.0 (Wednesday 10th July 2024)
+---------------------------------
 
 
 Added
