@@ -288,7 +288,8 @@ def make_mock_feat_analysis(featdir,
                             copes=True,
                             zstats=True,
                             residuals=True,
-                            clustMasks=True):
+                            clustMasks=True,
+                            zfstats=True):
 
     if xform is None:
         xform = np.eye(4)
@@ -343,6 +344,11 @@ def make_mock_feat_analysis(featdir,
 
     if zstats:
         files = glob.glob(op.join(featdir, 'stats', 'zstat*nii.gz'))
+        otherFiles .extend(files)
+        otherShapes.extend([shape] * len(files))
+
+    if zfstats:
+        files = glob.glob(op.join(featdir, 'stats', 'zfstat*nii.gz'))
         otherFiles .extend(files)
         otherShapes.extend([shape] * len(files))
 

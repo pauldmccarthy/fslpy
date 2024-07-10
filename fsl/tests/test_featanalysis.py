@@ -210,6 +210,77 @@ def test_loadContrasts():
                 featanalysis.loadContrasts(featdir)
 
 
+def test_loadFTests():
+
+    goodtests = [
+        ("""
+         /NumWaves 4
+         /NumContrasts 3
+         /Matrix
+         0 1 0 1
+         0 0 1 1
+         1 1 1 1
+         """,
+         [[0, 1, 0, 1],
+          [0, 0, 1, 1],
+          [1, 1, 1, 1]]),
+        ("""
+         /NumWaves 10
+         /NumContrasts 2
+         /Matrix
+         0 1 0 1 0 1 1 0 0 1
+         0 0 1 1 1 0 0 1 0 0
+         """,
+         [[0, 1, 0, 1, 0, 1, 1, 0, 0, 1],
+          [0, 0, 1, 1, 1, 0, 0, 1, 0, 0]]),
+    ]
+    badtests  = [
+        """
+        /NumWaves 10
+        /NumContrasts 2
+        """,
+        """
+        /NumContrasts 2
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /NumWaves Burgers
+        /NumContrasts 2
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /Matrix
+        1 0
+        0 1
+        """,
+        """
+        /NumWaves  4
+        /NumContrasts 3
+        /Matrix
+        1 0 0 0 1 0 0
+        0 1 0 0 1 0 0
+        """,
+    ]
+
+    with tests.testdir() as testdir:
+        featdir = op.join(testdir, 'analysis.feat')
+        for contents, expect in goodtests:
+            designcon = op.join(featdir, 'design.fts')
+            tests.make_dummy_file(designcon, textwrap.dedent(contents).strip())
+            assert featanalysis.loadFTests(featdir) == expect
+
+        for contents in badtests:
+            designcon = op.join(featdir, 'design.fts')
+            tests.make_dummy_file(designcon, textwrap.dedent(contents).strip())
+            with pytest.raises(Exception):
+                featanalysis.loadFTests(featdir)
+
+
+
 def test_loadSettings():
 
     contents = """
@@ -289,7 +360,10 @@ def test_loadClusterResults():
                 '2ndlevel_1.gfeat/cope1.feat', '2ndlevel_1.gfeat/cope2.feat',
                 '2ndlevel_2.gfeat/cope1.feat', '2ndlevel_2.gfeat/cope2.feat']
     ncontrasts = [2, 2, 2, 1, 1, 1, 1]
-    nclusters  = [[1, 5], [2, 2], [3, 5], [7], [1], [10], [27]]
+    nftests    = [0, 0, 1, 0, 0, 1, 1]
+
+    # nclusters = [contrastclusters] + [ftestclusters]
+    nclusters  = [[1, 5], [2, 2], [3, 5, 3], [7], [1], [10, 8], [27, 21]]
 
     with pytest.raises(Exception):
         featanalysis.loadClusterResults('notafeatdir')
@@ -320,14 +394,20 @@ def test_loadClusterResults():
                 fslimage.Image(data, xform=xform).save(datafile)
 
             settings = featanalysis.loadSettings(featdir)
+            # contrasts
             for c in range(ncontrasts[i]):
                 clusters = featanalysis.loadClusterResults(
                     featdir, settings, c)
-
                 assert len(clusters) == nclusters[i][c]
+            # f-tests
+            for c in range(nftests[i]):
+                clusters = featanalysis.loadClusterResults(
+                    featdir, settings, c, ftest=True)
+                assert len(clusters) == nclusters[i][c + ncontrasts[i]]
 
             # Test calling the function on a feat dir
             # which doesn't have any cluster results
+            # (2ndlevel_2.gfeat)
             if i == len(featdirs) - 1:
                 for clustfile in glob.glob(op.join(featdir, 'cluster*txt')):
                     os.remove(clustfile)
@@ -498,6 +578,53 @@ def test_getZStatFile():
                         featanalysis.getZStatFile(featdir, zi)
 
 
+def test_getZStatFile():
+    testcases = [
+        (['analysis.feat/stats/zstat1.nii.gz',
+          'analysis.feat/stats/zstat2.nii.gz'], True),
+        (['analysis.feat/stats/zstat1.nii.gz'], True),
+        (['analysis.feat/stats/zstat0.nii.gz'], False),
+        (['analysis.feat/stats/zstat1.txt'],    False),
+    ]
+
+    for paths, shouldPass in testcases:
+        with tests.testdir(paths) as testdir:
+            featdir = op.join(testdir, 'analysis.feat')
+
+            for zi in range(len(paths)):
+                expect = op.join(
+                    featdir, 'stats', 'zstat{}.nii.gz'.format(zi + 1))
+
+                if shouldPass:
+                    assert featanalysis.getZStatFile(featdir, zi) == expect
+                else:
+                    with pytest.raises(fslpath.PathError):
+                        featanalysis.getZStatFile(featdir, zi)
+
+
+def test_getZFStatFile():
+    testcases = [
+        (['analysis.feat/stats/zfstat1.nii.gz',
+          'analysis.feat/stats/zfstat2.nii.gz'], True),
+        (['analysis.feat/stats/zfstat1.nii.gz'], True),
+        (['analysis.feat/stats/zfstat0.nii.gz'], False),
+        (['analysis.feat/stats/zfstat1.txt'],    False),
+    ]
+    for paths, shouldPass in testcases:
+        with tests.testdir(paths) as testdir:
+            featdir = op.join(testdir, 'analysis.feat')
+
+            for zi in range(len(paths)):
+                expect = op.join(
+                    featdir, 'stats', 'zfstat{}.nii.gz'.format(zi + 1))
+
+                if shouldPass:
+                    assert featanalysis.getZFStatFile(featdir, zi) == expect
+                else:
+                    with pytest.raises(fslpath.PathError):
+                        featanalysis.getZFStatFile(featdir, zi)
+
+
 def test_getClusterMaskFile():
     testcases = [
         (['analysis.feat/cluster_mask_zstat1.nii.gz',
@@ -520,3 +647,27 @@ def test_getClusterMaskFile():
                 else:
                     with pytest.raises(fslpath.PathError):
                         featanalysis.getClusterMaskFile(featdir, ci)
+
+
+def test_getFClusterMaskFile():
+    testcases = [
+        (['analysis.feat/cluster_mask_zfstat1.nii.gz',
+          'analysis.feat/cluster_mask_zfstat2.nii.gz'], True),
+        (['analysis.feat/cluster_mask_zfstat1.nii.gz'], True),
+        (['analysis.feat/cluster_mask_zfstat0.nii.gz'], False),
+        (['analysis.feat/cluster_mask_zfstat1.txt'],    False),
+    ]
+
+    for paths, shouldPass in testcases:
+        with tests.testdir(paths) as testdir:
+            featdir = op.join(testdir, 'analysis.feat')
+
+            for ci in range(len(paths)):
+                expect = op.join(
+                    featdir, 'cluster_mask_zfstat{}.nii.gz'.format(ci + 1))
+
+                if shouldPass:
+                    assert featanalysis.getFClusterMaskFile(featdir, ci) == expect
+                else:
+                    with pytest.raises(fslpath.PathError):
+                        featanalysis.getFClusterMaskFile(featdir, ci)

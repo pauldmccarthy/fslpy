@@ -160,7 +160,7 @@ class FEATFSFDesign(object):
         # Print a warning if we're
         # using an old version of FEAT
         if version < 6:
-            log.warning('Unsupported FEAT version: {}'.format(version))
+            log.warning('Unsupported FEAT version: %s', version)
 
         # We need to parse the EVS a bit
         # differently depending on whether
@@ -210,8 +210,7 @@ class FEATFSFDesign(object):
                 continue
 
             if (not self.__loadVoxEVs) or (ev.filename is None):
-                log.warning('Voxel EV image missing '
-                            'for ev {}'.format(ev.index))
+                log.warning('Voxel EV image missing for ev %s', ev.index)
                 continue
 
             design[:, ev.index] = ev.getData(x, y, z)
@@ -250,8 +249,7 @@ class VoxelwiseEVMixin(object):
         if op.exists(filename):
             self.__filename = filename
         else:
-            log.warning('Voxelwise EV file does not '
-                        'exist: {}'.format(filename))
+            log.warning('Voxelwise EV file does not exist: %s', filename)
             self.__filename = None
 
         self.__image = None
@@ -502,11 +500,11 @@ def getFirstLevelEVs(featDir, settings, designMat):
     #   - voxelwise EVs
     for origIdx in range(origEVs):
 
-        title    = settings[        'evtitle{}'  .format(origIdx + 1)]
-        shape    = int(settings[    'shape{}'    .format(origIdx + 1)])
-        convolve = int(settings[    'convolve{}' .format(origIdx + 1)])
-        deriv    = int(settings[    'deriv_yn{}' .format(origIdx + 1)])
-        basis    = int(settings.get('basisfnum{}'.format(origIdx + 1), -1))
+        title    = settings[        f'evtitle{origIdx + 1}']
+        shape    = int(settings[    f'shape{origIdx + 1}'])
+        convolve = int(settings[    f'convolve{origIdx + 1}'])
+        deriv    = int(settings[    f'deriv_yn{origIdx + 1}'])
+        basis    = int(settings.get(f'basisfnum{origIdx + 1}', -1))
 
         # Normal EV. This is just a column
         # in the design matrix, defined by
@@ -525,8 +523,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
 
             # The addExt function will raise an
             # error if the file does not exist.
-            filename = op.join(
-                featDir, 'designVoxelwiseEV{}'.format(origIdx + 1))
+            filename = op.join(featDir, f'designVoxelwiseEV{origIdx + 1}')
             filename = fslimage.addExt(filename, True)
 
             evs.append(VoxelwiseEV(len(evs), origIdx, title, filename))
@@ -607,7 +604,7 @@ def getFirstLevelEVs(featDir, settings, designMat):
         startIdx = len(evs) + 1
         if voxConfLocs != list(range(startIdx, startIdx + len(voxConfFiles))):
             raise FSFError('Unsupported voxelwise confound ordering '
-                           '({} -> {})'.format(startIdx, voxConfLocs))
+                           f'({startIdx} -> {voxConfLocs})')
 
         # Create the voxelwise confound EVs.
         # We make a name for the EV from the
@@ -680,7 +677,7 @@ def getHigherLevelEVs(featDir, settings, designMat):
     for origIdx in range(origEVs):
 
         # All we need is the title
-        title = settings['evtitle{}'.format(origIdx + 1)]
+        title = settings[f'evtitle{origIdx + 1}']
         evs.append(NormalEV(len(evs), origIdx, title))
 
     # Only the input file is specified for
@@ -689,7 +686,7 @@ def getHigherLevelEVs(featDir, settings, designMat):
     # name.
     for origIdx in range(voxEVs):
 
-        filename = settings['evs_vox_{}'.format(origIdx + 1)]
+        filename = settings[f'evs_vox_{origIdx + 1}']
         title    = op.basename(fslimage.removeExt(filename))
         evs.append(VoxelwiseEV(len(evs), origIdx, title, filename))
 
@@ -705,12 +702,12 @@ def loadDesignMat(designmat):
     :arg designmat: Path to the ``design.mat`` file.
     """
 
-    log.debug('Loading FEAT design matrix from {}'.format(designmat))
+    log.debug('Loading FEAT design matrix from %s', designmat)
 
     matrix = np.loadtxt(designmat, comments='/', ndmin=2)
 
     if matrix is None or matrix.size == 0 or len(matrix.shape) != 2:
-        raise FSFError('{} does not appear to be a '
-                       'valid design.mat file'.format(designmat))
+        raise FSFError(f'{designmat} does not appear '
+                       'to be a valid design.mat file')
 
     return matrix
