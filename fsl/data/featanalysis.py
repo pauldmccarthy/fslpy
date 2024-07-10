@@ -430,6 +430,7 @@ def loadClusterResults(featdir, settings, contrast, ftest=False):
 
             # F-test cluster results will not have
             # COPE-* results
+            if not hasattr(self, 'copemax'):  self.copemax  = np.nan
             if not hasattr(self, 'copemaxx'): self.copemaxx = np.nan
             if not hasattr(self, 'copemaxy'): self.copemaxy = np.nan
             if not hasattr(self, 'copemaxz'): self.copemaxz = np.nan
