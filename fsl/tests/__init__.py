@@ -10,6 +10,7 @@
 import              os
 import              sys
 import              glob
+import              hashlib
 import              shutil
 import              fnmatch
 import              logging
@@ -439,3 +440,10 @@ def make_random_mask(filename, shape, xform, premask=None, minones=1):
     img.save(filename)
 
     return img
+
+
+def sha256(filename):
+    hashobj = hashlib.sha256()
+    with open(filename, 'rb') as f:
+        hashobj.update(f.read())
+    return hashobj.hexdigest()
