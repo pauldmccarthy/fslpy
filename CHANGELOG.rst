@@ -2,6 +2,20 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.21.0 (Tuesday 23rd July 2024)
+-------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Behaviour of the ``imcp`` / ``immv`` commands has been adjusted so that
+  when an image file is copied/moved, and converted to a different format
+  (e.g. ``.nii`` to ``.nii.gz``), the image data and header slope/intercept
+  fields are not modified (!462).
+
+
 3.20.0 (Wednesday 10th July 2024)
 ---------------------------------
 

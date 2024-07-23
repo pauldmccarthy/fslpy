@@ -7,22 +7,26 @@
 
 from __future__ import print_function
 
+import              gzip
+import itertools as it
+import os.path   as op
+import              os
+import              shutil
+import              tempfile
 
+from unittest import mock
 
-import os.path    as op
-import               os
-import               shutil
-import               tempfile
-
-import numpy as np
+import numpy   as np
 import nibabel as nib
 
-import fsl.utils.imcp        as imcp
-import fsl.data.image        as fslimage
+import fsl.utils.imcp    as imcp
+import fsl.utils.tempdir as tempdir
+import fsl.data.image    as fslimage
 
-from fsl.tests import make_random_image
-from fsl.tests import make_dummy_file
-from fsl.tests import looks_like_image
+from fsl.tests import (make_random_image,
+                       make_dummy_file,
+                       looks_like_image,
+                       sha256)
 
 
 real_print = print
@@ -315,3 +319,60 @@ def test_imcp_shouldPass(move=False):
 
 def test_immv_shouldPass():
     test_imcp_shouldPass(move=True)
+
+
+def test_imcp_data_unmodified():
+    """Test that the data in an imcp'd image file is not modified. """
+
+    dtypes = [
+       np.int16,
+       np.int32,
+       np.float32,
+       np.float64]
+
+    slints = [(None, None), (1, 0), (3, 1.5)]
+
+    for dtype, (slope, inter) in it.product(dtypes, slints):
+        with tempdir.tempdir():
+            data = np.random.randint(1, 100, (10, 10, 10)).astype(dtype)
+            hdr  = nib.Nifti1Header()
+            hdr.set_data_dtype(dtype)
+            hdr.set_data_shape((10, 10, 10))
+            hdr.set_slope_inter(slope, inter)
+            hdr.set_sform(np.eye(4))
+
+            # write header/data separately, as otherwise
+            # nibabel will automatically rescale the data
+            with open('image.nii', 'wb') as f:
+                hdr.write_to(f)
+                f.write(data.tobytes())
+
+            # Input/output formats the same,
+            # should induce a straight file copy
+            imcp.imcp('image.nii', 'copied.nii', useDefaultExt=False)
+
+            # uncompresed->compressed will cause imcp
+            # to load in the image, rather than doing a
+            # file copy
+            with mock.patch.dict(os.environ, FSLOUTPUTTYPE='NIFTI_GZ'):
+                imcp.imcp('image.nii', 'converted.nii.gz', useDefaultExt=True)
+
+            # copied files should be identical
+            assert sha256('image.nii') == sha256('copied.nii')
+
+            # Converted files should have the same
+            # data, slope, and intercept. Read result
+            # header/data separately to avoid nibabel
+            # auto-rescaling.
+            with gzip.open('converted.nii.gz', 'rb') as f:
+                gothdr    = nib.Nifti1Header.from_fileobj(f)
+                databytes = f.read()
+
+            gotdata = np.frombuffer(databytes, dtype=dtype).reshape((10, 10, 10))
+
+            # Data should be binary identical
+            assert np.all(gotdata == data)
+
+            if slope is None: slope = 1
+            if inter is None: inter = 0
+            assert np.all(np.isclose(gothdr.get_slope_inter(), (slope, inter)))

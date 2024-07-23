@@ -151,7 +151,7 @@ def test_scanDir():
         datafile = op.join(datadir, 'example_dicom.tbz2')
 
         with tarfile.open(datafile) as f:
-            f.extractall()
+            f.extractall(filter='data')
 
         series = fsldcm.scanDir('.')
         assert len(series) == 2
