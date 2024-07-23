@@ -50,7 +50,8 @@ def imcp(src,
                         :func:`~fsl.data.image.defaultOutputType`. If the
                         source file does not have the same type as the default
                         extension, it will be converted. If ``False``, the
-                        source file type is not changed.
+                        source file type is used, and the destination file type
+                        (if specified) is ignored.
 
     :arg move:          If ``True``, the files are moved, instead of being
                         copied. See :func:`immv`.
@@ -143,7 +144,7 @@ def imcp(src,
 
         img = nib.load(src)
 
-        # Force conversion to specific data type if
+        # Force conversion to specific file format if
         # necessary.  The file format (pair, gzipped
         # or not) is taken care of automatically by
         # nibabel
@@ -151,7 +152,26 @@ def imcp(src,
         elif 'NIFTI2'  in destType.name: cls = nib.Nifti2Image
         elif 'NIFTI'   in destType.name: cls = nib.Nifti1Image
 
-        img = cls(np.asanyarray(img.dataobj), None, header=img.header)
+        # The default behaviour of nibabel when saving
+        # is to rescale the image data to the full range
+        # of the data type, and then set the scl_slope/
+        # inter header fields accordingly. This is highly
+        # disruptive in many circumstances. Fortunately:
+        #  - The nibabel ArrayProxy class provides a
+        #    get_unscaled method, which allows us to
+        #    bypass the rescaling at load time.
+        #  - Explicitly setting the slope and intercept
+        #    on the header allows us to bypass rescaling
+        #    at save time.
+        #
+        # https://github.com/nipy/nibabel/issues/1001
+        # https://neurostars.org/t/preserve-datatype-and-precision-with-nibabel/27641/2
+        slope = img.dataobj.slope
+        inter = img.dataobj.inter
+        data  = np.asanyarray(img.dataobj.get_unscaled(),
+                              dtype=img.get_data_dtype())
+        img   = cls(data, None, header=img.header)
+        img.header.set_slope_inter(slope, inter)
         nib.save(img, dest)
 
         # Make sure the image reference is cleared, and
