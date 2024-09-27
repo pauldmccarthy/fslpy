@@ -63,7 +63,7 @@ def fromFlirt(xform, src, ref, from_='voxel', to='world'):
     Valid values for the ``from_`` and ``to`` arguments are:
 
      - ``voxel``: The voxel coordinate system
-     - ``fsl``: The FSL coordiante system (voxels scaled by pixdims, with the
+     - ``fsl``: The FSL coordinate system (voxels scaled by pixdims, with the
        X axis inverted if the image sform/qform has a positive determinant)
      - ``world``  The world coordinate system
 
