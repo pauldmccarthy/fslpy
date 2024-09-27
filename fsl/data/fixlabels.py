@@ -343,32 +343,39 @@ def saveLabelFile(allLabels,
                   filename,
                   dirname=None,
                   listBad=True,
-                  signalLabels=None):
+                  signalLabels=None,
+                  probabilities=None):
     """Saves the given classification labels to the specified file. The
     classifications are saved in the format described in the
     :func:`loadLabelFile` method.
 
-    :arg allLabels:    A list of lists, one list for each component, where
-                       each list contains the labels for the corresponding
-                       component.
+    :arg allLabels:     A list of lists, one list for each component, where
+                        each list contains the labels for the corresponding
+                        component.
 
-    :arg filename:     Name of the file to which the labels should be saved.
+    :arg filename:      Name of the file to which the labels should be saved.
 
-    :arg dirname:      If provided, is output as the first line of the file.
-                       Intended to be a relative path to the MELODIC analysis
-                       directory with which this label file is associated. If
-                       not provided, a ``'.'`` is output as the first line.
+    :arg dirname:       If provided, is output as the first line of the file.
+                        Intended to be a relative path to the MELODIC analysis
+                        directory with which this label file is associated. If
+                        not provided, a ``'.'`` is output as the first line.
 
-    :arg listBad:      If ``True`` (the default), the last line of the file
-                       will contain a comma separated list of components which
-                       are deemed 'noisy' (see :func:`isNoisyComponent`).
+    :arg listBad:       If ``True`` (the default), the last line of the file
+                        will contain a comma separated list of components which
+                        are deemed 'noisy' (see :func:`isNoisyComponent`).
 
-    :arg signalLabels: Labels which should be deemed 'signal' - see the
-                       :func:`isNoisyComponent` function.
+    :arg signalLabels:  Labels which should be deemed 'signal' - see the
+                        :func:`isNoisyComponent` function.
+
+    :arg probabilities: Classification probabilities. If provided, the
+                        probability for each component is saved to the file.
     """
 
     lines      = []
     noisyComps = []
+
+    if probabilities is not None and len(probabilities) != len(allLabels):
+        raise ValueError('len(probabilities) != len(allLabels)')
 
     # The first line - the melodic directory name
     if dirname is None:
@@ -386,6 +393,9 @@ def saveLabelFile(allLabels,
         # commas in any label names
         labels = [l.replace(',', '_') for l in labels]
         tokens = [str(comp)] + labels + [str(noise)]
+
+        if probabilities is not None:
+            tokens.append(f'{probabilities[i]:0.6f}')
 
         lines.append(', '.join(tokens))
 
@@ -422,4 +432,3 @@ class InvalidLabelFileError(Exception):
     """Exception raised by the :func:`loadLabelFile` function when an attempt
     is made to load an invalid label file.
     """
-    pass
