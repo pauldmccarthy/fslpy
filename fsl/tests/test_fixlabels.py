@@ -435,12 +435,7 @@ def test_loadLabelFile_probabilities():
             assert lists_equal(gotprobs, expprobs)
 
 
-
-
-
-
 def test_saveLabelFile():
-
 
     labels = [['Label1', 'Label2', 'Label3'],
               ['Signal'],
@@ -493,3 +488,31 @@ def test_saveLabelFile():
         fixlabels.saveLabelFile(labels, fname, signalLabels=sigLabels)
         with open(fname, 'rt') as f:
             assert f.read().strip() == exp
+
+
+def test_saveLabelFile_probabilities():
+
+    labels = [['Label1', 'Label2', 'Label3'],
+              ['Signal'],
+              ['Noise'],
+              ['Label1'],
+              ['Unknown']]
+    probs = [0.1, 0.2, 0.3, 0.4, 0.5]
+
+    expected = tw.dedent("""
+    1, Label1, Label2, Label3, True, 0.100000
+    2, Signal, False, 0.200000
+    3, Noise, True, 0.300000
+    4, Label1, True, 0.400000
+    5, Unknown, False, 0.500000
+    [1, 3, 4]
+    """).strip()
+
+    with tests.testdir() as testdir:
+        fname = op.join(testdir, 'fname.txt')
+
+        exp = '.\n{}'.format(expected)
+        fixlabels.saveLabelFile(labels, fname, probabilities=probs)
+        with open(fname, 'rt') as f:
+            got = f.read().strip()
+            assert got == exp
