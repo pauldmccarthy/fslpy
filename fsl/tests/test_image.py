@@ -1471,14 +1471,28 @@ def test_identifyAffine():
 
     assert identify(None, None, 'ho', 'hum') == ('ho', 'hum')
 
-    xform = affine.compose(0.1        + 5     * np.random.random(3),
-                           -10        + 20    * np.random.random(3),
-                           -np.pi / 2 + np.pi * np.random.random(3))
+    # Construct an affine which causes
+    # all coordinate systems to be different
+    xform = np.diag([-1, 1, 1, 1])
+    while npla.det(xform) <= 0:
+        scales    = 0.1        + 5     * np.random.random(3)
+        offsets   = -10        + 20    * np.random.random(3)
+        rotations = -np.pi / 2 + np.pi * np.random.random(3)
+        xform     = affine.compose(scales, offsets, rotations)
 
-    img = fslimage.Image(make_random_image(None, xform=xform))
+    img = fslimage.Image(make_random_image(None, pixdims=scales, xform=xform))
 
     for from_, to in it.permutations(('voxel', 'scaled', 'fsl', 'world'), 2):
-        assert identify(img, img.getAffine(from_, to)) == (from_, to)
+        aff = img.getAffine(from_, to)
+        got = identify(img, aff)
+
+        # The fsl->scaled and scaled->fsl affines are
+        # equivalent, as they just encode an inversion
+        # along the first axis.
+        if sorted((from_, to)) == ['fsl', 'scaled']:
+            assert got in ((from_, to), (to, from_))
+        else:
+            assert got == (from_, to)
 
     assert identify(img, img.getAffine('voxel', 'world'), from_='voxel') == ('voxel', 'world')
     assert identify(img, img.getAffine('voxel', 'world'), to='world')    == ('voxel', 'world')
