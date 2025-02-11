@@ -46,6 +46,7 @@ from pathlib import Path
 from typing  import Union
 
 import numpy             as np
+import numpy.linalg      as npla
 import nibabel           as nib
 import nibabel.fileslice as fileslice
 
@@ -455,8 +456,6 @@ class Nifti(notifier.Notifier, meta.Meta):
                                "neurological", ``False`` otherwise - see the
                                :meth:`isNeurological` method.
         """
-
-        import numpy.linalg as npla
 
         affines        = {}
         shape          = list(shape[ :3])
