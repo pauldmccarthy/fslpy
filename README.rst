@@ -19,7 +19,7 @@ programming library written in Python. It is used by `FSLeyes
 <https://git.fmrib.ox.ac.uk/fsl/fsleyes/fsleyes/>`_.
 
 
-``fslpy`` is tested against Python versions 3.8, 3.9, 3.10, and 3.11.
+``fslpy`` is tested against Python versions 3.10, 3.11, 3.12, and 3.13.
 
 
 Installation
