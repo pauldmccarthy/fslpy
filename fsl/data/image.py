@@ -815,9 +815,10 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     @property
+    @deprecated.deprecated('3.22.0', '4.0.0', 'Use getAffine instead')
     def voxToScaledVoxMat(self):
-        """Returns a transformation matrix which transforms from voxel
-        coordinates into scaled voxel coordinates, with a left-right flip
+        """Returns a transformation matrix which transforms from ``voxel``
+        coordinates into ``fsl`` coordinates, with a left-right flip
         if the image appears to be stored in neurological order.
 
         See http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the\
@@ -828,9 +829,11 @@ class Nifti(notifier.Notifier, meta.Meta):
 
 
     @property
+    @deprecated.deprecated('3.22.0', '4.0.0', 'Use getAffine instead')
     def scaledVoxToVoxMat(self):
-        """Returns a transformation matrix which transforms from scaled voxels
-        into voxels, the inverse of the :meth:`voxToScaledVoxMat` transform.
+        """Returns a transformation matrix which transforms from ``fsl``
+        coordinates into ``voxel`` coordinates, the inverse of the
+        :meth:`voxToScaledVoxMat` transform.
         """
         return self.getAffine('fsl', 'voxel')
 
