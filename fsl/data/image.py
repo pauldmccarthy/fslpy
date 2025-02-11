@@ -210,8 +210,12 @@ class Nifti(notifier.Notifier, meta.Meta):
 
       - The ``fsl`` coordinate system, where voxel coordinates are scaled by
         the ``pixdim`` values in the NIFTI header, and the X axis is inverted
-        if the voxel-to-world affine has a positive determinant.
+        if the voxel-to-world affine has a positive determinant. The
+        coordinates ``(0, 0, 0)`` correspond to the corner of voxel
+        ``(0, 0, 0)``.
 
+      - The ``scaled`` coordinate system, where voxel coordinates are scaled by
+        the ``pixdim`` values in the NIFTI header.
 
     The :meth:`getAffine` method is a simple means of acquiring an affine
     which will transform between any of these coordinate systems.
@@ -435,7 +439,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     def generateAffines(voxToWorldMat, shape, pixdim):
         """Called by :meth:`__init__`, and the :meth:`voxToWorldMat` setter.
         Generates and returns a dictionary containing affine transformations
-        between the ``voxel``, ``fsl``, and ``world`` coordinate
+        between the ``voxel``, ``fsl``, ``scaled``, and ``world`` coordinate
         systems. These affines are accessible via the :meth:`getAffine`
         method.
 
@@ -454,29 +458,43 @@ class Nifti(notifier.Notifier, meta.Meta):
 
         import numpy.linalg as npla
 
-        affines = {}
-        shape             = list(shape[ :3])
-        pixdim            = list(pixdim[:3])
-        voxToScaledVoxMat = np.diag(pixdim + [1.0])
-        isneuro           = npla.det(voxToWorldMat) > 0
+        affines        = {}
+        shape          = list(shape[ :3])
+        pixdim         = list(pixdim[:3])
+        voxToScaledMat = np.diag(pixdim + [1.0])
+        voxToFSLMat    = np.array(voxToScaledMat)
+        isneuro        = npla.det(voxToWorldMat) > 0
 
         if isneuro:
-            x                 = (shape[0] - 1) * pixdim[0]
-            flip              = affine.scaleOffsetXform([-1, 1, 1],
-                                                        [ x, 0, 0])
-            voxToScaledVoxMat = affine.concat(flip, voxToScaledVoxMat)
+            x           = (shape[0] - 1) * pixdim[0]
+            flip        = affine.scaleOffsetXform([-1, 1, 1],
+                                                  [ x, 0, 0])
+            voxToFSLMat = affine.concat(flip, voxToFSLMat)
 
-        affines['fsl',   'fsl']   = np.eye(4)
-        affines['voxel', 'voxel'] = np.eye(4)
-        affines['world', 'world'] = np.eye(4)
-        affines['voxel', 'world'] = voxToWorldMat
-        affines['world', 'voxel'] = affine.invert(voxToWorldMat)
-        affines['voxel', 'fsl']   = voxToScaledVoxMat
-        affines['fsl',   'voxel'] = affine.invert(voxToScaledVoxMat)
-        affines['fsl',   'world'] = affine.concat(affines['voxel', 'world'],
-                                                  affines['fsl',   'voxel'])
-        affines['world', 'fsl']   = affine.concat(affines['voxel',   'fsl'],
-                                                  affines['world', 'voxel'])
+        affines['voxel',  'voxel']  = np.eye(4)
+        affines['voxel',  'scaled'] = voxToFSLMat
+        affines['voxel',  'fsl']    = voxToScaledMat
+        affines['voxel',  'world']  = voxToWorldMat
+
+        affines['scaled', 'scaled'] = np.eye(4)
+        affines['scaled', 'voxel']  = affine.invert(voxToScaledMat)
+        affines['scaled', 'fsl']    = affine.concat(affines['voxel',  'fsl'],
+                                                    affines['scaled', 'voxel'])
+        affines['scaled', 'world']  = affine.concat(affines['voxel',  'world'],
+                                                    affines['scaled', 'voxel'])
+
+        affines['fsl',    'fsl']    = np.eye(4)
+        affines['fsl',    'voxel']  = affine.invert(voxToFSLMat)
+        affines['fsl',    'scaled'] = affine.invert(affines['scaled', 'fsl'])
+        affines['fsl',    'world']  = affine.concat(affines['voxel',  'world'],
+                                                    affines['fsl',    'voxel'])
+
+        affines['world',  'world']  = np.eye(4)
+        affines['world',  'voxel']  = affine.invert(voxToWorldMat)
+        affines['world',  'scaled'] = affine.concat(affines['voxel', 'scaled'],
+                                                    affines['world', 'voxel'])
+        affines['world',  'fsl']    = affine.concat(affines['voxel', 'fsl'],
+                                                    affines['world', 'voxel'])
 
         return affines, isneuro
 
@@ -515,9 +533,9 @@ class Nifti(notifier.Notifier, meta.Meta):
             return from_, to
 
         if from_ is not None: froms = [from_]
-        else:                 froms = ['voxel', 'fsl', 'world']
+        else:                 froms = ['voxel', 'scaled', 'fsl', 'world']
         if to    is not None: tos   = [to]
-        else:                 tos   = ['voxel', 'fsl', 'world']
+        else:                 tos   = ['voxel', 'scaled', 'fsl', 'world']
 
         for from_, to in it.product(froms, tos):
 
@@ -590,7 +608,7 @@ class Nifti(notifier.Notifier, meta.Meta):
         elif isinstance(self.header, nib.nifti1.Nifti1Header):   return 1
         elif isinstance(self.header, nib.analyze.AnalyzeHeader): return 0
 
-        else: raise RuntimeError('Unrecognised header: {}'.format(self.header))
+        else: raise RuntimeError(f'Unrecognised header: {self.header}')
 
 
     @property
@@ -724,6 +742,8 @@ class Nifti(notifier.Notifier, meta.Meta):
            sform/qform
          - ``'fsl'``: The FSL coordinate system (scaled voxels, with a
            left-right flip if the sform/qform has a positive determinant)
+         - ``'scaled'``: Scaled voxel coordinate system (equivalent to
+           ``'fsl'`` without the flip).
 
         :arg from_: Source coordinate system
         :arg to:    Destination coordinate system
@@ -732,11 +752,11 @@ class Nifti(notifier.Notifier, meta.Meta):
         from_ = from_.lower()
         to    = to   .lower()
 
-        if from_ not in ('voxel', 'fsl', 'world') or \
-           to    not in ('voxel', 'fsl', 'world'):
+        if from_ not in ('voxel', 'scaled', 'fsl', 'world') or \
+           to    not in ('voxel', 'scaled', 'fsl', 'world'):
             raise ValueError('Invalid source/reference spaces: "{}" -> "{}".'
-                             'Recognised spaces are "voxel", "fsl", and '
-                             '"world"'.format(from_, to))
+                             'Recognised spaces are "voxel", "fsl", "scaled", '
+                             'and "world"'.format(from_, to))
 
         return np.copy(self.__affines[from_, to])
 
