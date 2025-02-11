@@ -84,7 +84,7 @@ def _random_affine_field():
                              np.arange(ref.shape[2]), indexing='ij')
 
     rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
-    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    rcoords  = affine.transform(rvoxels, ref.getAffine('voxel', 'fsl'))
     scoords  = affine.transform(rcoords, xform)
 
     field    = np.zeros(list(ref.shape[:3]) + [3])
@@ -162,7 +162,7 @@ def test_convertDeformationSpace():
                      np.random.randint(0, basefield.shape[1], 5),
                      np.random.randint(0, basefield.shape[2], 5)]
         refcoords = np.array(refcoords, dtype=int).T
-        refcoords = affine.transform(refcoords, ref.voxToScaledVoxMat)
+        refcoords = affine.transform(refcoords, ref.getAffine('voxel', 'fsl'))
         srccoords = basefield.transform(refcoords)
 
         field   = nonlinear.convertDeformationSpace(basefield, from_, to)
@@ -190,9 +190,9 @@ def test_DeformationField_transform():
                              np.arange(ref.shape[1]),
                              np.arange(ref.shape[2]), indexing='ij')
     rvoxels  = np.vstack((rx.flatten(), ry.flatten(), rz.flatten())).T
-    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    rcoords  = affine.transform(rvoxels, ref.getAffine('voxel', 'fsl'))
     scoords  = affine.transform(rcoords, xform)
-    svoxels  = affine.transform(scoords, src.scaledVoxToVoxMat)
+    svoxels  = affine.transform(scoords, src.getAffine('fsl', 'voxel'))
 
     absfield    = np.zeros(list(ref.shape[:3]) + [3])
     absfield[:] = scoords.reshape(*it.chain(ref.shape, [3]))
@@ -217,9 +217,9 @@ def test_DeformationField_transform():
     # test out of bounds are returned as nan
     rvoxels = np.array([[-1, -1, -1],
                         [ 0,  0,  0]])
-    rcoords  = affine.transform(rvoxels, ref.voxToScaledVoxMat)
+    rcoords  = affine.transform(rvoxels, ref.getAffine('voxel', 'fsl'))
     scoords  = affine.transform(rcoords, xform)
-    svoxels  = affine.transform(scoords, src.scaledVoxToVoxMat)
+    svoxels  = affine.transform(scoords, src.getAffine('fsl', 'voxel'))
 
     got = relfield.transform(rcoords)
     assert np.all(np.isnan(got[0, :]))

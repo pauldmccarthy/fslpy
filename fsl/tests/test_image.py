@@ -1055,11 +1055,11 @@ def _test_Image_5D(imgtype):
             img = None
 
 
-def test_Image_voxToScaledVox_analyze(): _test_Image_voxToScaledVox(0)
-def test_Image_voxToScaledVox_nifti1():  _test_Image_voxToScaledVox(1)
-def test_Image_voxToScaledVox_nifti2():  _test_Image_voxToScaledVox(2)
+def test_Image_voxToFSL_analyze(): _test_Image_voxToFSL(0)
+def test_Image_voxToFSL_nifti1():  _test_Image_voxToFSL(1)
+def test_Image_voxToFSL_nifti2():  _test_Image_voxToFSL(2)
 
-def _test_Image_voxToScaledVox(imgtype):
+def _test_Image_voxToFSL(imgtype):
 
     dims     = [(10, 10, 10)]
     pixdims  = [(-1, 1, 1),
@@ -1088,8 +1088,8 @@ def _test_Image_voxToScaledVox(imgtype):
         expected    = expect(imgtype, dim, pixdim)
         invexpected = npla.inv(expected)
 
-        assert np.all(np.isclose(expected,    img.voxToScaledVoxMat))
-        assert np.all(np.isclose(invexpected, img.scaledVoxToVoxMat))
+        assert np.all(np.isclose(expected,    img.getAffine('voxel', 'fsl')))
+        assert np.all(np.isclose(invexpected, img.getAffine('fsl', 'voxel')))
         img = None
 
 
