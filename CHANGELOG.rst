@@ -3,6 +3,28 @@ order.
 
 
 
+
+3.22.0 (Tuesday 11th February 2025)
+-----------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :meth:`.Nifti.getAffine` method now supports the ``'scaled'`` coordinate
+  system, which is equivalent to the ``'fsl'`` coordinate system, but without
+  any flip along the first axis (!466).
+
+
+Deprecated
+^^^^^^^^^^
+
+* Deprecated the :meth:`.Nifti.voxToScaledVoxMat` and
+  :meth:`.Nifti.caledVoxToVoxMat` properties in favour of using the
+  :meth:`.Nifti.getAffine` method (!466).
+
+
 3.21.1 (Friday 27th September 2024)
 -----------------------------------
 
