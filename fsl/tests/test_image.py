@@ -1055,11 +1055,11 @@ def _test_Image_5D(imgtype):
             img = None
 
 
-def test_Image_voxToScaledVox_analyze(): _test_Image_voxToScaledVox(0)
-def test_Image_voxToScaledVox_nifti1():  _test_Image_voxToScaledVox(1)
-def test_Image_voxToScaledVox_nifti2():  _test_Image_voxToScaledVox(2)
+def test_Image_voxToFSL_analyze(): _test_Image_voxToFSL(0)
+def test_Image_voxToFSL_nifti1():  _test_Image_voxToFSL(1)
+def test_Image_voxToFSL_nifti2():  _test_Image_voxToFSL(2)
 
-def _test_Image_voxToScaledVox(imgtype):
+def _test_Image_voxToFSL(imgtype):
 
     dims     = [(10, 10, 10)]
     pixdims  = [(-1, 1, 1),
@@ -1088,8 +1088,8 @@ def _test_Image_voxToScaledVox(imgtype):
         expected    = expect(imgtype, dim, pixdim)
         invexpected = npla.inv(expected)
 
-        assert np.all(np.isclose(expected,    img.voxToScaledVoxMat))
-        assert np.all(np.isclose(invexpected, img.scaledVoxToVoxMat))
+        assert np.all(np.isclose(expected,    img.getAffine('voxel', 'fsl')))
+        assert np.all(np.isclose(invexpected, img.getAffine('fsl', 'voxel')))
         img = None
 
 
@@ -1414,32 +1414,55 @@ def test_generateAffines():
     v2w = affine.compose(np.random.random(3),
                          np.random.random(3),
                          np.random.random(3))
+    w2v = npla.inv(v2w)
     shape = (10, 10, 10)
     pixdim = (1, 1, 1)
 
     got, isneuro = fslimage.Nifti.generateAffines(v2w, shape, pixdim)
 
-    w2v = npla.inv(v2w)
+    exp = {}
+
+    exp['voxel', 'scaled'] = np.eye(4)
+    exp['voxel', 'world']  = v2w
+
+    exp['world', 'voxel']  = npla.inv(v2w)
+    exp['world', 'scaled'] = npla.inv(v2w)
+
+    exp['scaled', 'voxel'] = np.eye(4)
+    exp['scaled', 'world'] = v2w
 
     assert isneuro == (npla.det(v2w) > 0)
 
     if not isneuro:
-        v2f = np.eye(4)
-        f2v = np.eye(4)
-        f2w = v2w
-        w2f = w2v
+        exp['voxel',  'fsl']    = np.eye(4)
+        exp['scaled', 'fsl']    = np.eye(4)
+        exp['world',  'fsl']    = npla.inv(v2w)
+        exp['fsl',    'voxel']  = np.eye(4)
+        exp['fsl',    'scaled'] = np.eye(4)
+        exp['fsl',    'world']  = v2w
+
     else:
         v2f = affine.scaleOffsetXform([-1, 1, 1], [9, 0, 0])
-        f2v = npla.inv(v2f)
-        f2w = affine.concat(v2w, f2v)
-        w2f = affine.concat(v2f, w2v)
 
-    assert np.all(np.isclose(v2w, got['voxel', 'world']))
-    assert np.all(np.isclose(w2v, got['world', 'voxel']))
-    assert np.all(np.isclose(v2f, got['voxel', 'fsl']))
-    assert np.all(np.isclose(f2v, got['fsl',   'voxel']))
-    assert np.all(np.isclose(f2w, got['fsl'  , 'world']))
-    assert np.all(np.isclose(w2f, got['world', 'fsl']))
+        exp['voxel',  'fsl'] = v2f
+        exp['scaled', 'fsl'] = affine.concat(exp['voxel',  'fsl'],
+                                             exp['scaled', 'voxel'])
+        exp['world',  'fsl'] = affine.concat(exp['voxel',  'fsl'],
+                                             exp['world',  'voxel'])
+
+        exp['fsl', 'voxel']  = npla.inv(exp['voxel',  'fsl'])
+        exp['fsl', 'scaled'] = npla.inv(exp['scaled', 'fsl'])
+        exp['fsl', 'world']  = npla.inv(exp['world',  'fsl'])
+
+    spaces = ['voxel', 'fsl', 'scaled', 'world']
+    for from_, to in it.product(spaces, spaces):
+
+        if from_ == to: expxfm = np.eye(4)
+        else:           expxfm = exp[from_, to]
+
+        gotxfm = got[from_, to]
+
+        assert np.all(np.isclose(gotxfm, expxfm))
 
 
 def test_identifyAffine():
@@ -1448,14 +1471,28 @@ def test_identifyAffine():
 
     assert identify(None, None, 'ho', 'hum') == ('ho', 'hum')
 
-    xform = affine.compose(0.1        + 5     * np.random.random(3),
-                           -10        + 20    * np.random.random(3),
-                           -np.pi / 2 + np.pi * np.random.random(3))
+    # Construct an affine which causes
+    # all coordinate systems to be different
+    xform = np.diag([-1, 1, 1, 1])
+    while npla.det(xform) <= 0:
+        scales    = 0.1        + 5     * np.random.random(3)
+        offsets   = -10        + 20    * np.random.random(3)
+        rotations = -np.pi / 2 + np.pi * np.random.random(3)
+        xform     = affine.compose(scales, offsets, rotations)
 
-    img = fslimage.Image(make_random_image(None, xform=xform))
+    img = fslimage.Image(make_random_image(None, pixdims=scales, xform=xform))
 
-    for from_, to in it.permutations(('voxel', 'fsl', 'world'), 2):
-        assert identify(img, img.getAffine(from_, to)) == (from_, to)
+    for from_, to in it.permutations(('voxel', 'scaled', 'fsl', 'world'), 2):
+        aff = img.getAffine(from_, to)
+        got = identify(img, aff)
+
+        # The fsl->scaled and scaled->fsl affines are
+        # equivalent, as they just encode an inversion
+        # along the first axis.
+        if sorted((from_, to)) == ['fsl', 'scaled']:
+            assert got in ((from_, to), (to, from_))
+        else:
+            assert got == (from_, to)
 
     assert identify(img, img.getAffine('voxel', 'world'), from_='voxel') == ('voxel', 'world')
     assert identify(img, img.getAffine('voxel', 'world'), to='world')    == ('voxel', 'world')

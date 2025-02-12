@@ -138,15 +138,15 @@ def sformToFlirtMatrix(srcImage, refImage, srcXform=None):
                    :attr:`.Nifti.voxToWorldMat`
     """
 
-    srcScaledVoxToVoxMat = srcImage.scaledVoxToVoxMat
-    srcVoxToWorldMat     = srcImage.voxToWorldMat
-    refWorldToVoxMat     = refImage.worldToVoxMat
-    refVoxToScaledVoxMat = refImage.voxToScaledVoxMat
+    srcFSLToVoxMat   = srcImage.getAffine('fsl',   'voxel')
+    srcVoxToWorldMat = srcImage.getAffine('voxel', 'world')
+    refWorldToVoxMat = refImage.getAffine('world', 'voxel')
+    refVoxToFSLMat   = refImage.getAffine('voxel', 'fsl')
 
     if srcXform is not None:
         srcVoxToWorldMat = srcXform
 
-    return concat(refVoxToScaledVoxMat,
+    return concat(refVoxToFSLMat,
                   refWorldToVoxMat,
                   srcVoxToWorldMat,
-                  srcScaledVoxToVoxMat)
+                  srcFSLToVoxMat)
