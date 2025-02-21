@@ -544,7 +544,12 @@ def loadFEATDesignFile(filename):
         if line == '':
             continue
 
-        name, value  = line.split(maxsplit=1)
+        tokens = line.split(maxsplit=1)
+        if len(tokens) == 1:
+            name, value = tokens[0], ''
+        else:
+            name, value = tokens
+
         fields[name] = value
 
     return fields
