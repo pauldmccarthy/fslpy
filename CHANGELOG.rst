@@ -1,6 +1,16 @@
 This document contains the ``fslpy`` release history in reverse chronological
 order.
 
+XXX (Under development)
+-----------------------
+
+
+Fixed
+^^^^^
+
+* Adjusted the :func:`.featdesign.loadFEATDesignFile` function to handle missing
+  values (!469).
+
 
 3.22.0 (Monday 17th February 2025)
 ----------------------------------
