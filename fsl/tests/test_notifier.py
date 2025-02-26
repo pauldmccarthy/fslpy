@@ -204,3 +204,31 @@ def test_skip():
     t.notify(topic='topic')
     assert default_called[0] == 14
     assert topic_called[  0] == 6
+
+
+# Make sure there is no error
+# if a callback function is GC'd
+# fsl/fslpy!470
+def test_gc():
+
+    class Thing(notifier.Notifier):
+        pass
+
+    t = Thing()
+
+    called = []
+
+    def callback(thing, topic, value):
+        called.append((thing, topic, value))
+
+    t.register('callback', callback)
+
+    t.notify()
+    assert called == [(t, None, None)]
+
+    called[:] = []
+    callback  = None
+    del callback
+
+    t.notify()
+    assert called == []
