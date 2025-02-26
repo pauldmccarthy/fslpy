@@ -10,6 +10,8 @@ Fixed
 
 * Adjusted the :func:`.featdesign.loadFEATDesignFile` function to handle missing
   values (!469).
+* Fix to the :class:`.Notifier` class involving handling of callback functions
+  that have been garbage-collected (!470).
 
 
 3.22.0 (Monday 17th February 2025)
