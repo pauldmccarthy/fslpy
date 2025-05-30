@@ -632,31 +632,40 @@ def hold(job_ids, hold_filename=None, timeout=10):
                 return res
         return ','.join(sorted(unpack(job_ids)))
 
+    # If a hold file has been specified,
+    # check that it doesn't exist, but that
+    # its containing directory does exist.
     if hold_filename is not None:
+        hold_filename = op.abspath(hold_filename)
         if op.exists(hold_filename):
             raise IOError(f"Hold file ({hold_filename}) already exists")
-        elif not op.isdir(op.split(op.abspath(hold_filename))[0]):
+        elif not op.isdir(op.split(hold_filename)[0]):
             raise IOError(f"Hold file ({hold_filename}) can not be created "
                           "in non-existent directory")
 
-    # Generate a random file name to use as
-    # the hold file. Reduce likelihood of
-    # naming collision by storing file in
-    # cwd.
-    if hold_filename is None:
+    # Otherwise generate a random file name to
+    # use as the hold file. Reduce likelihood
+    # of naming collision by storing file in cwd
+    # rather than in $TMPDIR
+    else:
         handle, hold_filename = tempfile.mkstemp(prefix='.',
                                                  suffix='.hold',
                                                  dir='.')
         os.remove(hold_filename)
         os.close(handle)
 
+    # Direct log files to same directory
+    # as hold file
+    logdir = op.dirname(hold_filename)
+
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
         'jobtime'  : 1,
         'name'     : '.hold',
+        'logdir'   : logdir
     }
 
-    run(f'touch {hold_filename}', submit=submit, silent=True)
+    hold_jid = run(f'touch {hold_filename}', submit=submit, silent=True)
 
     while not op.exists(hold_filename):
         time.sleep(timeout)
@@ -664,7 +673,7 @@ def hold(job_ids, hold_filename=None, timeout=10):
     # remove the hold file and the
     # fsl_sub job stdout/err files
     os.remove(hold_filename)
-    for outfile in glob.glob('.hold.[o,e]*'):
+    for outfile in glob.glob(op.join(logdir, f'.hold.[o,e]{hold_jid}')):
         os.remove(outfile)
 
 
