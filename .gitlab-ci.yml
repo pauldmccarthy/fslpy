@@ -124,33 +124,48 @@ variables:
 ############
 
 .test_rules: &test_rules
-  # We only run tests on MRs, and on release branches
-  # (a more substantial test suite is run on release
-  # branches - see .ci/test_template.sh). We don't run
-  # on upstream/main, as all merges are fast-forwards,
-  # so the tests will have already been run on the MR
-  # branch. We also allow manually running a pipeline
-  # via the web interface.
   rules:
     # Disable MR pipelines
     - if:   '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never
-    # Don't run if SKIP_TESTS is set or "[skip-tests]" is in commit message
-    - if:   $SKIP_TESTS != null
+    # Don't run on upstream repo
+    - if:   '$CI_PROJECT_PATH == $UPSTREAM_PROJECT'
       when: never
-    - if:   $CI_COMMIT_MESSAGE =~ /\[skip-tests\]/
+    # Set SKIP_TESTS to skip tests
+    - if:   '$SKIP_TESTS != null'
       when: never
-    # Upstream: only run on release branches
-    - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT && $CI_COMMIT_BRANCH =~ /^v.+$/
-      when: on_success
-    - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT
+    # Don't test if "[skip-tests]"
+    # is in the commit message
+    - if:   '$CI_COMMIT_MESSAGE =~ /\[skip-tests\]/'
       when: never
     - when: on_success
 
+# some test jobs are only run on the upstream repo
+.test_rules_upstream: &test_rules_upstream
+  rules:
+    # Releases are just tags on a release
+    # branch, so we don't need to test them.
+    - if:   '$CI_COMMIT_TAG != null'
+      when: never
+    # Don't test if "[skip-tests]"
+    # is in the commit message
+    - if:   '$CI_COMMIT_MESSAGE =~ /\[skip-tests\]/'
+      when: never
+    # Set SKIP_TESTS to skip tests
+    - if:   '$SKIP_TESTS != null'
+      when: never
+    # Only run on upstream repo
+    - if:   '$CI_PROJECT_PATH != $UPSTREAM_PROJECT'
+      when: never
+    # Only run on release branches
+    - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT && $CI_COMMIT_BRANCH =~ /^v.+$/
+      when: on_success
+    # Allow manual pipeline creation
+    - if:   '$CI_PIPELINE_SOURCE == "web"'
+      when: on_success
 
 .test: &test_template
   <<: *setup_ssh
-  <<: *test_rules
 
   tags:
     - docker
@@ -163,24 +178,33 @@ test:3.10:
   stage: test
   image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
   <<: *test_template
+  <<: *test_rules_upstream
 
 
 test:3.11:
   stage: test
   image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
   <<: *test_template
+  <<: *test_rules_upstream
 
+quicktest:3.12:
+  stage: test
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+  <<: *test_template
+  <<: *test_rules
 
 test:3.12:
   stage: test
   image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
   <<: *test_template
+  <<: *test_rules_upstream
 
 
 test:3.13:
   stage: test
   image: pauldmccarthy/fsleyes-py313-wxpy4-gtk3
   <<: *test_template
+  <<: *test_rules_upstream
 
 
 test:build-pypi-dist:
@@ -204,6 +228,7 @@ style:
   stage: style
   image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
   <<: *test_template
+  <<: *test_rules
   variables:
     TEST_STYLE:  "true"
 
