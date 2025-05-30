@@ -66,7 +66,12 @@ class _Listener:
         positional arguments - see :meth:`Notifier.register` for details.
         """
 
-        func    = self.callback
+        func = self.callback
+
+        # the function may have been GC'd
+        if func is None:
+            return False
+
         spec    = inspect.signature(func)
         posargs = 0
         varargs = False
@@ -377,9 +382,6 @@ class Notifier:
             callback = listener.callback
             name     = listener.name
 
-            if listener.expectsArguments: args = (self, topic, value)
-            else:                         args = ()
-
             # The callback, or the owner of the
             # callback function may have been
             # gc'd - remove it if this is the case.
@@ -387,12 +389,16 @@ class Notifier:
                 log.debug('Listener %s has been gc\'d - '
                           'removing from list', name)
                 self.__listeners[listener.topic].pop(name)
-
-            elif not listener.enabled:
                 continue
 
-            elif listener.runOnIdle: idle.idle(callback, *args)
-            else:                    callback(           *args)
+            if not listener.enabled:
+                continue
+
+            if listener.expectsArguments: args = (self, topic, value)
+            else:                         args = ()
+
+            if listener.runOnIdle: idle.idle(callback, *args)
+            else:                  callback(           *args)
 
 
     def __getListeners(self, topic):

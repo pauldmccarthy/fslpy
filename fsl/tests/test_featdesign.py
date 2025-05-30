@@ -103,8 +103,9 @@ with the following commands:
 """
 
 
-import os.path as op
-import numpy   as np
+import os.path  as op
+import textwrap as tw
+import numpy    as np
 
 import pytest
 
@@ -398,6 +399,45 @@ def test_loadDesignMat():
 
     with pytest.raises(Exception):
         featdesign.loadDesignMat(badfile)
+
+
+# fsl/fslpy!469
+def test_loadFEATDesignFile():
+    with tempdir():
+        with open('design1.con', 'wt') as f:
+            f.write(tw.dedent("""
+            /ContrastName1  mycontrast
+            /NumWaves       2
+            /NumContrasts   1
+
+            /Matrix
+            10 20
+            """).strip())
+
+        with open('design2.con', 'wt') as f:
+            f.write(tw.dedent("""
+            /ContrastName1
+            /NumWaves       2
+            /NumContrasts   1
+
+            /Matrix
+            10 20
+            """).strip())
+
+        des1 = featanalysis.loadFEATDesignFile('design1.con')
+        exp1 = {'ContrastName1': 'mycontrast',
+                'NumWaves':      '2',
+                'NumContrasts':  '1',
+                'Matrix':        '10 20'}
+
+        des2 = featanalysis.loadFEATDesignFile('design2.con')
+        exp2 = {'ContrastName1': '',
+                'NumWaves':      '2',
+                'NumContrasts':  '1',
+                'Matrix':        '10 20'}
+
+        assert des1 == exp1
+        assert des2 == exp2
 
 
 def test_VoxelwiseEVs():
