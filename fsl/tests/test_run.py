@@ -470,7 +470,7 @@ def test_hold():
 
     with tempdir.tempdir():
 
-        holdfile = 'holdfile'
+        holdfile = op.abspath('holdfile')
 
         def create_holdfile():
             time.sleep(3)
@@ -487,7 +487,7 @@ def test_hold():
     # so we do a very simple check here
     assert len(cmds) == 1
     cmd, submit = cmds[0]
-    assert cmd               == ('touch', 'holdfile')
+    assert cmd               == ('touch', holdfile)
     assert submit['jobhold'] == '1,2,3'
 
 

@@ -1,13 +1,16 @@
 This document contains the ``fslpy`` release history in reverse chronological
 order.
 
-XXX (Under development)
------------------------
+
+3.22.1 (Monday 2nd June 2025)
+-----------------------------
 
 
 Fixed
 ^^^^^
 
+* Fixed a race condition in the :func:`.hold` function when holding on multiple
+  jobs concurrently (!471).
 * Adjusted the :func:`.featdesign.loadFEATDesignFile` function to handle missing
   values (!469).
 * Fix to the :class:`.Notifier` class involving handling of callback functions
