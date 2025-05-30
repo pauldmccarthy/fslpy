@@ -132,17 +132,20 @@ variables:
   # branch. We also allow manually running a pipeline
   # via the web interface.
   rules:
+    # Disable MR pipelines
+    - if:   '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    # Don't run if SKIP_TESTS is set or "[skip-tests]" is in commit message
     - if:   $SKIP_TESTS != null
       when: never
     - if:   $CI_COMMIT_MESSAGE =~ /\[skip-tests\]/
       when: never
-    - if:   $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: on_success
+    # Upstream: only run on release branches
     - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT && $CI_COMMIT_BRANCH =~ /^v.+$/
       when: on_success
-    - if:   $CI_PIPELINE_SOURCE == "web"
-      when: on_success
-    - when: never
+    - if:   $CI_PROJECT_PATH == $UPSTREAM_PROJECT
+      when: never
+    - when: on_success
 
 
 .test: &test_template
