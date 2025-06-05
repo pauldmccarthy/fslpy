@@ -28,6 +28,7 @@ import                    sys
 import                    glob
 import                    time
 import                    shlex
+import                    shutil
 import                    logging
 import                    tempfile
 import                    threading
@@ -454,6 +455,81 @@ def runfunc(func,
     """
     cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose, save, env)
     return run(cmd, **run_kwargs)
+
+
+def submitfunc(func,
+               args=None,
+               kwargs=None,
+               workdir=None,
+               env=None,
+               hold_jids=None):
+    """Submit the given python function to the cluster using ``fsl_sub``.
+
+    :arg func:      Function to run
+    :arg args:      Function positional arguments
+    :arg kwargs:    Function keyword arguments
+    :arg workdir:   Temporary/working directory (default: system temporary
+                    directory)
+    :arg env:       Dict of additional environment variables that should be set
+    :arg hold_jids: List of cluster job IDs that this job depends on.
+
+    :returns: a tuple containing:
+
+              - A function which can be called to retrieve the function return
+                value. When this function is called, it waits until the job
+                completes (using :func:`hold`), then loads and returns the
+                function return value.
+
+              - the submitted job ID
+    """
+
+    if hold_jids is not None:
+        hold_jids = ','.join(hold_jids)
+
+    # if user didn't specify their own
+    # temp dir we remove it afterwards
+    rmdir = workdir is None
+
+    # submit the function, directing all temporary
+    # files into a temp dir (or the tmp_dir given
+    # by the caller)
+    with tempdir.tempdir(override=workdir,
+                         changeto=False,
+                         delete=False) as workdir:
+
+        run_kwargs = {
+            'silent' : True,
+            'submit' : {
+                'logdir'  : workdir,
+                'jobhold' : hold_jids
+            }
+        }
+
+        result_file = op.join(workdir, func.__name__)
+        jid         = runfunc(func, args, kwargs, workdir, env=env,
+                              save=result_file, **run_kwargs)
+
+    # Function which waits until the job has
+    # completed, loads and returns its
+    # return value, and deletes the temp dir
+    # if needed
+    def get_result():
+        hold([jid])
+
+        val = None
+        if op.exists(result_file):
+            with open(result_file, 'rb') as f:
+                val = dill.loads(f.read())
+
+        if rmdir and op.exists(workdir):
+            shutil.rmtree(workdir)
+
+        if isinstance(val, Exception):
+            raise val
+
+        return val
+
+    return get_result, jid
 
 
 def func_to_cmd(func,
