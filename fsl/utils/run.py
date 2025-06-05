@@ -727,7 +727,6 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
 
     :arg jobtime:       Expected run time in minutes, passed to fsl_sub via
                         the --jobtime flag.
-
     """
 
     # Returns a potentially nested sequence of
@@ -747,48 +746,53 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
 
     # If a hold file has been specified,
     # check that it doesn't exist, but that
-    # its containing directory does exist.
-    if hold_filename is not None:
-        hold_filename = op.abspath(hold_filename)
-        if op.exists(hold_filename):
-            raise IOError(f"Hold file ({hold_filename}) already exists")
-        elif not op.isdir(op.split(hold_filename)[0]):
-            raise IOError(f"Hold file ({hold_filename}) can not be created "
+    # its containing directory does exist,
+    # then create the file.
+    holdfile = hold_filename
+    if holdfile is not None:
+        holdfile = op.abspath(holdfile)
+        if op.exists(holdfile):
+            raise IOError(f"Hold file ({holdfile}) already exists")
+        elif not op.isdir(op.split(holdfile)[0]):
+            raise IOError(f"Hold file ({holdfile}) can not be created "
                           "in non-existent directory")
+        with open(holdfile, 'wb') as f:
+            pass
 
     # Otherwise generate a random file name to
-    # use as the hold file. Reduce likelihood
-    # of naming collision by storing file in cwd
-    # rather than in $TMPDIR
+    # use as the hold file. Store in cwd, as
+    # it is more likely to be on the network
+    # file system (and acecssible by cluster
+    # nodes) than $TMPDIR
     else:
-        handle, hold_filename = tempfile.mkstemp(prefix='.',
-                                                 suffix='.hold',
-                                                 dir='.')
-        os.remove(hold_filename)
-        os.close(handle)
+        holdfile = tempdir.mkstemp(prefix='.', suffix='.hold', dir='.')
 
-    # Direct log files to same directory
-    # as hold file
-    logdir = op.dirname(hold_filename)
+    # Direct log files to same directory as
+    # hold file. Use hold file name as job
+    # identitier, as it should be unique to
+    # this job.
+    logdir  = op.dirname( holdfile)
+    jobname = op.basename(holdfile)
 
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
-        'name'     : '.hold',
+        'name'     : jobname,
         'logdir'   : logdir
     }
     if jobtime is not None:
         submit['jobtime'] = jobtime
 
-    hold_jid = run(f'touch {hold_filename}', submit=submit, silent=True)
+    # submit a job to remove the hold file
+    # once the specified job_ids have completed
+    run(f'rm {holdfile}', submit=submit, silent=True)
 
-    while not op.exists(hold_filename):
+    # wait until the hold file is removed
+    while op.exists(holdfile):
         time.sleep(timeout)
 
-    # remove the hold file and the
-    # fsl_sub job stdout/err files
-    os.remove(hold_filename)
-    for outfile in glob.glob(op.join(logdir, f'.hold.[o,e]{hold_jid}')):
-        os.remove(outfile)
+    # remove the fsl_sub job stdout/err files
+    for fname in glob.glob(op.join(logdir, f'{jobname}.*')):
+        os.remove(fname)
 
 
 def job_output(job_id, logdir='.', command=None, name=None):

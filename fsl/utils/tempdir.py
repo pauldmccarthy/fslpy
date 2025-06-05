@@ -5,12 +5,13 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module contains utilities for working with temporary files and
-directories. It currently only contains one function:
+directories. It currently contains the following functions:
 
 .. autosummary::
    :nosignatures:
 
    tempdir
+   mkstemp
 """
 
 
@@ -67,3 +68,12 @@ def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
             shutil.rmtree(testdir)
         if changeto:
             os.chdir(prevdir)
+
+
+def mkstemp(*args, **kwargs):
+    """Wrapper around ``tempfile.mkstemp``. Does the same as that
+    function, but closes the file, and just returns the file name.
+    """
+    hd, fname = tempfile.mkstemp(*args, **kwargs)
+    os.close(hd)
+    return fname
