@@ -473,12 +473,12 @@ def test_hold():
 
         holdfile = op.abspath('holdfile')
 
-        def create_holdfile():
+        def remove_holdfile():
             time.sleep(3)
-            touch(holdfile)
+            os.remove(holdfile)
 
         with run.dryrun():
-            threading.Thread(target=create_holdfile).start()
+            threading.Thread(target=remove_holdfile).start()
             run.hold([1, 2, 3], holdfile, timeout=1)
 
         cmds = list(run.DRY_RUN_COMMANDS)
@@ -488,7 +488,7 @@ def test_hold():
     # so we do a very simple check here
     assert len(cmds) == 1
     cmd, submit = cmds[0]
-    assert cmd               == ('touch', holdfile)
+    assert cmd               == ('rm', holdfile)
     assert submit['jobhold'] == '1,2,3'
 
 
