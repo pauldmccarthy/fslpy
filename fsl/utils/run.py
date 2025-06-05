@@ -443,6 +443,8 @@ def runfunc(func,
             tmp_dir=None,
             clean="never",
             verbose=False,
+            save=None,
+            env=None,
             **run_kwargs):
     """Run the given python function as a shell command. See
     :func:`func_to_cmd` for details on the arguments.
@@ -450,7 +452,7 @@ def runfunc(func,
     The remaining ``run_kwargs`` arguments are passed through to the
     :func:`run` function.
     """
-    cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose)
+    cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose, save, env)
     return run(cmd, **run_kwargs)
 
 
@@ -459,7 +461,9 @@ def func_to_cmd(func,
                 kwargs=None,
                 tmp_dir=None,
                 clean="never",
-                verbose=False):
+                verbose=False,
+                save=None,
+                env=None):
     """Save the given python function to an executable file. Return a string
     containing a command that can be used to run the function.
 
@@ -488,7 +492,23 @@ def func_to_cmd(func,
 
     :arg verbose: If set to True, the script will print its own filename
                   before running
+
+    :arg save:    Name of file to which the function return value will be saved
+                  (serialised using dill).
+
+    :arg env:     Dictionary of additional environment variables to be set when
+                  the function nis executed.
     """
+
+    if env is not None:
+        env_snippet = [f'os.environ["{k}"] = "{v}"' for k, v in env.items()]
+        env_snippet = '\n'.join(env_snippet)
+    else:
+        env_snippet = ''
+
+    if save is None:
+        save = ''
+
     script_template = tw.dedent("""
     #!{executable}
     # This is a temporary file designed to run the python function {funcname},
@@ -498,6 +518,8 @@ def func_to_cmd(func,
     from io import BytesIO
     from importlib import import_module
 
+    {env_snippet}
+
     if {verbose}:
         print('running {filename}')
 
@@ -505,14 +527,23 @@ def func_to_cmd(func,
     func, args, kwargs = dill.load(dill_bytes)
 
     clean = {clean}
+    save  = {save}
 
     try:
-        res = func(*args, **kwargs)
+        result = func(*args, **kwargs)
+
     except Exception as e:
         if clean == 'on_success':
             clean = 'never'
+        result = e
         raise e
+
     finally:
+
+        if save != '':
+            with open(save, 'wb') as f:
+                f.write(dill.dumps(result))
+
         if clean in ('on_success', 'always'):
             os.remove({filename})
     """).strip()
@@ -538,6 +569,8 @@ def func_to_cmd(func,
         filename=f'"{filename}"',
         verbose=verbose,
         clean=f'"{clean}"',
+        save=f'"{save}"',
+        env_snippet=env_snippet,
         dill_bytes=dill_bytes.getvalue())
 
     with open(filename, 'w') as f:
