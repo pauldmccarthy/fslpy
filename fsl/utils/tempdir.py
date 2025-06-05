@@ -21,7 +21,7 @@ import contextlib
 
 
 @contextlib.contextmanager
-def tempdir(root=None, changeto=True, override=None, prefix=None):
+def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
     """Returns a context manager which creates and returns a temporary
     directory, and then deletes it on exit.
 
@@ -39,6 +39,10 @@ def tempdir(root=None, changeto=True, override=None, prefix=None):
 
     :arg prefix:   Create the temporary directory with a name starting with
                    this prefix.
+
+    :arg delete:   If ``True`` (the default), the directory is deleted on exit.
+                   Otherwise the caller is responsible for deleting the
+                   directory.
     """
 
     if root is not None:
@@ -57,7 +61,7 @@ def tempdir(root=None, changeto=True, override=None, prefix=None):
         yield testdir
 
     finally:
-        if override is None:
+        if (override is None) and (not delete):
             shutil.rmtree(testdir)
         if changeto:
             os.chdir(prevdir)
