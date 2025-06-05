@@ -35,7 +35,8 @@ def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
 
     :arg override: Don't create a temporary directory, but use this one
                    instead. This allows ``tempdir`` to be used as a context
-                   manager when a temporary directory already exists.
+                   manager when a temporary directory already exists. Implies
+                   ``delete=False``.
 
     :arg prefix:   Create the temporary directory with a name starting with
                    this prefix.
@@ -52,6 +53,7 @@ def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
         testdir = tempfile.mkdtemp(dir=root, prefix=prefix)
     else:
         testdir = override
+        delete  = False
 
     prevdir = os.getcwd()
 
@@ -61,7 +63,7 @@ def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
         yield testdir
 
     finally:
-        if (override is None) and (not delete):
+        if delete:
             shutil.rmtree(testdir)
         if changeto:
             os.chdir(prevdir)
