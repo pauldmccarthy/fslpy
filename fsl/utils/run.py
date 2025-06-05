@@ -712,7 +712,7 @@ def wslcmd(cmdpath, *args):
         return None
 
 
-def hold(job_ids, hold_filename=None, timeout=10):
+def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
     """Waits until all specified cluster jobs have finished.
 
     :arg job_ids:       Possibly nested sequence of job ids. The job ids
@@ -724,6 +724,10 @@ def hold(job_ids, hold_filename=None, timeout=10):
                         the current directory.
 
     :arg timeout:       Number of seconds to sleep between  status checks.
+
+    :arg jobtime:       Expected run time in minutes, passed to fsl_sub via
+                        the --jobtime flag.
+
     """
 
     # Returns a potentially nested sequence of
@@ -769,10 +773,11 @@ def hold(job_ids, hold_filename=None, timeout=10):
 
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
-        'jobtime'  : 1,
         'name'     : '.hold',
         'logdir'   : logdir
     }
+    if jobtime is not None:
+        submit['jobtime'] = jobtime
 
     hold_jid = run(f'touch {hold_filename}', submit=submit, silent=True)
 
