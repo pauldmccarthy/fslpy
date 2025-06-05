@@ -460,18 +460,21 @@ def runfunc(func,
 def submitfunc(func,
                args=None,
                kwargs=None,
-               workdir=None,
+               tmp_dir=None,
                env=None,
-               hold_jids=None):
+               hold_jids=None,
+               **submit_kwargs):
     """Submit the given python function to the cluster using ``fsl_sub``.
 
-    :arg func:      Function to run
-    :arg args:      Function positional arguments
-    :arg kwargs:    Function keyword arguments
-    :arg workdir:   Temporary/working directory (default: system temporary
-                    directory)
-    :arg env:       Dict of additional environment variables that should be set
-    :arg hold_jids: List of cluster job IDs that this job depends on.
+    :arg func:          Function to run
+    :arg args:          Function positional arguments
+    :arg kwargs:        Function keyword arguments
+    :arg tmp_dir:       Temporary/working directory (default: current working
+                        directory)
+    :arg env:           Dict of additional environment variables that should be
+                        set when the function is run.
+    :arg hold_jids:     List of cluster job IDs that this job depends on.
+    :arg submit_kwargs: Passed through to ``fsl_sub``.
 
     :returns: a tuple containing:
 
@@ -483,36 +486,40 @@ def submitfunc(func,
               - the submitted job ID
     """
 
+    func_args     = tuple(args)
+    func_kwargs   = tuple(kwargs)
+    submit_kwargs = dict(submit_kwargs)
+    kwargs        = {}
+
+    if tmp_dir is None:
+        tmp_dir = '.'
+
+    result_file = tempdir.mkstemp(f'.submitfunc.{func.__name__}',
+                                  suffix='.dill',
+                                  dir=tmp_dir)
+    jobname     = op.basename(result_file).removesuffix('.dill')
+
+    # passed to fsl_sub()
+    submit_kwargs['name']   = jobname
+    submit_kwargs['logdir'] = tmp_dir
+
     if hold_jids is not None:
-        hold_jids = ','.join(hold_jids)
+        submit_kwargs['jobhold'] = ','.join(hold_jids)
 
-    # if user didn't specify their own
-    # temp dir we remove it afterwards
-    rmdir = workdir is None
+    # passed to func_to_cmd()
+    kwargs['env']     = env
+    kwargs['save']    = result_file
+    kwargs['tmp_dir'] = tmp_dir
+    # passed through to run()
+    kwargs['submit']  = submit_kwargs
+    kwargs['silent']  = True
 
-    # submit the function, directing all temporary
-    # files into a temp dir (or the tmp_dir given
-    # by the caller)
-    with tempdir.tempdir(override=workdir,
-                         changeto=False,
-                         delete=False) as workdir:
-
-        run_kwargs = {
-            'silent' : True,
-            'submit' : {
-                'logdir'  : workdir,
-                'jobhold' : hold_jids
-            }
-        }
-
-        result_file = op.join(workdir, func.__name__)
-        jid         = runfunc(func, args, kwargs, workdir, env=env,
-                              save=result_file, **run_kwargs)
+    jid = runfunc(func, func_args, func_kwargs, **kwargs)
 
     # Function which waits until the job has
     # completed, loads and returns its
-    # return value, and deletes the temp dir
-    # if needed
+    # return value, and deletes temp output
+    # files if needed
     def get_result():
         hold([jid])
 
@@ -521,8 +528,9 @@ def submitfunc(func,
             with open(result_file, 'rb') as f:
                 val = dill.loads(f.read())
 
-        if rmdir and op.exists(workdir):
-            shutil.rmtree(workdir)
+        # remove result file and fsl_sub log files
+        for f in glob.glob(op.join(tmp_dir, f'{jobname}.*')):
+            os.remove(f)
 
         if isinstance(val, Exception):
             raise val
