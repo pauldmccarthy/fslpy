@@ -16,6 +16,7 @@ import textwrap as tw
 from unittest import mock
 
 import pytest
+import dill
 
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
@@ -497,10 +498,40 @@ def _good_func():
 def _bad_func():
     1/0
 
+def _func_returning_value():
+    return [1, 2, 3, 4, 5, "six"]
+
+def _func_reading_env():
+    return os.environ['ENV_VAR']
+
+
 def test_runfunc():
     assert run.runfunc(_good_func, clean='always') == 'hello\n'
     with pytest.raises(Exception):
         assert run.runfunc(_bad_func, clean='always')
+
+
+def test_runfunc_save():
+    with tempdir.tempdir():
+
+        run.runfunc(_func_returning_value, tmp_dir='.', save='output.dill')
+
+        with open('output.dill', 'rb') as f:
+            result = dill.loads(f.read())
+        assert result == [1, 2, 3, 4, 5, "six"]
+
+
+def test_runfunc_env():
+    with tempdir.tempdir():
+
+        run.runfunc(_func_reading_env,
+                    tmp_dir='.',
+                    env={'ENV_VAR' : 'ENV_VALUE'},
+                    save='output.dill')
+
+        with open('output.dill', 'rb') as f:
+            result = dill.loads(f.read())
+        assert result == 'ENV_VALUE'
 
 
 def test_func_to_cmd():

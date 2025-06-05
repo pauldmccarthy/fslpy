@@ -78,3 +78,25 @@ def test_tempdir_override():
         assert op.exists(override)
         # and we should be moved back into the original cwd
         assert op.realpath(os.getcwd()) == op.realpath(parent)
+
+
+def test_tempdir_delete():
+    with tempdir.tempdir() as parent:
+        # default is to delete on exit
+        with tempdir.tempdir(root='.') as td:
+            pass
+        assert not op.exists(td)
+
+        # delete=False -> tempdir should not be deleted
+        with tempdir.tempdir(root='.', delete=False) as td:
+            pass
+        assert op.exists(td)
+
+        # overrire not none -> should not be deleted
+        os.makedirs('override')
+        with tempdir.tempdir(root='.', override='override') as td:
+            pass
+        assert op.exists(td)
+        with tempdir.tempdir(root='.', override='override', delete=True) as td:
+            pass
+        assert op.exists(td)
