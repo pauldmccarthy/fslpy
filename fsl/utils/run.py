@@ -28,7 +28,6 @@ import                    sys
 import                    glob
 import                    time
 import                    shlex
-import                    shutil
 import                    logging
 import                    tempfile
 import                    threading
@@ -533,7 +532,10 @@ def submitfunc(func,
     # return value, and deletes temp output
     # files if needed
     def get_result():
-        hold([jid])
+        jobtime = submit_kwargs.get('jobtime', None)
+        if jobtime is not None:
+            jobtime = jobtime + 1
+        hold([jid], jobtime=jobtime)
 
         cleanop = clean
 
