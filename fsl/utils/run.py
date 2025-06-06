@@ -535,16 +535,18 @@ def submitfunc(func,
     def get_result():
         hold([jid])
 
+        cleanop = clean
+
         val = None
         if op.exists(result_file):
             with open(result_file, 'rb') as f:
                 val = dill.loads(f.read())
 
-        if isinstance(val, Exception) and clean == 'on_success':
-            clean = 'never'
+        if isinstance(val, Exception) and cleanop == 'on_success':
+            cleanop = 'never'
 
         # remove result file and fsl_sub log files
-        if clean in ('on_success', 'always'):
+        if cleanop in ('on_success', 'always'):
             for f in glob.glob(op.join(tmp_dir, f'{jobname}.*')):
                 os.remove(f)
 
