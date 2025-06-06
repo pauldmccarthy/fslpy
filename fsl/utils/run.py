@@ -513,12 +513,16 @@ def submitfunc(func,
     # passed to func_to_cmd()
     kwargs['env']     = env
     kwargs['save']    = result_file
+    kwargs['verbose'] = True
     kwargs['tmp_dir'] = tmp_dir
     # passed through to run()
     kwargs['submit']  = submit_kwargs
     kwargs['silent']  = True
 
     jid = runfunc(func, func_args, func_kwargs, **kwargs)
+
+    log.debug('Running function %s on cluster (job %s, saving results to  %s)',
+              func.__name__, jid, result_file)
 
     # Function which waits until the job has
     # completed, loads and returns its
@@ -629,6 +633,8 @@ def func_to_cmd(func,
     finally:
 
         if save != '':
+            if {verbose}:
+                print('Saving rseult to {save}')
             with open(save, 'wb') as f:
                 f.write(dill.dumps(result))
 
