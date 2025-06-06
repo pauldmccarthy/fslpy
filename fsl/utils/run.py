@@ -463,6 +463,7 @@ def submitfunc(func,
                tmp_dir=None,
                env=None,
                hold_jids=None,
+               clean='never',
                **submit_kwargs):
     """Submit the given python function to the cluster using ``fsl_sub``.
 
@@ -474,6 +475,8 @@ def submitfunc(func,
     :arg env:           Dict of additional environment variables that should be
                         set when the function is run.
     :arg hold_jids:     List of cluster job IDs that this job depends on.
+    :arg clean:         Clean up temporary files afterwards - see
+                        :func:`func_to_cmd`.
     :arg submit_kwargs: Passed through to ``fsl_sub``.
 
     :returns: a tuple containing:
@@ -514,6 +517,7 @@ def submitfunc(func,
     kwargs['env']     = env
     kwargs['save']    = result_file
     kwargs['verbose'] = True
+    kwargs['clean']   = clean
     kwargs['tmp_dir'] = tmp_dir
     # passed through to run()
     kwargs['submit']  = submit_kwargs
@@ -536,9 +540,13 @@ def submitfunc(func,
             with open(result_file, 'rb') as f:
                 val = dill.loads(f.read())
 
+        if isinstance(val, Exception) and clean == 'on_success':
+            clean = 'never'
+
         # remove result file and fsl_sub log files
-        for f in glob.glob(op.join(tmp_dir, f'{jobname}.*')):
-            os.remove(f)
+        if clean in ('on_success', 'always'):
+            for f in glob.glob(op.join(tmp_dir, f'{jobname}.*')):
+                os.remove(f)
 
         if isinstance(val, Exception):
             raise val
