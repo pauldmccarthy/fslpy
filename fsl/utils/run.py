@@ -486,8 +486,12 @@ def submitfunc(func,
               - the submitted job ID
     """
 
-    func_args     = tuple(args)
-    func_kwargs   = tuple(kwargs)
+    # rename args/kwargs
+    if args   is not None: func_args   = list(args)
+    else:                  func_args   = []
+    if kwargs is not None: func_kwargs = dict(kwargs)
+    else:                  func_kwargs = {}
+
     submit_kwargs = dict(submit_kwargs)
     kwargs        = {}
 
