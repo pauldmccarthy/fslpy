@@ -498,7 +498,7 @@ def submitfunc(func,
     if tmp_dir is None:
         tmp_dir = '.'
 
-    result_file = tempdir.mkstemp(f'.submitfunc.{func.__name__}',
+    result_file = tempdir.mkstemp(prefix=f'.submitfunc.{func.__name__}',
                                   suffix='.dill',
                                   dir=tmp_dir)
     jobname     = op.basename(result_file).removesuffix('.dill')
