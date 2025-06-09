@@ -6,16 +6,19 @@
 #
 
 
-import os.path  as op
-import             os
-import             shutil
-import             threading
-import             time
-import textwrap as tw
+import os.path    as op
+import               os
+import               shutil
+import               threading
+import               time
+import               shlex
+import subprocess as sp
+import textwrap   as tw
 
 from unittest import mock
 
 import pytest
+import dill
 
 import fsl.utils.tempdir                  as tempdir
 from   fsl.utils.platform import platform as fslplatform
@@ -472,12 +475,12 @@ def test_hold():
 
         holdfile = op.abspath('holdfile')
 
-        def create_holdfile():
+        def remove_holdfile():
             time.sleep(3)
-            touch(holdfile)
+            os.remove(holdfile)
 
         with run.dryrun():
-            threading.Thread(target=create_holdfile).start()
+            threading.Thread(target=remove_holdfile).start()
             run.hold([1, 2, 3], holdfile, timeout=1)
 
         cmds = list(run.DRY_RUN_COMMANDS)
@@ -487,7 +490,7 @@ def test_hold():
     # so we do a very simple check here
     assert len(cmds) == 1
     cmd, submit = cmds[0]
-    assert cmd               == ('touch', holdfile)
+    assert cmd               == ('rm', holdfile)
     assert submit['jobhold'] == '1,2,3'
 
 
@@ -497,10 +500,40 @@ def _good_func():
 def _bad_func():
     1/0
 
+def _func_returning_value():
+    return [1, 2, 3, 4, 5, "six"]
+
+def _func_reading_env():
+    return os.environ['ENV_VAR']
+
+
 def test_runfunc():
     assert run.runfunc(_good_func, clean='always') == 'hello\n'
     with pytest.raises(Exception):
         assert run.runfunc(_bad_func, clean='always')
+
+
+def test_runfunc_save():
+    with tempdir.tempdir():
+
+        run.runfunc(_func_returning_value, tmp_dir='.', save='output.dill')
+
+        with open('output.dill', 'rb') as f:
+            result = dill.loads(f.read())
+        assert result == [1, 2, 3, 4, 5, "six"]
+
+
+def test_runfunc_env():
+    with tempdir.tempdir():
+
+        run.runfunc(_func_reading_env,
+                    tmp_dir='.',
+                    env={'ENV_VAR' : 'ENV_VALUE'},
+                    save='output.dill')
+
+        with open('output.dill', 'rb') as f:
+            result = dill.loads(f.read())
+        assert result == 'ENV_VALUE'
 
 
 def test_func_to_cmd():
@@ -534,6 +567,28 @@ def test_func_to_cmd():
                     assert not op.exists(fn), "Failing job should always be removed if requested"
                 else:
                     assert op.exists(fn), f"Failing job got removed even with clean = {clean}"
+
+
+def test_submitfunc():
+
+    def func1(a1, a2):
+        return a1 + a2
+
+    def func2(a1, a2):
+        raise ValueError("inputs are wrong")
+
+    # just run the command
+    def mock_fsl_sub(*cmd, **kwargs):
+        sp.run(cmd)
+        return '1234'
+
+    with mock.patch('fsl.wrappers.fsl_sub', mock_fsl_sub):
+        result = run.submitfunc(func1, ('123', '456'), clean='always')[0]()
+        assert result == '123456'
+
+        with pytest.raises(ValueError):
+            run.submitfunc(func2, ('123', '456'), clean='always')[0]()
+
 
 def test_wrapper_to_cmd():
     fn = run.func_to_cmd(wrappers.bet)

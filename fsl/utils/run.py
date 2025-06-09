@@ -16,6 +16,7 @@
    run
    runfsl
    runfunc
+   submitfunc
    func_to_cmd
    dryrun
    hold
@@ -443,6 +444,8 @@ def runfunc(func,
             tmp_dir=None,
             clean="never",
             verbose=False,
+            save=None,
+            env=None,
             **run_kwargs):
     """Run the given python function as a shell command. See
     :func:`func_to_cmd` for details on the arguments.
@@ -450,8 +453,112 @@ def runfunc(func,
     The remaining ``run_kwargs`` arguments are passed through to the
     :func:`run` function.
     """
-    cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose)
+    cmd = func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose, save, env)
     return run(cmd, **run_kwargs)
+
+
+def submitfunc(func,
+               args=None,
+               kwargs=None,
+               tmp_dir=None,
+               env=None,
+               hold_jids=None,
+               clean='never',
+               **submit_kwargs):
+    """Submit the given python function to the cluster using ``fsl_sub``.
+
+    :arg func:          Function to run
+    :arg args:          Function positional arguments
+    :arg kwargs:        Function keyword arguments
+    :arg tmp_dir:       Temporary/working directory (default: current working
+                        directory)
+    :arg env:           Dict of additional environment variables that should be
+                        set when the function is run.
+    :arg hold_jids:     List of cluster job IDs that this job depends on.
+    :arg clean:         Clean up temporary files afterwards - see
+                        :func:`func_to_cmd`.
+    :arg submit_kwargs: Passed through to ``fsl_sub``.
+
+    :returns: a tuple containing:
+
+              - A function which can be called to retrieve the function return
+                value. When this function is called, it waits until the job
+                completes (using :func:`hold`), then loads and returns the
+                function return value.
+
+              - the submitted job ID
+    """
+
+    # rename args/kwargs
+    if args   is not None: func_args   = list(args)
+    else:                  func_args   = []
+    if kwargs is not None: func_kwargs = dict(kwargs)
+    else:                  func_kwargs = {}
+
+    submit_kwargs = dict(submit_kwargs)
+    kwargs        = {}
+
+    if tmp_dir is None:
+        tmp_dir = '.'
+
+    result_file = tempdir.mkstemp(prefix=f'.submitfunc.{func.__name__}',
+                                  suffix='.dill',
+                                  dir=tmp_dir)
+    jobname     = op.basename(result_file).removesuffix('.dill')
+
+    # passed to fsl_sub()
+    submit_kwargs['name']   = jobname
+    submit_kwargs['logdir'] = tmp_dir
+
+    if hold_jids is not None:
+        submit_kwargs['jobhold'] = ','.join(hold_jids)
+
+    # passed to func_to_cmd()
+    kwargs['env']     = env
+    kwargs['save']    = result_file
+    kwargs['verbose'] = True
+    kwargs['clean']   = clean
+    kwargs['tmp_dir'] = tmp_dir
+    # passed through to run()
+    kwargs['submit']  = submit_kwargs
+    kwargs['silent']  = True
+
+    jid = runfunc(func, func_args, func_kwargs, **kwargs)
+
+    log.debug('Running function %s on cluster (job %s, saving results to  %s)',
+              func.__name__, jid, result_file)
+
+    # Function which waits until the job has
+    # completed, loads and returns its
+    # return value, and deletes temp output
+    # files if needed
+    def get_result():
+        jobtime = submit_kwargs.get('jobtime', None)
+        if jobtime is not None:
+            jobtime = jobtime + 1
+        hold([jid], jobtime=jobtime)
+
+        cleanop = clean
+
+        val = None
+        if op.exists(result_file):
+            with open(result_file, 'rb') as f:
+                val = dill.loads(f.read())
+
+        if isinstance(val, Exception) and cleanop == 'on_success':
+            cleanop = 'never'
+
+        # remove result file and fsl_sub log files
+        if cleanop in ('on_success', 'always'):
+            for f in glob.glob(op.join(tmp_dir, f'{jobname}.*')):
+                os.remove(f)
+
+        if isinstance(val, Exception):
+            raise val
+
+        return val
+
+    return get_result, jid
 
 
 def func_to_cmd(func,
@@ -459,7 +566,9 @@ def func_to_cmd(func,
                 kwargs=None,
                 tmp_dir=None,
                 clean="never",
-                verbose=False):
+                verbose=False,
+                save=None,
+                env=None):
     """Save the given python function to an executable file. Return a string
     containing a command that can be used to run the function.
 
@@ -488,7 +597,23 @@ def func_to_cmd(func,
 
     :arg verbose: If set to True, the script will print its own filename
                   before running
+
+    :arg save:    Name of file to which the function return value will be saved
+                  (serialised using dill).
+
+    :arg env:     Dictionary of additional environment variables to be set when
+                  the function nis executed.
     """
+
+    if env is not None:
+        env_snippet = [f'os.environ["{k}"] = "{v}"' for k, v in env.items()]
+        env_snippet = '\n'.join(env_snippet)
+    else:
+        env_snippet = ''
+
+    if save is None:
+        save = ''
+
     script_template = tw.dedent("""
     #!{executable}
     # This is a temporary file designed to run the python function {funcname},
@@ -496,7 +621,8 @@ def func_to_cmd(func,
     import os
     import dill
     from io import BytesIO
-    from importlib import import_module
+
+    {env_snippet}
 
     if {verbose}:
         print('running {filename}')
@@ -505,14 +631,25 @@ def func_to_cmd(func,
     func, args, kwargs = dill.load(dill_bytes)
 
     clean = {clean}
+    save  = {save}
 
     try:
-        res = func(*args, **kwargs)
+        result = func(*args, **kwargs)
+
     except Exception as e:
         if clean == 'on_success':
             clean = 'never'
+        result = e
         raise e
+
     finally:
+
+        if save != '':
+            if {verbose}:
+                print('Saving result to {save}')
+            with open(save, 'wb') as f:
+                f.write(dill.dumps(result))
+
         if clean in ('on_success', 'always'):
             os.remove({filename})
     """).strip()
@@ -538,6 +675,8 @@ def func_to_cmd(func,
         filename=f'"{filename}"',
         verbose=verbose,
         clean=f'"{clean}"',
+        save=f'"{save}"',
+        env_snippet=env_snippet,
         dill_bytes=dill_bytes.getvalue())
 
     with open(filename, 'w') as f:
@@ -603,7 +742,7 @@ def wslcmd(cmdpath, *args):
         return None
 
 
-def hold(job_ids, hold_filename=None, timeout=10):
+def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
     """Waits until all specified cluster jobs have finished.
 
     :arg job_ids:       Possibly nested sequence of job ids. The job ids
@@ -615,6 +754,9 @@ def hold(job_ids, hold_filename=None, timeout=10):
                         the current directory.
 
     :arg timeout:       Number of seconds to sleep between  status checks.
+
+    :arg jobtime:       Expected run time in minutes, passed to fsl_sub via
+                        the --jobtime flag.
     """
 
     # Returns a potentially nested sequence of
@@ -634,47 +776,53 @@ def hold(job_ids, hold_filename=None, timeout=10):
 
     # If a hold file has been specified,
     # check that it doesn't exist, but that
-    # its containing directory does exist.
-    if hold_filename is not None:
-        hold_filename = op.abspath(hold_filename)
-        if op.exists(hold_filename):
-            raise IOError(f"Hold file ({hold_filename}) already exists")
-        elif not op.isdir(op.split(hold_filename)[0]):
-            raise IOError(f"Hold file ({hold_filename}) can not be created "
+    # its containing directory does exist,
+    # then create the file.
+    holdfile = hold_filename
+    if holdfile is not None:
+        holdfile = op.abspath(holdfile)
+        if op.exists(holdfile):
+            raise IOError(f"Hold file ({holdfile}) already exists")
+        elif not op.isdir(op.split(holdfile)[0]):
+            raise IOError(f"Hold file ({holdfile}) can not be created "
                           "in non-existent directory")
+        with open(holdfile, 'wb') as f:
+            pass
 
     # Otherwise generate a random file name to
-    # use as the hold file. Reduce likelihood
-    # of naming collision by storing file in cwd
-    # rather than in $TMPDIR
+    # use as the hold file. Store in cwd, as
+    # it is more likely to be on the network
+    # file system (and acecssible by cluster
+    # nodes) than $TMPDIR
     else:
-        handle, hold_filename = tempfile.mkstemp(prefix='.',
-                                                 suffix='.hold',
-                                                 dir='.')
-        os.remove(hold_filename)
-        os.close(handle)
+        holdfile = tempdir.mkstemp(prefix='.', suffix='.hold', dir='.')
 
-    # Direct log files to same directory
-    # as hold file
-    logdir = op.dirname(hold_filename)
+    # Direct log files to same directory as
+    # hold file. Use hold file name as job
+    # identitier, as it should be unique to
+    # this job.
+    logdir  = op.dirname( holdfile)
+    jobname = op.basename(holdfile)
 
     submit = {
         'jobhold'  : _flatten_job_ids(job_ids),
-        'jobtime'  : 1,
-        'name'     : '.hold',
+        'name'     : jobname,
         'logdir'   : logdir
     }
+    if jobtime is not None:
+        submit['jobtime'] = jobtime
 
-    hold_jid = run(f'touch {hold_filename}', submit=submit, silent=True)
+    # submit a job to remove the hold file
+    # once the specified job_ids have completed
+    run(f'rm {holdfile}', submit=submit, silent=True)
 
-    while not op.exists(hold_filename):
+    # wait until the hold file is removed
+    while op.exists(holdfile):
         time.sleep(timeout)
 
-    # remove the hold file and the
-    # fsl_sub job stdout/err files
-    os.remove(hold_filename)
-    for outfile in glob.glob(op.join(logdir, f'.hold.[o,e]{hold_jid}')):
-        os.remove(outfile)
+    # remove the fsl_sub job stdout/err files
+    for fname in glob.glob(op.join(logdir, f'{jobname}.*')):
+        os.remove(fname)
 
 
 def job_output(job_id, logdir='.', command=None, name=None):

@@ -410,45 +410,13 @@ def _flatten_job_ids(job_ids):
 
 
 @deprecated.deprecated('3.13.0', '4.0.0', 'Use fsl.utils.run.hold instead')
-def hold(job_ids, hold_filename=None):
-    """
-    Waits until all jobs have finished
-
-    Internally works by submitting a new job, which creates a file named `hold_filename`,
-    which will only run after all jobs in `job_ids` finished.
-
-    This function will only return once `hold_filename` has been created
-
-    :param job_ids: possibly nested sequence of job ids. The job ids themselves should be strings.
-    :param hold_filename: filename to use as a hold file.
-        The containing directory should exist, but the file itself should not.
-        Defaults to a ./.<random characters>.hold in the current directory.
-    :return: only returns when all the jobs have finished
-    """
-    run.hold(job_ids, hold_filename)
+def hold(*args, **kwargs):
+    """Deprecated - moved to the :mod:`.run` module. """
+    run.hold(*args, **kwargs)
 
 
 @deprecated.deprecated('3.13.0', '4.0.0',
-                      'Use fsl.utils.run.func_to_cmd or '
-                      'fsl.utils.run.runfunc instead')
-def func_to_cmd(func, args=None, kwargs=None, tmp_dir=None, clean="never", verbose=False):
-    """Defines the command needed to run the function from the command line
-
-    WARNING: if submitting a function defined in the __main__ script,
-    the script will be run again to retrieve this function. Make sure there is a
-    "if __name__ == '__main__'" guard to prevent the full script from being rerun.
-
-    :arg func:    function to be run
-    :arg args:    positional arguments
-    :arg kwargs:  keyword arguments
-    :arg tmp_dir: directory where to store the temporary file
-    :arg clean:   Whether the script should be removed after running. There are three options:
-
-        - "never" (default): Script is kept
-        - "on_success": only remove if script successfully finished (i.e., no error is raised)
-        - "always": always remove the script, even if it raises an error
-
-    :arg verbose: If set to True, the script will print its own filename before running
-    :return:      string which will run the function
-    """
-    return run.func_to_cmd(func, args, kwargs, tmp_dir, clean, verbose)
+                      'Use fsl.utils.run.func_to_cmd instead')
+def func_to_cmd(*args, **kwargs):
+    """Deprecated - moved to the :mod:`.run` module. """
+    return run.func_to_cmd(*args, **kwargs)
