@@ -16,6 +16,7 @@
    run
    runfsl
    runfunc
+   submitfunc
    func_to_cmd
    dryrun
    hold
@@ -620,7 +621,6 @@ def func_to_cmd(func,
     import os
     import dill
     from io import BytesIO
-    from importlib import import_module
 
     {env_snippet}
 
@@ -646,7 +646,7 @@ def func_to_cmd(func,
 
         if save != '':
             if {verbose}:
-                print('Saving rseult to {save}')
+                print('Saving result to {save}')
             with open(save, 'wb') as f:
                 f.write(dill.dumps(result))
 
