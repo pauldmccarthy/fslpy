@@ -2,6 +2,23 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.23.0 (Tuesday 10th June 2025)
+-------------------------------
+
+
+Added
+^^^^^
+
+* New :func:`.submitfunc` function, allowing a Python function to be
+  synchronously executed on a cluster via ``fsl_sub`` (!474).
+* New `save` argument to the :func:`.func_to_cmd` function, allowing the
+  function return value to be serialised and saved to a file (!474).
+* New :func:`.mkstemp` function, which is simply a wrapper around the built-in
+  ``tempfile.mkstemp`` function, but which closes the open file handle (!474).
+
+
+
 3.22.1 (Monday 2nd June 2025)
 -----------------------------
 
