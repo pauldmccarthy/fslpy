@@ -12,10 +12,15 @@ Added
 
 * New :func:`.submitfunc` function, allowing a Python function to be
   synchronously executed on a cluster via ``fsl_sub`` (!474).
-* New `save` argument to the :func:`.func_to_cmd` function, allowing the
+* New ``save`` argument to the :func:`.func_to_cmd` function, allowing the
   function return value to be serialised and saved to a file (!474).
-* New :func:`.mkstemp` function, which is simply a wrapper around the built-in
-  ``tempfile.mkstemp`` function, but which closes the open file handle (!474).
+* New ``env`` option to the :func:`.func_to_cmd` function, allowing additional
+  environment variables to be set when the function is executed (!474).
+* New ``delete`` option to the :func:`~fsl.utils.tempdir.tempdir` function,
+  which can be used to prevent the directory from being deleted (!474).
+* New :func:`~fsl.utils.tempdir.mkstemp` function, which is simply a wrapper
+  around the built-in ``tempfile.mkstemp`` function, but which closes the open
+  file handle (!474).
 
 
 
