@@ -6,12 +6,14 @@
 #
 
 
-import os.path  as op
-import             os
-import             shutil
-import             threading
-import             time
-import textwrap as tw
+import os.path    as op
+import               os
+import               shutil
+import               threading
+import               time
+import               shlex
+import subprocess as sp
+import textwrap   as tw
 
 from unittest import mock
 
@@ -565,6 +567,28 @@ def test_func_to_cmd():
                     assert not op.exists(fn), "Failing job should always be removed if requested"
                 else:
                     assert op.exists(fn), f"Failing job got removed even with clean = {clean}"
+
+
+def test_submitfunc():
+
+    def func1(a1, a2):
+        return a1 + a2
+
+    def func2(a1, a2):
+        raise ValueError("inputs are wrong")
+
+    # just run the command
+    def mock_fsl_sub(*cmd, **kwargs):
+        sp.run(cmd)
+        return '1234'
+
+    with mock.patch('fsl.wrappers.fsl_sub', mock_fsl_sub):
+        result = run.submitfunc(func1, ('123', '456'), clean='always')[0]()
+        assert result == '123456'
+
+        with pytest.raises(ValueError):
+            run.submitfunc(func2, ('123', '456'), clean='always')[0]()
+
 
 def test_wrapper_to_cmd():
     fn = run.func_to_cmd(wrappers.bet)
