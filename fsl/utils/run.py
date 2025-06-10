@@ -533,10 +533,7 @@ def submitfunc(func,
     # return value, and deletes temp output
     # files if needed
     def get_result():
-        jobtime = submit_kwargs.get('jobtime', None)
-        if jobtime is not None:
-            jobtime = jobtime + 1
-        hold([jid], jobtime=jobtime)
+        hold([jid])
 
         cleanop = clean
 
@@ -755,8 +752,7 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
 
     :arg timeout:       Number of seconds to sleep between  status checks.
 
-    :arg jobtime:       Expected run time in minutes, passed to fsl_sub via
-                        the --jobtime flag.
+    :arg jobtime:       Ignored, will be removed at some point.
     """
 
     # Returns a potentially nested sequence of
@@ -809,8 +805,6 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
         'name'     : jobname,
         'logdir'   : logdir
     }
-    if jobtime is not None:
-        submit['jobtime'] = jobtime
 
     # submit a job to remove the hold file
     # once the specified job_ids have completed
