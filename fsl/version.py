@@ -47,8 +47,16 @@ import            re
 import            string
 
 
-__version__ = '3.24.0.dev0'
+from importlib.metadata import version, PackageNotFoundError
+
+
+__version__ = '<unknown>'
 """Current version number, as a string. """
+
+try:
+    __version__ = version('fslpy')
+except PackageNotFoundError:
+    pass
 
 
 def parseVersionString(versionString):

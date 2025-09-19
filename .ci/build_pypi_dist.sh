@@ -2,7 +2,7 @@
 
 set -e
 
-pip install --upgrade pip wheel setuptools twine build
+pip install --upgrade pip wheel setuptools setuptools-scm twine build
 
 python -m build
 twine check dist/*

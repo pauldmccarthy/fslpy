@@ -1,5 +1,5 @@
 [build-system]
-requires      = ["setuptools"]
+requires      = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 
@@ -89,8 +89,8 @@ exclude = ["fsl.tests*"]
 fsl = ["utils/filetree/trees/*"]
 
 
-[tool.setuptools.dynamic]
-version = {attr = "fsl.version.__version__"}
+[tool.setuptools_scm]
+version_scheme = "release-branch-semver"
 
 
 [tool.coverage.run]
