@@ -105,14 +105,10 @@ request onto the relevant minor branch.
 
 1. Update the changelog on the main branch to include the new version number
    and release date.
-2. On the main branch, update the version number in ``fsl/version.py`` to
-   a development version of **the next** minor release number. For example,
-   if you are about to release version ``1.3.0``, the version in the main
-   branch should be ``1.4.0.dev0``.
-3. Create the new minor release branch off the main branch.
-4. Update the version number on the release branch. If CI tests fail on the
-   release branch, postpone the release until they are fixed.
-5. Tag the new release on the minor release branch.
+2. Create the new minor release branch off the main branch.
+3. If CI tests fail on the release branch, postpone the release until they
+   are fixed.
+4. Tag the new release on the minor release branch.
 
 
 Bugfix/patch releases
