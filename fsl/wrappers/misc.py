@@ -9,6 +9,7 @@
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_ command-line tools.
 """
 
+import collections.abc      as abc
 
 import fsl.utils.assertions as asrt
 from . import wrapperutils  as wutils
@@ -104,7 +105,7 @@ def slicer(input, input2=None, **kwargs):
     return cmd
 
 
-@wutils.fileOrArray('out', 'init')
+@wutils.fileOrArray('init', outprefix='out')
 @wutils.fslwrapper
 def gps(out, ndir, **kwargs):
     """Wrapper of the ``gps`` command
@@ -112,11 +113,15 @@ def gps(out, ndir, **kwargs):
     Usage example to get 128 gradient orientations on the whole sphere::
 
         from fsl.wrappers import gps, LOAD
-        bvecs = gps(LOAD, 128, optws=True)['out']
+        bvecs = gps(LOAD, 128, optws=True)['out128']
     """
     valmap = {name: wutils.SHOW_IF_TRUE for name in [
         'optws', 'report', 'verbose'
     ]}
+
+    # multiple values can be given for ndir
+    if isinstance(ndir, abc.Sequence):
+        ndir = ','.join(str(d) for d in ndir)
 
     cmd = ['gps', f'--ndir={ndir}', f'--out={out}']
     cmd += wutils.applyArgStyle('--=', valmap=valmap, **kwargs)
