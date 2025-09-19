@@ -2,6 +2,26 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.24.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+* Adjust the :func:`.hold` function - there is no need for it to submit
+  itself with a jobtime - it will sit in the queue until the held job
+  completes, then will run more or less instantly (!476).
+* Now using ``setuptools-scm`` for automatic number management.
+
+
+Fixed
+^^^^^
+
+
+* Adjust the :func:`.gps` wrapper - the ``gps`` command expects an output file
+  prefix, and can be passed multiple values for ``--ndir``  (!477).
+
 
 3.23.0 (Tuesday 10th June 2025)
 -------------------------------
