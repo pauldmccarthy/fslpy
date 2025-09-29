@@ -106,19 +106,6 @@ variables:
     - bash ./.ci/setup_ssh.sh
 
 
-###################################################
-# The check_version anchor contains a before_script
-# section which is run on release builds, and makes
-# sure that the version in the code is up to date
-# (i.e. equal to the tag name).
-###################################################
-
-
-.check_version: &check_version
-  before_script:
-    - bash ./.ci/check_version.sh
-
-
 ############
 # Test stage
 ############
@@ -267,7 +254,6 @@ pages:
 
 build-pypi-dist:
   <<: *only_releases
-  <<: *check_version
 
   stage: build
   image: python:3.10
@@ -277,6 +263,7 @@ build-pypi-dist:
 
   script:
    - bash ./.ci/build_pypi_dist.sh
+   - bash ./.ci/check_version.sh
 
   artifacts:
     expire_in: 1 day
