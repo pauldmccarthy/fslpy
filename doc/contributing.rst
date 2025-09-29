@@ -122,8 +122,8 @@ the relevant minor branch.
 
 1. Add the fix to the main branch, along with an updated changelog including
    the version number and date for the bugfix release.
-2. Cherry-pick the relevant commit(s) from the main branch onto the minor
-   release branch, and update the version number on the minor release branch.
+2. Merge or cherry-pick the relevant commit(s) from the main branch onto the
+   minor release branch.
    If CI tests fail on the release branch, go back to step 1.
 3. Tag the new release on the minor release branch.
 
