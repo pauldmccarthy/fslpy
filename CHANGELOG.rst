@@ -2,8 +2,8 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.24.0 (Under development)
---------------------------
+3.24.0 (Monday 29th September 2025)
+-----------------------------------
 
 
 Changed
@@ -21,6 +21,8 @@ Fixed
 
 * Adjust the :func:`.gps` wrapper - the ``gps`` command expects an output file
   prefix, and can be passed multiple values for ``--ndir``  (!477).
+* Fixed a bug in the :func:`.fslstats` wrapper function when there is missing
+  data in multi-dimensional output (!478).
 
 
 3.23.0 (Tuesday 10th June 2025)

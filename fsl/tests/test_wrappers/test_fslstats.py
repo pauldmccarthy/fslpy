@@ -134,3 +134,26 @@ def test_fslstats_index_mask_missing_labels():
             namask = np.isnan(expect)
             assert np.all(result[~namask]  == expect[~namask])
             assert np.all(np.isnan(expect) == np.isnan(result))
+
+
+def test_fslstats_index_mask_missing_labels_nd():
+    script = tw.dedent("""
+    #!/usr/bin/env bash
+
+    echo "1 2 3"
+    echo "missing label: 2 in mask"
+    echo "7 8 9"
+    echo "missing label: 4 in mask"
+    echo "10 11 12"
+    """).strip()
+    with tempdir.tempdir():
+        with mockFSLDIR(fslstats=script) as fsldir:
+            result = fw.fslstats('image', K='mask').m.v.run()
+            expect = np.array([[1, 2, 3],
+                               [np.nan, np.nan, np.nan],
+                               [7, 8, 9],
+                               [np.nan, np.nan, np.nan],
+                               [10, 11, 12]])
+            namask = np.isnan(expect)
+            assert np.all(result[~namask]  == expect[~namask])
+            assert np.all(np.isnan(expect) == np.isnan(result))

@@ -239,18 +239,37 @@ class fslstats:
         if raw:
             return result.stdout
 
-        # If an index mask was used (-K), any
-        # missing labels will result in a line
-        # "missing label: <x>". Replace these
-        # lines with nan before passing the
-        # output to numpy for the conversion.
+        # Split into separate lines
         result = result.stdout[0]
         result = result.split('\n')
 
-        for i, line in enumerate(result):
-            if 'missing label' in line: result[i] = 'nan'
-            else:                       result[i] = line
+        # If an index mask was used (-K), any
+        # missing labels will result in a line
+        # "missing label: <x>".
+        #
+        # Replace these lines with nans before
+        # passing the output to numpy for the
+        # conversion. This is a multi-step
+        # procedure, as we don't know the number
+        # of expected values per line.
 
+        # First replace offending lines with a
+        # placeholder, and also count the number
+        # of values in a valid line
+        nvals = None
+        for i, line in enumerate(result):
+            if 'missing label' in line:
+                result[i] = None
+            elif nvals is None:
+                nvals = len(line.split())
+
+        # Then replace offending lines with a
+        # sutable amount of nans
+        for i, line in enumerate(result):
+            if line is None:
+                result[i] = ' '.join(['nan'] * nvals)
+
+        # Convert to numpy array
         result  = '\n'.join(result).strip()
         result  = np.genfromtxt(io.StringIO(result))
         sepvols = '-t' in self.__options
