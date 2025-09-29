@@ -71,6 +71,10 @@ The version number in the ``main`` branch should be of the form
 branch are development releases (although development releases are not part of
 the release model).
 
+The ``fslpy`` project uses `setuptools-scm
+<https://setuptools-scm.readthedocs.io/>`_ for automatic version number
+management.
+
 
 Releases
 --------
