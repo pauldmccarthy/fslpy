@@ -256,7 +256,7 @@ build-pypi-dist:
   <<: *only_releases
 
   stage: build
-  image: python:3.10
+  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
 
   tags:
     - docker
