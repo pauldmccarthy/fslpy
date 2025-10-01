@@ -8,9 +8,9 @@ import pytest
 
 import scipy.ndimage       as ndimage
 
-import fsl.data.image           as     fslimage
-import fsl.transform.affine     as     affine
-import fsl.utils.image.resample as     resample
+from fsl.data.image  import Image
+from fsl.transform   import affine
+from fsl.utils.image import resample
 
 from fsl.tests import make_random_image
 
@@ -28,7 +28,7 @@ def test_resample(seed):
     for i in range(25):
 
         shape = np.random.randint(5, 50, 3)
-        img = fslimage.Image(make_random_image(dims=shape))
+        img = Image(make_random_image(dims=shape))
 
         # bad shape
         with pytest.raises(ValueError):
@@ -92,7 +92,7 @@ def test_resample(seed):
 def test_resample_4d(seed):
 
     # resample one volume
-    img = fslimage.Image(make_random_image(dims=(10, 10, 10, 10)))
+    img = Image(make_random_image(dims=(10, 10, 10, 10)))
     slc = (slice(None), slice(None), slice(None), 3)
     resampled = resample.resample(img, img.shape[:3], slc)[0]
     assert np.all(resampled == img[..., 3])
@@ -122,14 +122,14 @@ def test_resample_4d(seed):
 
 def test_resample_origin(seed):
 
-    img = fslimage.Image(make_random_image(dims=(10, 10, 10)))
+    img = Image(make_random_image(dims=(10, 10, 10)))
 
     # with origin='corner', image
     # bounding boxes should match
     for i in range(25):
         shape = np.random.randint(5, 50, 3)
         res = resample.resample(img, shape, origin='corner')
-        res = fslimage.Image(res[0], xform=res[1])
+        res = Image(res[0], xform=res[1])
         imgb = affine.axisBounds(img.shape, img.voxToWorldMat)
         resb = affine.axisBounds(res.shape, res.voxToWorldMat)
         assert np.all(np.isclose(imgb, resb, rtol=1e-5, atol=1e-5))
@@ -140,7 +140,7 @@ def test_resample_origin(seed):
     for i in range(25):
         shape = np.random.randint(5, 50, 3)
         res = resample.resample(img, shape, origin='centre')
-        res = fslimage.Image(res[0], xform=res[1])
+        res = Image(res[0], xform=res[1])
         off = (np.array(img.shape) / np.array(res.shape) - 1) / 2
         imgb = np.array(affine.axisBounds(img.shape, img.voxToWorldMat))
         resb = np.array(affine.axisBounds(res.shape, res.voxToWorldMat))
@@ -164,7 +164,7 @@ def test_resample_origin(seed):
 
 def test_resampleToPixdims():
 
-    img          = fslimage.Image(make_random_image(dims=(10, 10, 10)))
+    img          = Image(make_random_image(dims=(10, 10, 10)))
     imglo, imghi = affine.axisBounds(img.shape, img.voxToWorldMat)
     oldpix       = np.array(img.pixdim, dtype=float)
     oldshape     = np.array(img.shape,  dtype=float)
@@ -176,7 +176,7 @@ def test_resampleToPixdims():
         expshape = np.round(oldshape * (oldpix / newpix))
 
         res = resample.resampleToPixdims(img, newpix, origin=origin)
-        res = fslimage.Image(res[0], xform=res[1])
+        res = Image(res[0], xform=res[1])
         reslo, reshi = affine.axisBounds(res.shape, res.voxToWorldMat)
         resfov       = reshi - reslo
         expfov       = newpix * res.shape
@@ -202,10 +202,10 @@ def test_resampleToReference1():
         rshape = np.random.randint(5, 50, 3)
         iv2w   = random_affine()
         rv2w   = random_affine()
-        img    = fslimage.Image(make_random_image(dims=ishape, xform=iv2w))
-        ref    = fslimage.Image(make_random_image(dims=rshape, xform=rv2w))
+        img    = Image(make_random_image(dims=ishape, xform=iv2w))
+        ref    = Image(make_random_image(dims=rshape, xform=rv2w))
         res    = resample.resampleToReference(img, ref)
-        res    = fslimage.Image(res[0], header=ref.header)
+        res    = Image(res[0], header=ref.header)
 
         assert res.sameSpace(ref)
 
@@ -217,11 +217,11 @@ def test_resampleToReference2():
     # into reference space
     img          = np.zeros((5, 5, 5), dtype=float)
     img[1, 1, 1] = 1
-    img          = fslimage.Image(img)
+    img          = Image(img)
 
     refv2w = affine.scaleOffsetXform([1, 1, 1], [-1, -1, -1])
     ref    = np.zeros((5, 5, 5), dtype=float)
-    ref    = fslimage.Image(ref, xform=refv2w)
+    ref    = Image(ref, xform=refv2w)
     res    = resample.resampleToReference(img, ref, order=0)
 
     exp          = np.zeros((5, 5, 5), dtype=float)
@@ -235,7 +235,7 @@ def test_resampleToReference3():
     # Test resampling image to ref
     # with mismatched dimensions
     imgdata = np.random.randint(0, 65536, (5, 5, 5), dtype=np.int32)
-    img     = fslimage.Image(imgdata, xform=affine.scaleOffsetXform(
+    img     = Image(imgdata, xform=affine.scaleOffsetXform(
         (2, 2, 2), (0.5, 0.5, 0.5)))
 
     # reference/expected data when
@@ -244,7 +244,7 @@ def test_resampleToReference3():
     # factor of 2
     refdata = np.repeat(np.repeat(np.repeat(imgdata, 2, 0), 2, 1), 2, 2)
     refdata = np.array([refdata] * 8).transpose((1, 2, 3, 0))
-    ref     = fslimage.Image(refdata)
+    ref     = Image(refdata)
 
     # We should be able to use a 4D reference
     resampled, xform = resample.resampleToReference(img, ref, order=0, mode='nearest')
@@ -259,7 +259,7 @@ def test_resampleToReference3():
     # When resampling 4D to 4D, only the
     # first 3 dimensions should be resampled
     imgdata = np.array([imgdata] * 15).transpose((1, 2, 3, 0))
-    img     = fslimage.Image(imgdata, xform=img.voxToWorldMat)
+    img     = Image(imgdata, xform=img.voxToWorldMat)
     exp     = np.array([refdata[..., 0]] * 15).transpose((1, 2, 3, 0))
     resampled, xform = resample.resampleToReference(img, ref, order=0, mode='nearest')
     assert np.all(resampled == exp)
@@ -274,8 +274,8 @@ def test_resampleToReference4():
 
     imgdata = np.random.randint(0, 65536, (5, 5, 5), dtype=np.int32)
     refdata = np.zeros((5, 5, 5))
-    img     = fslimage.Image(imgdata)
-    ref     = fslimage.Image(refdata, xform=img2ref)
+    img     = Image(imgdata)
+    ref     = Image(refdata, xform=img2ref)
 
     # Without the affine, the image
     # will be out of the FOV of the
@@ -288,3 +288,61 @@ def test_resampleToReference4():
     # perfectly in world coordinates
     resampled, xform = resample.resampleToReference(img, ref, matrix=img2ref)
     assert np.all(resampled == imgdata)
+
+
+def test_resampleToReference_constrain():
+
+    # Resample a high-resolution 2D slice
+    # into a low-resolution 3D volume
+
+    imgdata = np.random.random((10, 10, 1))
+    refdata = np.ones((2, 2, 2))
+
+    # just for viz
+    refdata[0, 0, 0] = 0
+
+    # voxel centres aligned on z slice 0 - interp should work
+    imgxf       = np.diag([0.2, 0.2, 0.2, 1])
+    imgxf[:, 3] = [-0.4, -0.4, 0, 1]
+
+    img = Image(imgdata, xform=imgxf)
+    ref = Image(refdata)
+    got = resample.resampleToReference(img, ref, smooth=False)[0]
+    exp = imgdata[2::5, 2::5, 0]
+
+    assert np.all(np.isclose(got[:, :, 0], exp))
+    assert np.all(np.isclose(got[:, :, 1], 0))
+
+    # voxel centres within zslice 0 but off voxel
+    # centres - sampling points outside of image
+    # FOV - interp should not work
+    imgxf       = np.diag([0.2, 0.2, 0.2, 1])
+    imgxf[:, 3] = [-0.4, -0.4, -0.25, 1]
+
+    img = Image(imgdata, xform=imgxf)
+    ref = Image(refdata)
+    got = resample.resampleToReference(img, ref, smooth=False)[0]
+
+    assert np.all(np.isclose(got, 0))
+
+    # With nearest extrapolation, the slice
+    # voxel nearest the sampling point will
+    # be taken, for *all* slices in the ref
+    # image space
+    exp = imgdata[2::5, 2::5, 0]
+    got = resample.resampleToReference(
+        img, ref, smooth=False, mode='nearest')[0]
+
+    assert np.all(np.isclose(got[:, :, 0], exp))
+    assert np.all(np.isclose(got[:, :, 1], exp))
+
+    # But when constrained=True, extrap
+    # should only be applied within the
+    # ref slice that contains the image
+    # slice
+    exp = imgdata[2::5, 2::5, 0]
+    got = resample.resampleToReference(
+        img, ref, smooth=False, mode='nearest', constrain=True)[0]
+
+    assert np.all(np.isclose(got[:, :, 0], exp))
+    assert np.all(np.isclose(got[:, :, 1], 0))

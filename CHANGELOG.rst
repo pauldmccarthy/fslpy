@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.25.0 (Under development)
+--------------------------
+
+
+Added
+^^^^^
+
+* New ``constrain`` option to the :func:`.resampleToReference` function,
+  which constrains the resampling to regions where the source and
+  reference image fields of view overlap (!484).
+
+
 3.24.0 (Monday 29th September 2025)
 -----------------------------------
 
@@ -12,7 +25,7 @@ Changed
 * Adjust the :func:`.hold` function - there is no need for it to submit
   itself with a jobtime - it will sit in the queue until the held job
   completes, then will run more or less instantly (!476).
-* Now using ``setuptools-scm`` for automatic number management.
+* Now using ``setuptools-scm`` for automatic version number management.
 
 
 Fixed

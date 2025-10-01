@@ -1,19 +1,17 @@
 #!/bin/bash
 
-tmp=`dirname $0`
-pushd $tmp > /dev/null
-thisdir=`pwd`
-popd > /dev/null
+thisdir=$(cd $(dirname $0) && pwd)
+
+source /test.venv/bin/activate
+
+pip install .
+pip install requests jinja2
 
 zenodo_url=$1
 zenodo_tkn=$2
 zenodo_depid=$3
 
-version=$(cat fsl/version.py      |
-          egrep '^__version__ +=' |
-          cut -d "=" -f 2         |
-          tr -d "'"               |
-          tr -d ' ')
+version=$(python -c "import fsl.version as v; print(v.__version__)")
 upfile=$(pwd)/dist/fslpy-"$version".tar.gz
 metafile=$(pwd)/.ci/zenodo_meta.json.jinja2
 date=$(date +"%Y-%m-%d")

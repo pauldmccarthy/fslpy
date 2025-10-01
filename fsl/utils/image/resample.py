@@ -10,7 +10,9 @@ to resample an :class:`.Image` object to a different resolution.
 The :func:`resampleToPixdims` and :func:`resampleToReference` functions
 are convenience wrappers around :func:`resample`.
 
-The :func:`applySmoothing` function is a sub-function of :func:`resample`.
+There are also a few utility functions used by the ``resample`` functions:
+ - The :func:`applySmoothing` function is a sub-function of :func:`resample`.
+ - The :func:`fovdistance` function is used by :func:`resampleToReference`.
 """
 
 
@@ -36,7 +38,12 @@ def resampleToPixdims(image, newPixdims, **kwargs):
     return resample(image, newShape, **kwargs)
 
 
-def resampleToReference(image, reference, matrix=None, **kwargs):
+def resampleToReference(
+        image,
+        reference,
+        matrix=None,
+        constrain=False,
+        **kwargs):
     """Resample ``image`` into the space of the ``reference``.
 
     This is a wrapper around :func:`resample` - refer to its documenttion
@@ -49,6 +56,9 @@ def resampleToReference(image, reference, matrix=None, **kwargs):
     :arg reference: :class:`.Nifti` defining the space to resample ``image``
                     into
     :arg matrix:    Optional world-to-world affine alignment matrix
+    :arg constrain: Defaults to ``False``. If ``True``, the resampling is
+                    constrained to the voxels where the two image
+                    fields of view overlap in the world coordinate system.
     """
 
     oldShape = list(image.shape)
@@ -88,6 +98,13 @@ def resampleToReference(image, reference, matrix=None, **kwargs):
     kwargs['matrix']   = matrix
 
     data = resample(image, **kwargs)[0]
+
+    # Zero out voxels which are outside
+    # of regions where the FOVs overlap
+    if constrain:
+        dist             = fovdistance(image, reference)
+        thr              = max(reference.pixdim[:3])
+        data[dist > thr] = 0
 
     # The image is now in the same space
     # as the reference, so it inherits
@@ -281,3 +298,70 @@ def applySmoothing(data, matrix, newShape):
     sigma[ratio >= 1.1] *= 0.425
 
     return ndimage.gaussian_filter(data, sigma)
+
+
+def fovdistance(image, reference):
+    """Calculates a distance map from reference image voxels to the image
+    bounding box. Used by :func:`resampleToReference` when its ``constrain``
+    argument is applied.
+
+    The distances are calculated in the world/mm coordinate system. The
+    result contains the distance from each reference image voxel to the
+    nearest location on the bounding box of the image FOV.
+
+    :arg image:     :class:`.Nifti` defining the source image space.
+
+    :arg reference: :class:`.Nifti` defining the reference image space.
+
+    :returns:        A 3D numpy array in the reference image space,
+                     containing distance values.
+    """
+
+    # We create the overlap mask by calculating
+    # the distance from every reference voxel to
+    # the image bounding box in world/mm space.
+
+    # Start by creating a reference-space image
+    # containing voxel coordinates
+    rx, ry, rz = reference.shape[:3]
+    rcoords    = np.mgrid[:rx, :ry, :rz]
+
+    # Transform those coordinates into image space
+    # scaled coordinates, so the resulting
+    # distances will be relative to mm/world space
+    ix, iy, iz = np.array(image.shape[:3]) * image.pixdim[:3]
+    xform      = affine.concat(
+        image    .getAffine('world', 'scaled'),
+        reference.getAffine('voxel', 'world'))
+
+    rcoords = rcoords.reshape(3, -1).T
+    rcoords = affine.transform(rcoords, xform)
+
+    # Now create a copy of the coordinates
+    # in image space, where voxels outside
+    # of the image bounding box are clamped
+    icoords = np.array(rcoords)
+    rcx     = rcoords[:, 0]
+    rcy     = rcoords[:, 1]
+    rcz     = rcoords[:, 2]
+
+    icoords[:, 0][rcx < 0]  = 0
+    icoords[:, 1][rcy < 0]  = 0
+    icoords[:, 2][rcz < 0]  = 0
+    icoords[:, 0][rcx > ix] = ix
+    icoords[:, 1][rcy > iy] = iy
+    icoords[:, 2][rcz > iz] = iz
+
+    # We can now just calculate the distance
+    # between each pair of coordinates, which
+    # gives us the distance from every
+    # reference voxel to the nearest point in
+    # the image bounding box
+    icx   = icoords[:, 0]
+    icy   = icoords[:, 1]
+    icz   = icoords[:, 2]
+    dists = np.sqrt((icx - rcx) ** 2 +
+                    (icy - rcy) ** 2 +
+                    (icz - rcz) ** 2)
+
+    return dists.reshape((rx, ry, rz))

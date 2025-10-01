@@ -196,7 +196,8 @@ test:3.13:
 
 test:build-pypi-dist:
   stage: test
-  image: python:3.10
+  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+
   <<: *test_rules
 
   tags:
@@ -298,7 +299,7 @@ deploy-zenodo:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.10
+  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
 
   tags:
     - docker
