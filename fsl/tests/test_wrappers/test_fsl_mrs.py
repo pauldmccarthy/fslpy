@@ -73,6 +73,11 @@ def test_svs_segment():
         expected = f'{svs_segment} svs --anat anat --output output'
         assert result.stdout[0] == expected
 
+        # same call but with single dashed arguments
+        result = fw.svs_segment('svs', a='anat', o='output')
+        expected = f'{svs_segment} svs --anat anat --output output'
+        assert result.stdout[0] == expected
+
 
 def test_mrsi_segment():
     with testenv('mrsi_segment') as mrsi_segment:
@@ -83,5 +88,10 @@ def test_mrsi_segment():
 
         # test more complex and common call
         result = fw.mrsi_segment('mrsi', anat='anat', output='output')
+        expected = f'{mrsi_segment} mrsi --anat anat --output output'
+        assert result.stdout[0] == expected
+
+        # same call but with single dashed arguments
+        result = fw.mrsi_segment('mrsi', a='anat', o='output')
         expected = f'{mrsi_segment} mrsi --anat anat --output output'
         assert result.stdout[0] == expected

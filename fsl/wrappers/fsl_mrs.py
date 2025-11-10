@@ -214,6 +214,11 @@ def svs_segment(svs, **kwargs):
     asrt.assertIsNifti(svs)
 
     argmap = {
+        't' : 't1',
+        'a' : 'anat',
+        'o' : 'output',
+        'f' : 'filename',
+        'm' : 'mask_only',
     }
 
     valmap = {
@@ -239,6 +244,10 @@ def mrsi_segment(mrsi, **kwargs):
     asrt.assertIsNifti(mrsi)
 
     argmap = {
+        't' : 't1',
+        'a' : 'anat',
+        'o' : 'output',
+        'f' : 'filename',
     }
 
     valmap = {
