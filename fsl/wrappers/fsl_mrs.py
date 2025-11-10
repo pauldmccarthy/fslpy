@@ -36,7 +36,7 @@ def fsl_mrs(data, basis, output, **kwargs):
     export_no_baseline, export_separate, filename, config.
     """
 
-    asrt.assertIsNifti(data)
+    asrt.assertIsNiftiMRS(data)
     asrt.assertFileExists(basis)
 
     argmap = {
@@ -86,7 +86,7 @@ def fsl_mrsi(data, basis, output, **kwargs):
     no_conj_fid, conj_basis, no_conj_basis, no_rescale, config.
     """
 
-    asrt.assertIsNifti(data)
+    asrt.assertIsNiftiMRS(data)
     asrt.assertFileExists(basis)
 
     argmap = {
@@ -130,7 +130,7 @@ def fsl_mrs_preproc(data, reference, output, **kwargs):
     leftshift, t1, verbose, conjugate, overwrite, report, config.
     """
 
-    asrt.assertIsNifti(data, reference)
+    asrt.assertIsNiftiMRS(data, reference)
 
     argmap = {
         'remove_water' : 'remove-water',
@@ -171,7 +171,7 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
     leftshift, t1, verbose, conjugate, overwrite, report, config.
     """
 
-    asrt.assertIsNifti(data, reference)
+    asrt.assertIsNiftiMRS(data, reference)
 
     argmap = {
         'remove_water' : 'remove-water',
@@ -205,13 +205,12 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
 @wutils.fileOrImage('svs', 't1', outprefix='filename')
 @wutils.fslwrapper
 def svs_segment(svs, **kwargs):
-    """Wrapper for the ``svs_segment`` command. Note that only the 
-    double dashed version of the options (i.e. --) are supported as
-    arguments to this function:
-    t1, anat, output, filename, mask_only, no_normalisation.
+    """Wrapper for the ``svs_segment`` command.
+    The following arguments are currently supported:
+    t/t1, a/anat, o/output, f/filename, m/mask_only, no_normalisation.
     """
 
-    asrt.assertIsNifti(svs)
+    asrt.assertIsNiftiMRS(svs)
 
     argmap = {
         't' : 't1',
@@ -235,13 +234,12 @@ def svs_segment(svs, **kwargs):
 @wutils.fileOrImage('mrsi', 't1', outprefix='filename')
 @wutils.fslwrapper
 def mrsi_segment(mrsi, **kwargs):
-    """Wrapper for the ``mrsi_segment`` command. Note that only the 
-    double dashed version of the options (i.e. --) are supported as
-    arguments to this function:
-    t1, anat, output, filename, no_normalisation.
+    """Wrapper for the ``mrsi_segment`` command.
+    The following arguments are currently supported:
+    t/t1, a/anat, o/output, f/filename, no_normalisation.
     """
 
-    asrt.assertIsNifti(mrsi)
+    asrt.assertIsNiftiMRS(mrsi)
 
     argmap = {
         't' : 't1',

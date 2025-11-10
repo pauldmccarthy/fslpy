@@ -143,3 +143,15 @@ def assertIsMelodicDir(path):
     :arg path:  Path to melodic directory
     """
     assert fslma.isMelodicDir(path), 'not a melodic directory: {}'.format(path)
+
+
+@_canDisable
+def assertIsNiftiMRS(*args):
+    """Raise an exception if the specified file/s are not NIfTI-MRS."""
+    for f in args:
+        assertIsNifti(f)
+        d = ensure.ensureIsImage(f)
+        assert len(d.shape) >= 4, \
+            'incorrect shape for NIfTI-MRS: {}:{}'.format(d.shape, f)
+        assert 44 in d.header.extensions.get_codes(), \
+            'not a NIfTI-MRS file (missing extension code 44): {}'.format(f)
