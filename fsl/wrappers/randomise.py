@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides wrapper functions for the FSL :fsldocs:`randomise
-<statistics/randomise.html>`_ tool, used for
+<statistics/randomise.html>` tool, used for
 calculating non-parametric statistics.
 """
 
