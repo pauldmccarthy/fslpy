@@ -7,7 +7,7 @@
 # Author: Martin Craig <martin.craig@eng.ox.ac.uk>
 #
 """This module provides the :func:`bet` function, a wrapper for the FSL
-`BET <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET>`_ command.
+:fsldocs:`BET <structural/bet.html>` command.
 """
 
 

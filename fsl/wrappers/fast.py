@@ -6,7 +6,7 @@
 #         Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module provides the :func:`fast` function, a wrapper for the FSL
-`FAST <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FAST>`_ command.
+:fsldocs:`FAST <structural/fast.html>` command.
 """
 
 

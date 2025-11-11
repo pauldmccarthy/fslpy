@@ -5,7 +5,7 @@
 # Author: Martin Craig <martin.craig@eng.ox.ac.uk>
 #
 """This module provides the :func:`fsl_anat` function, a wrapper for the FSL
-`FSL_ANAT <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/fsl_anat>`_ command.
+:fsldocs:`fsl_anat <structural/fsl_anat.html>` command.
 """
 
 import fsl.utils.assertions as asrt

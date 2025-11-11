@@ -4,9 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains wrapper functions for the FSL
-`FIRST <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FIRST/>`_ commands,
-for subcortical segmentation.
+"""This module contains wrapper functions for the FSL :fsldocs:`FIRST
+<structural/first.html>` commands, for subcortical segmentation.
 """
 
 

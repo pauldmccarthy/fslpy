@@ -5,9 +5,9 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides wrapper functions for the FSL `FNIRT
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FNIRT/>`_ tool, used for performing
-non-linear registration of 3D images.
+"""This module provides wrapper functions for the FSL :fsldocs:`FNIRT
+<registration/fnirt/>` tool, used for performing non-linear registration of 3D
+images.
 
 .. autosummary::
    :nosignatures:

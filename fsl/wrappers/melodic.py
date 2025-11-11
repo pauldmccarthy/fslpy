@@ -5,9 +5,8 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides wrapper functions for the FSL
-`MELODIC <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/MELODIC>`_ tool, and other
-related utilities.
+"""This module provides wrapper functions for the FSL :fsldocs:`MELODIC
+<resting_state/melodic.html>` tool, and other related utilities.
 
 .. autosummary::
    :nosignatures:

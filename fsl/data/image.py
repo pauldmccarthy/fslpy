@@ -238,7 +238,7 @@ class Nifti(notifier.Notifier, meta.Meta):
     which will transform between any of these coordinate systems.
 
 
-    See `here <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/FAQ#What_is_the_format_of_the_matrix_used_by_FLIRT.2C_and_how_does_it_relate_to_the_transformation_parameters.3F>`_
+    See :fsldocs:`here <registration/flirt/faq.html#what-is-the-format-of-the-matrix-used-by-flirt-and-how-does-it-relate-to-the-transformation-parameters>`
     for more details on the ``fsl`` coordinate system.
 
 

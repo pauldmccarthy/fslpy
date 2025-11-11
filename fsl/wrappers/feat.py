@@ -5,7 +5,7 @@
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
 """This module provides the :func:`feast` function, a wrapper for the FSL
-`FEAT <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FEAT>`_ command.
+:fsldocs:`FEAT <task_fmri/feat/>` command.
 """
 
 from . import wrapperutils as wutils

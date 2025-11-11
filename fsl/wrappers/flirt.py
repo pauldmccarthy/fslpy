@@ -6,9 +6,8 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
-"""This module provides wrapper functions for the FSL `FLIRT
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT>`_ tool, and other related
-tools.
+"""This module provides wrapper functions for the FSL :fsldocs:`FLIRT
+<registration/flirt/>` tool, and other related tools.
 
 .. autosummary::
    :nosignatures:

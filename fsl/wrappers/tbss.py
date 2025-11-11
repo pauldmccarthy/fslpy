@@ -6,8 +6,8 @@
 # Author: Evan Edmond <eedmond@gmail.com>
 #
 
-"""This module contains wrapper functions for various `TBSS
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/TBSS/>`_ command-line tools.
+"""This module contains wrapper functions for various :fsldocs:`TBSS
+<diffusion/tbss.html>` command-line tools.
 """
 
 

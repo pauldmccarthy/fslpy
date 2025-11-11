@@ -4,8 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains wrapper functions for the FSL `BIANCA
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BIANCA/>`_ commands.
+"""This module contains wrapper functions for the FSL :fsldocs:`BIANCA
+<structural/bianca.html> commands.
 """
 
 
