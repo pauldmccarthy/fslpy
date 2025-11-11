@@ -8,9 +8,8 @@
 # Author: Michiel Cottaar <michiel.cottaar@ndcn.ox.ac.uk>
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
-"""This module provides wrapper functions for the FSL `TOPUP
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup>`_ and `EDDY
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy>`_ tools, for field map
+"""This module provides wrapper functions for the FSL :fsldocs:`TOPUP
+<diffusion/topup/>` and :fsldocs:`EDDY <diffusion/eddy/>` tools, for field map
 estimation and eddy-current distortion correction.
 
 .. autosummary::
@@ -74,7 +73,7 @@ def eddy(imain, mask, index, acqp, bvecs, bvals, out, **kwargs):
             'which will call the appropriate GPU or CPU version '
             'of eddy automatically.')
 def eddy_cuda(*args, **kwargs):
-    eddy(*args, **kwargs)
+    return eddy(*args, **kwargs)
 
 
 @wutils.fileOrImage('imain', 'fout', 'iout', outprefix='out')
