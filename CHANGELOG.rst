@@ -11,7 +11,9 @@ Added
 ^^^^^
 
 * The :class:`.Image` class can now load NIfTI images compressed with ``zstd``
-  and ``bzip2`` (with ``.nii.zst`` / ``.nii.bz2`` file suffixes) (!485).
+  and ``bzip2`` (with ``.nii.zst`` / ``.nii.bz2`` file suffixes). Currently the
+  `pyzstd <https://pyzstd.readthedocs.io/en/stable/>`_ library is required for
+  `zstd` support (!485).
 * New :func:`.mmorf` wrapper function (!485).
 * New ``constrain`` option to the :func:`.resampleToReference` function,
   which constrains the resampling to regions where the source and
