@@ -68,24 +68,40 @@ ImageSource = Union[PathLike, nib.Nifti1Image, np.ndarray, 'Image']
 log = logging.getLogger(__name__)
 
 
-ALLOWED_EXTENSIONS = ['.nii.gz', '.nii', '.img', '.hdr', '.img.gz', '.hdr.gz']
+ALLOWED_EXTENSIONS = ['.nii.gz',
+                      '.nii.zst',
+                      '.nii.bz2',
+                      '.nii',
+                      '.img',     '.hdr',
+                      '.img.gz',  '.hdr.gz',
+                      '.img.zst', '.hdr.zst',
+                      '.img.bz2', '.hdr.bz2']
 """The file extensions which we understand. This list is used as the default
 if the ``allowedExts`` parameter is not passed to any of the ``*Ext``
 functions, or the :func:`looksLikeImage` function.
 """
 
 
-EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images',
+EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images (gzip)',
+                          'Compressed NIFTI images (zstd)',
+                          'Compressed NIFTI images (bzip2)',
                           'NIFTI images',
                           'NIFTI/ANALYZE75 images',
                           'NIFTI/ANALYZE75 headers',
-                          'Compressed NIFTI/ANALYZE75 images',
-                          'Compressed NIFTI/ANALYZE75 headers']
+                          'Compressed NIFTI/ANALYZE75 images (gzip)',
+                          'Compressed NIFTI/ANALYZE75 headers (gzip)',
+                          'Compressed NIFTI/ANALYZE75 images (zstd)',
+                          'Compressed NIFTI/ANALYZE75 headers (zstd)',
+                          'Compressed NIFTI/ANALYZE75 images (bzip2)',
+                          'Compressed NIFTI/ANALYZE75 headers (bzip2)']
 """Descriptions for each of the extensions in :data:`ALLOWED_EXTENSIONS`. """
 
 
-FILE_GROUPS = [('.hdr',    '.img'),
-               ('.hdr.gz', '.img.gz')]
+FILE_GROUPS = [('.hdr',     '.img'),
+               ('.hdr.gz',  '.img.gz'),
+               ('.hdr.zst', '.img.zst'),
+               ('.hdr.bz2', '.img.bz2'),
+               ]
 """File suffix groups used by :func:`addExt` to resolve file path
 ambiguities - see :func:`fsl.utils.path.addExt`.
 """
@@ -2032,16 +2048,26 @@ class FileType(enum.Enum):
     """Enumeration of supported image file types. The values for each type
     are the same as defined in the FSL ``newimage/newimage.h`` header file.
     """
-    NIFTI          = 1
-    NIFTI2         = 2
-    ANALYZE        = 10
-    NIFTI_PAIR     = 11
-    NIFTI2_PAIR    = 12
-    ANALYZE_GZ     = 100
-    NIFTI_GZ       = 101
-    NIFTI2_GZ      = 102
-    NIFTI_PAIR_GZ  = 111
-    NIFTI2_PAIR_GZ = 112
+    NIFTI           = 1
+    NIFTI2          = 2
+    ANALYZE         = 10
+    NIFTI_PAIR      = 11
+    NIFTI2_PAIR     = 12
+    ANALYZE_GZ      = 100
+    NIFTI_GZ        = 101
+    NIFTI2_GZ       = 102
+    NIFTI_PAIR_GZ   = 111
+    NIFTI2_PAIR_GZ  = 112
+    ANALYZE_ZST     = 200
+    NIFTI_ZST       = 201
+    NIFTI2_ZST      = 202
+    NIFTI_PAIR_ZST  = 211
+    NIFTI2_PAIR_ZST = 212
+    ANALYZE_BZ2     = 300
+    NIFTI_BZ2       = 301
+    NIFTI2_BZ2      = 302
+    NIFTI_PAIR_BZ2  = 311
+    NIFTI2_PAIR_BZ2 = 312
 
 
 def fileType(filename) -> FileType:
@@ -2058,22 +2084,38 @@ def fileType(filename) -> FileType:
     nii1     = (nib.Nifti1Image, nib.Nifti1Pair, nib.Nifti1Header)
     nii2     = (nib.Nifti2Image, nib.Nifti2Pair, nib.Nifti2Header)
     mappings = [
-        (nii2, '.nii',    FileType.NIFTI2),
-        (nii2, '.nii.gz', FileType.NIFTI2_GZ),
-        (nii2, '.hdr',    FileType.NIFTI2_PAIR),
-        (nii2, '.img',    FileType.NIFTI2_PAIR),
-        (nii2, '.hdr.gz', FileType.NIFTI2_PAIR_GZ),
-        (nii2, '.img.gz', FileType.NIFTI2_PAIR_GZ),
-        (nii1, '.nii',    FileType.NIFTI),
-        (nii1, '.nii.gz', FileType.NIFTI_GZ),
-        (nii1, '.hdr',    FileType.NIFTI_PAIR),
-        (nii1, '.img',    FileType.NIFTI_PAIR),
-        (nii1, '.hdr.gz', FileType.NIFTI_PAIR_GZ),
-        (nii1, '.img.gz', FileType.NIFTI_PAIR_GZ),
-        (anlz, '.hdr',    FileType.ANALYZE),
-        (anlz, '.img',    FileType.ANALYZE),
-        (anlz, '.hdr.gz', FileType.ANALYZE_GZ),
-        (anlz, '.img.gz', FileType.ANALYZE_GZ),
+        (nii2, '.nii',     FileType.NIFTI2),
+        (nii2, '.nii.gz',  FileType.NIFTI2_GZ),
+        (nii2, '.nii.zst', FileType.NIFTI2_ZST),
+        (nii2, '.nii.bz2', FileType.NIFTI2_BZ2),
+        (nii2, '.hdr',     FileType.NIFTI2_PAIR),
+        (nii2, '.img',     FileType.NIFTI2_PAIR),
+        (nii2, '.hdr.gz',  FileType.NIFTI2_PAIR_GZ),
+        (nii2, '.img.gz',  FileType.NIFTI2_PAIR_GZ),
+        (nii2, '.hdr.zst', FileType.NIFTI2_PAIR_ZST),
+        (nii2, '.img.zst', FileType.NIFTI2_PAIR_ZST),
+        (nii2, '.hdr.bz2', FileType.NIFTI2_PAIR_BZ2),
+        (nii2, '.img.bz2', FileType.NIFTI2_PAIR_BZ2),
+        (nii1, '.nii',     FileType.NIFTI),
+        (nii1, '.nii.gz',  FileType.NIFTI_GZ),
+        (nii1, '.nii.zst', FileType.NIFTI_ZST),
+        (nii1, '.nii.bz2', FileType.NIFTI_BZ2),
+        (nii1, '.hdr',     FileType.NIFTI_PAIR),
+        (nii1, '.img',     FileType.NIFTI_PAIR),
+        (nii1, '.hdr.gz',  FileType.NIFTI_PAIR_GZ),
+        (nii1, '.img.gz',  FileType.NIFTI_PAIR_GZ),
+        (nii1, '.hdr.zst', FileType.NIFTI_PAIR_ZST),
+        (nii1, '.img.zst', FileType.NIFTI_PAIR_ZST),
+        (nii1, '.hdr.bz2', FileType.NIFTI_PAIR_BZ2),
+        (nii1, '.img.bz2', FileType.NIFTI_PAIR_BZ2),
+        (anlz, '.hdr',     FileType.ANALYZE),
+        (anlz, '.img',     FileType.ANALYZE),
+        (anlz, '.hdr.gz',  FileType.ANALYZE_GZ),
+        (anlz, '.img.gz',  FileType.ANALYZE_GZ),
+        (anlz, '.hdr.zst', FileType.ANALYZE_ZST),
+        (anlz, '.img.zst', FileType.ANALYZE_ZST),
+        (anlz, '.hdr.bz2', FileType.ANALYZE_BZ2),
+        (anlz, '.img.bz2', FileType.ANALYZE_BZ2),
     ]
 
     for ftype, ext, code in mappings:
@@ -2101,16 +2143,26 @@ def defaultExt() -> str:
     """
 
     options = {
-        FileType.ANALYZE        : '.img',
-        FileType.NIFTI          : '.nii',
-        FileType.NIFTI2         : '.nii',
-        FileType.NIFTI_GZ       : '.nii.gz',
-        FileType.NIFTI2_GZ      : '.nii.gz',
-        FileType.NIFTI_PAIR     : '.img',
-        FileType.NIFTI2_PAIR    : '.img',
-        FileType.ANALYZE_GZ     : '.img.gz',
-        FileType.NIFTI_PAIR_GZ  : '.img.gz',
-        FileType.NIFTI2_PAIR_GZ : '.img.gz',
+        FileType.ANALYZE         : '.img',
+        FileType.NIFTI           : '.nii',
+        FileType.NIFTI2          : '.nii',
+        FileType.NIFTI_GZ        : '.nii.gz',
+        FileType.NIFTI2_GZ       : '.nii.gz',
+        FileType.NIFTI_ZST       : '.nii.zst',
+        FileType.NIFTI2_ZST      : '.nii.zst',
+        FileType.NIFTI_BZ2       : '.nii.bz2',
+        FileType.NIFTI2_BZ2      : '.nii.bz2',
+        FileType.NIFTI_PAIR      : '.img',
+        FileType.NIFTI2_PAIR     : '.img',
+        FileType.ANALYZE_GZ      : '.img.gz',
+        FileType.NIFTI_PAIR_GZ   : '.img.gz',
+        FileType.NIFTI2_PAIR_GZ  : '.img.gz',
+        FileType.ANALYZE_ZST     : '.img.zst',
+        FileType.NIFTI_PAIR_ZST  : '.img.zst',
+        FileType.NIFTI2_PAIR_ZST : '.img.zst',
+        FileType.ANALYZE_BZ2     : '.img.bz2',
+        FileType.NIFTI_PAIR_BZ2  : '.img.bz2',
+        FileType.NIFTI2_PAIR_BZ2 : '.img.bz2',
     }
 
     return options[defaultOutputType()]
