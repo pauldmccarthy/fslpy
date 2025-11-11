@@ -3,16 +3,25 @@ order.
 
 
 
-3.25.0 (Under development)
---------------------------
+3.25.0 (Wednesday 12th November 2025)
+-------------------------------------
 
 
 Added
 ^^^^^
 
+* The :class:`.Image` class can now load NIfTI images compressed with ``zstd``
+  and ``bzip2`` (with ``.nii.zst`` / ``.nii.bz2`` file suffixes).
+* New :func:`.mmorf` wrapper function.
 * New ``constrain`` option to the :func:`.resampleToReference` function,
   which constrains the resampling to regions where the source and
   reference image fields of view overlap (!484).
+
+
+Fixed
+^^^^^
+
+* Fixed a bug in the :func:`.eddy` wrapper function.
 
 
 3.24.0 (Monday 29th September 2025)
