@@ -21,6 +21,6 @@ def mmorf(config=None, **kwargs):
     if config is not None:
         cmd += ['--config', config]
 
-    cmd += wutils.applyArgStyle('--', kwargs)
+    cmd += wutils.applyArgStyle('--', **kwargs)
 
     return cmd
