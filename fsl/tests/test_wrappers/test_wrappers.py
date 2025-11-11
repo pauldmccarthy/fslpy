@@ -680,3 +680,9 @@ def test_midtrans():
     with testenv('midtrans') as exe:
         assert fw.midtrans('out', 'xfm1', 'xfm2', 'xfm3').stdout[0] == \
             f'{exe} -o out xfm1 xfm2 xfm3'
+
+
+def test_mmorf():
+    with testenv('mmorf') as exe:
+        assert fw.mmorf(config='config.ini', num_threads=6)[0] == \
+            f'{exe} --config config.ini --num_threads 6'
