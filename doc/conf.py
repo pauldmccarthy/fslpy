@@ -91,6 +91,7 @@ if __name__ == '__main__':
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
@@ -120,8 +121,13 @@ copyright = u'{}, FMRIB Centre, University of Oxford, Oxford, UK'.format(
 # Links to other things
 rst_epilog = """
 .. |fsleyes_apidoc| replace:: FSLeyes
-.. _fsleyes_apidoc: http://users.fmrib.ox.ac.uk/~paulmc/fsleyes/userdoc/latest/index.html
+.. _fsleyes_apidoc: https://open.win.ox.ac.uk/pages/fsl/fsleyes/fsleyes/apidoc/
 """
+
+#
+extlinks = {
+    'fsldocs' : ('https://fsl.fmrib.ox.ac.uk/fsl/docs/%s', 'FSL docs')
+}
 
 
 # The version info for the project you're documenting, acts as replacement for
