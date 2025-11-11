@@ -43,7 +43,8 @@ extra = [
   "wxpython >=4",
   "trimesh >=2.37.29",
   "rtree >=0.8.3",
-  "Pillow >=3.2.0"
+  "Pillow >=3.2.0",
+  "pyzstd"
 ]
 doc = [
   "sphinx",
