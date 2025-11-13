@@ -5,7 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 """This module contains the :func:`cluster` function, which calls
-the FSL ``cluster`` / ``fsl-cluster``command.
+the FSL ``cluster`` / ``fsl-cluster`` command.
 """
 
 

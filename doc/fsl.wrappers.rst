@@ -24,6 +24,7 @@
    fsl.wrappers.fugue
    fsl.wrappers.melodic
    fsl.wrappers.misc
+   fsl.wrappers.mmorf
    fsl.wrappers.oxford_asl
    fsl.wrappers.randomise
    fsl.wrappers.tbss

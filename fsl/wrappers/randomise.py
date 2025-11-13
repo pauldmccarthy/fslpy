@@ -4,8 +4,8 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module provides wrapper functions for the FSL `randomise
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Randomise>`_ tool, used for
+"""This module provides wrapper functions for the FSL :fsldocs:`randomise
+<statistics/randomise.html>` tool, used for
 calculating non-parametric statistics.
 """
 

@@ -5,7 +5,7 @@
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
 """This module provides wrapper functions for the main FSL
-`FDT <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT>` tractography
+:fsldocs:`FDT <diffusion>` tractography
 commands.
 
 .. autosummary::

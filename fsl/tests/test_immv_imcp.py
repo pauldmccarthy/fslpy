@@ -53,6 +53,8 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
         'NIFTI'      : ['.nii'],
         'NIFTI_PAIR' : ['.hdr', '.img'],
         'NIFTI_GZ'   : ['.nii.gz'],
+        'NIFTI_ZST'  : ['.nii.zst'],
+        'NIFTI_BZ2'  : ['.nii.bz2'],
         ''           : ['.nii.gz'],
     }.get(outputType, None)
 
@@ -68,10 +70,12 @@ def checkFilesToExpect(files, outdir, outputType, datahashes):
 
         if fexts is None:
             fexts = {
-                '.img'    : ['.hdr', '.img'],
-                '.hdr'    : ['.hdr', '.img'],
-                '.nii'    : ['.nii'],
-                '.nii.gz' : ['.nii.gz']
+                '.img'     : ['.hdr', '.img'],
+                '.hdr'     : ['.hdr', '.img'],
+                '.nii'     : ['.nii'],
+                '.nii.gz'  : ['.nii.gz'],
+                '.nii.zst' : ['.nii.zst'],
+                '.nii.bz2' : ['.nii.bz2'],
             }.get(fe, [])
         # filename already has a different extension
         elif fe != '' and fe not in fexts:

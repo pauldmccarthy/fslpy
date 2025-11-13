@@ -5,8 +5,8 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains wrapper functions for various `FSL
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_ command-line tools.
+"""This module contains wrapper functions for various :fsldocs:`FSL <>`
+command-line tools.
 """
 
 import collections.abc      as abc

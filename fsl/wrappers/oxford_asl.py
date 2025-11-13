@@ -5,7 +5,7 @@
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 #
 """This module provides wrapper functions for the main FSL
-`oxford_asl <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/oxford_asl>` commands.
+:fsldocs:`oxford_asl <physiological/basil.html>` commands.
 
 .. autosummary::
    :nosignatures:

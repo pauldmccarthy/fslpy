@@ -5,8 +5,8 @@
 # Author: Fidel Alfaro Almagro <fidel.alfaroalmagro@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains wrapper functions for various `FSL
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_ command-line tools.
+"""This module contains wrapper functions for various :fsldocs:`FSL
+<>` command-line tools.
 """
 
 

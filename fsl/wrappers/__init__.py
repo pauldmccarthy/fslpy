@@ -100,21 +100,39 @@ from fsl.wrappers.wrapperutils       import (LOAD,
                                              cmdwrapper,
                                              fslwrapper,
                                              funcwrapper)
-from fsl.wrappers                    import (tbss,)
-from fsl.wrappers.cluster_commands   import (cluster,
-                                             smoothest)
+from fsl.wrappers                    import  tbss
+from fsl.wrappers.avwutils           import (fslmerge,
+                                             fslselectvols,
+                                             fslsplit,
+                                             fslcpgeom,)
+from fsl.wrappers.bedpostx           import (xfibres,
+                                             xfibres_gpu,
+                                             split_parts_gpu,
+                                             bedpostx,
+                                             bedpostx_gpu,
+                                             bedpostx_postproc_gpu,
+                                             probtrackx,
+                                             probtrackx2,
+                                             probtrackx2_gpu)
 from fsl.wrappers.bet                import (bet,
                                              robustfov)
+from fsl.wrappers.bianca             import (bianca,
+                                             bianca_cluster_stats,
+                                             bianca_overlap_measures,
+                                             bianca_perivent_deep,
+                                             make_bianca_mask)
+from fsl.wrappers.cluster_commands   import (cluster,
+                                             smoothest)
 from fsl.wrappers.eddy               import (eddy,
                                              eddy_cuda,
                                              topup,
                                              applytopup)
 from fsl.wrappers.epi_reg            import  epi_reg
-from fsl.wrappers.fast               import (fast,)
-from fsl.wrappers.avwutils           import (fslmerge,
-                                             fslselectvols,
-                                             fslsplit,
-                                             fslcpgeom,)
+from fsl.wrappers.fast               import  fast
+from fsl.wrappers.fdt                import (dtifit,
+                                             vecreg)
+from fsl.wrappers.feat               import (feat,
+                                             featquery)
 from fsl.wrappers.first              import (concat_bvars,
                                              first,
                                              first_flirt,
@@ -137,6 +155,12 @@ from fsl.wrappers.fnirt              import (fnirt,
                                              convertwarp)
 from fsl.wrappers.fsl_anat           import (fsl_anat,)
 from fsl.wrappers.fsl_sub            import (fsl_sub,)
+from fsl.wrappers.fslio              import (imcp,
+                                             imglob,
+                                             imln,
+                                             immv,
+                                             imrm,
+                                             imtest)
 from fsl.wrappers.fslmaths           import (fslmaths,)
 from fsl.wrappers.fslstats           import (fslstats,)
 from fsl.wrappers.fugue              import (fugue,
@@ -153,30 +177,7 @@ from fsl.wrappers.misc               import (fslreorient2std,
                                              fslroi,
                                              slicer,
                                              gps)
-from fsl.wrappers.bianca             import (bianca,
-                                             bianca_cluster_stats,
-                                             bianca_overlap_measures,
-                                             bianca_perivent_deep,
-                                             make_bianca_mask)
-from fsl.wrappers.feat               import (feat,
-                                             featquery)
-from fsl.wrappers.fdt                import (dtifit,
-                                             vecreg)
-from fsl.wrappers.bedpostx           import (xfibres,
-                                             xfibres_gpu,
-                                             split_parts_gpu,
-                                             bedpostx,
-                                             bedpostx_gpu,
-                                             bedpostx_postproc_gpu,
-                                             probtrackx,
-                                             probtrackx2,
-                                             probtrackx2_gpu)
+from fsl.wrappers.mmorf              import  mmorf
 from fsl.wrappers.oxford_asl         import (oxford_asl,
                                              asl_file)
 from fsl.wrappers.randomise          import  randomise
-from fsl.wrappers.fslio              import (imcp,
-                                             imglob,
-                                             imln,
-                                             immv,
-                                             imrm,
-                                             imtest)

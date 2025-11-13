@@ -8,12 +8,15 @@ import subprocess as sp
 import               os
 import               glob
 import               gzip
+import               bz2
 import               shutil
 import               tempfile
 
 from unittest import mock
 
 import               pytest
+
+import pyzstd
 
 import numpy as np
 import nibabel as nib
@@ -32,9 +35,10 @@ def test_imcp_script_shouldPass(move=False):
 
     # The imcp/immv scripts should honour the
     # FSLOUTPUTTYPE env var. If it is unset
-    # or invalid - '' in this case), they
+    # (or invalid - '' in this case), they
     # should produce .nii.gz
-    outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ', '']
+    outputTypes = ['NIFTI', 'NIFTI_PAIR', 'NIFTI_GZ',
+                   'NIFTI_ZST', 'NIFTI_BZ2', '']
     reldirs     = ['neutral', 'samedir', 'indir', 'outdir']
 
     # Test tuples have the following structure (each
@@ -439,16 +443,26 @@ def test_immv_badExt():
 def _make_file(prefix, ftype, dtype):
 
     mapping = {
-        fslimage.FileType.NIFTI          : (nib.Nifti1Image,  'nii'),
-        fslimage.FileType.NIFTI2         : (nib.Nifti2Image,  'nii'),
-        fslimage.FileType.ANALYZE        : (nib.AnalyzeImage, 'img'),
-        fslimage.FileType.NIFTI_PAIR     : (nib.Nifti1Pair,   'img'),
-        fslimage.FileType.NIFTI2_PAIR    : (nib.Nifti2Pair,   'img'),
-        fslimage.FileType.ANALYZE_GZ     : (nib.AnalyzeImage, 'img.gz'),
-        fslimage.FileType.NIFTI_GZ       : (nib.Nifti1Image,  'nii.gz'),
-        fslimage.FileType.NIFTI2_GZ      : (nib.Nifti2Image,  'nii.gz'),
-        fslimage.FileType.NIFTI_PAIR_GZ  : (nib.Nifti1Pair,   'img.gz'),
-        fslimage.FileType.NIFTI2_PAIR_GZ : (nib.Nifti2Pair,   'img.gz'),
+        fslimage.FileType.NIFTI           : (nib.Nifti1Image,  'nii'),
+        fslimage.FileType.NIFTI2          : (nib.Nifti2Image,  'nii'),
+        fslimage.FileType.ANALYZE         : (nib.AnalyzeImage, 'img'),
+        fslimage.FileType.NIFTI_PAIR      : (nib.Nifti1Pair,   'img'),
+        fslimage.FileType.NIFTI2_PAIR     : (nib.Nifti2Pair,   'img'),
+        fslimage.FileType.ANALYZE_GZ      : (nib.AnalyzeImage, 'img.gz'),
+        fslimage.FileType.NIFTI_GZ        : (nib.Nifti1Image,  'nii.gz'),
+        fslimage.FileType.NIFTI2_GZ       : (nib.Nifti2Image,  'nii.gz'),
+        fslimage.FileType.NIFTI_PAIR_GZ   : (nib.Nifti1Pair,   'img.gz'),
+        fslimage.FileType.NIFTI2_PAIR_GZ  : (nib.Nifti2Pair,   'img.gz'),
+        fslimage.FileType.ANALYZE_ZST     : (nib.AnalyzeImage, 'img.zst'),
+        fslimage.FileType.NIFTI_ZST       : (nib.Nifti1Image,  'nii.zst'),
+        fslimage.FileType.NIFTI2_ZST      : (nib.Nifti2Image,  'nii.zst'),
+        fslimage.FileType.NIFTI_PAIR_ZST  : (nib.Nifti1Pair,   'img.zst'),
+        fslimage.FileType.NIFTI2_PAIR_ZST : (nib.Nifti2Pair,   'img.zst'),
+        fslimage.FileType.ANALYZE_BZ2     : (nib.AnalyzeImage, 'img.bz2'),
+        fslimage.FileType.NIFTI_BZ2       : (nib.Nifti1Image,  'nii.bz2'),
+        fslimage.FileType.NIFTI2_BZ2      : (nib.Nifti2Image,  'nii.bz2'),
+        fslimage.FileType.NIFTI_PAIR_BZ2  : (nib.Nifti1Pair,   'img.bz2'),
+        fslimage.FileType.NIFTI2_PAIR_BZ2 : (nib.Nifti2Pair,   'img.bz2'),
     }
 
     if np.issubdtype(dtype, np.complex64):
@@ -473,14 +487,35 @@ def _is_gzip(filename):
     except Exception:
         return False
 
+def _is_bzip(filename):
+    try:
+        with bz2.BZ2File(filename, 'rb') as f:
+            f.read()
+        return True
+    except Exception:
+        return False
+
+
+def _is_zstd(filename):
+    try:
+        with pyzstd.ZstdFile(filename, 'rb') as f:
+            f.read()
+        return True
+    except Exception:
+        return False
+
 
 def _is_pair(imgfile):
     prefix, suffix = fslimage.splitExt(imgfile)
     hdrfile        = imgfile
-    if   suffix == '.hdr':    imgfile = f'{prefix}.img'
-    elif suffix == '.hdr.gz': imgfile = f'{prefix}.img.gz'
-    elif suffix == '.img':    hdrfile = f'{prefix}.hdr'
-    elif suffix == '.img.gz': hdrfile = f'{prefix}.hdr.gz'
+    if   suffix == '.hdr':     imgfile = f'{prefix}.img'
+    elif suffix == '.hdr.gz':  imgfile = f'{prefix}.img.gz'
+    elif suffix == '.hdr.bZ2': imgfile = f'{prefix}.img.bz2'
+    elif suffix == '.hdr.zst': imgfile = f'{prefix}.img.zst'
+    elif suffix == '.img':     hdrfile = f'{prefix}.hdr'
+    elif suffix == '.img.gz':  hdrfile = f'{prefix}.hdr.gz'
+    elif suffix == '.img.bz2': hdrfile = f'{prefix}.hdr.bz2'
+    elif suffix == '.img.zst': hdrfile = f'{prefix}.hdr.zst'
     return op.exists(imgfile) and op.exists(hdrfile)
 
 
@@ -508,6 +543,8 @@ def _check_file(prefix, expftype, dtype):
     elif 'NIFTI'   in expftype.name: assert _is_nifti1( filename)
     elif 'ANALYZE' in expftype.name: assert _is_analyze(filename)
     if   'GZ'      in expftype.name: assert _is_gzip(   filename)
+    elif 'BZ2'     in expftype.name: assert _is_bzip(   filename)
+    elif 'ZST'     in expftype.name: assert _is_zstd(   filename)
     if   'PAIR'    in expftype.name: assert _is_pair(   filename)
 
     img = nib.load(filename)

@@ -2,10 +2,8 @@
 #
 # epi_reg.py - Wrapper for the epi_reg command.
 #
-# Author: 
-#
 """This module provides the :func:`epi_reg` function, a wrapper for the FSL
-`epi_reg <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/UserGuide#epi_reg>`_ command.
+:fsldocs:`epi_reg <registration/epi_reg.html>` command.
 """
 
 import fsl.utils.assertions as asrt

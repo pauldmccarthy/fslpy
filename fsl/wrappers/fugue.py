@@ -5,9 +5,9 @@
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk>
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
-"""This module contains wrappers for the FSL `FUGUE
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FUGUE>`_ tools, for EPI field map
-processing and distortion correction.
+"""This module contains wrappers for the FSL :fsldocs:`FUGUE
+<registration/fugue.html>` tools, for EPI field map processing and distortion
+correction.
 """
 
 
