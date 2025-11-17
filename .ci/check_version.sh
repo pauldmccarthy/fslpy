@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-
 set -e
 
-source /test.venv/bin/activate
+micromamba activate /test.env
 pip install  dist/*.whl
 
 exp=${CI_COMMIT_REF_NAME}

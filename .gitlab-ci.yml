@@ -161,13 +161,6 @@ variables:
     - bash ./.ci/test_template.sh
 
 
-test:3.10:
-  stage: test
-  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
-  <<: *test_template
-  <<: *test_rules_upstream
-
-
 test:3.11:
   stage: test
   image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
@@ -194,9 +187,16 @@ test:3.13:
   <<: *test_rules_upstream
 
 
+test:3.14:
+  stage: test
+  image: pauldmccarthy/fsleyes-py314-wxpy4-gtk3
+  <<: *test_template
+  <<: *test_rules_upstream
+
+
 test:build-pypi-dist:
   stage: test
-  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
 
   <<: *test_rules
 
@@ -214,7 +214,7 @@ test:build-pypi-dist:
 
 style:
   stage: style
-  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
   <<: *test_template
   <<: *test_rules
   variables:
@@ -238,7 +238,7 @@ pages:
    - docker
 
   stage: doc
-  image: pauldmccarthy/fsleyes-py310-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
 
   script:
     - bash ./.ci/build_doc.sh
@@ -257,7 +257,7 @@ build-pypi-dist:
   <<: *only_releases
 
   stage: build
-  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
 
   tags:
     - docker
@@ -282,7 +282,7 @@ deploy-pypi:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: python:3.10
+  image: python:3.12
 
   tags:
     - docker
@@ -299,7 +299,7 @@ deploy-zenodo:
   <<: *setup_ssh
   stage: deploy
   when:  manual
-  image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+  image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
 
   tags:
     - docker
