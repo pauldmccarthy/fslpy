@@ -2,7 +2,7 @@
 
 set -e
 
-source /test.venv/bin/activate
+micromamba activate /test.env
 
 pip install ".[extra,test,style]"
 
