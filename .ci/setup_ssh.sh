@@ -21,9 +21,6 @@ set -e
 
 if [[ -f /.dockerenv ]]; then
 
- apt-get update -y                           || yum -y check-update                     || true;
- apt-get install -y openssh-client rsync git || yum install -y openssh-client rsync git || true;
-
  eval $(ssh-agent -s);
  mkdir -p $HOME/.ssh;
 
