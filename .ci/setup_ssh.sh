@@ -49,8 +49,5 @@ if [[ -f /.dockerenv ]]; then
  git config --global user.name  "Gitlab CI";
  git config --global user.email "gitlabci@localhost";
 
- if [[ `git remote -v` == *"upstream"* ]]; then
-     git remote remove upstream;
- fi;
- git remote add upstream "$UPSTREAM_URL:$UPSTREAM_PROJECT";
+ echo "Completed SSH configuration"
 fi
