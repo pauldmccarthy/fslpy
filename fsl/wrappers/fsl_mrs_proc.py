@@ -56,7 +56,8 @@ def coilcombine(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc coilcombine',
+    cmd = ['fsl_mrs_proc',
+           'coilcombine',
            '--file', file,
            '--output', output,
     ]
@@ -87,7 +88,8 @@ def average(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc average',
+    cmd = ['fsl_mrs_proc',
+           'average',
            '--file', file,
            '--output', output,
     ]
@@ -118,7 +120,8 @@ def align(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc align',
+    cmd = ['fsl_mrs_proc',
+           'align',
            '--file', file,
            '--output', output,
     ]
@@ -149,7 +152,8 @@ def align_diff(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc align-diff',
+    cmd = ['fsl_mrs_proc',
+           'align-diff',
            '--file', file,
            '--output', output,
     ]
@@ -180,7 +184,8 @@ def ecc(file, reference, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc ecc',
+    cmd = ['fsl_mrs_proc',
+           'ecc',
            '--file', file,
            '--reference', reference,
            '--output', output,
@@ -212,7 +217,8 @@ def remove(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc remove',
+    cmd = ['fsl_mrs_proc',
+           'remove',
            '--file', file,
            '--output', output,
     ]
@@ -243,7 +249,8 @@ def model(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc model',
+    cmd = ['fsl_mrs_proc',
+           'model',
            '--file', file,
            '--output', output,
     ]
@@ -274,7 +281,8 @@ def tshift(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc tshift',
+    cmd = ['fsl_mrs_proc',
+           'tshift',
            '--file', file,
            '--output', output,
     ]
@@ -305,7 +313,8 @@ def truncate(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc truncate',
+    cmd = ['fsl_mrs_proc',
+           'truncate',
            '--file', file,
            '--output', output,
     ]
@@ -336,7 +345,8 @@ def apodize(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc apodize',
+    cmd = ['fsl_mrs_proc',
+           'apodize',
            '--file', file,
            '--output', output,
     ]
@@ -369,7 +379,8 @@ def fshift(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc fshift',
+    cmd = ['fsl_mrs_proc',
+           'fshift',
            '--file', file,
            '--output', output,
     ]
@@ -401,7 +412,8 @@ def unlike(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc unlike',
+    cmd = ['fsl_mrs_proc',
+           'unlike',
            '--file', file,
            '--output', output,
     ]
@@ -434,7 +446,8 @@ def phase(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc phase',
+    cmd = ['fsl_mrs_proc',
+           'phase',
            '--file', file,
            '--output', output,
     ]
@@ -465,7 +478,8 @@ def fixed_phase(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc Xfixed_phase',
+    cmd = ['fsl_mrs_proc',
+           'fixed_phase',
            '--file', file,
            '--output', output,
     ]
@@ -496,7 +510,8 @@ def subtract(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc subtract',
+    cmd = ['fsl_mrs_proc',
+           'subtract',
            '--file', file,
            '--output', output,
     ]
@@ -527,7 +542,8 @@ def add(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc add',
+    cmd = ['fsl_mrs_proc',
+           'add',
            '--file', file,
            '--output', output,
     ]
@@ -558,7 +574,8 @@ def conj(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc conj',
+    cmd = ['fsl_mrs_proc',
+           'conj',
            '--file', file,
            '--output', output,
     ]
@@ -595,7 +612,8 @@ def mrsi_align(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc mrsi-align',
+    cmd = ['fsl_mrs_proc',
+           'mrsi-align',
            '--file', file,
            '--output', output,
     ]
@@ -626,7 +644,8 @@ def mrsi_lipid(file, output, **kwargs):
         'verbose'       : wutils.SHOW_IF_TRUE,
     }
 
-    cmd = ['fsl_mrs_proc mrsi-lipid',
+    cmd = ['fsl_mrs_proc',
+           'mrsi-lipid',
            '--file', file,
            '--output', output,
     ]
