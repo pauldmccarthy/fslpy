@@ -901,6 +901,9 @@ class TaskThread(threading.Thread):
         """Run the ``TaskThread``. """
 
         while True:
+            # End the thread if stop() has been called
+            if self.__stop:
+                break
 
             try:
                 # Clear ref to previous task if any. This
@@ -941,10 +944,6 @@ class TaskThread(threading.Thread):
             # the TaskThread object has been GC'd
             except Exception:
                 break
-
-            finally:
-                if self.__stop:
-                    break
 
             self.__enqueued.pop(task.name, None)
 
