@@ -2,8 +2,6 @@
 
 set -e
 
-source /test.venv/bin/activate
-
 pip install ".[extra,test,style]"
 
 # style stage
@@ -40,8 +38,14 @@ xvfb-run -a pytest $TEST_OPTS fsl/tests/test_platform.py
 # this directory writable by anybody (which,
 # unintuitively, includes nobody)
 chmod -R a+w `pwd`
-cmd="source /test.venv/bin/activate && pytest"
-cmd="$cmd $TEST_OPTS fsl/tests/test_scripts/test_immv_imcp.py fsl/tests/test_immv_imcp.py"
+
+
+# TODO there doesn't appear to be a way
+# of preserving the PATH when using su
+# - move this to docker image builds
+echo "PATH=$PATH" > /etc/environment
+
+cmd="pytest $TEST_OPTS fsl/tests/test_scripts/test_immv_imcp.py fsl/tests/test_immv_imcp.py"
 su -s /bin/bash -c "$cmd" nobody
 
 # All other tests can be run as normal.

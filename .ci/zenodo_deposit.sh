@@ -2,11 +2,8 @@
 
 thisdir=$(cd $(dirname $0) && pwd)
 
-source /test.venv/bin/activate
-
 pip install requests jinja2 setuptools-scm
 pip install .
-
 
 zenodo_url=$1
 zenodo_tkn=$2

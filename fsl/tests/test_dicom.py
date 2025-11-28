@@ -30,35 +30,17 @@ datadir = op.join(op.dirname(__file__), 'testdata')
 
 pytestmark = pytest.mark.dicomtest
 
-
 @contextlib.contextmanager
-def install_dcm2niix(version='1.0.20220720'):
-    filenames = {
-        '1.0.20201102' : 'v1.0.20201102/dcm2niix_lnx.zip',
-        '1.0.20190902' : 'v1.0.20190902/dcm2niix_lnx.zip',
-        '1.0.20181125' : 'v1.0.20181125/dcm2niix_25-Nov-2018_lnx.zip',
-        '1.0.20171017' : 'v1.0.20171017/dcm2niix_18-Oct-2017_lnx.zip',
-        '1.0.20220720' : 'v1.0.20220720/dcm2niix_lnx.zip',
-    }
-    prefix = 'https://github.com/rordenlab/dcm2niix/releases/download/'
-    url    = prefix + filenames.get(version, f'v{version}/dcm2niix_lnx.zip')
+def mock_dcm2niix(version='1.0.20250506'):
+    with tempdir.tempdir(changeto=False) as td:
+        fname = f'{td}/dcm2niix'
+        with open(fname, 'wt') as f:
+            f.write('#!/usr/bin/env bash\n')
+            f.write(f'echo "Chris Rorden\'s dcm2niiX version v{version} GCC14.3.0 x86-64 (64-bit Linux)"\n')
+        os.chmod(fname, 0o755)
 
-    with tempdir.tempdir() as td:
-        request.urlretrieve(url, 'dcm2niix.zip')
-
-        with zipfile.ZipFile('dcm2niix.zip', 'r') as f:
-            f.extractall('.')
-
-        os.chmod(op.join(td, 'dcm2niix'), 0o755)
-
-        path = op.abspath('dcm2niix')
-
-        with mock.patch('fsl.data.dicom.dcm2niix', return_value=path):
-            try:
-                yield
-            finally:
-                fsldcm.installedVersion.invalidate()
-
+        with mock.patch('fsl.data.dicom.dcm2niix', return_value=fname):
+            yield
 
 def test_disabled():
     with mock.patch('fsl.data.dicom.enabled', return_value=False):
@@ -69,8 +51,6 @@ def test_disabled():
 
 
 def test_dcm2niix():
-    """
-    """
     env = os.environ.copy()
     env.pop('FSLDIR', None)
     with tempdir.tempdir() as td:
@@ -98,22 +78,26 @@ def test_installedVersion():
     tests = [
         ('1.0.20190902', (1, 0, 2019, 9, 2)),
         ('1.0.20181125', (1, 0, 2018, 11, 25)),
-        ('1.0.20171017', (1, 0, 2017, 10, 17))]
+        ('1.0.20171017', (1, 0, 2017, 10, 17)),
+        ('1.0.20250506', (1, 0, 2025, 5, 6))]
 
-    for version, expect in tests:
+    try:
+        for version, expect in tests:
+            fsldcm.installedVersion.invalidate()
+            with mock_dcm2niix(version):
+                got = fsldcm.installedVersion()
+                assert got == expect
+    finally:
         fsldcm.installedVersion.invalidate()
-        with install_dcm2niix(version):
-            got = fsldcm.installedVersion()
-            assert got == expect
-
 
 
 def test_enabled():
 
     try:
-        with install_dcm2niix('1.0.20190902'):
+        with mock_dcm2niix():
             fsldcm.installedVersion.invalidate()
             assert fsldcm.enabled()
+            fsldcm.installedVersion.invalidate()
 
         # test dcm2niix not present
         with mock.patch('subprocess.check_output',
@@ -122,7 +106,8 @@ def test_enabled():
             assert not fsldcm.enabled()
 
         # test presence of different versions
-        tests = [(b'version v2.1.20191212', True),
+        tests = [(b'version v1.0.20250506', True),
+                 (b'version v2.1.20191212', True),
                  (b'version v1.0.20190902', True),
                  (b'version v1.0.20171216', True),
                  (b'version v1.0.20171215', True),
@@ -143,24 +128,22 @@ def test_enabled():
 
 def test_scanDir():
 
-    with install_dcm2niix():
+    series = fsldcm.scanDir('.')
+    assert len(series) == 0
 
-        series = fsldcm.scanDir('.')
-        assert len(series) == 0
+    datafile = op.join(datadir, 'example_dicom.tbz2')
 
-        datafile = op.join(datadir, 'example_dicom.tbz2')
+    with tarfile.open(datafile) as f:
+        f.extractall(filter='data')
 
-        with tarfile.open(datafile) as f:
-            f.extractall(filter='data')
+    series = fsldcm.scanDir('.')
+    assert len(series) == 2
 
-        series = fsldcm.scanDir('.')
-        assert len(series) == 2
-
-        for s in series:
-            assert s['PatientName'] in ('MCCARTHY_PAUL',
-                                        'MCCARTHY^PAUL',
-                                        'MCCARTHY_PAUL_2',
-                                        'MCCARTHY^PAUL^2')
+    for s in series:
+        assert s['PatientName'] in ('MCCARTHY_PAUL',
+                                    'MCCARTHY^PAUL',
+                                    'MCCARTHY_PAUL_2',
+                                    'MCCARTHY^PAUL^2')
 
 
 def test_sersiesCRC():
@@ -188,39 +171,34 @@ def test_sersiesCRC():
 
 def test_loadSeries():
 
-    # test a pre-CRC and a post-CRC version
-    for version in ('1.0.20181125', '1.0.20201102'):
+    datafile = op.join(datadir, 'example_dicom.tbz2')
 
-        with install_dcm2niix(version):
+    with tarfile.open(datafile) as f:
+        f.extractall()
 
-            datafile = op.join(datadir, 'example_dicom.tbz2')
+    dcmdir   = os.getcwd()
+    series   = fsldcm.scanDir(dcmdir)
+    expShape = (512, 512, 1)
 
-            with tarfile.open(datafile) as f:
-                f.extractall()
+    for s in series:
 
-            dcmdir   = os.getcwd()
-            series   = fsldcm.scanDir(dcmdir)
-            expShape = (512, 512, 1)
+        imgs = fsldcm.loadSeries(s)
 
-            for s in series:
+        for img in imgs:
 
-                imgs = fsldcm.loadSeries(s)
-
-                for img in imgs:
-
-                    assert img.dicomDir               == dcmdir
-                    assert img.shape                  == expShape
-                    assert img[:].shape               == expShape
-                    assert img.getMeta('PatientName') in ('MCCARTHY_PAUL',
-                                                          'MCCARTHY^PAUL',
-                                                          'MCCARTHY_PAUL_2',
-                                                          'MCCARTHY^PAUL^2')
-                    assert 'PatientName'                      in img.metaKeys()
-                    assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
-                           'MCCARTHY^PAUL'                    in img.metaValues() or \
-                           'MCCARTHY_PAUL_2'                  in img.metaValues() or \
-                           'MCCARTHY^PAUL^2'                  in img.metaValues()
-                    assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
-                           ('PatientName', 'MCCARTHY^PAUL')   in img.metaItems() or \
-                           ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems() or \
-                           ('PatientName', 'MCCARTHY^PAUL^2') in img.metaItems()
+            assert img.dicomDir               == dcmdir
+            assert img.shape                  == expShape
+            assert img[:].shape               == expShape
+            assert img.getMeta('PatientName') in ('MCCARTHY_PAUL',
+                                                  'MCCARTHY^PAUL',
+                                                  'MCCARTHY_PAUL_2',
+                                                  'MCCARTHY^PAUL^2')
+            assert 'PatientName'                      in img.metaKeys()
+            assert 'MCCARTHY_PAUL'                    in img.metaValues() or \
+                   'MCCARTHY^PAUL'                    in img.metaValues() or \
+                   'MCCARTHY_PAUL_2'                  in img.metaValues() or \
+                   'MCCARTHY^PAUL^2'                  in img.metaValues()
+            assert ('PatientName', 'MCCARTHY_PAUL')   in img.metaItems() or \
+                   ('PatientName', 'MCCARTHY^PAUL')   in img.metaItems() or \
+                   ('PatientName', 'MCCARTHY_PAUL_2') in img.metaItems() or \
+                   ('PatientName', 'MCCARTHY^PAUL^2') in img.metaItems()

@@ -21,25 +21,6 @@ set -e
 
 if [[ -f /.dockerenv ]]; then
 
- # We have to use different host names to connect
- # to the docker daemon host on mac as opposed
- # to on linux.
- #
- # On linux (assuming the docker job is running
- # with --net=host), we can connect via
- # username@localhost.
- #
- # On mac, we have to connect via
- # username@host.docker.internal
- if [[ "$CI_RUNNER_TAGS" == *"macOS"* ]]; then
-  if [[ "$FSL_HOST" == *"@localhost" ]]; then
-   FSL_HOST=${FSL_HOST/localhost/host.docker.internal}
-  fi
- fi
-
- apt-get update -y                           || yum -y check-update                     || true;
- apt-get install -y openssh-client rsync git || yum install -y openssh-client rsync git || true;
-
  eval $(ssh-agent -s);
  mkdir -p $HOME/.ssh;
 
@@ -65,8 +46,5 @@ if [[ -f /.dockerenv ]]; then
  git config --global user.name  "Gitlab CI";
  git config --global user.email "gitlabci@localhost";
 
- if [[ `git remote -v` == *"upstream"* ]]; then
-     git remote remove upstream;
- fi;
- git remote add upstream "$UPSTREAM_URL:$UPSTREAM_PROJECT";
+ echo "Completed SSH configuration"
 fi
