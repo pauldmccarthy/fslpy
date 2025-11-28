@@ -18,10 +18,13 @@ usage = """Usage: remove_ext <list of image paths to remove extension from>
 # fsl.data.image class, but are duplicated
 # here for performance (to avoid import of
 # nibabel/numpy/etc).
-exts = ['.nii.gz', '.nii',
-        '.img',    '.hdr',
-        '.img.gz', '.hdr.gz',
-        '.mnc',    '.mnc.gz']
+exts = ['.nii.gz',  '.nii',
+        '.nii.zst', '.nii.bz2',
+        '.img',     '.hdr',
+        '.img.gz',  '.hdr.gz',
+        '.img.zst', '.hdr.zst',
+        '.img.bz2', '.hdr.bz2',
+        '.mnc',     '.mnc.gz']
 """List of file extensions that are removed by ``remove_ext``. """
 
 
