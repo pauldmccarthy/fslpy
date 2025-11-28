@@ -32,7 +32,7 @@ class FEATImage(fslimage.Image):
         # You can pass in the name of the
         # .feat directory, or the filtered_func_data
         # file contained within that directory.
-        img = featimage.FEATImage('myanalysis.feat/filtered_func_data.nii.gz')
+        img = featimage.FEATImage('myanalysis.feat/filtered_func_data')
 
         # Query information about the FEAT analysis
         print(img.numEVs())

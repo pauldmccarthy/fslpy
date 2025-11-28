@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.25.1 (Monday 1st December 2025)
+---------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Minor adjustment to the :class:`.TaskThread` to work around Python 3.14
+  warnings.
+* Updated the ``imln``, ``imglob``, ``imtest`` and ``remove_ext`` scripts to
+  support ``.nii.bz2`` and ``.nii.zst`` files.
+
 
 3.25.0 (Thursday 13th November 2025)
 ------------------------------------
