@@ -13,7 +13,7 @@ for file I/O.
 It is very easy to load a NIFTI image::
 
     from fsl.data.image import Image
-    myimg = Image('MNI152_T1_2mm.nii.gz')
+    myimg = Image('MNI152_T1_2mm')
 
 
 A handful of other functions are also provided for working with image files
@@ -100,8 +100,7 @@ EXTENSION_DESCRIPTIONS = ['Compressed NIFTI images (gzip)',
 FILE_GROUPS = [('.hdr',     '.img'),
                ('.hdr.gz',  '.img.gz'),
                ('.hdr.zst', '.img.zst'),
-               ('.hdr.bz2', '.img.bz2'),
-               ]
+               ('.hdr.bz2', '.img.bz2')]
 """File suffix groups used by :func:`addExt` to resolve file path
 ambiguities - see :func:`fsl.utils.path.addExt`.
 """

@@ -18,14 +18,20 @@ import fsl.utils.path as fslpath
 # fsl.data.image class, but are duplicated
 # here for performance (to avoid import of
 # nibabel/numpy/etc).
-exts = ['.nii.gz', '.nii',
-        '.img',    '.hdr',
-        '.img.gz', '.hdr.gz',
-        '.mnc',    '.mnc.gz']
+exts = ['.nii.gz',  '.nii',
+        '.nii.zst', '.nii.bz2',
+        '.img',     '.hdr',
+        '.img.gz',  '.hdr.gz',
+        '.img.zst', '.hdr.zst',
+        '.img.bz2', '.hdr.bz2',
+        '.mnc',     '.mnc.gz']
 """List of file extensions that are supported by ``imtest``.
 """
 
-groups = [('.hdr', '.img'), ('.hdr.gz', '.img.gz')]
+groups = [('.hdr',     '.img'),
+          ('.hdr.gz',  '.img.gz'),
+          ('.hdr.zst', '.img.zst'),
+          ('.hdr.bz2', '.img.bz2')]
 """List of known image file groups (image/header file pairs). """
 
 
