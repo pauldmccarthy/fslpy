@@ -2,6 +2,16 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.26.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Minor adjustment to the :class:`.TaskThread` to work around Python 3.14 warnings.
+
 
 3.25.0 (Thursday 13th November 2025)
 ------------------------------------
