@@ -37,7 +37,7 @@ def ensureIsMRSBasis(basis):
         try:
             from fsl_mrs.utils import mrs_io
         except ModuleNotFoundError:
-            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow \
-                the installation instructions in the FSL-MRS documentation.')
+            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow '\
+                'the installation instructions in the FSL-MRS documentation.')
         basis = mrs_io.read_basis(basis)
     return basis
