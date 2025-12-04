@@ -1431,7 +1431,11 @@ def fileOrBasis(*args, **kwargs):
     """
 
     def prepIn(workdir, name, val):
-        from fsl_mrs.core  import basis as bmod
+        try:
+            from fsl_mrs.core  import basis as bmod
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow \
+                the installation instructions in the FSL-MRS documentation.')
 
         infile = None
 
@@ -1445,7 +1449,11 @@ def fileOrBasis(*args, **kwargs):
         return workdir
 
     def load(name, path):
-        from fsl_mrs.utils import mrs_io
+        try:
+            from fsl_mrs.utils import mrs_io
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow \
+                the installation instructions in the FSL-MRS documentation.')
         try:              return mrs_io.read_basis(path)
         except Exception: return None
 

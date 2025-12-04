@@ -102,6 +102,26 @@ from fsl.wrappers.wrapperutils       import (LOAD,
                                              funcwrapper)
 from fsl.wrappers                    import (tbss,
                                              fsl_mrs_proc)
+from fsl.wrappers.avwutils           import (fslmerge,
+                                             fslselectvols,
+                                             fslsplit,
+                                             fslcpgeom,)
+from fsl.wrappers.bedpostx           import (xfibres,
+                                             xfibres_gpu,
+                                             split_parts_gpu,
+                                             bedpostx,
+                                             bedpostx_gpu,
+                                             bedpostx_postproc_gpu,
+                                             probtrackx,
+                                             probtrackx2,
+                                             probtrackx2_gpu)
+from fsl.wrappers.bet                import (bet,
+                                             robustfov)
+from fsl.wrappers.bianca             import (bianca,
+                                             bianca_cluster_stats,
+                                             bianca_overlap_measures,
+                                             bianca_perivent_deep,
+                                             make_bianca_mask)
 from fsl.wrappers.cluster_commands   import (cluster,
                                              smoothest)
 from fsl.wrappers.eddy               import (eddy,

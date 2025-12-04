@@ -163,7 +163,11 @@ def assertIsNiftiMRS(*args):
 @_canDisable
 def assertIsMRSBasis(*args):
     """Raise an exception if the specified file/s are not FSL_MRS Basis."""
-    from fsl_mrs.core  import basis as bmod
+    try:
+        from fsl_mrs.core  import basis as bmod
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError('fsl_mrs modules not found. Please follow \
+            the installation instructions in the FSL-MRS documentation.')
     for f in args:
         f = ensure.ensureIsMRSBasis(f)
         assert isinstance(f, bmod.Basis), \
