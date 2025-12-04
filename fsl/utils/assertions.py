@@ -4,6 +4,7 @@
 #
 # Author: Sean Fitzgibbon <sean.fitzgibbon@ndcn.ox.ac.uk
 #         Paul McCarthy <pauldmccarthy@gmail.com>
+#         Vasilis Karlaftis <vasilis.karlaftis@ndcn.ox.ac.uk>
 #
 """This module contains a handful of miscellaneous assertion routines.
 
@@ -18,6 +19,8 @@
     assertIsSurfGifti
     assertIsFuncGifti
     assertIsMelodicDir
+    assertIsNiftiMRS
+    assertIsMRSBasis
 
 
 The :func:`disabled` context manager can be used to temporarily disable
@@ -155,3 +158,13 @@ def assertIsNiftiMRS(*args):
             'incorrect shape for NIfTI-MRS: {}:{}'.format(d.shape, f)
         assert 44 in d.header.extensions.get_codes(), \
             'not a NIfTI-MRS file (missing extension code 44): {}'.format(f)
+
+
+@_canDisable
+def assertIsMRSBasis(*args):
+    """Raise an exception if the specified file/s are not FSL_MRS Basis."""
+    from fsl_mrs.core  import basis as bmod
+    for f in args:
+        f = ensure.ensureIsMRSBasis(f)
+        assert isinstance(f, bmod.Basis), \
+            'file must be a Basis object or folder: {}'.format(f)

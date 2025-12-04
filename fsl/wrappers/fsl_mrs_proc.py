@@ -50,10 +50,11 @@ def coilcombine(file, output, **kwargs):
     }
     
     valmap = {
-        'no_prewhiten'  : wutils.SHOW_IF_TRUE,
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'no_prewhiten'      : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -83,9 +84,10 @@ def average(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -115,9 +117,10 @@ def align(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -147,9 +150,10 @@ def align_diff(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -179,9 +183,10 @@ def ecc(file, reference, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -212,9 +217,10 @@ def remove(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -244,9 +250,10 @@ def model(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -276,9 +283,10 @@ def tshift(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -308,9 +316,10 @@ def truncate(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -340,9 +349,10 @@ def apodize(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -372,11 +382,12 @@ def fshift(file, output, **kwargs):
     }
     
     valmap = {
-        'shiftRef'      : wutils.SHOW_IF_TRUE,
-        'use_avg'       : wutils.SHOW_IF_TRUE,
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'shiftRef'          : wutils.SHOW_IF_TRUE,
+        'use_avg'           : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -406,10 +417,11 @@ def unlike(file, output, **kwargs):
     }
     
     valmap = {
-        'outputbad'     : wutils.SHOW_IF_TRUE,
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'outputbad'         : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -439,11 +451,12 @@ def phase(file, output, **kwargs):
     }
     
     valmap = {
-        'hlsvd'         : wutils.SHOW_IF_TRUE,
-        'use_avg'       : wutils.SHOW_IF_TRUE,
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'hlsvd'             : wutils.SHOW_IF_TRUE,
+        'use_avg'           : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -473,9 +486,10 @@ def fixed_phase(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -505,9 +519,10 @@ def subtract(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -537,9 +552,10 @@ def add(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -569,9 +585,10 @@ def conj(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -604,12 +621,13 @@ def mrsi_align(file, output, **kwargs):
     }
     
     valmap = {
-        'freq-align'    : wutils.SHOW_IF_TRUE,
-        'phase-correct' : wutils.SHOW_IF_TRUE,
-        'save-params'   : wutils.SHOW_IF_TRUE,
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'freq-align'        : wutils.SHOW_IF_TRUE,
+        'phase-correct'     : wutils.SHOW_IF_TRUE,
+        'save-params'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',
@@ -639,9 +657,10 @@ def mrsi_lipid(file, output, **kwargs):
     }
     
     valmap = {
-        'overwrite'     : wutils.SHOW_IF_TRUE,
-        'allreports'    : wutils.SHOW_IF_TRUE,
-        'verbose'       : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'generateReports'   : wutils.SHOW_IF_TRUE,
+        'allreports'        : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
     }
 
     cmd = ['fsl_mrs_proc',

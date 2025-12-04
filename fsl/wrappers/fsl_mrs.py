@@ -22,6 +22,7 @@ from . import wrapperutils as wutils
 
 
 @wutils.fileOrImage('data', 'h2o', 't1')
+@wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def fsl_mrs(data, basis, output, **kwargs):
     """Wrapper for the ``fsl_mrs`` command.
@@ -37,7 +38,7 @@ def fsl_mrs(data, basis, output, **kwargs):
     """
 
     asrt.assertIsNiftiMRS(data)
-    asrt.assertFileExists(basis)
+    asrt.assertIsMRSBasis(basis)
 
     argmap = {
         't1_values' : 't1-values',
@@ -73,6 +74,7 @@ def fsl_mrs(data, basis, output, **kwargs):
 
 
 @wutils.fileOrImage('data', 'mask', 'h2o')
+@wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def fsl_mrsi(data, basis, output, **kwargs):
     """Wrapper for the ``fsl_mrsi`` command.
@@ -87,7 +89,7 @@ def fsl_mrsi(data, basis, output, **kwargs):
     """
 
     asrt.assertIsNiftiMRS(data)
-    asrt.assertFileExists(basis)
+    asrt.assertIsMRSBasis(basis)
 
     argmap = {
         'parallel_workers' : 'parallel-workers',

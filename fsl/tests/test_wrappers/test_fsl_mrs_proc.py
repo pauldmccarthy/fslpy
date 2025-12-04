@@ -16,10 +16,10 @@ def test_fsl_mrs_proc_coilcombine():
         expected = f'{fsl_mrs_proc} coilcombine --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.coilcombine('file', 'output')
-        # expected = f'{fsl_mrs_proc} coilcombine --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.coilcombine('file', 'output', reference='reference', r=True)
+        expected = f'{fsl_mrs_proc} coilcombine --file file --output output --reference reference --generateReports'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_average():
@@ -29,10 +29,10 @@ def test_fsl_mrs_proc_average():
         expected = f'{fsl_mrs_proc} average --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.average('file', 'output')
-        # expected = f'{fsl_mrs_proc} average --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.average('file', 'output', dim='DIM_DYN', filename='filename')
+        expected = f'{fsl_mrs_proc} average --file file --output output --dim DIM_DYN --filename filename'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_align():
@@ -42,10 +42,10 @@ def test_fsl_mrs_proc_align():
         expected = f'{fsl_mrs_proc} align --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.align('file', 'output')
-        # expected = f'{fsl_mrs_proc} align --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.align('file', 'output', ppm=(1.8, 3.5), apod=50, filename='filename')
+        expected = f'{fsl_mrs_proc} align --file file --output output --ppm 1.8 3.5 --apod 50 --filename filename'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_align_diff():
@@ -68,10 +68,10 @@ def test_fsl_mrs_proc_ecc():
         expected = f'{fsl_mrs_proc} ecc --file file --reference reference --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.ecc('file', 'reference', 'output')
-        # expected = f'{fsl_mrs_proc} ecc --file file --reference reference --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.ecc('file', 'reference', 'output', filename='filename')
+        expected = f'{fsl_mrs_proc} ecc --file file --reference reference --output output --filename filename'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_remove():
@@ -81,10 +81,10 @@ def test_fsl_mrs_proc_remove():
         expected = f'{fsl_mrs_proc} remove --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.remove('file', 'output')
-        # expected = f'{fsl_mrs_proc} remove --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.remove('file', 'output', filename='filename', r=True)
+        expected = f'{fsl_mrs_proc} remove --file file --output output --filename filename --generateReports'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_model():
@@ -120,10 +120,10 @@ def test_fsl_mrs_proc_truncate():
         expected = f'{fsl_mrs_proc} truncate --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.truncate('file', 'output')
-        # expected = f'{fsl_mrs_proc} truncate --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.truncate('file', 'output', points=-1, pos='first', generateReports=True)
+        expected = f'{fsl_mrs_proc} truncate --file file --output output --points -1 --pos first --generateReports'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_apodize():
@@ -172,10 +172,10 @@ def test_fsl_mrs_proc_phase():
         expected = f'{fsl_mrs_proc} phase --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.truncate('file', 'output')
-        # expected = f'{fsl_mrs_proc} truncate --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.truncate('file', 'output', filename='filename', ppm=(4.6, 4.7))
+        expected = f'{fsl_mrs_proc} truncate --file file --output output --filename filename --ppm 4.6 4.7'
+        assert result.stdout[0] == expected
 
 
 
