@@ -12,6 +12,9 @@ Added
 
 * New ``cancel`` option to the :func:`fsl.utils.run.hold` function, allowing
   the job hold to be cancelled (!491).
+* New :mod:`fsl.wrappers.fsl_mrs` and :mod:`fsl.wrappers.fsl_mrs_proc` modules
+  containing wrapper functions for `fsl_mrs
+  <https://open.oxcin.ox.ac.uk/pages/fsl/fsl_mrs/>`_ (!492).
 
 
 
