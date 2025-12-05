@@ -2,6 +2,19 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+
+3.26.0 (Monday 8th December 2025)
+---------------------------------
+
+
+Added
+^^^^^
+
+* New ``cancel`` option to the :func:`fsl.utils.run.hold` function, allowing
+  the job hold to be cancelled (!491).
+
+
+
 3.25.1 (Monday 1st December 2025)
 ---------------------------------
 
