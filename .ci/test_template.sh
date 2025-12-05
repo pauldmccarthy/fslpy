@@ -2,6 +2,13 @@
 
 set -e
 
+# install fsl-mrs for some of the fsl.wrappers tests
+/mamba/bin/micromamba install \
+ -y -p /test.env \
+ -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ \
+ -c conda-forge \
+ fsl_mrs
+
 pip install ".[extra,test,style]"
 
 # style stage

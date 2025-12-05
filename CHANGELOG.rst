@@ -12,6 +12,9 @@ Added
 
 * New ``cancel`` option to the :func:`fsl.utils.run.hold` function, allowing
   the job hold to be cancelled (!491).
+* New :mod:`fsl.wrappers.fsl_mrs` and :mod:`fsl.wrappers.fsl_mrs_proc` modules
+  containing wrapper functions for `fsl_mrs
+  <https://open.oxcin.ox.ac.uk/pages/fsl/fsl_mrs/>`_ (!492).
 
 
 
@@ -59,8 +62,8 @@ Fixed
 Changed
 ^^^^^^^
 
-* Adjust the :func:`.hold` function - there is no need for it to submit
-  itself with a jobtime - it will sit in the queue until the held job
+* Adjust the :func:`~fsl.utils.run.hold` function - there is no need for it to
+  submit itself with a jobtime - it will sit in the queue until the held job
   completes, then will run more or less instantly (!476).
 * Now using ``setuptools-scm`` for automatic version number management.
 
@@ -84,10 +87,12 @@ Added
 
 * New :func:`.submitfunc` function, allowing a Python function to be
   synchronously executed on a cluster via ``fsl_sub`` (!474).
-* New ``save`` argument to the :func:`.func_to_cmd` function, allowing the
-  function return value to be serialised and saved to a file (!474).
-* New ``env`` option to the :func:`.func_to_cmd` function, allowing additional
-  environment variables to be set when the function is executed (!474).
+* New ``save`` argument to the :func:`~fsl.utils.run.func_to_cmd` function,
+  allowing the function return value to be serialised and saved to a file
+  (!474).
+* New ``env`` option to the :func:`~fsl.utils.run.func_to_cmd` function,
+  allowing additional environment variables to be set when the function is
+  executed (!474).
 * New ``delete`` option to the :func:`~fsl.utils.tempdir.tempdir` function,
   which can be used to prevent the directory from being deleted (!474).
 * New :func:`~fsl.utils.tempdir.mkstemp` function, which is simply a wrapper
@@ -103,8 +108,8 @@ Added
 Fixed
 ^^^^^
 
-* Fixed a race condition in the :func:`.hold` function when holding on multiple
-  jobs concurrently (!471).
+* Fixed a race condition in the :func:`~fsl.utils.run.hold` function when
+  holding on multiple jobs concurrently (!471).
 * Adjusted the :func:`.featdesign.loadFEATDesignFile` function to handle missing
   values (!469).
 * Fix to the :class:`.Notifier` class involving handling of callback functions
@@ -301,8 +306,8 @@ Added
 ^^^^^
 
 
-* New `silent` option to the :func:`.run` function = passing ``silent=True`` is
-  equivalent to passing ``log={'tee':False}`` (!428).
+* New `silent` option to the :func:`~fsl.utils.run.run` function = passing
+  ``silent=True`` is equivalent to passing ``log={'tee':False}`` (!428).
 * New `prefix` option to the :func:`.tempdir` function, which is passed through
   to ``tempfile.mkdtemp`` (!429).
 

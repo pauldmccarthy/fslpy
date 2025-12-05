@@ -5,6 +5,7 @@
 #
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 # Author: Martin Craig <martin.craig@eng.ox.ac.uk>
+#         Vasilis Karlaftis <vasilis.karlaftis@ndcn.ox.ac.uk>
 #
 """This module contains functions and decorators used by the FSL wrapper
 functions.
@@ -1406,6 +1407,54 @@ def fileOrText(*args, **kwargs):
         try:
             with open(path, "r") as f:
                 return f.read()
+        except Exception: return None
+
+    def decorator(func):
+        fot = FileOrThing(func,
+                          prepIn,
+                          prepOut,
+                          load,
+                          fslpath.removeExt,
+                          *args,
+                          **kwargs)
+
+        def wrapper(*args, **kwargs):
+            return fot(*args, **kwargs)
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator
+
+def fileOrBasis(*args, **kwargs):
+    """Decorator which can be used to ensure that any Basis objects are saved to
+    file, and output images can be loaded and returned as :class:`.Basis` objects.
+    """
+
+    def prepIn(workdir, name, val):
+        try:
+            from fsl_mrs.core  import basis as bmod
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow '\
+                'the installation instructions in the FSL-MRS documentation.')
+
+        infile = None
+
+        if isinstance(val, bmod.Basis):
+            val.save(out_path=workdir)
+            infile = workdir
+
+        return infile
+
+    def prepOut(workdir, name, val):
+        return workdir
+
+    def load(name, path):
+        try:
+            from fsl_mrs.utils import mrs_io
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError('fsl_mrs modules not found. Please follow '\
+                'the installation instructions in the FSL-MRS documentation.')
+        try:              return mrs_io.read_basis(path)
         except Exception: return None
 
     def decorator(func):

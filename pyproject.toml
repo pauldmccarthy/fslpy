@@ -109,6 +109,7 @@ markers   = [
   "meshtest:   Requires trimesh and rtree",
   "igziptest:  Requires indexed_gzip",
   "piltest:    Requires Pillow",
+  "mrstest:    Requires fsl_mrs",
   "noroottest: Need to be executed as non-root user (will fail otherwise)",
   "longtest:   Takes a long time",
   "unixtest:   Only works on *nix systems"]
