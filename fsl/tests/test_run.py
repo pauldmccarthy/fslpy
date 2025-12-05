@@ -494,6 +494,45 @@ def test_hold():
     assert submit['jobhold'] == '1,2,3'
 
 
+def test_hold_cancel():
+
+    with tempdir.tempdir():
+
+        holdfile    = op.abspath('holdfile')
+        cancel      = threading.Event()
+        test_passed = threading.Event()
+
+        def cancel_hold():
+            time.sleep(0.5)
+            cancel.set()
+
+            for i in range(20):
+                if test_passed.is_set():
+                    break
+                time.sleep(0.5)
+
+            # prevent hold from hanging indefinitely
+            # in case the cancel fails
+            if op.exists(holdfile):
+                os.remove(holdfile)
+
+        with run.dryrun():
+            threading.Thread(target=cancel_hold).start()
+            with pytest.raises(run.CancelledError):
+                run.hold([1, 2, 3], holdfile, timeout=1, cancel=cancel)
+            test_passed.set()
+
+        cmds = list(run.DRY_RUN_COMMANDS)
+
+    # dryrun gathers all executed commands
+    # in a list of (cmd, submit) tuples,
+    # so we do a very simple check here
+    assert len(cmds) == 1
+    cmd, submit = cmds[0]
+    assert cmd               == ('rm', holdfile)
+    assert submit['jobhold'] == '1,2,3'
+
+
 def _good_func():
     print('hello')
 
