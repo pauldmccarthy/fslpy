@@ -11,6 +11,6 @@ The following modules are available:
 
 .. autosummary::
 
-   fsl.utils.image.resample
-   fsl.utils.image.roi
+   resample
+   roi
 """
