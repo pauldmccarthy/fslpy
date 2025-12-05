@@ -5,8 +5,13 @@
 # Author: Vasilis Karlaftis <vasilis.karlaftis@ndcn.ox.ac.uk>
 #
 
+import pytest
+
 import fsl.wrappers as fw
 from fsl.tests.test_wrappers import testenv
+
+
+pytestmark = pytest.mark.mrstest
 
 
 def test_fsl_mrs():
