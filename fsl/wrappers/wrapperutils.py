@@ -185,6 +185,7 @@ def genxwrapper(func, runner, funccmd=False):
       - ``submit``:   Passed to ``runner``. Defaults to ``None``.
       - ``log``:      Passed to ``runner``. Defaults to ``{'tee':True}``.
       - ``cmdonly``:  Passed to ``runner``. Defaults to ``False``.
+      - ``silent``:   Passed to ``runner``. Defaults to ``False``.
 
     The default values for these arguments are stored in the
     ``genxwrapper.run_options`` dictionary. This dictionary should not be
@@ -204,7 +205,7 @@ def genxwrapper(func, runner, funccmd=False):
         exitcode = kwargs.pop('exitcode', opts['exitcode'])
         submit   = kwargs.pop('submit',   opts['submit'])
         cmdonly  = kwargs.pop('cmdonly',  opts['cmdonly'])
-        silent   = kwargs.pop('silent',   False)
+        silent   = kwargs.pop('silent',   opts['silent'])
 
         # If silent=True, we need to explicitly set
         # log, as the run function will otherwise
@@ -248,7 +249,8 @@ genxwrapper.run_options = {
     'exitcode' : False,
     'submit'   : None,
     'log'      : {'tee' : True},
-    'cmdonly'  : False
+    'cmdonly'  : False,
+    'silent'   : False
 }
 
 
