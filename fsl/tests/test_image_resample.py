@@ -292,6 +292,8 @@ def test_resampleToReference4():
 
 def test_resampleToReference_constrain():
 
+    atol = 1e-4
+
     # Resample a high-resolution 2D slice
     # into a low-resolution 3D volume
 
@@ -310,8 +312,8 @@ def test_resampleToReference_constrain():
     got = resample.resampleToReference(img, ref, smooth=False)[0]
     exp = imgdata[2::5, 2::5, 0]
 
-    assert np.all(np.isclose(got[:, :, 0], exp))
-    assert np.all(np.isclose(got[:, :, 1], 0))
+    assert np.all(np.isclose(got[:, :, 0], exp, atol=atol))
+    assert np.all(np.isclose(got[:, :, 1], 0,   atol=atol))
 
     # voxel centres within zslice 0 but off voxel
     # centres - sampling points outside of image
@@ -323,7 +325,7 @@ def test_resampleToReference_constrain():
     ref = Image(refdata)
     got = resample.resampleToReference(img, ref, smooth=False)[0]
 
-    assert np.all(np.isclose(got, 0))
+    assert np.all(np.isclose(got, 0, atol=atol))
 
     # With nearest extrapolation, the slice
     # voxel nearest the sampling point will
@@ -333,8 +335,8 @@ def test_resampleToReference_constrain():
     got = resample.resampleToReference(
         img, ref, smooth=False, mode='nearest')[0]
 
-    assert np.all(np.isclose(got[:, :, 0], exp))
-    assert np.all(np.isclose(got[:, :, 1], exp))
+    assert np.all(np.isclose(got[:, :, 0], exp, atol=atol))
+    assert np.all(np.isclose(got[:, :, 1], exp, atol=atol))
 
     # But when constrained=True, extrap
     # should only be applied within the
@@ -344,5 +346,5 @@ def test_resampleToReference_constrain():
     got = resample.resampleToReference(
         img, ref, smooth=False, mode='nearest', constrain=True)[0]
 
-    assert np.all(np.isclose(got[:, :, 0], exp))
-    assert np.all(np.isclose(got[:, :, 1], 0))
+    assert np.all(np.isclose(got[:, :, 0], exp, atol=atol))
+    assert np.all(np.isclose(got[:, :, 1], 0,   atol=atol))

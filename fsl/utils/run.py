@@ -71,6 +71,12 @@ class FSLNotPresent(Exception):
     """
 
 
+class CancelledError(Exception):
+    """Error raised by the :func:`hold` function if a submitted job is to be
+    cancelled.
+    """
+
+
 @contextlib.contextmanager
 def dryrun(*_):
     """Context manager which causes all calls to :func:`run` to be logged but
@@ -464,6 +470,7 @@ def submitfunc(func,
                env=None,
                hold_jids=None,
                clean='never',
+               cancel=None,
                **submit_kwargs):
     """Submit the given python function to the cluster using ``fsl_sub``.
 
@@ -477,6 +484,8 @@ def submitfunc(func,
     :arg hold_jids:     List of cluster job IDs that this job depends on.
     :arg clean:         Clean up temporary files afterwards - see
                         :func:`func_to_cmd`.
+    :arg cancel:        Optional ``threading.Event`` object passed to
+                        :func:`hold`.
     :arg submit_kwargs: Passed through to ``fsl_sub``.
 
     :returns: a tuple containing:
@@ -533,7 +542,7 @@ def submitfunc(func,
     # return value, and deletes temp output
     # files if needed
     def get_result():
-        hold([jid])
+        hold([jid], cancel=cancel)
 
         cleanop = clean
 
@@ -739,7 +748,7 @@ def wslcmd(cmdpath, *args):
         return None
 
 
-def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
+def hold(job_ids, hold_filename=None, timeout=10, jobtime=None, cancel=None):
     """Waits until all specified cluster jobs have finished.
 
     :arg job_ids:       Possibly nested sequence of job ids. The job ids
@@ -753,6 +762,10 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
     :arg timeout:       Number of seconds to sleep between  status checks.
 
     :arg jobtime:       Ignored, will be removed at some point.
+
+    :arg cancel:        Optional ``threading.Event`` object. If set, causes
+                        this function to raise a :class:`CancelledError`
+                        after the current timeout period has elapsed.
     """
 
     # Returns a potentially nested sequence of
@@ -812,6 +825,9 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None):
 
     # wait until the hold file is removed
     while op.exists(holdfile):
+        # Return immediately if cancelled
+        if cancel is not None and cancel.is_set():
+            raise CancelledError()
         time.sleep(timeout)
 
     # remove the fsl_sub job stdout/err files
