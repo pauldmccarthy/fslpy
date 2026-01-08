@@ -39,22 +39,17 @@ import            sys
 import            tempfile
 
 
-def main(argv=None):
-
-    if argv is None:
-        argv = sys.argv[1:]
-
-    if len(argv) not in (0, 1):
-        raise ValueError('Invalid input - tmpnam expects '
-                         'zero or one arguments')
-
+def tmpnam(path=None):
+    """``tmpnam`` function - create a named temporary file, returning its
+    path.
+    """
     # Usage #1 - create file in $TMPDIR
-    if len(argv) == 0:
+    if path is None:
         prefix  = 'fsl'
         dirname = None
 
-    elif len(argv) == 1:
-        dirname, prefix = op.split(argv[0])
+    else:
+        dirname, prefix = op.split(path)
 
         # Usage #2 - create file in cwd
         if dirname == '':
@@ -75,4 +70,28 @@ def main(argv=None):
         raise RuntimeError(f'Could not create temporary file '
                            f'(dir: {dirname}, prefix: {prefix})') from e
 
-    print(op.abspath(name))
+    return op.abspath(name)
+
+
+def main(argv=None):
+    """``tmpnam`` entry point. """
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    if len(argv) not in (0, 1):
+        print('Invalid input - tmpnam expects '
+              'zero or one arguments')
+        return 1
+
+    if len(argv) == 0: path = None
+    else:              path = argv[0]
+
+    try:
+        path = tmpnam(path)
+        print(path)
+        return 0
+
+    except Exception as e:
+        print(f'tmpnam error: {e}')
+        return 1
