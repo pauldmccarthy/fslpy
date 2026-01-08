@@ -36,7 +36,8 @@ output.
 import            os
 import os.path as op
 import            sys
-import            tempfile
+
+from fsl.utils import tempdir
 
 
 def tmpnam(path=None):
@@ -64,8 +65,8 @@ def tmpnam(path=None):
             prefix = 'fsl'
 
     try:
-        f, name = tempfile.mkstemp(prefix=prefix + '_', dir=dirname)
-        os.close(f)
+        name = tempdir.mkstemp(prefix=prefix + '_', dir=dirname)
+
     except Exception as e:
         raise RuntimeError(f'Could not create temporary file '
                            f'(dir: {dirname}, prefix: {prefix})') from e

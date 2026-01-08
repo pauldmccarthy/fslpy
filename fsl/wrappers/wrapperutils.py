@@ -1257,9 +1257,7 @@ def fileOrImage(*args, **kwargs):
             # in-memory image - we have
             # to save it out to a file
             if infile is None or not op.exists(infile):
-                hd, infile = tempfile.mkstemp(fslimage.defaultExt(),
-                                              dir=workdir)
-                os.close(hd)
+                infile = tempdir.mkstemp(fslimage.defaultExt(), dir=workdir)
 
                 # Create a copy of the input image and
                 # save that, so the original doesn't
@@ -1328,8 +1326,7 @@ def fileOrArray(*args, **kwargs):
         infile = None
 
         if isinstance(val, np.ndarray):
-            hd, infile = tempfile.mkstemp('.txt', dir=workdir)
-            os.close(hd)
+            infile = tempdir.mkstemp('.txt', dir=workdir)
             np.savetxt(infile, val, fmt='%0.18f')
 
         return infile

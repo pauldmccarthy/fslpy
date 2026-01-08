@@ -40,7 +40,6 @@ import                    enum
 import                    json
 import                    string
 import                    logging
-import                    tempfile
 
 from pathlib import Path
 from typing  import Union
@@ -58,6 +57,7 @@ import fsl.utils.naninfrange as nir
 import fsl.utils.memoize     as memoize
 import fsl.utils.path        as fslpath
 import fsl.utils.bids        as fslbids
+import fsl.utils.tempdir     as tempdir
 import fsl.data.constants    as constants
 
 
@@ -1639,8 +1639,7 @@ class Image(Nifti):
         # then re-open the file. This is done
         # to ensure that all references to the
         # old file are destroyed.
-        tmphd, tmpfname = tempfile.mkstemp(suffix=getExt(filename))
-        os.close(tmphd)
+        tmpfname = tempdir.mkstemp(suffix=getExt(filename))
 
         try:
             # First of all, the nibabel object won't know
