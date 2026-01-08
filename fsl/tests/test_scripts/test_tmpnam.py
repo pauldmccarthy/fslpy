@@ -31,7 +31,7 @@ def expect_success(args, env, expect):
 
         with CaptureStdout() as cap:
             with mock.patch.dict(os.environ, env, clear=True):
-                tmpnam.main(args)
+                assert tmpnam.main(args) == 0
 
         result = cap.stdout.strip()
 
@@ -51,8 +51,7 @@ def expect_failure(args, env):
     tempfile.tempdir = None
 
     with mock.patch.dict(os.environ, env, clear=True):
-        with pytest.raises(Exception):
-            tmpnam.main(args)
+        assert tmpnam.main(args) != 0
 
 
 def test_without_tmpdir():
