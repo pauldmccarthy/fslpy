@@ -20,6 +20,15 @@ NB: filenames can be basenames or not
 """.strip()
 
 
+def imrm(*paths):
+    """Removes all specified paths. """
+    paths = imglob.imglob(paths, 'all')
+
+    for path in paths:
+        if op.exists(path):
+            os.remove(path)
+
+
 def main(argv=None):
     """Removes all images which are specified on the command line. """
 
@@ -30,11 +39,7 @@ def main(argv=None):
         print(usage)
         return 1
 
-    paths = imglob.imglob(argv, 'all')
-
-    for path in paths:
-        if op.exists(path):
-            os.remove(path)
+    imrm(*argv)
 
     return 0
 

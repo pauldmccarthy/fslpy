@@ -31,8 +31,7 @@ exts = ['.nii.gz',   '.nii',
         '.img.zst' , '.hdr.zst',
         '.img.bz2' , '.hdr.bz2',
         '.mnc',      '.mnc.gz']
-"""List of file extensions that are supported by ``imln``.
-"""
+"""List of file extensions that are supported by ``imln``. """
 
 groups = [('.hdr',     '.img'),
           ('.hdr.gz',  '.img.gz'),
@@ -48,6 +47,37 @@ Usage: imln <file1> <file2>
 """.strip()
 
 
+def imln(target, linkbase):
+    """Create a symlink to the target image. """
+    target   = fslpath.removeExt(target,   exts)
+    linkbase = fslpath.removeExt(linkbase, exts)
+
+    # Target must exist, so we can
+    # infer the correct extension(s).
+    # Error on incomplete file groups
+    # (e.g. a.img without a.hdr).
+    targets = fslpath.getFileGroup(target,
+                                   allowedExts=exts,
+                                   fileGroups=groups,
+                                   unambiguous=True)
+
+    for target in targets:
+        if not op.exists(target):
+            continue
+
+        ext  = fslpath.getExt(target, exts)
+        link = f'{linkbase}{ext}'
+
+        # emulate old imln behaviour - if
+        # link already exists, it is removed
+        if op.exists(link):
+            os.remove(link)
+
+        os.symlink(target, link)
+
+    return 0
+
+
 def main(argv=None):
     """``imln`` - create sym-links to images. """
 
@@ -59,41 +89,13 @@ def main(argv=None):
         return 1
 
     target, linkbase = argv
-    target           = fslpath.removeExt(target,   exts)
-    linkbase         = fslpath.removeExt(linkbase, exts)
 
-    # Target must exist, so we can
-    # infer the correct extension(s).
-    # Error on incomplete file groups
-    # (e.g. a.img without a.hdr).
     try:
-        targets = fslpath.getFileGroup(target,
-                                       allowedExts=exts,
-                                       fileGroups=groups,
-                                       unambiguous=True)
+        imln(target, linkbase)
+
     except Exception as e:
         print(f'Error: {e}')
         return 1
-
-    for target in targets:
-        if not op.exists(target):
-            continue
-
-        ext  = fslpath.getExt(target, exts)
-        link = f'{linkbase}{ext}'
-
-        try:
-
-            # emulate old imln behaviour - if
-            # link already exists, it is removed
-            if op.exists(link):
-                os.remove(link)
-
-            os.symlink(target, link)
-
-        except Exception as e:
-            print(f'Error: {e}')
-            return 1
 
     return 0
 

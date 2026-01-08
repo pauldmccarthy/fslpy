@@ -28,6 +28,17 @@ exts = ['.nii.gz',  '.nii',
 """List of file extensions that are removed by ``remove_ext``. """
 
 
+def remove_ext(*paths):
+    """Remove the file extension from all specified paths. """
+
+    removed = []
+
+    for path in paths:
+        removed.append(fslpath.removeExt(path, exts))
+
+    return removed
+
+
 def main(argv=None):
     """Removes file extensions from all paths which are specified on the
     command line.
@@ -40,10 +51,12 @@ def main(argv=None):
         print(usage)
         return 1
 
-    removed = []
+    try:
+        removed = remove_ext(*argv)
 
-    for path in argv:
-        removed.append(fslpath.removeExt(path, exts))
+    except Exception as e:
+        print(f'remove_ext error: {e}')
+        return 1
 
     print(' '.join(removed))
 
