@@ -18,9 +18,9 @@ from fsl.scripts import (imcp   as imcp_script,
                          imtest as imtest_script)
 
 
-def imcp(*args):
+def imcp(*paths):
     """Wrapper for the ``imcp`` script. """
-    imcp_script.main(args)
+    imcp_script.imcp(*paths)
 
 
 def imglob(*images, extension=False, extensions=False):
@@ -35,19 +35,19 @@ def imglob(*images, extension=False, extensions=False):
     return imglob_script.imglob(images, output)
 
 
-def imln(*args):
+def imln(target, linkbase):
     """Wrapper for the ``imln`` script. """
-    imln_script.main(args)
+    imln_script.imln(target, linkbase)
 
 
-def immv(*args):
+def immv(*paths):
     """Wrapper for the ``immv`` script. """
-    immv_script.main(args)
+    immv_script.immv(*paths)
 
 
-def imrm(*args):
+def imrm(*paths):
     """Wrapper for the ``imrm`` script. """
-    imrm_script.main(args)
+    imrm_script.imrm(*paths)
 
 
 def imtest(path):
