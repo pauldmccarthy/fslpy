@@ -168,9 +168,7 @@ def test_fslchfiletype_conversion():
             toprefix   = op.join(td, f't{to}_{dtype.__name__}')
 
             make_file(fromprefix, from_, dtype)
-
-            fslchfiletype.main((to, fromprefix, toprefix))
-
+            assert fslchfiletype.main((to, fromprefix, toprefix)) == 0
             check_file(toprefix, to, dtype)
 
 
@@ -181,7 +179,7 @@ def test_fslchfiletype_copy():
             image1 = op.join(td, 'image1')
             image2 = op.join(td, 'image2')
             make_file(image1, from_, np.int16)
-            fslchfiletype.main((to, image1, image2))
+            assert fslchfiletype.main((to, image1, image2)) == 0
             check_file(image1, from_, np.int16)
             check_file(image2, to,    np.int16)
 
@@ -191,5 +189,5 @@ def test_fslchfiletype_inplace():
         with tempfile.TemporaryDirectory() as td:
             image = op.join(td, 'image')
             make_file(image, from_, np.int16)
-            fslchfiletype.main((to, image))
+            assert fslchfiletype.main((to, image)) == 0
             check_file(image, to, np.int16)
