@@ -9,6 +9,7 @@
    fsl.scripts.fsl_apply_x5
    fsl.scripts.fsl_convert_x5
    fsl.scripts.fsl_ents
+   fsl.scripts.fslchfiletype
    fsl.scripts.imcp
    fsl.scripts.imglob
    fsl.scripts.imln
@@ -22,9 +23,11 @@
 
 
 The ``fsl.scripts`` package contains all of the executable scripts provided by
-``fslpy``, and other python-based FSL packages.
+``fslpy``.
 
 
 The ``fsl.scripts`` package is a `native namespace package
 <https://packaging.python.org/guides/packaging-namespace-packages/>`_, which
-means that it can be used by other Python libraries.
+means that it can be used by other Python libraries - i.e., other FSL Python
+packages may store their executable scripts within the ``fsl.scripts``
+package.
