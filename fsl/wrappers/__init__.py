@@ -156,12 +156,15 @@ from fsl.wrappers.fnirt              import (fnirt,
                                              convertwarp)
 from fsl.wrappers.fsl_anat           import (fsl_anat,)
 from fsl.wrappers.fsl_sub            import (fsl_sub,)
-from fsl.wrappers.fslio              import (imcp,
+from fsl.wrappers.fslio              import (fslchfiletype,
+                                             imcp,
                                              imglob,
                                              imln,
                                              immv,
                                              imrm,
-                                             imtest)
+                                             imtest,
+                                             remove_ext,
+                                             tmpnam)
 from fsl.wrappers.fslmaths           import (fslmaths,)
 from fsl.wrappers.fslstats           import (fslstats,)
 from fsl.wrappers.fugue              import (fugue,
