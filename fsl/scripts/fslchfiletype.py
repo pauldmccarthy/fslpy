@@ -73,7 +73,7 @@ def fslchfiletype(fmt, oldfile, newfile=None):
     oldfile = remove_ext(oldfile)
     inplace = newfile is None
 
-    if not inplace:
+    if newfile is not None:
         newfile = remove_ext(newfile)
     else:
         # for in-place conversions we save the conversion to
