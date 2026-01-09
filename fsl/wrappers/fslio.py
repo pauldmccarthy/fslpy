@@ -10,15 +10,14 @@ These scripts are actually implemented within fslpy, so the wrapper functions
 invoke the relevant code directly, rather than invoking a separate process.
 """
 
-from fsl.scripts import (fslchfiletype as fslchfiletype_script,
-                         imcp          as imcp_script,
-                         imglob        as imglob_script,
-                         imln          as imln_script,
-                         immv          as immv_script,
-                         imrm          as imrm_script,
-                         imtest        as imtest_script,
-                         remove_ext    as remove_ext_script,
-                         tmpnam        as tmpnam_script)
+from fsl.scripts import (imcp       as imcp_script,
+                         imglob     as imglob_script,
+                         imln       as imln_script,
+                         immv       as immv_script,
+                         imrm       as imrm_script,
+                         imtest     as imtest_script,
+                         remove_ext as remove_ext_script,
+                         tmpnam     as tmpnam_script)
 
 
 def imcp(*paths):
@@ -80,4 +79,5 @@ def tmpnam(path=None):
 
 def fslchfiletype(fmt, oldfile, newfile=None):
     """Wrapper for the ``fslchfiletype`` script. """
+    from fsl.scripts import fslchfiletype as fslchfiletype_script
     fslchfiletype_script.fslchfiletype(fmt, oldfile, newfile)
