@@ -63,22 +63,24 @@ style = [
 
 
 [project.scripts]
+atlasq         = "fsl.scripts.atlasq:main"
+atlasquery     = "fsl.scripts.atlasq:atlasquery_emulation"
+fsl_abspath    = "fsl.scripts.fsl_abspath:main"
+fsl_apply_x5   = "fsl.scripts.fsl_apply_x5:main"
+fsl_convert_x5 = "fsl.scripts.fsl_convert_x5:main"
+fsl_ents       = "fsl.scripts.fsl_ents:main"
 imcp           = "fsl.scripts.imcp:main"
+imglob         = "fsl.scripts.imglob:main"
 imln           = "fsl.scripts.imln:main"
 immv           = "fsl.scripts.immv:main"
 imrm           = "fsl.scripts.imrm:main"
-imglob         = "fsl.scripts.imglob:main"
 imtest         = "fsl.scripts.imtest:main"
 remove_ext     = "fsl.scripts.remove_ext:main"
-fsl_abspath    = "fsl.scripts.fsl_abspath:main"
+resample_image = "fsl.scripts.resample_image:main"
+tmpnam         = "fsl.scripts.tmpnam:main"
 Text2Vest      = "fsl.scripts.Text2Vest:main"
 Vest2Text      = "fsl.scripts.Vest2Text:main"
-atlasq         = "fsl.scripts.atlasq:main"
-atlasquery     = "fsl.scripts.atlasq:atlasquery_emulation"
-fsl_ents       = "fsl.scripts.fsl_ents:main"
-resample_image = "fsl.scripts.resample_image:main"
-fsl_convert_x5 = "fsl.scripts.fsl_convert_x5:main"
-fsl_apply_x5   = "fsl.scripts.fsl_apply_x5:main"
+
 
 
 [tool.setuptools.packages.find]
