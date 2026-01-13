@@ -18,6 +18,7 @@
    fsl.scripts.imtest
    fsl.scripts.remove_ext
    fsl.scripts.resample_image
+   fsl.scripts.tmpnam
    fsl.scripts.Text2Vest
    fsl.scripts.Vest2Text
 
