@@ -21,6 +21,13 @@ Added
   that they raise an exception when an error occurs (!493).
 
 
+Changed
+^^^^^^^
+
+* The :func:`.readFnirt` function now allows keyword arguments to be passed
+  through to :func:`.Image.__init__` (!494).
+
+
 
 3.26.0 (Monday 8th December 2025)
 ---------------------------------
