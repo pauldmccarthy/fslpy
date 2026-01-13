@@ -84,6 +84,8 @@ def fslchfiletype(fmt, oldfile, newfile=None):
         # same directory, as this would confuse imrm.
         newfile = tmpnam()
 
+    # the imcp function will save images in the format
+    # dictated by the FSLOUTPUTTYPE environemnt variable.
     with patchenv(FSLOUTPUTTYPE=fmt):
 
         # do the copy / type conversion
