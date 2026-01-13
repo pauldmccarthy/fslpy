@@ -100,3 +100,17 @@ def test_tempdir_delete():
         with tempdir.tempdir(root='.', override='override', delete=True) as td:
             pass
         assert op.exists(td)
+
+
+def test_indir():
+
+    with tempdir.tempdir() as td:
+        testdir = op.join(td, "testdir")
+        os.mkdir(testdir)
+
+        assert os.getcwd() == td
+
+        with tempdir.indir("testdir"):
+            assert os.getcwd() == testdir
+
+        assert os.getcwd() == td

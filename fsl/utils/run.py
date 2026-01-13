@@ -30,7 +30,6 @@ import                    glob
 import                    time
 import                    shlex
 import                    logging
-import                    tempfile
 import                    threading
 import                    contextlib
 import collections.abc as abc
@@ -670,10 +669,9 @@ def func_to_cmd(func,
     dill_bytes = io.BytesIO()
     dill.dump((func, args, kwargs), dill_bytes, recurse=True)
 
-    handle, filename = tempfile.mkstemp(prefix=func.__name__ + '_',
-                                        suffix='.py',
-                                        dir=tmp_dir)
-    os.close(handle)
+    filename = tempdir.mkstemp(prefix=func.__name__ + '_',
+                               suffix='.py',
+                               dir=tmp_dir)
 
     python_cmd = script_template.format(
         executable=sys.executable,
@@ -795,7 +793,7 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None, cancel=None):
         elif not op.isdir(op.split(holdfile)[0]):
             raise IOError(f"Hold file ({holdfile}) can not be created "
                           "in non-existent directory")
-        with open(holdfile, 'wb') as f:
+        with open(holdfile, 'wb'):
             pass
 
     # Otherwise generate a random file name to

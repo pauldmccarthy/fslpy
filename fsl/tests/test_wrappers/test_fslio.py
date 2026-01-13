@@ -37,3 +37,10 @@ def test_fslio_wrappers():
         assert not op.exists('image3.nii.gz')
 
         assert fw.imtest('image')
+
+        assert fw.remove_ext('image.nii.gz') == 'image'
+        tmpfile = fw.tmpnam('./')
+        assert op.isfile(tmpfile)
+
+        fw.fslchfiletype('NIFTI_BZ2', 'image.nii.gz')
+        assert op.isfile('image.nii.bz2')

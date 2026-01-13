@@ -3,6 +3,25 @@ order.
 
 
 
+3.27.0 (Tuesday 13th January 2026)
+----------------------------------
+
+Added
+^^^^^
+
+* New ``tmpnam`` command, implemented in the :mod:`fsl.scripts.tmpnam`
+  module. This has been migrated from the FSL ``misc_c`` project (!493).
+* New ``fslchfiletype`` command, implemented in the
+  :mod:`fsl.scripts.fslchfiletype` module. This has been converted to Python,
+  and migrated from the FSL ``avwutils`` project (!493).
+* Added the ~:func:`.fslio.remove_ext` wrapper function, for calling ``remove_ext``
+  programmatically (!493).
+* Adjust the :func:`~.fslio.imcp` ~:func:`.fslio.imln`, ~:func:`~.fslio.immv`,
+  ~:func:`.fslio.imrm`, and ~:func:`.fslio.remove_ext` wrapper functions so
+  that they raise an exception when an error occurs (!493).
+
+
+
 3.26.0 (Monday 8th December 2025)
 ---------------------------------
 

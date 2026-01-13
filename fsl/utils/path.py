@@ -346,17 +346,17 @@ def getFileGroup(path,
     return ``file.img`` (i.e. the file which matches the first extension in
     the group).
 
-    Similarly, if you call the :func:`.imcp.imcp` or :func:`.imcp.immv`
-    functions with the above parameters, both ``file.img`` and ``file.hdr``
-    will be moved.
+    Similarly, if you call the :func:`~fsl.utils.imcp.imcp` or
+    :func:`~fsl.utils.imcp.immv` functions with the above parameters, both
+    ``file.img`` and ``file.hdr`` will be moved.
 
     .. note:: The primary use-case of file groups is to resolve ambiguity with
               respect to NIFTI and ANALYSE75 image pairs. By specifying
               ``fileGroups=[('.img', '.hdr'), ('.img.gz', '.hdr.gz')]``, the
-              :func:`addExt`, :func:`.imcp.immv` and :func:`.imcp.imcp`
-              functions are able to figure out what you mean when you specify
-              ``file``, and both ``file.hdr`` and ``file.img`` (or
-              ``file.hdr.gz`` and ``file.img.gz``) exist.
+              :func:`addExt`, :func:`~fsl.utils.imcp.immv` and
+              :func:`~fsl.utils.imcp.imcp` functions are able to figure out
+              what you mean when you specify ``file``, and both ``file.hdr``
+              and ``file.img`` (or ``file.hdr.gz`` and ``file.img.gz``) exist.
 
     :arg path:        Path to the file. Must contain the file extension.
 

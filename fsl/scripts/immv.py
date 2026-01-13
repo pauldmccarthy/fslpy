@@ -35,9 +35,25 @@ Recognised file extensions: {}
 """.format(', '.join(fslimage.ALLOWED_EXTENSIONS))
 
 
+def immv(*paths):
+    """Calls the :func:`fsl.utils.imcp.immv` function on each input.
+    The last argument is assumed to be the destination.
+    """
+    srcs = paths[:-1]
+    dest = paths[-1]
+    srcs = [fslimage.fixExt(s) for s in srcs]
+    srcs = fslpath.removeDuplicates(
+        srcs,
+        allowedExts=fslimage.ALLOWED_EXTENSIONS,
+        fileGroups=fslimage.FILE_GROUPS)
+
+    for src in srcs:
+        imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
+
+
 def main(argv=None):
-    """Parses CLI arguments (see the usage string), and calls the
-    fsl.utils.imcp.immv function on each input.
+    """Parses CLI arguments (see the usage string), and moves image files
+    accordingly.
     """
 
     if argv is None:
@@ -50,6 +66,8 @@ def main(argv=None):
     srcs = argv[:-1]
     dest = argv[ -1]
 
+    # for multiple inputs, the
+    # destination must be a directory
     if len(srcs) > 1 and not op.isdir(dest):
         print(usage)
         return 1
@@ -60,14 +78,7 @@ def main(argv=None):
     logging.getLogger('nibabel').setLevel(logging.ERROR)
 
     try:
-        srcs = [fslimage.fixExt(s) for s in srcs]
-        srcs = fslpath.removeDuplicates(
-            srcs,
-            allowedExts=fslimage.ALLOWED_EXTENSIONS,
-            fileGroups=fslimage.FILE_GROUPS)
-
-        for src in srcs:
-            imcp.immv(src, dest, useDefaultExt=True, overwrite=True)
+        immv(*argv)
 
     except Exception as e:
         print(str(e))

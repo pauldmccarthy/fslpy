@@ -11,6 +11,7 @@ directories. It currently contains the following functions:
    :nosignatures:
 
    tempdir
+   indir
    mkstemp
 """
 
@@ -68,6 +69,20 @@ def tempdir(root=None, changeto=True, override=None, prefix=None, delete=True):
             shutil.rmtree(testdir)
         if changeto:
             os.chdir(prevdir)
+
+
+@contextlib.contextmanager
+def indir(path):
+    """Context manager which changes into the specified directory, then changes
+    back afterwards.
+    """
+
+    prevdir = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
 
 def mkstemp(*args, **kwargs):
