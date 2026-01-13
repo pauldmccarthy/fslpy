@@ -142,7 +142,7 @@ from . import                nonlinear
 log = logging.getLogger(__name__)
 
 
-def _readFnirtDeformationField(fname, img, src, ref, defType=None):
+def _readFnirtDeformationField(fname, img, src, ref, defType=None, **kwargs):
     """Loads ``fname``, assumed to be a FNIRT deformation field.
 
     :arg fname:   File name of FNIRT deformation field
@@ -157,16 +157,20 @@ def _readFnirtDeformationField(fname, img, src, ref, defType=None):
                   If not provided, is automatically inferred from the data.
 
     :return:      A :class:`.DeformationField` object
+
+    All other keyword arguments are ultimately passed through to
+    :meth:`.Image.__init__`.
     """
     return nonlinear.DeformationField(fname,
                                       src,
                                       ref,
                                       srcSpace='fsl',
                                       refSpace='fsl',
-                                      defType=defType)
+                                      defType=defType,
+                                      **kwargs)
 
 
-def _readFnirtCoefficientField(fname, img, src, ref):
+def _readFnirtCoefficientField(fname, img, src, ref, **kwargs):
     """Loads ``fname``, assumed to be a FNIRT coefficient field.
 
     :arg fname: File name of FNIRT coefficient field
@@ -174,6 +178,9 @@ def _readFnirtCoefficientField(fname, img, src, ref):
     :arg src:   Source image
     :arg ref:   Reference image
     :return:    A :class:`.CoefficientField`
+
+    All other keyword arguments are ultimately passed through to
+    :meth:`.Image.__init__`.
     """
 
     # FNIRT uses NIFTI header fields in
@@ -254,10 +261,11 @@ def _readFnirtCoefficientField(fname, img, src, ref):
                                       fieldType=fieldType,
                                       knotSpacing=knotSpacing,
                                       srcToRefMat=srcToRefMat,
-                                      fieldToRefMat=fieldToRefMat)
+                                      fieldToRefMat=fieldToRefMat,
+                                      **kwargs)
 
 
-def readFnirt(fname, src, ref, defType=None, intent=None):
+def readFnirt(fname, src, ref, defType=None, intent=None, **kwargs):
     """Reads a non-linear FNIRT transformation image, returning
     a :class:`.DeformationField` or :class:`.CoefficientField` depending
     on the file type.
@@ -271,6 +279,9 @@ def readFnirt(fname, src, ref, defType=None, intent=None):
     :arg intent:   NIFTI intent code of ``fname``. e.g.
                    :attr:`.constants.FSL_FNIRT_DISPLACEMENT_FIELD`. If not
                    provided, the intent is read from the image header.
+
+    All other arguments are ultimately passed through to
+    :meth:`.Image.__init__`.
     """
 
     if defType not in (None, 'absolute', 'relative'):
@@ -294,9 +305,10 @@ def readFnirt(fname, src, ref, defType=None, intent=None):
               constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
 
     if intent in disps:
-        return _readFnirtDeformationField(fname, img, src, ref, defType)
+        return _readFnirtDeformationField(fname, img, src, ref, defType,
+                                          **kwargs)
     elif intent in coefs:
-        return _readFnirtCoefficientField(fname, img, src, ref)
+        return _readFnirtCoefficientField(fname, img, src, ref, **kwargs)
     else:
         raise ValueError('Cannot determine type of nonlinear warp field '
                          '{} (intent code: {})'.format(fname, intent))
