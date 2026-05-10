@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  UPSTREAM_PROJECT: "fsl/fslpy"
+  UPSTREAM_URL: "git@git.fmrib.ox.ac.uk"
+
+jobs:
+  test-3-11:
+    name: test:3.11
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py311-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && !startsWith(github.ref, 'refs/tags/') && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') && ((startsWith(github.ref, 'refs/heads/v') && github.ref_name != 'v') || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  quicktest-3-12:
+    name: quicktest:3.12
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository != 'fsl/fslpy' && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  test-3-12:
+    name: test:3.12
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && !startsWith(github.ref, 'refs/tags/') && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') && ((startsWith(github.ref, 'refs/heads/v') && github.ref_name != 'v') || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  test-3-13:
+    name: test:3.13
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py313-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && !startsWith(github.ref, 'refs/tags/') && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') && ((startsWith(github.ref, 'refs/heads/v') && github.ref_name != 'v') || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  test-3-14:
+    name: test:3.14
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py314-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && !startsWith(github.ref, 'refs/tags/') && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') && ((startsWith(github.ref, 'refs/heads/v') && github.ref_name != 'v') || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  test-build-pypi-dist:
+    name: test:build-pypi-dist
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository != 'fsl/fslpy' && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/build_pypi_dist.sh
+
+  style:
+    name: style
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository != 'fsl/fslpy' && vars.SKIP_TESTS == '' && !contains(github.event.head_commit.message, '[skip-tests]') }}
+    env:
+      TEST_STYLE: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/test_template.sh
+
+  pages:
+    name: pages
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && startsWith(github.ref, 'refs/heads/v') && github.ref_name != 'v' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/build_doc.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pages
+          path: public
+
+  build-pypi-dist:
+    name: build-pypi-dist
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    if: ${{ github.repository == 'fsl/fslpy' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./.ci/build_pypi_dist.sh
+      - run: bash ./.ci/check_version.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-pypi-dist
+          path: dist/*
+
+  deploy-pypi:
+    name: deploy-pypi
+    runs-on: ubuntu-22.04
+    container:
+      image: python:3.12
+    needs: build-pypi-dist
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'fsl/fslpy' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-pypi-dist
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/deploy_pypi.sh
+
+  deploy-zenodo:
+    name: deploy-zenodo
+    runs-on: ubuntu-22.04
+    container:
+      image: pauldmccarthy/fsleyes-py312-wxpy4-gtk3
+    needs: build-pypi-dist
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'fsl/fslpy' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-pypi-dist
+      - run: bash ./.ci/setup_ssh.sh
+      - run: bash ./.ci/zenodo_deposit.sh "$ZENODO_URL" "$ZENODO_TOKEN" "$ZENODO_DEPOSIT_ID"
