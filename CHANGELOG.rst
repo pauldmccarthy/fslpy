@@ -2,6 +2,18 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.28.0 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+* :class:`.CancelledError` exceptions (emitted by the :func:`.hold` function)
+  now contain two attributes - ``job_ids`` contains the list of IDs that were
+  being waited on, and ``hold_id`` contains the ID of the hold job.
+
+
 
 3.27.0 (Tuesday 13th January 2026)
 ----------------------------------
