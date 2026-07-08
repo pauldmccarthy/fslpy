@@ -72,8 +72,20 @@ class FSLNotPresent(Exception):
 
 class CancelledError(Exception):
     """Error raised by the :func:`hold` function if a submitted job is to be
-    cancelled.
+    cancelled. ``CancelledError`` exceptions contain the following attributes:
+
+     - ``job_ids``: String containing all job IDs that the :func:`hold`
+       function was waiting on, separated by commas.
+     - ``hold_id``: ID of the hold job.
+
+    The caller is responsible for cancelling all jobs, including the hold
+    job.
     """
+
+    def __init__(self, job_ids : str, hold_id : str):
+        """Create a ``CancelledError``. """
+        self.job_ids = job_ids
+        self.hold_id = hold_id
 
 
 @contextlib.contextmanager
@@ -819,13 +831,13 @@ def hold(job_ids, hold_filename=None, timeout=10, jobtime=None, cancel=None):
 
     # submit a job to remove the hold file
     # once the specified job_ids have completed
-    run(f'rm {holdfile}', submit=submit, silent=True)
+    hold_id = run(f'rm {holdfile}', submit=submit, silent=True)
 
     # wait until the hold file is removed
     while op.exists(holdfile):
         # Return immediately if cancelled
         if cancel is not None and cancel.is_set():
-            raise CancelledError()
+            raise CancelledError(submit['jobhold'], hold_id)
         time.sleep(timeout)
 
     # remove the fsl_sub job stdout/err files
