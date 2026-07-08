@@ -17,14 +17,26 @@ if [ "$TEST_STYLE"x != "x" ]; then pylint --output-format=colorized fsl || true;
 if [ "$TEST_STYLE"x != "x" ]; then exit 0;                                       fi;
 
 # We need the FSL atlases for the atlas
-# tests, and need $FSLDIR to be defined
+# tests, and need $FSLDIR to be defined.
+# If FSL_ATLAS_DIR isn't set, the data
+# isn't copied, and the relevant tests
+# are skipped.
 export FSLDIR=/fsl/
 mkdir -p $FSLDIR/data/
-rsync -rv "fsldownload:$FSL_ATLAS_DIR" "$FSLDIR/data/atlases/"
+if [[ -n "${FSL_ATLAS_DIR}" ]]; then
+    rsync -rv "fsldownload:$FSL_ATLAS_DIR" "$FSLDIR/data/atlases/"
+else
+    echo "FSL datasets cannot be found - skipping FSL tests."
+fi
 
 # Run the tests. Suppress coverage
 # reporting until after we're finished.
 TEST_OPTS="--cov-report= --cov-append"
+
+if [[ -z "${FSL_ATLAS_DIR}" ]]; then
+    TEST_OPTS="${TEST_OPTS} -k 'not fsltest'"
+fi
+
 
 # pytest struggles with my organisation of
 # the fslpy package, where all tests are in

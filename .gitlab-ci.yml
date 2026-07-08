@@ -55,8 +55,6 @@ stages:
 #   - SSH_PRIVATE_KEY_FSL_DOWNLOAD   - private key for downloading some FSL
 #                                      files from a remote server (FSL_HOST)
 #
-#   - SSH_SERVER_HOSTKEYS            - List of trusted SSH hosts
-#
 #   - FSL_HOST:                      - Username@host to download FSL data from
 #                                      (most likely "paulmc@localhost")
 #
