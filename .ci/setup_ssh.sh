@@ -19,6 +19,14 @@ set -e
 #       (or don't need any configuration).
 ##########################################################
 
+# Skip setup if running on
+# an unconfigured machine
+if [[ -z "${FSL_HOST}" ]]; then
+    echo "FSL_HOST is not set - tests will not be able to download FSL datasets"
+    exit 0
+fi
+
+
 if [[ -f /.dockerenv ]]; then
 
  eval $(ssh-agent -s);
