@@ -31,10 +31,10 @@ fi
 
 # Run the tests. Suppress coverage
 # reporting until after we're finished.
-TEST_OPTS="--cov-report= --cov-append"
+TEST_OPTS=(--cov-report=  --cov-append)
 
 if [[ -z "${FSL_ATLAS_DIR}" ]]; then
-    TEST_OPTS="${TEST_OPTS} -k 'not fsltest'"
+    TEST_OPTS+=(-k "not fsltest")
 fi
 
 
@@ -46,9 +46,9 @@ touch fsl/__init__.py
 # We run some tests under xvfb-run
 # because they invoke wx. Sleep in
 # between, otherwise xvfb gets upset.
-xvfb-run -a pytest $TEST_OPTS fsl/tests/test_idle.py
+xvfb-run -a pytest "${TEST_OPTS[@]}" fsl/tests/test_idle.py
 sleep 5
-xvfb-run -a pytest $TEST_OPTS fsl/tests/test_platform.py
+xvfb-run -a pytest "${TEST_OPTS[@]}" fsl/tests/test_platform.py
 
 # We run the immv/imcp tests as the nobody
 # user because some tests expect permission
