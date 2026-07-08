@@ -21,7 +21,7 @@ set -e
 
 # Skip setup if running on
 # an unconfigured machine
-if [[ -z "${FSL_HOST}" ]]; thenn
+if [[ -z "${FSL_HOST}" ]]; then
     echo "FSL_HOST is not set - tests will not be able to download FSL datasets"
     exit 0
 fi
