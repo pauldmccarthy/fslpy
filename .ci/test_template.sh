@@ -64,11 +64,11 @@ chmod -R a+w `pwd`
 # - move this to docker image builds
 echo "PATH=$PATH" > /etc/environment
 
-cmd="pytest $TEST_OPTS fsl/tests/test_scripts/test_immv_imcp.py fsl/tests/test_immv_imcp.py"
+cmd=(pytest "${TEST_OPTS[@]}" fsl/tests/test_scripts/test_immv_imcp.py fsl/tests/test_immv_imcp.py)
 su -s /bin/bash -c "$cmd" nobody
 
 # All other tests can be run as normal.
-pytest $TEST_OPTS -m 'not longtest'         \
+pytest "${TEST_OPTS[@]}" -m 'not longtest'    \
        --ignore=fsl/tests/test_idle.py      \
        --ignore=fsl/tests/test_platform.py  \
        --ignore=fsl/tests/test_immv_imcp.py \
