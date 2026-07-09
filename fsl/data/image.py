@@ -312,20 +312,47 @@ class Nifti(notifier.Notifier, meta.Meta):
     """  # noqa
 
 
-    def __init__(self, header):
+
+    def __init__(self,
+                 header : nib.analyze.AnalyzeHeader = None,
+                 shape  : tuple[int, ...]           = None,
+                 xform  : np.ndarray                = None):
         """Create a ``Nifti`` object.
+
+        A ``Nifti`` object can be created from either a ``header``, or from
+        a ``shape`` and voxel-to-world affine (``xform``).
 
         :arg header: A :class:`nibabel.nifti1.Nifti1Header`,
                      :class:`nibabel.nifti2.Nifti2Header`, or
                      ``nibabel.analyze.AnalyzeHeader`` to be used as the
                      image header.
+
+        :arg shape:  Image dimensions
+
+        :arg xform:  Voxel to world affine
         """
+
+        # Only one of header, or (shape, xform) may be specified
+        if header is not None:
+            if any((shape is not None, xform is not None)):
+                raise ValueError('Cannot use both header and (shape, xform)')
+        elif any((shape is None, xform is None)):
+            raise ValueError('Both shape and xform must be specified')
+
+        if header is None:
+            header = nib.Nifti1Header()
+            pixdim = affine.decompose(xform)[0]
+            if len(shape) > 3:
+                pixdim = list(pixdim) + [1] * (len(shape) - 3)
+            header.set_data_shape(shape)
+            header.set_zooms(pixdim)
+            header.set_sform(xform, 2)
 
         # Nifti2Header is a sub-class of Nifti1Header,
         # and Nifti1Header a sub-class of AnalyzeHeader,
         # so we only need to test for the latter.
         if not isinstance(header, nib.analyze.AnalyzeHeader):
-            raise ValueError('Unrecognised header: {}'.format(header))
+            raise ValueError(f'Unrecognised header: {header}')
 
         origShape, shape, pixdim = Nifti.determineShape(header)
         voxToWorldMat            = Nifti.determineAffine(header)
@@ -1378,7 +1405,6 @@ class Image(Nifti):
         Nifti.__init__(self, header)
 
         self.name         = name
-        self.__lName      = f'{id(self)}_{self.name}'
         self.__dataSource = dataSource
         self.__nibImage   = nibImage
         self.__saveState  = saved
