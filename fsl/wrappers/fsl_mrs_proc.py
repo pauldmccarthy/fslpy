@@ -602,27 +602,23 @@ def conj(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'mask')
+@wutils.fileOrImage('file', 'filename', 'target', 'mask')
 @wutils.fslwrapper
 def mrsi_align(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc mrsi-align`` command.
     The following arguments are currently supported:
-    file, output, mask, freq_align, zpad, phase-correct, ppm,
-    save_params, overwrite, r/generateReports, allreports,
-    filename, verbose.
+    file, output, target, mask, zpad, ppm, save_params, overwrite,
+    r/generateReports, allreports, filename, verbose.
     """
 
     asrt.assertIsNiftiMRS(file)
 
     argmap = {
-        'freq_align' : 'freq-align',
         'save_params': 'save-params',
         'r': 'generateReports',
     }
     
     valmap = {
-        'freq-align'        : wutils.SHOW_IF_TRUE,
-        'phase-correct'     : wutils.SHOW_IF_TRUE,
         'save-params'       : wutils.SHOW_IF_TRUE,
         'overwrite'         : wutils.SHOW_IF_TRUE,
         'generateReports'   : wutils.SHOW_IF_TRUE,
