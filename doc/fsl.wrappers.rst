@@ -9,10 +9,10 @@
    fsl.wrappers.bet
    fsl.wrappers.bianca
    fsl.wrappers.cluster_commands
-   fsl.wrappers.dtifit
    fsl.wrappers.eddy
    fsl.wrappers.epi_reg
    fsl.wrappers.fast
+   fsl.wrappers.fdt
    fsl.wrappers.feat
    fsl.wrappers.first
    fsl.wrappers.flirt
@@ -21,9 +21,11 @@
    fsl.wrappers.fsl_mrs
    fsl.wrappers.fsl_mrs_proc
    fsl.wrappers.fsl_sub
+   fsl.wrappers.fslio
    fsl.wrappers.fslmaths
    fsl.wrappers.fslstats
    fsl.wrappers.fugue
+   fsl.wrappers.get_standard
    fsl.wrappers.melodic
    fsl.wrappers.misc
    fsl.wrappers.mmorf

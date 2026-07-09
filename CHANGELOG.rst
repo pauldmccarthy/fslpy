@@ -6,12 +6,20 @@ order.
 --------------------------
 
 
+Added
+^^^^^
+
+
+* New :func:`.cancel_job` function which cancels a job submitted via
+  :func:`.fsl_sub` (:mr:`498`).
+
 Changed
 ^^^^^^^
 
-* :class:`.CancelledError` exceptions (emitted by the :func:`.hold` function)
-  now contain two attributes - ``job_ids`` contains the list of IDs that were
-  being waited on, and ``hold_id`` contains the ID of the hold job.
+* :class:`.CancelledError` exceptions (emitted by the
+  :func:`~fsl.utils.run.hold` function) now contain two attributes -
+  ``job_ids`` contains the list of IDs that were being waited on, and
+  ``hold_id`` contains the ID of the hold job.
 
 
 
@@ -22,22 +30,22 @@ Added
 ^^^^^
 
 * New ``tmpnam`` command, implemented in the :mod:`fsl.scripts.tmpnam`
-  module. This has been migrated from the FSL ``misc_c`` project (!493).
+  module. This has been migrated from the FSL ``misc_c`` project (:mr:`493`).
 * New ``fslchfiletype`` command, implemented in the
   :mod:`fsl.scripts.fslchfiletype` module. This has been converted to Python,
-  and migrated from the FSL ``avwutils`` project (!493).
+  and migrated from the FSL ``avwutils`` project (:mr:`493`).
 * Added the ~:func:`.fslio.remove_ext` wrapper function, for calling ``remove_ext``
-  programmatically (!493).
+  programmatically (:mr:`493`).
 * Adjust the :func:`~.fslio.imcp` ~:func:`.fslio.imln`, ~:func:`~.fslio.immv`,
   ~:func:`.fslio.imrm`, and ~:func:`.fslio.remove_ext` wrapper functions so
-  that they raise an exception when an error occurs (!493).
+  that they raise an exception when an error occurs (:mr:`493`).
 
 
 Changed
 ^^^^^^^
 
 * The :func:`.readFnirt` function now allows keyword arguments to be passed
-  through to :func:`.Image.__init__` (!494).
+  through to :func:`.Image.__init__` (:mr:`494`).
 
 
 
@@ -49,10 +57,10 @@ Added
 ^^^^^
 
 * New ``cancel`` option to the :func:`fsl.utils.run.hold` function, allowing
-  the job hold to be cancelled (!491).
+  the job hold to be cancelled (:mr:`491`).
 * New :mod:`fsl.wrappers.fsl_mrs` and :mod:`fsl.wrappers.fsl_mrs_proc` modules
   containing wrapper functions for `fsl_mrs
-  <https://open.oxcin.ox.ac.uk/pages/fsl/fsl_mrs/>`_ (!492).
+  <https://open.oxcin.ox.ac.uk/pages/fsl/fsl_mrs/>`_ (:mr:`492`).
 
 
 
@@ -80,17 +88,17 @@ Added
 * The :class:`.Image` class can now load NIfTI images compressed with ``zstd``
   and ``bzip2`` (with ``.nii.zst`` / ``.nii.bz2`` file suffixes). Currently the
   `pyzstd <https://pyzstd.readthedocs.io/en/stable/>`_ library is required for
-  `zstd` support (!485).
-* New :func:`.mmorf` wrapper function (!485).
+  `zstd` support (:mr:`485`).
+* New :func:`.mmorf` wrapper function (:mr:`485`).
 * New ``constrain`` option to the :func:`.resampleToReference` function,
   which constrains the resampling to regions where the source and
-  reference image fields of view overlap (!484).
+  reference image fields of view overlap (:mr:`484`).
 
 
 Fixed
 ^^^^^
 
-* Fixed a bug in the :func:`.eddy` wrapper function (!485).
+* Fixed a bug in the :func:`.eddy` wrapper function (:mr:`485`).
 
 
 3.24.0 (Monday 29th September 2025)
@@ -102,7 +110,7 @@ Changed
 
 * Adjust the :func:`~fsl.utils.run.hold` function - there is no need for it to
   submit itself with a jobtime - it will sit in the queue until the held job
-  completes, then will run more or less instantly (!476).
+  completes, then will run more or less instantly (:mr:`476`).
 * Now using ``setuptools-scm`` for automatic version number management.
 
 
@@ -111,9 +119,9 @@ Fixed
 
 
 * Adjust the :func:`.gps` wrapper - the ``gps`` command expects an output file
-  prefix, and can be passed multiple values for ``--ndir``  (!477).
+  prefix, and can be passed multiple values for ``--ndir``  (:mr:`477`).
 * Fixed a bug in the :func:`.fslstats` wrapper function when there is missing
-  data in multi-dimensional output (!478).
+  data in multi-dimensional output (:mr:`478`).
 
 
 3.23.0 (Tuesday 10th June 2025)
@@ -124,18 +132,18 @@ Added
 ^^^^^
 
 * New :func:`.submitfunc` function, allowing a Python function to be
-  synchronously executed on a cluster via ``fsl_sub`` (!474).
+  synchronously executed on a cluster via ``fsl_sub`` (:mr:`474`).
 * New ``save`` argument to the :func:`~fsl.utils.run.func_to_cmd` function,
   allowing the function return value to be serialised and saved to a file
-  (!474).
+  (:mr:`474`).
 * New ``env`` option to the :func:`~fsl.utils.run.func_to_cmd` function,
   allowing additional environment variables to be set when the function is
-  executed (!474).
+  executed (:mr:`474`).
 * New ``delete`` option to the :func:`~fsl.utils.tempdir.tempdir` function,
-  which can be used to prevent the directory from being deleted (!474).
+  which can be used to prevent the directory from being deleted (:mr:`474`).
 * New :func:`~fsl.utils.tempdir.mkstemp` function, which is simply a wrapper
   around the built-in ``tempfile.mkstemp`` function, but which closes the open
-  file handle (!474).
+  file handle (:mr:`474`).
 
 
 
@@ -147,11 +155,11 @@ Fixed
 ^^^^^
 
 * Fixed a race condition in the :func:`~fsl.utils.run.hold` function when
-  holding on multiple jobs concurrently (!471).
+  holding on multiple jobs concurrently (:mr:`471`).
 * Adjusted the :func:`.featdesign.loadFEATDesignFile` function to handle missing
-  values (!469).
+  values (:mr:`469`).
 * Fix to the :class:`.Notifier` class involving handling of callback functions
-  that have been garbage-collected (!470).
+  that have been garbage-collected (:mr:`470`).
 
 
 3.22.0 (Monday 17th February 2025)
@@ -164,7 +172,7 @@ Changed
 
 * The :meth:`.Nifti.getAffine` method now supports the ``'scaled'`` coordinate
   system, which is equivalent to the ``'fsl'`` coordinate system, but without
-  any flip along the first axis (!466).
+  any flip along the first axis (:mr:`466`).
 
 
 Deprecated
@@ -172,7 +180,7 @@ Deprecated
 
 * Deprecated the :meth:`.Nifti.voxToScaledVoxMat` and
   :meth:`.Nifti.caledVoxToVoxMat` properties in favour of using the
-  :meth:`.Nifti.getAffine` method (!466).
+  :meth:`.Nifti.getAffine` method (:mr:`466`).
 
 
 3.21.1 (Friday 27th September 2024)
@@ -184,7 +192,7 @@ Changed
 
 * The :func:`.fixlabels.loadLabelFile` and :func:`.fixlabels.saveLabelFile`
   functions now support FIX label files which contain classification
-  probabilities, as generated by pyfix >= 0.9.0, and old FIX >= 1.069 (!464).
+  probabilities, as generated by pyfix >= 0.9.0, and old FIX >= 1.069 (:mr:`464`).
 
 
 3.21.0 (Tuesday 23rd July 2024)
@@ -198,7 +206,7 @@ Changed
 * Behaviour of the ``imcp`` / ``immv`` commands has been adjusted so that
   when an image file is copied/moved, and converted to a different format
   (e.g. ``.nii`` to ``.nii.gz``), the image data and header slope/intercept
-  fields are not modified (!462).
+  fields are not modified (:mr:`462`).
 
 
 3.20.0 (Wednesday 10th July 2024)
@@ -210,7 +218,7 @@ Added
 
 
 * New functions/methods in the :mod:`.featanalysis` module and
-  :class:`.FEATImage` class for accessing F-test results (!460).
+  :class:`.FEATImage` class for accessing F-test results (:mr:`460`).
 
 
 3.19.1 (Wednesday 26th June 2024)
@@ -221,7 +229,7 @@ Fixed
 ^^^^^
 
 
-* Minor Updates for compatibility with ``numpy`` 2.0 (!458).
+* Minor Updates for compatibility with ``numpy`` 2.0 (:mr:`458`).
 
 
 3.19.0 (Friday 24th May 2024)
@@ -232,9 +240,9 @@ Added
 ^^^^^
 
 
-* New :func:`.bedpostx` and :func:`.bedpostx_gpu` wrapper functions (!455).
+* New :func:`.bedpostx` and :func:`.bedpostx_gpu` wrapper functions (:mr:`455`).
 * New :meth:`.Platform.wsl` property for detecting whether we are running
-  under Microsoft WSL (!456).
+  under Microsoft WSL (:mr:`456`).
 
 
 Deprecated
@@ -243,7 +251,7 @@ Deprecated
 
 * Deprecated the :func:`.bedpostx_postproc_gpu` wrapper function - the
   ``bedpostx_postproc_gpu.sh`` and ``bedpostx_postproc.sh`` scripts are not
-  intended to be called directly (!455).
+  intended to be called directly (:mr:`455`).
 
 
 3.18.3 (Saturday 4th May 2024)
@@ -255,7 +263,7 @@ Fixed
 
 
 * Fixed an issue with :mod:``fsl.wrappers`` functions not finding output files
-  when ``$FSLOUTPUTTYPE`` is set to something other than ``NIFTI_GZ`` (!452).
+  when ``$FSLOUTPUTTYPE`` is set to something other than ``NIFTI_GZ`` (:mr:`452`).
 
 
 3.18.2 (Wednesday 3rd April 2024)
@@ -267,7 +275,7 @@ Fixed
 
 
 * Made some changes to the :mod:`fsl.utils.run` module to improve
-  compatibility with [`dill`](https://github.com/uqfoundation/dill/) (!449).
+  compatibility with [`dill`](https://github.com/uqfoundation/dill/) (:mr:`449`).
 
 
 
@@ -280,7 +288,7 @@ Fixed
 
 
 * Fixed an issue which could cause :mod:`fsl.wrappers` functions to crash
-  when being executed concurrently (!446).
+  when being executed concurrently (:mr:`446`).
 
 
 3.18.0 (Thursdday 22nd February 2024)
@@ -290,9 +298,9 @@ Fixed
 Added
 ^^^^^
 
-* New wrapper function for the FLIRT `midtrans` command (!443).
+* New wrapper function for the FLIRT `midtrans` command (:mr:`443`).
 * The :class:`.Image` class now accepts a ``version`` parameter, as an
-  easy way of specifying the NIfTI file format version (!443).
+  easy way of specifying the NIfTI file format version (:mr:`443`).
 
 
 3.17.0 (Friday 9th February 2024)
@@ -303,10 +311,10 @@ Added
 Added
 ^^^^^
 
-* New wrapper function for the FLIRT `makerot` command (!441).
+* New wrapper function for the FLIRT `makerot` command (:mr:`441`).
 * New wrapper functions for the `imcp`, `immv`, `imrm`, `imln`, `imglob` and
   `imtest` commands. These are all implemented within fslpy, so the wrapper
-  functions invoke them directly (i.e. within the same process) (!441).
+  functions invoke them directly (i.e. within the same process) (:mr:`441`).
 
 
 3.16.1 (Wednesday 17th January 2024)
@@ -319,7 +327,7 @@ Added
 
 * The :func:`run` function now allows the ``log{'stdout']`` and
   ``log{'stderr'}`` options (used for capturing the standard output/error
-  streams of a called process) to be either file-likes or callables (!438).
+  streams of a called process) to be either file-likes or callables (:mr:`438`).
 
 
 3.16.0 (Thursday 21st December 2023)
@@ -330,10 +338,10 @@ Added
 ^^^^^
 
 
-* Added more functions to the :class:`.fslmaths` wrapper (!431).
-* New :func:`.smoothest` wrapper function (!432).
-* New :func:`.get_standard` wrapper function (!433).
-* New :func:`.vecreg` wrapper function (!434).
+* Added more functions to the :class:`.fslmaths` wrapper (:mr:`431`).
+* New :func:`.smoothest` wrapper function (:mr:`432`).
+* New :func:`.get_standard` wrapper function (:mr:`433`).
+* New :func:`.vecreg` wrapper function (:mr:`434`).
 
 
 3.15.4 (Monday 27th November 2023)
@@ -345,9 +353,9 @@ Added
 
 
 * New `silent` option to the :func:`~fsl.utils.run.run` function = passing
-  ``silent=True`` is equivalent to passing ``log={'tee':False}`` (!428).
+  ``silent=True`` is equivalent to passing ``log={'tee':False}`` (:mr:`428`).
 * New `prefix` option to the :func:`.tempdir` function, which is passed through
-  to ``tempfile.mkdtemp`` (!429).
+  to ``tempfile.mkdtemp`` (:mr:`429`).
 
 
 3.15.3 (Thursday 16th November 2023)
@@ -360,13 +368,13 @@ Changed
 
 * Adjusted the :func:`.loadLabelFile` function to accept files with missing
   entries, and files which only contain the MELODIC directory path and list of
-  noisy components (!424, !425).
+  noisy components (:mr:`424`, :mr:`425`).
 
 
 Fixed
 ^^^^^
 
-* Fixed a bug in the :func:`.run.hold` function (!426).
+* Fixed a bug in the :func:`.run.hold` function (:mr:`426`).
 
 
 3.15.2 (Wednesday 4th October 2023)
@@ -378,7 +386,7 @@ Fixed
 
 
 * Removed the obsolete :func:`fsl.wrappers.misc.cluster` wrapper function
-  (!422).
+  (:mr:`422`).
 
 
 3.15.1 (Monday 25th September 2023)
@@ -389,7 +397,7 @@ Fixed
 ^^^^^
 
 
-* Fixed a problem with some unit tests (!420).
+* Fixed a problem with some unit tests (:mr:`420`).
 
 
 3.15.0 (Monday 25th September 2023)
@@ -400,14 +408,14 @@ Added
 ^^^^^
 
 * New :func:`.cluster` wrapper function for the FSL ``cluster`` /
-  ``fsl-cluster`` command (!417).
+  ``fsl-cluster`` command (:mr:`417`).
 
 Changed
 ^^^^^^^
 
 
 * All metadata stored in GIfTI files is now copied by :class:`.GiftiMesh`
-  instances into their :class:`.Meta` store (!416).
+  instances into their :class:`.Meta` store (:mr:`416`).
 
 
 3.14.1 (Thursday 31st August 2023)
@@ -420,7 +428,7 @@ Fixed
 
 * Fixed a bug in :meth:`.Image.__setitem__` - change listeners were being
   passed an un-normalised ``slice`` object (with slices for trailing
-  dimensions of length 1 present) (!414).
+  dimensions of length 1 present) (:mr:`414`).
 
 
 3.14.0 (Wednesday 30th August 2023)
@@ -432,7 +440,7 @@ Added
 
 
 * New :func:`.affine.flip` function, for applying a flip/inversion to the
-  axes of an affine transformation (!403).
+  axes of an affine transformation (:mr:`403`).
 
 
 Changed
@@ -440,11 +448,11 @@ Changed
 
 
 * The ``sform``/``qform`` fields of a :class:`.DeformationField` instance are
-  automatically set from the reference image if they are not already set (!402).
-* Replaced ``setup.py``-based build system with ``pyproject.toml`` (!402).
-* Tests have been moved into the ``fsl/tests/`` package (!402).
+  automatically set from the reference image if they are not already set (:mr:`402`).
+* Replaced ``setup.py``-based build system with ``pyproject.toml`` (:mr:`402`).
+* Tests have been moved into the ``fsl/tests/`` package (:mr:`402`).
 * Updated the ```immv``/``imcp`` scripts to support ``FSLOUTPUTTYPE=ANALYZE``
-  (!405).
+  (:mr:`405`).
 
 
 Fixed
@@ -453,7 +461,7 @@ Fixed
 
 * Updated the ```immv``/``imcp`` scripts to honour the ``$FSLOUTPUTTYPE``
   environment variable more closely - conversions between NIFTI1 and
-  NIFTI2 were not being performed correctly (!405).
+  NIFTI2 were not being performed correctly (:mr:`405`).
 
 
 3.13.3 (Monday 17th July 2023)
@@ -465,7 +473,7 @@ Changed
 
 
 * Callback functions registered with :class:`.Notifier` instances no longer
-  need to accept three arguments (!400).
+  need to accept three arguments (:mr:`400`).
 
 
 3.13.2 (Monday 3rd July 2023)
@@ -477,7 +485,7 @@ Added
 
 
 * New ``scaleAtOrigin`` option to the :func:`.affine.compose` function, which
-  allows the origin to be preserved by scaling parameters (!398).
+  allows the origin to be preserved by scaling parameters (:mr:`398`).
 
 
 
@@ -489,7 +497,7 @@ Fixed
 ^^^^^
 
 
-* Fixed some minor issues with API documentation (!396).
+* Fixed some minor issues with API documentation (:mr:`396`).
 
 
 3.13.0 (Monday 12th June 2023)
@@ -501,9 +509,9 @@ Added
 
 * New :func:`.runfunc` function which can be used to execute a Python function
   in a separate process (or as a submitted cluster job), via the
-  :func:`~fsl.utils.run.func_to_cmd` function (!390).
+  :func:`~fsl.utils.run.func_to_cmd` function (:mr:`390`).
 * New ``keys()``, ``values()``, and ``items()`` methods on the :class:`.Cache`
-  class (!391).
+  class (:mr:`391`).
 
 
 Changed
@@ -512,7 +520,7 @@ Changed
 
 * The :func:`.run.func_to_cmd`, :func:`.run.hold`, and :func:`.run.job_output`
   functions have been moved from :mod:`fsl.utils.fslsub` to the
-  :mod:`fsl.utils.run` module (!390).
+  :mod:`fsl.utils.run` module (:mr:`390`).
 
 
 Deprecated
@@ -520,7 +528,7 @@ Deprecated
 
 
 * The :mod:`fsl.utils.fslsub`  module has been deprecated, and scheduled for
-  removal in ``fslpy 4.0.0`` (!390).
+  removal in ``fslpy 4.0.0`` (:mr:`390`).
 
 
 3.12.1 (Tuesday 23rd May 2023)
@@ -532,9 +540,9 @@ Fixed
 
 
 * The :mod:`fsl.scripts.Text2Vest` now handles column vector inputs
-  correctly (!387, !388).
+  correctly (:mr:`387`, :mr:`388`).
 * The :func:`.tempdir` function was not changing back to the original
-  working directory when the ``override`` argument was used (!388).
+  working directory when the ``override`` argument was used (:mr:`388`).
 
 
 
@@ -554,12 +562,12 @@ Changed
 
 
 * The :func:`.fslmaths` wrapper function now allows the ``-dt`` and
-  ``-odt`` options to be set (!381).
+  ``-odt`` options to be set (:mr:`381`).
 * Assertions (from the :mod:`.assertions` module) called within wrapper
   functions are now disabled if the command is to be submitted via
-  ``fsl_sub`` (!382).
+  ``fsl_sub`` (:mr:`382`).
 * The :class:`.Image` class will now resolve symlinks when loading images
-  from file (!383).
+  from file (:mr:`383`).
 
 
 Fixed
@@ -568,7 +576,7 @@ Fixed
 
 * The :func:`.fslstats` wrapper no longer overwrites the ``log`` option that
   is passed to :func:`~.run.run`, if a :func:`.wrapperconfig` context is
-  active (!381).
+  active (:mr:`381`).
 
 
 
@@ -580,7 +588,7 @@ Fixed
 ^^^^^
 
 
-* Fixed another bug in the :func:`.dcm2niix` function (!379).
+* Fixed another bug in the :func:`.dcm2niix` function (:mr:`379`).
 
 
 3.11.2 (Monday 27th February 2023)
@@ -591,9 +599,9 @@ Fixed
 ^^^^^
 
 
-* Fixed a bug in the :func:`.dcm2niix` function (!376).
+* Fixed a bug in the :func:`.dcm2niix` function (:mr:`376`).
 * Adjusted the :mod:`.imrm` and :mod:`.imglob` scripts to support incomplete
-  wildcard patterns (e.g. ``img_??`` matching ``img_01.nii.gz``) (!377).
+  wildcard patterns (e.g. ``img_??`` matching ``img_01.nii.gz``) (:mr:`377`).
 
 
 3.11.1 (Friday 24th February 2023)
@@ -604,7 +612,7 @@ Added
 ^^^^^
 
 
-* New :func:`.featquery` wrapper function (!374).
+* New :func:`.featquery` wrapper function (:mr:`374`).
 
 
 Fixed
@@ -612,7 +620,7 @@ Fixed
 
 
 * fixed the :class:`.fslstats` wrapper to handle index masks (the ``-K``
-  option) with missing label values (!374).
+  option) with missing label values (:mr:`374`).
 
 
 
@@ -626,19 +634,19 @@ Added
 
 * New :func:`.standard_space_roi`, :func:`.fslswapdim`, :func:`.fslmerge`,
   :func:`.fslsplit`, :func:`fslselectvols`, and :func:`.fslcpgeom` wrapper
-  functions (!351, !354, !364).
-* New :mod:`fsl.wrappers.first` wrapper functions (!355).
+  functions (:mr:`351`, :mr:`354`, :mr:`364`).
+* New :mod:`fsl.wrappers.first` wrapper functions (:mr:`355`).
 * New :mod:`fsl.wrappers.bianca` and :mod:`fsl.wrappers.avwutils` wrapper
-  functions (!358).
+  functions (:mr:`358`).
 * New :mod:`fsl.wrappers.bedpostx` and :mod:`~.wrappers.dtifit` wrapper
-  functions (!364).
+  functions (:mr:`364`).
 * New :func:`~fsl.wrappers.feat.feat`, :func:`~.melodic.fsl_regfilt` and
-  :func:`~.melodic.fsl_glm` wrapper functions (!364).
-* New :func:`.oxford_asl` and :func:`asl_file` wrapper functions (!368).
+  :func:`~.melodic.fsl_glm` wrapper functions (:mr:`364`).
+* New :func:`.oxford_asl` and :func:`asl_file` wrapper functions (:mr:`368`).
 * New :func:`.wrapperconfig` context manager function, which allows the
   default values for arguments passed by the :mod:`fsl.wrappers` functions to
-  the :func:`fsl.utils.run.run` function to be changed (!352, !356).
-* New :func:`.affine.mergeBounds` function (!360).
+  the :func:`fsl.utils.run.run` function to be changed (:mr:`352`, :mr:`356`).
+* New :func:`.affine.mergeBounds` function (:mr:`360`).
 
 
 Changed
@@ -647,27 +655,27 @@ Changed
 
 * The :class:`fsl.wrappers.fslmaths.fslmaths` and
   :class:`fsl.wrappers.fslstats.fslstats` wrapper functions have been updated
-  to accept arguments destined for :func:`fsl.utils.run.run` (!352).
+  to accept arguments destined for :func:`fsl.utils.run.run` (:mr:`352`).
 * :class:`.Mesh` objects can now be created without indices/triangles - they
-  can be assigned after creation (!360).
+  can be assigned after creation (:mr:`360`).
 * The :mod:`.dicom` module will now preferentially call
   ``$FSLDIR/bin/dcm2niix``, instead of calling the first ``dcm2niix`` on the
-  ``$PATH`` (!365).
+  ``$PATH`` (:mr:`365`).
 * The :func:`.applyArgStyle` ``argmap`` argument can now be a callable which
-  defines a rule which will be applied to all argument names (!366).
+  defines a rule which will be applied to all argument names (:mr:`366`).
 * The :func:`.applyArgStyle` ``valmap`` argument now accepts a new
   ``EXPAND_LIST`` option, which allows sequences to be expanded as separate
-  command-line options (!366).
+  command-line options (:mr:`366`).
 * :class:`.Image` objects can now be created without passing a
   ``nibabel.Nifti1Image`` (or similar) object, as long as a
-  ``nibabel.Nifti1Header`` and a :class:`.DataManager` are provided (!362).
+  ``nibabel.Nifti1Header`` and a :class:`.DataManager` are provided (:mr:`362`).
 
 
 Fixed
 ^^^^^
 
 
-* Fixed a bug in the :meth:`.Image.strval` method (!353).
+* Fixed a bug in the :meth:`.Image.strval` method (:mr:`353`).
 
 
 3.10.0 (Wednesday 29th June 2022)
@@ -680,7 +688,7 @@ Added
 
 * New :func:`fsl.wrappers.eddy.eddy` function, to replace :func:`.eddy_cuda`.
   Note that this function will not work with FSL versions 6.0.5.2 or older
-  (!348).
+  (:mr:`348`).
 
 
 Deprecated
@@ -688,7 +696,7 @@ Deprecated
 
 
 * The :func:`fsl.wrappers.eddy.eddy_cuda` function has been deprecated in
-  favour of the ``eddy`` function (!348).
+  favour of the ``eddy`` function (:mr:`348`).
 
 
 3.9.6 (Wednesday 15th June 2022)
@@ -700,7 +708,7 @@ Added
 
 
 * The `.fslmaths` wrapper now supports the ``-roi`` option, via the
-  :meth:`.fslmaths.roi` method (!346).
+  :meth:`.fslmaths.roi` method (:mr:`346`).
 
 
 3.9.5 (Thursday 2nd June 2022)
@@ -712,7 +720,7 @@ Changed
 
 
 * Updated the :func:`.ensureIsImage` function to support ``pathlib.Path``
-  objects (!343).
+  objects (:mr:`343`).
 
 
 Fixed
@@ -721,7 +729,7 @@ Fixed
 
 * Some fixes in the :mod:`.wrappers` module (specifically in the
   :class:`.FileOrThing` class) to better support ``pathlib.Path`` objects
-  (!343).
+  (:mr:`343`).
 
 
 3.9.4 (Friday 27th May 2022)
@@ -734,7 +742,7 @@ Changed
 
 * Changed the behaviour of :meth:`.Image.__getitem__` so that, if image
   data is accessed with a boolean mask array (e.g. ``image[mask > 0]``),
-  the image data is loaded into memory (!341).
+  the image data is loaded into memory (:mr:`341`).
 
 
 3.9.3 (Friday 27th May 2022)
@@ -745,7 +753,7 @@ Fixed
 ^^^^^
 
 
-* Fixed an issue in the :func:`~.fslsub.func_to_cmd` function (!339).
+* Fixed an issue in the :func:`~.fslsub.func_to_cmd` function (:mr:`339`).
 
 
 3.9.2 (Friday 20th May 2022)
@@ -757,7 +765,7 @@ Changed
 
 
 * Added the :data:`.NIFTI_XFORM_TEMPLATE_OTHER` identifier, an extension to the
-  NIfTI standard (!337).
+  NIfTI standard (:mr:`337`).
 
 
 3.9.1 (Friday 13th May 2022)
@@ -772,7 +780,7 @@ Changed
   specification of the style to use for single-character arguments. This
   fixes some usage issues with commands such as FSL ``fast``, which have
   regular ``--=`` arguments, but also single-character arguments which
-  expect multiple positional values (!335).
+  expect multiple positional values (:mr:`335`).
 
 
 3.9.0 (Tuesday 12th April 2022)
@@ -784,7 +792,7 @@ Added
 
 
 * New :meth:`.Image.niftiDataTypeSize` method, which reports the number
-  of bits per voxel, according to the NIfTI data type (!327).
+  of bits per voxel, according to the NIfTI data type (:mr:`327`).
 
 
 Changed
@@ -792,15 +800,15 @@ Changed
 
 
 * The :class:`.Image` class no longer uses an :class:`.ImageWrapper` to
-  manage data access and assignment (!327).
+  manage data access and assignment (:mr:`327`).
 * Semantics for accessing and modifying image data have changed. By default,
   image data access is now delegated to the underlying ``nibabel.Nifti1Image``
   object (and so remains on disk by default). Image data can be loaded into
   memory by accessing the :meth:`.Image.data` property, or by modifying the
-  data through :meth:`.Image.__setitem__` (!327).
+  data through :meth:`.Image.__setitem__` (:mr:`327`).
 * The :func:`~.fslsub.func_to_cmd` function now uses `dill
   <https://dill.readthedocs.io/en/latest/>`_ instead of ``pickle`` for
-  serialisation (!328).
+  serialisation (:mr:`328`).
 
 
 Fixed
@@ -815,13 +823,13 @@ Deprecated
 
 
 * The :mod:`.imagewrapper` module (and the :class:`.ImageWrapper` class) is
-  being migrated to FSLeyes (!327).
+  being migrated to FSLeyes (:mr:`327`).
 * The ``loadData``, ``calcRange``, and ``threaded`` arguments to the
-  :class:`.Image` class are deprecated and no longer have any effect (!327).
-* The :meth:`.Nifti.mapIndices` method is deprecated (!327).
+  :class:`.Image` class are deprecated and no longer have any effect (:mr:`327`).
+* The :meth:`.Nifti.mapIndices` method is deprecated (:mr:`327`).
 * The :meth:`.Image.getImageWrapper`, :meth:`.Image.calcRange` and
   :meth:`.Image.loadData` methods are deprecated and no longer have any effect
-  (!327).
+  (:mr:`327`).
 
 
 3.8.2 (Tuesday 15th February 2022)
@@ -833,7 +841,7 @@ Fixed
 
 
 * The the :func:`.topup` wrapper function now allows multiple file names to
-  be passed to the ``--imain`` argument (!324).
+  be passed to the ``--imain`` argument (:mr:`324`).
 
 
 3.8.1 (Tuesday 28th December 2021)
@@ -845,7 +853,7 @@ Fixed
 
 
 * The :func:`.melodic` wrapper function no longer requires its ``input``
-  argument to be a NIFTI image or file (!321).
+  argument to be a NIFTI image or file (:mr:`321`).
 
 
 
@@ -857,16 +865,16 @@ Added
 ^^^^^
 
 
-* New :func:`.fslorient` wrapper function (!315).
+* New :func:`.fslorient` wrapper function (:mr:`315`).
 * The :class:`.Bitmap` class has basic support for loading JPEG2000 images
-  (!316).
+  (:mr:`316`).
 
 
 Fixed
 ^^^^^
 
 
-* Fixed an issue with API  documentation generation (!317).
+* Fixed an issue with API  documentation generation (:mr:`317`).
 
 
 
@@ -879,7 +887,7 @@ Changed
 
 
 * BIDS and ``dcm2niix`` ``.json`` sidecar files with control characters
-  are now accepted (!312).
+  are now accepted (:mr:`312`).
 
 
 Fixed
@@ -887,7 +895,7 @@ Fixed
 
 
 * Fixed an issue with temporary input files created by :mod:`fsl.wrappers`
-  functions not being deleted (!313).
+  functions not being deleted (:mr:`313`).
 
 
 3.7.0 (Friday 20th August 2021)
@@ -899,7 +907,7 @@ Added
 
 
 * New :mod:`fsl.wrappers.fsl_sub` wrapper function for the ``fsl_sub``
-  command (!309).
+  command (:mr:`309`).
 
 
 Changed
@@ -908,19 +916,19 @@ Changed
 
 * Performance of the :mod:`.imglob`, :mod:`.imln`, :mod:`imtest`, :mod:`.imrm`
   and :mod:`.remove_ext` scripts has been improved, by re-organising them to
-  avoid unnecessary and expensive imports such as ``numpy`` (!310).
+  avoid unnecessary and expensive imports such as ``numpy`` (:mr:`310`).
 * The default behaviour of the :func:`fsl.utils.run.run` function (and hence
   that of all :mod:`fsl.wrappers` functions) has been changed so that the
   standard output and error of the called command is now forwarded to the
   calling Python process, in addition to being returned from ``run`` as
   strings. In other words, the default behaviour of ``run('cmd')``, is now
   equivalent to ``run('cmd', log={"tee":True})``. The previous default
-  behaviour can be achieved with ``run('cmd', log={"tee":False})`` (!309).
+  behaviour can be achieved with ``run('cmd', log={"tee":False})`` (:mr:`309`).
 * The :func:`fsl.utils.run.run` and :func:`fsl.utils.run.runfsl` functions
   (and hence all :mod:`fsl.wrappers` functions) have been modified to use
   ``fsl.wrappers.fsl_sub`` instead of ``fsl.utils.fslsub.submit``. This is an
   internal change which should not affect the usage of the ``run``, ``runfsl``
-  or wrapper functions (!309).
+  or wrapper functions (:mr:`309`).
 
 
 Deprecated
@@ -929,10 +937,10 @@ Deprecated
 
 * :class:`fsl.utils.fslsub.SubmitParams` and :func:`fsl.utils.fslsub.submit`
   have been deprecated in favour of using the ``fsl.wrappers.fsl_sub`` wrapper
-  function (!309).
+  function (:mr:`309`).
 * The :func:`fsl.utils.fslsub.info` function has been deprecated in favour of
   using the ``fsl_sub.report`` function, from the separate `fsl_sub
-  <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ Python library (!309).
+  <https://git.fmrib.ox.ac.uk/fsl/fsl_sub>`_ Python library (:mr:`309`).
 
 
 3.6.4 (Tuesday 3rd August 2021)
@@ -943,9 +951,9 @@ Added
 ^^^^^
 
 
-* New :func:`.epi_reg` wrapper function (!306).
+* New :func:`.epi_reg` wrapper function (:mr:`306`).
 * New :meth:`.fslmaths.kernel` and :meth:`.fslmaths.fmeanu` options on the
-  :class:`.fslmaths` wrapper (!304).
+  :class:`.fslmaths` wrapper (:mr:`304`).
 
 
 3.6.3 (Wednesday 28th July 2021)
@@ -958,7 +966,7 @@ Changed
 
 * When creating an ``Image`` object with ``loadData=False``, the ``calcRange``
   argument is ignored, as it would otherwise cause the data to be loaded
-  (!301).
+  (:mr:`301`).
 
 
 3.6.2 (Wednesday 23rd June 2021)
@@ -981,7 +989,7 @@ Changed
 ^^^^^^^
 
 
-* Removed the ``dataclasses`` backport from requirements (!297).
+* Removed the ``dataclasses`` backport from requirements (:mr:`297`).
 
 
 3.6.0 (Monday 19th April 2021)
@@ -993,21 +1001,21 @@ Changed
 
 
 * The ``fslpy`` API ocumentation is now hosted at
-  https://open.win.ox.ac.uk/pages/fsl/fslpy (!290).
+  https://open.win.ox.ac.uk/pages/fsl/fslpy (:mr:`290`).
 * The :mod:`fsl` and :mod:`fsl.scripts` packages have been changed from being
   `pkgutil-style
   <https://packaging.python.org/guides/packaging-namespace-packages/#pkgutil-style-namespace-packages>`_
   namespace packages to now being `native
   <https://packaging.python.org/guides/packaging-namespace-packages/#native-namespace-packages>`_
-  namespace packages (!290).
+  namespace packages (:mr:`290`).
 * The :class:`.TaskThread` now allows an error handler function to be
-  specified, which is run on the :mod:`.idle` loop (!283).
+  specified, which is run on the :mod:`.idle` loop (:mr:`283`).
 * The :func:`.bids.loadMetadata` function no long resolves sym-links when
-  determining whether a file is contained within a BIDS data set (!287).
+  determining whether a file is contained within a BIDS data set (:mr:`287`).
 * The :class:`.Image` class can now be created from a ``pathlib.Path`` object
-  (!292).
+  (:mr:`292`).
 * Some functions in the :mod:`.path` module can now be used with
-  ``pathlib.Path`` objects (!293).
+  ``pathlib.Path`` objects (:mr:`293`).
 
 
 Deprecated
@@ -1019,19 +1027,19 @@ Deprecated
   ``canHaveGui``, ``inSSHSession``, ``inVNCSession``, ``wxPlatform``,
   ``wxFlavour``, ``glVersion``, ``glRenderer``, and ``glIsSoftwareRenderer``.
   Equivalent functions are being added to the ``fsleyes-widgets`` library
-  (!285).
+  (:mr:`285`).
 * The :mod:`fsl.utils.filetree` package has been deprecated, and will be
   removed in a future version of ``fslpy`` - it is now published as a separate
-  library on [PyPI](https://pypi.org/project/file-tree/) (!286).
+  library on [PyPI](https://pypi.org/project/file-tree/) (:mr:`286`).
 
 
 Fixed
 ^^^^^
 
 * Fixed an edge-case in the :mod:`.gifti` module, where a surface with a
-  single triangle was being loaded incorrectly (!288).
+  single triangle was being loaded incorrectly (:mr:`288`).
 * Fixed an issue in the :func:`~.fslsub.func_to_cmd` function, where it was
-  unintentionally leaving flie handles open (!291).
+  unintentionally leaving flie handles open (:mr:`291`).
 
 
 3.5.3 (Tuesday 9th February 2021)
@@ -1042,7 +1050,7 @@ Fixed
 ^^^^^
 
 
-* Fixed a bug in :func:`.featanalysis.loadClusterResults` (!281).
+* Fixed a bug in :func:`.featanalysis.loadClusterResults` (:mr:`281`).
 
 
 3.5.2 (Friday 29th January 2021)
@@ -1055,8 +1063,8 @@ Fixed
 
 * Adjusted the :func:`.dicom.scanDir` function so that it will set a
   default value for ``SeriesDescription`` if it is not present in the
-  ``dcm2niix`` ``json`` output (!279).
-* Fixed some issues with API documentation generation (!279).
+  ``dcm2niix`` ``json`` output (:mr:`279`).
+* Fixed some issues with API documentation generation (:mr:`279`).
 
 
 3.5.1 (Thursday 21st January 2021)
@@ -1068,7 +1076,7 @@ Added
 
 
 * New :func:`.featanalysis.loadFsf` function, for loading arbitrary ``.fsf``
-  files (!276).
+  files (:mr:`276`).
 
 
 Fixed
@@ -1076,7 +1084,7 @@ Fixed
 
 
 * Adjustments to :mod:`.dicom` tests to work with different versions of
-  ``dcm2niix`` (!277).
+  ``dcm2niix`` (:mr:`277`).
 
 
 3.5.0 (Wednesday 20th January 2021)
@@ -1088,10 +1096,10 @@ Added
 
 
 * New ``fsl_anat.tree``, for use with the :mod:`~fsl.utils.filetree` package
-  (!264).
-* New :func:`.fsl_prepare_fieldmap` wrapper function (!265).
+  (:mr:`264`).
+* New :func:`.fsl_prepare_fieldmap` wrapper function (:mr:`265`).
 * The :class:`.fslmaths` wrapper now supports the ``fslmaths -s`` option
-  via the :meth:`.fslmaths.smooth` method (!271).
+  via the :meth:`.fslmaths.smooth` method (:mr:`271`).
 
 
 Fixed
@@ -1100,7 +1108,7 @@ Fixed
 
 * Windows/WSL-specific workaround to the :func:`fsl.utils.run.run` function to
   avoid console windows from popping up, when used from a graphical program
-  (!272).
+  (:mr:`272`).
 
 
 3.4.0 (Tuesday 20th October 2020)
