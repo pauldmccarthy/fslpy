@@ -155,7 +155,8 @@ from fsl.wrappers.fnirt              import (fnirt,
                                              invwarp,
                                              convertwarp)
 from fsl.wrappers.fsl_anat           import (fsl_anat,)
-from fsl.wrappers.fsl_sub            import (fsl_sub,)
+from fsl.wrappers.fsl_sub            import (fsl_sub,
+                                             cancel_job)
 from fsl.wrappers.fslio              import (fslchfiletype,
                                              imcp,
                                              imglob,

@@ -19,6 +19,8 @@ import os.path as op
 import sys
 import datetime
 
+from docutils import nodes
+
 date = datetime.date.today()
 
 
@@ -75,6 +77,23 @@ def check_for_missing_stubs():
 if __name__ == '__main__':
     check_for_missing_stubs()
 
+
+# Type :mr:`123` to link to GitLab
+# fsl/fslpy merge request !123
+
+def mr_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url  = f'https://git.fmrib.ox.ac.uk/fsl/fslpy/-/merge_requests/{text}'
+    node = nodes.reference(
+        rawtext,
+        f"!{text}",
+        refuri=url,
+        **options
+    )
+    return [node], []
+
+
+def setup(app):
+    app.add_role('mr', mr_role)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
