@@ -5,9 +5,10 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
-import os.path as op
-import            pathlib
-import            shlex
+import os.path      as op
+import                 pathlib
+import                 shlex
+from   unittest import mock
 
 import fsl.wrappers as fw
 
@@ -322,6 +323,15 @@ def test_fsl_sub():
         result = fw.fsl_sub(
             'some_command', '--some_arg', jobhold='123', queue='long.q')
         assert shlex.split(result[0]) == expected
+
+
+def test_cancel_job():
+    calls = []
+    def fake_fsl_sub(*args, **kwargs):
+        calls.append((args, kwargs))
+    with mock.patch('fsl.wrappers.fsl_sub.fsl_sub', fake_fsl_sub):
+        fw.cancel_job('123')
+    assert calls == [(tuple(), {'delete_job' : '123'})]
 
 
 def test_standard_space_roi():
