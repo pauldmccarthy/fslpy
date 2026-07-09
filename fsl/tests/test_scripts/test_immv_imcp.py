@@ -16,7 +16,10 @@ from unittest import mock
 
 import               pytest
 
-import pyzstd
+try:
+    from compression import zstd
+except ImportError:
+    from backports import zstd
 
 import numpy as np
 import nibabel as nib
@@ -498,7 +501,7 @@ def _is_bzip(filename):
 
 def _is_zstd(filename):
     try:
-        with pyzstd.ZstdFile(filename, 'rb') as f:
+        with zstd.ZstdFile(filename, 'rb') as f:
             f.read()
         return True
     except Exception:
