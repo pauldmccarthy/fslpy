@@ -9,9 +9,11 @@ order.
 Added
 ^^^^^
 
-
+* New wrapper functions for the :func:`.fsl_dynmrs`, :func:`.basis2spec`, and
+  :func:`.fmrs_stats` FSL-MRS commands (:mr:`495`).
 * New :func:`.cancel_job` function which cancels a job submitted via
   :func:`.fsl_sub` (:mr:`498`).
+
 
 Changed
 ^^^^^^^
@@ -19,8 +21,10 @@ Changed
 * :class:`.CancelledError` exceptions (emitted by the
   :func:`~fsl.utils.run.hold` function) now contain two attributes -
   ``job_ids`` contains the list of IDs that were being waited on, and
-  ``hold_id`` contains the ID of the hold job.
-
+  ``hold_id`` contains the ID of the hold job (:mr:`498`).
+* :class:`.Nifti` instances can now be created from either a ``nibabel``
+  header instance, or from a shape and voxel to world affine (:mr:`498`).
+* Various improvments to the FSL-MRS wrapper functions (:mr:`495`).
 
 
 3.27.0 (Tuesday 13th January 2026)
