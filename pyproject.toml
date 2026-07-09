@@ -10,7 +10,18 @@ description     = "FSL Python library"
 readme          = {file = "README.rst", content-type="text/x-rst"}
 license         = {text = "Apache License Version 2.0"}
 requires-python = ">=3.8"
-authors         = [{name = "Paul McCarthy", email = "pauldmccarthy@gmail.com"}]
+authors         = [
+    {name = "Paul McCarthy",        email = "pauldmccarthy@gmail.com"},
+    {name = "Michiel Cottaar",      email = "michiel.cottaar@ndcn.ox.ac.uk"},
+    {name = "Matthew Webster",      email = "matthew.webster@ndcn.ox.ac.uk"},
+    {name = "Sean Fitzgibbon",      email = "sean.fitzgibbon@ndcn.ox.ac.uk"},
+    {name = "Martin Craig",         email = "martin.craig@eng.ox.ac.uk"},
+    {name = "Taylor Hanayik",       email = "taylor.hanayik@ndcn.ox.ac.uk"},
+    {name = "Evan Edmond",          email = "evan.edmond@ndcn.ox.ac.uk"},
+    {name = "Christoph Arthofer",   email = "christoph.arthofer@ndcn.oxc.ac.uk"},
+    {name = "Fidel Alfaro Almagro", email = "fidel.alfaroalmagro@ndcn.ox.ac.uk"},
+    {name = "Vasilis Karlaftis",    email = "vasilis.karlaftis@ndcn.ox.ac.uk"},
+]
 
 dependencies = [
  "dill",
