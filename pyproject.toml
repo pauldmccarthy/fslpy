@@ -55,7 +55,7 @@ extra = [
   "trimesh >=2.37.29",
   "rtree >=0.8.3",
   "Pillow >=3.2.0",
-  "pyzstd"
+  "backports.zstd; python_version < \"3.14\"",
 ]
 doc = [
   "sphinx",
