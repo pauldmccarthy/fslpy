@@ -60,10 +60,12 @@ def test_fsl_mrs_proc_align_diff():
         expected = f'{fsl_mrs_proc} align-diff --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.align_diff('file', 'output')
-        # expected = f'{fsl_mrs_proc} align-diff --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.align_diff('file', 'output', ppm=[1.8, 3.5], dim='DIM_DYN',
+                                            dim_diff='DIM_EDIT', diff_type='add',)
+        expected = f'{fsl_mrs_proc} align-diff --file file --output output --ppm 1.8 3.5'\
+                    ' --dim DIM_DYN --dim_diff DIM_EDIT --diff_type add'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_ecc():
@@ -99,10 +101,10 @@ def test_fsl_mrs_proc_model():
         expected = f'{fsl_mrs_proc} model --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.model('file', 'output')
-        # expected = f'{fsl_mrs_proc} model --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.model('file', 'output', ppm=(4.5, 4.8), components=7, allreports=True)
+        expected = f'{fsl_mrs_proc} model --file file --output output --ppm 4.5 4.8 --components 7 --allreports'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_tshift():
@@ -112,10 +114,10 @@ def test_fsl_mrs_proc_tshift():
         expected = f'{fsl_mrs_proc} tshift --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.tshift('file', 'output')
-        # expected = f'{fsl_mrs_proc} tshift --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.tshift('file', 'output', tshiftStart=1.2, tshiftEnd=2.3, samples=10)
+        expected = f'{fsl_mrs_proc} tshift --file file --output output --tshiftStart 1.2 --tshiftEnd 2.3 --samples 10'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_truncate():
@@ -138,10 +140,10 @@ def test_fsl_mrs_proc_apodize():
         expected = f'{fsl_mrs_proc} apodize --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.apodize('file', 'output')
-        # expected = f'{fsl_mrs_proc} apodize --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.apodize('file', 'output', filter='exp', amount=[1, 2])
+        expected = f'{fsl_mrs_proc} apodize --file file --output output --filter exp --amount 1 2'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_fshift():
@@ -151,10 +153,12 @@ def test_fsl_mrs_proc_fshift():
         expected = f'{fsl_mrs_proc} fshift --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.fshift('file', 'output')
-        # expected = f'{fsl_mrs_proc} fshift --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.fshift('file', 'output', shiftppm=4.65, shifthz=10.5,
+                                        shiftRef=True, target=3.027, use_avg=True)
+        expected = f'{fsl_mrs_proc} fshift --file file --output output --shiftppm 4.65'\
+                    ' --shifthz 10.5 --shiftRef --target 3.027 --use_avg'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_unlike():
@@ -164,10 +168,10 @@ def test_fsl_mrs_proc_unlike():
         expected = f'{fsl_mrs_proc} unlike --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.unlike('file', 'output')
-        # expected = f'{fsl_mrs_proc} unlike --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.unlike('file', 'output', sd=1.96, iter=2, outputbad=True)
+        expected = f'{fsl_mrs_proc} unlike --file file --output output --sd 1.96 --iter 2 --outputbad'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_phase():
@@ -178,8 +182,8 @@ def test_fsl_mrs_proc_phase():
         assert result.stdout[0] == expected
 
         # test more complex and common call
-        result = fw.fsl_mrs_proc.truncate('file', 'output', filename='filename', ppm=(4.6, 4.7))
-        expected = f'{fsl_mrs_proc} truncate --file file --output output --filename filename --ppm 4.6 4.7'
+        result = fw.fsl_mrs_proc.phase('file', 'output', filename='filename', ppm=(4.6, 4.7), hlsvd=True)
+        expected = f'{fsl_mrs_proc} phase --file file --output output --filename filename --ppm 4.6 4.7 --hlsvd'
         assert result.stdout[0] == expected
 
 
@@ -191,10 +195,10 @@ def test_fsl_mrs_proc_fixed_phase():
         expected = f'{fsl_mrs_proc} fixed_phase --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.fixed_phase('file', 'output')
-        # expected = f'{fsl_mrs_proc} fixed_phase --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.fixed_phase('file', 'output', p0=90, p1=0.001, p1_type='shift')
+        expected = f'{fsl_mrs_proc} fixed_phase --file file --output output --p0 90 --p1 0.001 --p1_type shift'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_subtract():
@@ -204,10 +208,10 @@ def test_fsl_mrs_proc_subtract():
         expected = f'{fsl_mrs_proc} subtract --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.subtract('file', 'output')
-        # expected = f'{fsl_mrs_proc} subtract --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.subtract('file', 'output', reference='reference', dim='DIM_EDIT')
+        expected = f'{fsl_mrs_proc} subtract --file file --output output --reference reference --dim DIM_EDIT'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_add():
@@ -217,10 +221,10 @@ def test_fsl_mrs_proc_add():
         expected = f'{fsl_mrs_proc} add --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.add('file', 'output')
-        # expected = f'{fsl_mrs_proc} add --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.add('file', 'output', reference='reference', dim='DIM_EDIT')
+        expected = f'{fsl_mrs_proc} add --file file --output output --reference reference --dim DIM_EDIT'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_conj():
@@ -230,10 +234,10 @@ def test_fsl_mrs_proc_conj():
         expected = f'{fsl_mrs_proc} conj --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.conj('file', 'output')
-        # expected = f'{fsl_mrs_proc} conj --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.conj('file', 'output', filename='filename')
+        expected = f'{fsl_mrs_proc} conj --file file --output output --filename filename'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_mrsi_align():
@@ -243,10 +247,12 @@ def test_fsl_mrs_proc_mrsi_align():
         expected = f'{fsl_mrs_proc} mrsi-align --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.mrsi_align('file', 'output')
-        # expected = f'{fsl_mrs_proc} mrsi-align --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.mrsi_align('file', 'output', target='target', mask='mask',
+                                            zpad=1, save_params=True)
+        expected = f'{fsl_mrs_proc} mrsi-align --file file --output output --target target'\
+                    ' --mask mask --zpad 1 --save-params'
+        assert result.stdout[0] == expected
 
 
 def test_fsl_mrs_proc_mrsi_lipid():
@@ -256,7 +262,7 @@ def test_fsl_mrs_proc_mrsi_lipid():
         expected = f'{fsl_mrs_proc} mrsi-lipid --file file --output output'
         assert result.stdout[0] == expected
 
-        # # test more complex and common call
-        # result = fw.fsl_mrs_proc.mrsi_lipid('file', 'output')
-        # expected = f'{fsl_mrs_proc} mrsi-lipid --file file --output output'
-        # assert result.stdout[0] == expected
+        # test more complex and common call
+        result = fw.fsl_mrs_proc.mrsi_lipid('file', 'output', mask='mask', beta=1E-5)
+        expected = f'{fsl_mrs_proc} mrsi-lipid --file file --output output --mask mask --beta 1e-05'
+        assert result.stdout[0] == expected

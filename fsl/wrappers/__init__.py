@@ -190,4 +190,7 @@ from fsl.wrappers.fsl_mrs            import (fsl_mrs,
                                              fsl_mrs_preproc_edit,
                                              fsl_mrsi,
                                              svs_segment,
-                                             mrsi_segment)
+                                             mrsi_segment,
+                                             fsl_dynmrs,
+                                             basis2spec,
+                                             fmrs_stats)

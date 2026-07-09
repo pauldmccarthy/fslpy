@@ -15,10 +15,14 @@
    fsl_mrs_preproc_edit
    svs_segment
    mrsi_segment   
+   fsl_dynmrs
+   basis2spec
+   fmrs_stats
 """
 
 import fsl.utils.assertions as asrt
 from . import wrapperutils as wutils
+from pathlib import Path
 
 
 @wutils.fileOrImage('data', 'h2o', 't1')
@@ -32,9 +36,9 @@ def fsl_mrs(data, basis, output, **kwargs):
     ind_scale, disable_MH_priors, mh_samples, t1, TE, TR,
     tissue_frac, t1_values, t2_values, internal_ref,
     wref_metabolite, ref_protons, ref_int_limits, h2o_scale,
-    report, verbose, overwrite, conj_fid, no_conj_fid,
-    conj_basis, no_conj_basis, no_rescale, export_baseline,
-    export_no_baseline, export_separate, filename, config.
+    report, verbose, overwrite, conj_basis, no_conj_basis,
+    no_rescale, export_baseline, export_no_baseline,
+    export_separate, f/filename, config.
     """
 
     asrt.assertIsNiftiMRS(data)
@@ -43,6 +47,7 @@ def fsl_mrs(data, basis, output, **kwargs):
     argmap = {
         't1_values' : 't1-values',
         't2_values' : 't2-values',
+        'f'         : 'filename',
     }
     
     valmap = {
@@ -52,14 +57,13 @@ def fsl_mrs(data, basis, output, **kwargs):
         'report'             : wutils.SHOW_IF_TRUE,
         'verbose'            : wutils.SHOW_IF_TRUE,
         'overwrite'          : wutils.SHOW_IF_TRUE,
-        'conj_fid'           : wutils.SHOW_IF_TRUE,
-        'no_conj_fid'        : wutils.SHOW_IF_TRUE,
         'conj_basis'         : wutils.SHOW_IF_TRUE,
         'no_conj_basis'      : wutils.SHOW_IF_TRUE,
         'no_rescale'         : wutils.SHOW_IF_TRUE,
         'export_baseline'    : wutils.SHOW_IF_TRUE,
         'export_no_baseline' : wutils.SHOW_IF_TRUE,
         'export_separate'    : wutils.SHOW_IF_TRUE,
+        'combine'            : wutils.EXPAND_LIST,
     }
 
     cmd = ['fsl_mrs',
@@ -84,8 +88,10 @@ def fsl_mrsi(data, basis, output, **kwargs):
     ind_scale, disable_MH_priors, TE, TR, tissue_frac,
     internal_ref, wref_metabolite, ref_protons, ref_int_limits,
     h2o_scale, report, output_correlations, verbose, overwrite,
-    single_proc, parallel, parallel_workers, conj_fid,
-    no_conj_fid, conj_basis, no_conj_basis, no_rescale, config.
+    single_proc, parallel, parallel_workers,
+    parallel-batch-size-multiple, minimize-maxfun,
+    slow-fit-log-threshold, slow-fit-log, slow-fit-worker-log-lines,
+    conj_basis, no_conj_basis, no_rescale, config.
     """
 
     asrt.assertIsNiftiMRS(data)
@@ -104,11 +110,10 @@ def fsl_mrsi(data, basis, output, **kwargs):
         'verbose'             : wutils.SHOW_IF_TRUE,
         'overwrite'           : wutils.SHOW_IF_TRUE,
         'single_proc'         : wutils.SHOW_IF_TRUE,
-        'conj_fid'            : wutils.SHOW_IF_TRUE,
-        'no_conj_fid'         : wutils.SHOW_IF_TRUE,
         'conj_basis'          : wutils.SHOW_IF_TRUE,
         'no_conj_basis'       : wutils.SHOW_IF_TRUE,
         'no_rescale'          : wutils.SHOW_IF_TRUE,
+        'combine'             : wutils.EXPAND_LIST,
     }
 
     cmd = ['fsl_mrsi',
@@ -122,14 +127,14 @@ def fsl_mrsi(data, basis, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('data', 'reference', 'quant', 'ecc', 'noise', 't1')
+@wutils.fileOrImage('data', 'reference', 'quant', 'ecc', 'noise', 'target', 't1')
 @wutils.fslwrapper
 def fsl_mrs_preproc(data, reference, output, **kwargs):
     """Wrapper for the ``fsl_mrs_preproc`` command.
     The following arguments are currently supported:
-    quant, ecc, noise, fmrs, noremoval, noaverage, noalign,
+    quant, ecc, noise, target, fmrs, noremoval, noaverage, noalign,
     align_limits, align_window, remove_water, hlsvd, truncate_fid,
-    leftshift, t1, verbose, conjugate, overwrite, report, config.
+    leftshift, t1, verbose, overwrite, report, config.
     """
 
     asrt.assertIsNiftiMRS(data, reference)
@@ -147,7 +152,6 @@ def fsl_mrs_preproc(data, reference, output, **kwargs):
         'remove-water'  : wutils.SHOW_IF_TRUE,
         'hlsvd'         : wutils.SHOW_IF_TRUE,
         'verbose'       : wutils.SHOW_IF_TRUE,
-        'conjugate'     : wutils.SHOW_IF_TRUE,
         'report'        : wutils.SHOW_IF_TRUE,
         'overwrite'     : wutils.SHOW_IF_TRUE,
     }
@@ -170,7 +174,7 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
     quant, ecc, noise, noaverage, noalign, align_ppm_dynamic,
     align_window_dynamic, align_ppm_edit, dynamic_align,
     dynamic_align_edit, remove_water, hlsvd, truncate_fid,
-    leftshift, t1, verbose, conjugate, overwrite, report, config.
+    leftshift, t1, verbose, overwrite, report, config.
     """
 
     asrt.assertIsNiftiMRS(data, reference)
@@ -188,7 +192,6 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
         'remove-water'       : wutils.SHOW_IF_TRUE,
         'hlsvd'              : wutils.SHOW_IF_TRUE,
         'verbose'            : wutils.SHOW_IF_TRUE,
-        'conjugate'          : wutils.SHOW_IF_TRUE,
         'overwrite'          : wutils.SHOW_IF_TRUE,
         'report'             : wutils.SHOW_IF_TRUE,
     }
@@ -255,6 +258,128 @@ def mrsi_segment(mrsi, **kwargs):
     }
 
     cmd = ['mrsi_segment', mrsi]
+    cmd += wutils.applyArgStyle('--', argmap=argmap, valmap=valmap, **kwargs)
+
+    return cmd
+
+
+@wutils.fileOrImage('data', 't1', 'spatial_mask')
+@wutils.fileOrBasis('basis')
+@wutils.fslwrapper
+def fsl_dynmrs(data, basis, output, dyn_config, time_variables, **kwargs):
+    """Wrapper for the ``fsl_dynmrs`` command.
+    The following arguments are currently supported:
+    ppmlim, baseline, baseline_order, metab_groups, lorentzian,
+    free_shift, inversion_model, t1, report, verbose, overwrite,
+    parallel, parallel_workers, no_rescale, save_fit, full_save,
+    mean_mrsi, spatial_mask, spatial_index.
+    """
+
+    asrt.assertIsNiftiMRS(data)
+    asrt.assertIsMRSBasis(basis)
+
+    argmap = {
+        'parallel_workers'  : 'parallel-workers',
+        'save_fit'          : 'save-fit',
+        'full_save'         : 'full-save',
+        'spatial_mask'      : 'spatial-mask',
+        'spatial_index'     : 'spatial-index',
+    }
+    
+    valmap = {
+        'lorentzian'         : wutils.SHOW_IF_TRUE,
+        'free_shift'         : wutils.SHOW_IF_TRUE,
+        'inversion_model'    : wutils.SHOW_IF_TRUE,
+        'report'             : wutils.SHOW_IF_TRUE,
+        'verbose'            : wutils.SHOW_IF_TRUE,
+        'overwrite'          : wutils.SHOW_IF_TRUE,
+        'no_rescale'         : wutils.SHOW_IF_TRUE,
+        'save_fit'           : wutils.SHOW_IF_TRUE,
+        'full_save'          : wutils.SHOW_IF_TRUE,
+        'mean_mrsi'          : wutils.SHOW_IF_TRUE,
+    }
+
+    # convert time_variables input to list
+    if isinstance(time_variables, (str, Path)):
+        time_variables = [time_variables]
+
+    cmd = ['fsl_dynmrs',
+           '--data', data,
+           '--basis', basis,
+           '--output', output,
+           '--dyn_config', dyn_config,
+           '--time_variables', *time_variables,
+    ]
+
+    cmd += wutils.applyArgStyle('--', argmap=argmap, valmap=valmap, **kwargs)
+
+    return cmd
+
+
+@wutils.fileOrImage('reference')
+@wutils.fileOrBasis('basis')
+@wutils.fslwrapper
+def basis2spec(basis, reference, output, **kwargs):
+    """Wrapper for the ``basis2spec`` command.
+    The following arguments are currently supported:
+    linewidth, ignore.
+    """
+
+    asrt.assertIsNiftiMRS(reference)
+    asrt.assertIsMRSBasis(basis)
+
+    argmap = {}
+    valmap = {}
+
+    cmd = ['basis2spec',
+           '--basis', basis,
+           '--reference', reference,
+           '--output', output,
+    ]
+
+    cmd += wutils.applyArgStyle('--', argmap=argmap, valmap=valmap, **kwargs)
+
+    return cmd
+
+
+@wutils.fileOrText('')
+@wutils.fslwrapper
+def fmrs_stats(data, output, **kwargs):
+    """Wrapper for the ``fmrs_stats`` command.
+    The following arguments are currently supported:
+    combine, fl_contrasts, mean_contrasts, reference_contrast,
+    hl_design, hl_contrasts, hl_covariance, hl_contrast_names,
+    hl_ftests, runmode, report, verbose, overwrite, config.
+    """
+
+    argmap = {
+        'fl_contrasts'       : 'fl-contrasts',
+        'mean_contrasts'     : 'mean-contrasts',
+        'reference_contrast' : 'reference-contrast',
+        'hl_design'          : 'hl-design',
+        'hl_contrasts'       : 'hl-contrasts',
+        'hl_covariance'      : 'hl-covariance',
+        'hl_contrast_names'  : 'hl-contrast-names',
+        'hl_ftests'          : 'hl-ftests',
+    }
+
+    valmap = {
+        'report'            : wutils.SHOW_IF_TRUE,
+        'verbose'           : wutils.SHOW_IF_TRUE,
+        'overwrite'         : wutils.SHOW_IF_TRUE,
+        'combine'           : wutils.EXPAND_LIST,
+        'mean-contrasts'    : wutils.EXPAND_LIST,
+    }
+
+    # convert data input to list
+    if isinstance(data, (str, Path)):
+        data = [data]
+
+    cmd = ['fmrs_stats',
+           '--data', *data,
+           '--output', output,
+    ]
+
     cmd += wutils.applyArgStyle('--', argmap=argmap, valmap=valmap, **kwargs)
 
     return cmd
