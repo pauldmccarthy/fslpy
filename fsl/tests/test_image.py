@@ -186,6 +186,42 @@ def test_load_from_symlink():
             assert i2.dataSource == op.abspath(imagefile)
 
 
+def test_create_Nifti():
+
+    # Test creating:
+    #  from a nibabel header
+    #  from a shape+affine
+
+    shape  = (10, 20, 30)
+    pixdim = (1.5, 2.5, 3.5)
+    xform  = affine.scaleOffsetXform(pixdim, (1, 2, 3))
+
+    hdr = nib.Nifti1Header()
+    hdr.set_data_shape(shape)
+    hdr.set_zooms(pixdim)
+    hdr.set_sform(xform)
+
+    ni1 = fslimage.Nifti(hdr)
+    ni2 = fslimage.Nifti(shape=shape, xform=xform)
+
+    assert ni1.shape  == ni2.shape  == shape
+    assert ni1.pixdim == ni2.pixdim == pixdim
+
+    aff1 = ni1.getAffine('voxel', 'world')
+    aff2 = ni2.getAffine('voxel', 'world')
+    assert np.all(np.isclose(xform, aff1))
+    assert np.all(np.isclose(xform, aff2))
+
+    with pytest.raises(ValueError):
+        fslimage.Nifti()
+    with pytest.raises(ValueError):
+        fslimage.Nifti(hdr, shape=shape, xform=xform)
+    with pytest.raises(ValueError):
+        fslimage.Nifti(shape=shape)
+    with pytest.raises(ValueError):
+        fslimage.Nifti(xform=xform)
+
+
 def test_create():
 
     # Test creating:
