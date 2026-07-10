@@ -24,9 +24,9 @@ def fsl_sub(*args, **kwargs):
     return cmd
 
 
-def cancel_job(job_id):
+def cancel_job(job_id, **kwargs):
     """Cancel a job submitted via :func:`fsl_sub`.
 
     This function simply calls ``fsl_sub(delete_job=job_id)``.
     """
-    fsl_sub(delete_job=job_id)
+    fsl_sub(delete_job=job_id, **kwargs)
