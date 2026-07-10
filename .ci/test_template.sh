@@ -34,7 +34,7 @@ fi
 TEST_OPTS=(--cov-report=  --cov-append)
 
 if [[ -z "${FSL_ATLAS_DIR}" ]]; then
-    TEST_OPTS+=(-k "not fsltest")
+    TEST_OPTS+=(-k "'not fsltest'")
 fi
 
 
@@ -46,8 +46,10 @@ touch fsl/__init__.py
 # We run some tests under xvfb-run
 # because they invoke wx. Sleep in
 # between, otherwise xvfb gets upset.
+echo "Running pytest ${TEST_OPTS[@]} fsl/tests/test_idle.py"
 xvfb-run -a pytest "${TEST_OPTS[@]}" fsl/tests/test_idle.py
 sleep 5
+echo "Running pytest ${TEST_OPTS[@]} fsl/tests/test_platform.py"
 xvfb-run -a pytest "${TEST_OPTS[@]}" fsl/tests/test_platform.py
 
 # We run the immv/imcp tests as the nobody
@@ -58,17 +60,25 @@ xvfb-run -a pytest "${TEST_OPTS[@]}" fsl/tests/test_platform.py
 # unintuitively, includes nobody)
 chmod -R a+w `pwd`
 
-
 # TODO there doesn't appear to be a way
 # of preserving the PATH when using su
 # - move this to docker image builds
 echo "PATH=$PATH" > /etc/environment
 
-cmd=(pytest "${TEST_OPTS[@]}" fsl/tests/test_scripts/test_immv_imcp.py fsl/tests/test_immv_imcp.py)
-su -s /bin/bash -c "$cmd" nobody
+cmd=(pytest "${TEST_OPTS[@]}"
+     fsl/tests/test_scripts/test_immv_imcp.py
+     fsl/tests/test_immv_imcp.py)
+echo "Running ${cmd[@]}"
+su -s /bin/bash -c "${cmd[*]}" nobody
 
 # All other tests can be run as normal.
-pytest "${TEST_OPTS[@]}" -m 'not longtest'    \
+echo "Running pytest ${TEST_OPTS[@]} -m 'not longtest'"
+echo "    --ignore=fsl/tests/test_idle.py"
+echo "    --ignore=fsl/tests/test_platform.py"
+echo "    --ignore=fsl/tests/test_immv_imcp.py"
+echo "    --ignore=fsl/tests/test_scripts/test_immv_imcp.py"
+
+pytest "${TEST_OPTS[@]}" -m 'not longtest'  \
        --ignore=fsl/tests/test_idle.py      \
        --ignore=fsl/tests/test_platform.py  \
        --ignore=fsl/tests/test_immv_imcp.py \
@@ -76,7 +86,7 @@ pytest "${TEST_OPTS[@]}" -m 'not longtest'    \
 
 # Long tests are only run on release branches
 if [[ $CI_COMMIT_REF_NAME == v* ]]; then
-    pytest $TEST_OPTS -m 'longtest'
+    pytest "${TEST_OPTS[@]}" -m 'longtest'
 fi
 
 python -m coverage report -i
