@@ -723,7 +723,7 @@ class FileOrThing:
             return 'Done'
 
 
-    Because we have decorated the ``concat`` function with :func:`fileToArray`,
+    Because we have decorated the ``concat`` function with :func:`fileOrArray`,
     it can be called with either file names, or Numpy arrays::
 
 
@@ -1244,12 +1244,10 @@ def fileOrImage(*args, **kwargs):
 
         if isinstance(val, fslimage.Image):
             intypes.append(fslimage.Image)
+            val = val.nibImage
 
         elif isinstance(val, nib.nifti1.Nifti1Image):
             intypes.append(nib.nifti1.Nifti1Image)
-
-        if isinstance(val, fslimage.Image):
-            val = val.nibImage
 
         if isinstance(val, nib.nifti1.Nifti1Image):
             infile = val.get_filename()
@@ -1270,7 +1268,6 @@ def fileOrImage(*args, **kwargs):
 
     def prepOut(workdir, name, val):
         return op.join(workdir, f'{name}{fslimage.defaultExt()}')
-
 
     def load(name, path):
 
@@ -1494,18 +1491,14 @@ def fileOrNiftiMRS(*args, **kwargs):
 
         if NIFTI_MRS is not None and isinstance(val, NIFTI_MRS):
             intypes.append(NIFTI_MRS)
+            val = val.image.nibImage
 
-        if isinstance(val, fslimage.Image):
+        elif isinstance(val, fslimage.Image):
             intypes.append(fslimage.Image)
+            val = val.nibImage
 
         elif isinstance(val, nib.nifti1.Nifti1Image):
             intypes.append(nib.nifti1.Nifti1Image)
-
-        if NIFTI_MRS is not None and isinstance(val, NIFTI_MRS):
-            val = val.image
-
-        if isinstance(val, fslimage.Image):
-            val = val.nibImage
 
         if isinstance(val, nib.nifti1.Nifti1Image):
             infile = val.get_filename()
@@ -1540,11 +1533,12 @@ def fileOrNiftiMRS(*args, **kwargs):
         # if any arguments were NIfTI_MRS images,
         # that takes precedence.
         if NIFTI_MRS is not None and NIFTI_MRS in intypes:
-            return NIFTI_MRS(data, header=img.header, name=name, validate_on_creation=False)
+            return NIFTI_MRS(data, header=img.header, name=name,
+                             validate_on_creation=False)
 
         # then if any arguments were fsl images,
         # that takes precedence.
-        if fslimage.Image in intypes:
+        elif fslimage.Image in intypes:
             return fslimage.Image(data, header=img.header, name=name)
 
         # but if all inputs were file names,
