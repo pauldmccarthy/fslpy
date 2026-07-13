@@ -25,7 +25,8 @@ from . import wrapperutils as wutils
 from pathlib import Path
 
 
-@wutils.fileOrImage('data', 'h2o', 't1')
+@wutils.fileOrNiftiMRS('data', 'h2o')
+@wutils.fileOrImage('t1')
 @wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def fsl_mrs(data, basis, output, **kwargs):
@@ -77,7 +78,8 @@ def fsl_mrs(data, basis, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('data', 'mask', 'h2o')
+@wutils.fileOrNiftiMRS('data', 'h2o')
+@wutils.fileOrImage('mask')
 @wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def fsl_mrsi(data, basis, output, **kwargs):
@@ -127,7 +129,8 @@ def fsl_mrsi(data, basis, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('data', 'reference', 'quant', 'ecc', 'noise', 'target', 't1')
+@wutils.fileOrNiftiMRS('data', 'reference', 'quant', 'ecc', 'noise', 'target')
+@wutils.fileOrImage('t1')
 @wutils.fslwrapper
 def fsl_mrs_preproc(data, reference, output, **kwargs):
     """Wrapper for the ``fsl_mrs_preproc`` command.
@@ -166,7 +169,8 @@ def fsl_mrs_preproc(data, reference, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('data', 'reference', 'quant', 'ecc', 'noise', 't1')
+@wutils.fileOrNiftiMRS('data', 'reference', 'quant', 'ecc', 'noise')
+@wutils.fileOrImage('t1')
 @wutils.fslwrapper
 def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
     """Wrapper for the ``fsl_mrs_preproc_edit`` command.
@@ -207,7 +211,8 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('svs', 't1', outprefix='filename')
+@wutils.fileOrNiftiMRS('svs')
+@wutils.fileOrImage('t1', outprefix='filename')
 @wutils.fslwrapper
 def svs_segment(svs, **kwargs):
     """Wrapper for the ``svs_segment`` command.
@@ -236,7 +241,8 @@ def svs_segment(svs, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('mrsi', 't1', outprefix='filename')
+@wutils.fileOrNiftiMRS('mrsi')
+@wutils.fileOrImage('t1', outprefix='filename')
 @wutils.fslwrapper
 def mrsi_segment(mrsi, **kwargs):
     """Wrapper for the ``mrsi_segment`` command.
@@ -263,7 +269,8 @@ def mrsi_segment(mrsi, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('data', 't1', 'spatial_mask')
+@wutils.fileOrNiftiMRS('data')
+@wutils.fileOrImage('t1', 'spatial_mask')
 @wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def fsl_dynmrs(data, basis, output, dyn_config, time_variables, **kwargs):
@@ -316,7 +323,7 @@ def fsl_dynmrs(data, basis, output, dyn_config, time_variables, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('reference')
+@wutils.fileOrNiftiMRS('reference')
 @wutils.fileOrBasis('basis')
 @wutils.fslwrapper
 def basis2spec(basis, reference, output, **kwargs):

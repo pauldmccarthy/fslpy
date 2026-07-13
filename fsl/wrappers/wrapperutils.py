@@ -1469,3 +1469,111 @@ def fileOrBasis(*args, **kwargs):
         return _update_wrapper(wrapper, func)
 
     return decorator
+
+
+def fileOrNiftiMRS(*args, **kwargs):
+    """Decorator which can be used to ensure that any NIfTI_MRS images are saved
+    to file, and output images can be loaded and returned as ``nibabel``
+    image objects or :class:`.Image` objects.
+    """
+
+    # keep track of the input argument
+    # types on each call, so we know
+    # whether to return a fsl.Image or
+    # a nibabel image
+    intypes = []
+
+    def prepIn(workdir, name, val):
+
+        infile = None
+
+        try:
+            from nifti_mrs.nifti_mrs import NIFTI_MRS
+            if isinstance(val, NIFTI_MRS):
+                intypes.append(NIFTI_MRS)
+
+        except ImportError:
+            NIFTI_MRS = None
+
+            if isinstance(val, fslimage.Image):
+                intypes.append(fslimage.Image)
+
+            elif isinstance(val, nib.nifti1.Nifti1Image):
+                intypes.append(nib.nifti1.Nifti1Image)
+
+        if NIFTI_MRS is not None and isinstance(val, NIFTI_MRS):
+            val = val.image
+
+        if isinstance(val, fslimage.Image):
+            val = val.nibImage
+
+        if isinstance(val, nib.nifti1.Nifti1Image):
+            infile = val.get_filename()
+
+            # in-memory image - we have
+            # to save it out to a file
+            if infile is None or not op.exists(infile):
+                infile = tempdir.mkstemp(fslimage.defaultExt(), dir=workdir)
+
+                # Create a copy of the input image and
+                # save that, so the original doesn't
+                # get associated with the temp file
+                val = nib.nifti1.Nifti1Image(
+                    np.asanyarray(val.dataobj), None, val.header)
+                val.to_filename(infile)
+
+        return infile
+
+    def prepOut(workdir, name, val):
+        return op.join(workdir, f'{name}{fslimage.defaultExt()}')
+
+    def load(name, path):
+
+        if not fslimage.looksLikeImage(path):
+            return None
+
+        # create an independent in-memory
+        # copy of the image file
+        img  = nib.load(path, mmap=False)
+        data = np.asanyarray(img.dataobj)
+
+        try:
+            from nifti_mrs.nifti_mrs import NIFTI_MRS
+            # if any arguments were NIfTI_MRS images,
+            # that takes precedence.
+            if NIFTI_MRS in intypes:
+                return NIFTI_MRS(data, header=img.header, name=name, validate_on_creation=False)
+
+        except ImportError:
+            # then if any arguments were fsl images,
+            # that takes precedence.
+            if fslimage.Image in intypes:
+                return fslimage.Image(data, header=img.header, name=name)
+
+            # but if all inputs were file names,
+            # nibabel takes precedence
+            elif nib.nifti1.Nifti1Image in intypes or len(intypes) == 0:
+                return nib.nifti1.Nifti1Image(data, None, img.header)
+
+            # this function should not be called
+            # under any other circumstances
+            else:
+                raise RuntimeError('Cannot handle type: {}'.format(intypes))
+
+    def decorator(func):
+        fot = FileOrThing(func,
+                          prepIn,
+                          prepOut,
+                          load,
+                          fslimage.removeExt,
+                          *args,
+                          **kwargs)
+
+        def wrapper(*args, **kwargs):
+            result = fot(*args, **kwargs)
+            intypes[:] = []
+            return result
+
+        return _update_wrapper(wrapper, func)
+
+    return decorator

@@ -34,7 +34,7 @@ import fsl.utils.assertions as asrt
 from . import wrapperutils as wutils
 
 
-@wutils.fileOrImage('file', 'filename', 'reference')
+@wutils.fileOrNiftiMRS('file', 'filename', 'reference')
 @wutils.fslwrapper
 def coilcombine(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc coilcombine`` command.
@@ -68,7 +68,7 @@ def coilcombine(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def average(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc average`` command.
@@ -101,7 +101,7 @@ def average(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'reference')
+@wutils.fileOrNiftiMRS('file', 'filename', 'reference')
 @wutils.fslwrapper
 def align(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc align`` command.
@@ -134,7 +134,7 @@ def align(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def align_diff(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc align-diff`` command.
@@ -167,7 +167,7 @@ def align_diff(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'reference')
+@wutils.fileOrNiftiMRS('file', 'filename', 'reference')
 @wutils.fslwrapper
 def ecc(file, reference, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc ecc`` command.
@@ -201,7 +201,7 @@ def ecc(file, reference, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def remove(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc remove`` command.
@@ -234,7 +234,7 @@ def remove(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def model(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc model`` command.
@@ -267,7 +267,7 @@ def model(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def tshift(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc tshift`` command.
@@ -300,7 +300,7 @@ def tshift(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def truncate(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc truncate`` command.
@@ -333,7 +333,7 @@ def truncate(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def apodize(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc apodize`` command.
@@ -366,7 +366,7 @@ def apodize(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def fshift(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc fshift`` command.
@@ -401,7 +401,7 @@ def fshift(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def unlike(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc unlike`` command.
@@ -435,7 +435,7 @@ def unlike(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def phase(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc phase`` command.
@@ -470,7 +470,7 @@ def phase(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def fixed_phase(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc fixed_phase`` command.
@@ -503,7 +503,7 @@ def fixed_phase(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'reference')
+@wutils.fileOrNiftiMRS('file', 'filename', 'reference')
 @wutils.fslwrapper
 def subtract(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc subtract`` command.
@@ -536,7 +536,7 @@ def subtract(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'reference')
+@wutils.fileOrNiftiMRS('file', 'filename', 'reference')
 @wutils.fslwrapper
 def add(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc add`` command.
@@ -569,7 +569,7 @@ def add(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename')
+@wutils.fileOrNiftiMRS('file', 'filename')
 @wutils.fslwrapper
 def conj(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc conj`` command.
@@ -602,7 +602,8 @@ def conj(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'target', 'mask')
+@wutils.fileOrNiftiMRS('file', 'filename', 'target')
+@wutils.fileOrImage('mask')
 @wutils.fslwrapper
 def mrsi_align(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc mrsi-align`` command.
@@ -637,7 +638,8 @@ def mrsi_align(file, output, **kwargs):
     return cmd
 
 
-@wutils.fileOrImage('file', 'filename', 'mask')
+@wutils.fileOrNiftiMRS('file', 'filename')
+@wutils.fileOrImage('mask')
 @wutils.fslwrapper
 def mrsi_lipid(file, output, **kwargs):
     """Wrapper for the ``fsl_mrs_proc mrsi-lipid`` command.
