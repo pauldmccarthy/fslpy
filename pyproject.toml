@@ -109,13 +109,13 @@ version_scheme = "release-branch-semver"
 
 
 [tool.coverage.run]
-include = ["fsl/*"]
+source  = ["fsl"]
 omit    = ["fsl/tests/*", "fsl/data/imagewrapper.py"]
 
 
 [tool.pytest.ini_options]
 testpaths = ["fsl/tests"]
-addopts   = "-v --cov=fsl --showlocals --import-mode=importlib"
+addopts   = "-v --cov --showlocals --import-mode=importlib"
 markers   = [
   "fsltest:    Requires FSL",
   "wxtest:     Requires wxPython",

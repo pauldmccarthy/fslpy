@@ -174,7 +174,7 @@ def test_loadSeries():
     datafile = op.join(datadir, 'example_dicom.tbz2')
 
     with tarfile.open(datafile) as f:
-        f.extractall()
+        f.extractall(filter='data')
 
     dcmdir   = os.getcwd()
     series   = fsldcm.scanDir(dcmdir)
