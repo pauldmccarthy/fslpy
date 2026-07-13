@@ -34,7 +34,7 @@ fi
 TEST_OPTS=(--cov-report=  --cov-append)
 
 if [[ -z "${FSL_ATLAS_DIR}" ]]; then
-    TEST_OPTS+=(-k "'not fsltest'")
+    TEST_OPTS+=(-m "not fsltest")
 fi
 
 
@@ -65,10 +65,10 @@ chmod -R a+w `pwd`
 # - move this to docker image builds
 echo "PATH=$PATH" > /etc/environment
 
-cmd=(pytest "${TEST_OPTS[@]}"
+cmd=(pytest "${TEST_OPTS[@]@Q}"
      fsl/tests/test_scripts/test_immv_imcp.py
      fsl/tests/test_immv_imcp.py)
-echo "Running ${cmd[@]}"
+echo "Running ${cmd[*]}"
 su -s /bin/bash -c "${cmd[*]}" nobody
 
 # All other tests can be run as normal.
