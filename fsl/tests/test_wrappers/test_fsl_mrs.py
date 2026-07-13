@@ -6,9 +6,16 @@
 #
 
 import pytest
+import os
+import json
+import numpy as np
+import nibabel as nib
 
 import fsl.wrappers as fw
+import fsl.data.image as fslimage
+import fsl.utils.tempdir as tempdir
 from fsl.tests.test_wrappers import testenv
+from nifti_mrs.nifti_mrs import NIFTI_MRS
 
 
 pytestmark = pytest.mark.mrstest
@@ -168,3 +175,128 @@ def test_fmrs_stats():
                     ' --mean-contrasts beta0 beta1 --mean-contrasts beta2 beta3'\
                     ' --combine NAA NAAG --combine Cr PCr --combine PCh GPC --overwrite'
         assert result.stdout[0] == expected
+
+
+def test_fileOrNiftiMRS():
+    @fw.wrapperutils.fileOrNiftiMRS('img1', 'img2', 'output')
+    def func(img1, **kwargs):
+        img1   = nib.load(img1)
+        img2   = nib.load(kwargs['img2'])
+        output = nib.nifti1.Nifti1Image(
+            np.asanyarray(img1.dataobj) * np.asanyarray(img2.dataobj),
+            img1.affine,
+            img1.header.copy())
+        nib.save(output, kwargs['output'])
+
+    with tempdir.tempdir():
+
+        img1     = nib.nifti1.Nifti1Image(
+            np.array([[1,  2], [ 3,  4]], dtype=np.int32), np.eye(4))
+        img2     = nib.nifti1.Nifti1Image(
+            np.array([[5,  6], [ 7,  8]], dtype=np.int32), np.eye(4))
+        img3     = nib.nifti1.Nifti1Image(
+            np.array([[1,  2], [ 3,  4]], dtype=np.int32), np.eye(4))
+        expected = np.array([[5, 12], [21, 32]], dtype=np.int32)
+        img1.header.extensions.append(
+            nib.nifti1.Nifti1Extension(
+                44,
+                json.dumps({
+                    'ResonantNucleus'       : ['1H'],
+                    'SpectrometerFrequency' : [123.456],
+                }).encode('utf-8')))
+        img1.header['intent_name'] = 'mrs_v0_2'.encode()
+        nib.save(img1, 'img1.nii')
+        img2.header.extensions.append(
+            nib.nifti1.Nifti1Extension(
+                44,
+                json.dumps({
+                    'ResonantNucleus'       : ['1H'],
+                    'SpectrometerFrequency' : [123.456],
+                }).encode('utf-8')))
+        img2.header['intent_name'] = 'mrs_v0_2'.encode()
+        nib.save(img2, 'img2.nii')
+
+        # file  file  file
+        func('img1.nii', img2='img2.nii', output='output.nii')
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
+        os.remove('output.nii')
+
+        # file  file  array
+        result = func('img1.nii', img2='img2.nii', output=fw.wrapperutils.LOAD)['output']
+        assert np.all(np.asanyarray(result.dataobj) == expected)
+
+        # file  array file
+        func('img1.nii', img2=img2, output='output.nii')
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
+        os.remove('output.nii')
+
+        # file  array array
+        result = func('img1.nii', img2=img2, output=fw.wrapperutils.LOAD)['output']
+        assert np.all(np.asanyarray(result.dataobj) == expected)
+
+        # array file  file
+        func(img1, img2='img2.nii', output='output.nii')
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
+        os.remove('output.nii')
+
+        # array file  array
+        result = func(img1, img2='img2.nii', output=fw.wrapperutils.LOAD)['output']
+        assert np.all(np.asanyarray(result.dataobj) == expected)
+
+        # array array file
+        func(img1, img2=img2, output='output.nii')
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
+        os.remove('output.nii')
+
+        # array array array
+        result = func(img1, img2=img2, output=fw.wrapperutils.LOAD)['output']
+        assert np.all(np.asanyarray(result.dataobj) == expected)
+
+        # in-memory image, file, file
+        result = func(img3, img2='img2.nii', output='output.nii')
+        assert np.all(np.asanyarray(nib.load('output.nii').dataobj) == expected)
+        os.remove('output.nii')
+
+        # fslimage, file, load
+        result = func(fslimage.Image(img1), img2='img2.nii',
+                      output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # fslimage, fslimage, load
+        result = func(fslimage.Image(img1), img2=fslimage.Image(img2),
+                      output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # fslimage, nib.image, load
+        result = func(fslimage.Image(img1), img2=img2,
+                      output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, fslimage.Image)
+        assert np.all(result[:].squeeze() == expected)
+
+        # nib.image, nib.image, load
+        result = func(img1, img2=img2, output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, nib.nifti1.Nifti1Image)
+        assert np.all(np.asanyarray(result.dataobj)[:] == expected)
+
+        # nifti_mrs, fslimage, load
+        result = func(NIFTI_MRS(img1, valid_on_creation=False),
+                      img2=fslimage.Image(img2),
+                      output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, NIFTI_MRS)
+        assert np.all(np.asanyarray(result.image[:].squeeze()) == expected)
+
+        # nib.image, nifti_mrs, load
+        result = func(img1,
+                      img2=NIFTI_MRS(img2, valid_on_creation=False),
+                      output=fw.wrapperutils.LOAD)['output']
+        assert isinstance(result, NIFTI_MRS)
+        assert np.all(np.asanyarray(result.image[:].squeeze()) == expected)
+
+        # nifti_mrs, nifti_mrs, file
+        result = func(NIFTI_MRS(img1, valid_on_creation=False),
+                      img2=NIFTI_MRS(img2, valid_on_creation=False),
+                      output='output.nii')
+        assert np.all(np.asanyarray(NIFTI_MRS('output.nii').image[:].squeeze()) == expected)
+        os.remove('output.nii')

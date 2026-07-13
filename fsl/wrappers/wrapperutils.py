@@ -1483,23 +1483,23 @@ def fileOrNiftiMRS(*args, **kwargs):
     # a nibabel image
     intypes = []
 
+    try:
+        from nifti_mrs.nifti_mrs import NIFTI_MRS
+    except ImportError:
+        NIFTI_MRS = None
+
     def prepIn(workdir, name, val):
 
         infile = None
 
-        try:
-            from nifti_mrs.nifti_mrs import NIFTI_MRS
-            if isinstance(val, NIFTI_MRS):
-                intypes.append(NIFTI_MRS)
+        if NIFTI_MRS is not None and isinstance(val, NIFTI_MRS):
+            intypes.append(NIFTI_MRS)
 
-        except ImportError:
-            NIFTI_MRS = None
+        if isinstance(val, fslimage.Image):
+            intypes.append(fslimage.Image)
 
-            if isinstance(val, fslimage.Image):
-                intypes.append(fslimage.Image)
-
-            elif isinstance(val, nib.nifti1.Nifti1Image):
-                intypes.append(nib.nifti1.Nifti1Image)
+        elif isinstance(val, nib.nifti1.Nifti1Image):
+            intypes.append(nib.nifti1.Nifti1Image)
 
         if NIFTI_MRS is not None and isinstance(val, NIFTI_MRS):
             val = val.image
@@ -1537,28 +1537,25 @@ def fileOrNiftiMRS(*args, **kwargs):
         img  = nib.load(path, mmap=False)
         data = np.asanyarray(img.dataobj)
 
-        try:
-            from nifti_mrs.nifti_mrs import NIFTI_MRS
-            # if any arguments were NIfTI_MRS images,
-            # that takes precedence.
-            if NIFTI_MRS in intypes:
-                return NIFTI_MRS(data, header=img.header, name=name, validate_on_creation=False)
+        # if any arguments were NIfTI_MRS images,
+        # that takes precedence.
+        if NIFTI_MRS is not None and NIFTI_MRS in intypes:
+            return NIFTI_MRS(data, header=img.header, name=name, validate_on_creation=False)
 
-        except ImportError:
-            # then if any arguments were fsl images,
-            # that takes precedence.
-            if fslimage.Image in intypes:
-                return fslimage.Image(data, header=img.header, name=name)
+        # then if any arguments were fsl images,
+        # that takes precedence.
+        if fslimage.Image in intypes:
+            return fslimage.Image(data, header=img.header, name=name)
 
-            # but if all inputs were file names,
-            # nibabel takes precedence
-            elif nib.nifti1.Nifti1Image in intypes or len(intypes) == 0:
-                return nib.nifti1.Nifti1Image(data, None, img.header)
+        # but if all inputs were file names,
+        # nibabel takes precedence
+        elif nib.nifti1.Nifti1Image in intypes or len(intypes) == 0:
+            return nib.nifti1.Nifti1Image(data, None, img.header)
 
-            # this function should not be called
-            # under any other circumstances
-            else:
-                raise RuntimeError('Cannot handle type: {}'.format(intypes))
+        # this function should not be called
+        # under any other circumstances
+        else:
+            raise RuntimeError('Cannot handle type: {}'.format(intypes))
 
     def decorator(func):
         fot = FileOrThing(func,
