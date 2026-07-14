@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.28.1 (Tuesday 14th July 2026)
+-------------------------------
+
+
+Changed
+^^^^^^^
+
+
+* Minor adjustment to unit tests (:mr:`503`).
+
+
 3.28.0 (Tuesday 14th July 2026)
 -------------------------------
 

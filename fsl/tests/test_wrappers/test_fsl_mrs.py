@@ -15,7 +15,14 @@ import fsl.wrappers as fw
 import fsl.data.image as fslimage
 import fsl.utils.tempdir as tempdir
 from fsl.tests.test_wrappers import testenv
-from nifti_mrs.nifti_mrs import NIFTI_MRS
+
+
+# Tests may be executed without the fsl_mrs
+# libs, but test modules need to be importable.
+try:
+    from nifti_mrs.nifti_mrs import NIFTI_MRS
+except ImportError:
+    NIFTI_MRS = None
 
 
 pytestmark = pytest.mark.mrstest
