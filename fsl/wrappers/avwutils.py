@@ -132,3 +132,22 @@ def fslcpgeom(src, dest, d=False):
     if d:
         cmd += ['-d']
     return cmd
+
+
+@wutils.fileOrImage('infile', 'outfile')
+@wutils.fslwrapper
+def fslchpixdim(infile, xdim, ydim, zdim, tdim=None, outfile=None):
+    """Wrapper for the ``fslchpixdim`` command. """
+
+    cmd = ['fslchpixdim', infile, str(xdim), str(ydim), str(zdim)]
+
+    if tdim is None and outfile is not None:
+        tdim = 0
+
+    if tdim is not None:
+        cmd.append(str(tdim))
+
+    if outfile is not None:
+        cmd.append(outfile)
+
+    return cmd

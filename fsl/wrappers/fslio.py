@@ -79,5 +79,6 @@ def tmpnam(path=None):
 
 def fslchfiletype(fmt, oldfile, newfile=None):
     """Wrapper for the ``fslchfiletype`` script. """
+    # Avoid circular import
     from fsl.scripts import fslchfiletype as fslchfiletype_script
     fslchfiletype_script.fslchfiletype(fmt, oldfile, newfile)

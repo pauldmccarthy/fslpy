@@ -105,7 +105,8 @@ from fsl.wrappers                    import (tbss,
 from fsl.wrappers.avwutils           import (fslmerge,
                                              fslselectvols,
                                              fslsplit,
-                                             fslcpgeom,)
+                                             fslchpixdim,
+                                             fslcpgeom)
 from fsl.wrappers.bedpostx           import (xfibres,
                                              xfibres_gpu,
                                              split_parts_gpu,
