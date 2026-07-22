@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.29.0 (Thursday 23rd July 2026)
+--------------------------------
+
+
+Added
+^^^^^
+
+* Ported the ``fslchpixdim`` command over from the ``avwutils`` project
+  (:mr:`506`).
+
+
 3.28.1 (Tuesday 14th July 2026)
 -------------------------------
 

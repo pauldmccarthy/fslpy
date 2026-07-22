@@ -696,3 +696,11 @@ def test_mmorf():
     with testenv('mmorf') as exe:
         assert fw.mmorf(config='config.ini', num_threads=6)[0] == \
             f'{exe} --config config.ini --num_threads 6'
+
+
+def test_fslchpixdim():
+    chpix = fw.fslchpixdim
+    with testenv('fslchpixdim') as exe:
+        assert chpix('in', 2, 3, 4).stdout[0]           == f'{exe} in 2 3 4'
+        assert chpix('in', 2, 3, 4, 5).stdout[0]        == f'{exe} in 2 3 4 5'
+        assert chpix('in', 2, 3, 4, 5, 'out').stdout[0] == f'{exe} in 2 3 4 5 out'
