@@ -8,7 +8,7 @@ name            = "fslpy"
 dynamic         = ["version"]
 description     = "FSL Python library"
 readme          = {file = "README.rst", content-type="text/x-rst"}
-license         = {text = "Apache License Version 2.0"}
+license-files   = ["LICENSE"]
 requires-python = ">=3.8"
 authors         = [
     {name = "Paul McCarthy",        email = "pauldmccarthy@gmail.com"},
@@ -26,19 +26,19 @@ authors         = [
 dependencies = [
  "dill",
  "h5py >=2.9",
- "nibabel >=2.4",
+ "nibabel >=5.4",
  "numpy >=1",
- "scipy >=0.18"
+ "scipy >=0.18",
+ "backports.zstd; python_version < \"3.14\""
 ]
 
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
@@ -55,7 +55,6 @@ extra = [
   "trimesh >=2.37.29",
   "rtree >=0.8.3",
   "Pillow >=3.2.0",
-  "backports.zstd; python_version < \"3.14\"",
 ]
 doc = [
   "sphinx",
@@ -94,14 +93,8 @@ Text2Vest      = "fsl.scripts.Text2Vest:main"
 Vest2Text      = "fsl.scripts.Vest2Text:main"
 
 
-
 [tool.setuptools.packages.find]
 include = ["fsl*"]
-exclude = ["fsl.tests*"]
-
-
-[tool.setuptools.package-data]
-fsl = ["utils/filetree/trees/*"]
 
 
 [tool.setuptools_scm]
