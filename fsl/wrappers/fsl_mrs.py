@@ -14,7 +14,7 @@
    fsl_mrs_preproc
    fsl_mrs_preproc_edit
    svs_segment
-   mrsi_segment   
+   mrsi_segment
    fsl_dynmrs
    basis2spec
    fmrs_stats
@@ -37,9 +37,9 @@ def fsl_mrs(data, basis, output, **kwargs):
     ind_scale, disable_MH_priors, mh_samples, t1, TE, TR,
     tissue_frac, t1_values, t2_values, internal_ref,
     wref_metabolite, ref_protons, ref_int_limits, h2o_scale,
-    report, verbose, overwrite, conj_basis, no_conj_basis,
-    no_rescale, export_baseline, export_no_baseline,
-    export_separate, f/filename, config.
+    report, verbose, overwrite, conj_fid, no_conj_fid,
+    conj_basis, no_conj_basis, no_rescale, export_baseline,
+    export_no_baseline, export_separate, f/filename, config.
     """
 
     asrt.assertIsNiftiMRS(data)
@@ -50,7 +50,7 @@ def fsl_mrs(data, basis, output, **kwargs):
         't2_values' : 't2-values',
         'f'         : 'filename',
     }
-    
+
     valmap = {
         'lorentzian'         : wutils.SHOW_IF_TRUE,
         'free_shift'         : wutils.SHOW_IF_TRUE,
@@ -58,6 +58,8 @@ def fsl_mrs(data, basis, output, **kwargs):
         'report'             : wutils.SHOW_IF_TRUE,
         'verbose'            : wutils.SHOW_IF_TRUE,
         'overwrite'          : wutils.SHOW_IF_TRUE,
+        'conj_fid'           : wutils.SHOW_IF_TRUE,
+        'no_conj_fid'        : wutils.SHOW_IF_TRUE,
         'conj_basis'         : wutils.SHOW_IF_TRUE,
         'no_conj_basis'      : wutils.SHOW_IF_TRUE,
         'no_rescale'         : wutils.SHOW_IF_TRUE,
@@ -93,7 +95,8 @@ def fsl_mrsi(data, basis, output, **kwargs):
     single_proc, parallel, parallel_workers,
     parallel-batch-size-multiple, minimize-maxfun,
     slow-fit-log-threshold, slow-fit-log, slow-fit-worker-log-lines,
-    conj_basis, no_conj_basis, no_rescale, config.
+    conj_fid, no_conj_fid, conj_basis, no_conj_basis, no_rescale,
+    config.
     """
 
     asrt.assertIsNiftiMRS(data)
@@ -112,6 +115,8 @@ def fsl_mrsi(data, basis, output, **kwargs):
         'verbose'             : wutils.SHOW_IF_TRUE,
         'overwrite'           : wutils.SHOW_IF_TRUE,
         'single_proc'         : wutils.SHOW_IF_TRUE,
+        'conj_fid'            : wutils.SHOW_IF_TRUE,
+        'no_conj_fid'         : wutils.SHOW_IF_TRUE,
         'conj_basis'          : wutils.SHOW_IF_TRUE,
         'no_conj_basis'       : wutils.SHOW_IF_TRUE,
         'no_rescale'          : wutils.SHOW_IF_TRUE,
@@ -137,7 +142,7 @@ def fsl_mrs_preproc(data, reference, output, **kwargs):
     The following arguments are currently supported:
     quant, ecc, noise, target, fmrs, noremoval, noaverage, noalign,
     align_limits, align_window, remove_water, hlsvd, truncate_fid,
-    leftshift, t1, verbose, overwrite, report, config.
+    leftshift, t1, verbose, conjugate, overwrite, report, config.
     """
 
     asrt.assertIsNiftiMRS(data, reference)
@@ -155,6 +160,7 @@ def fsl_mrs_preproc(data, reference, output, **kwargs):
         'remove-water'  : wutils.SHOW_IF_TRUE,
         'hlsvd'         : wutils.SHOW_IF_TRUE,
         'verbose'       : wutils.SHOW_IF_TRUE,
+        'conjugate'     : wutils.SHOW_IF_TRUE,
         'report'        : wutils.SHOW_IF_TRUE,
         'overwrite'     : wutils.SHOW_IF_TRUE,
     }
@@ -178,7 +184,7 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
     quant, ecc, noise, noaverage, noalign, align_ppm_dynamic,
     align_window_dynamic, align_ppm_edit, dynamic_align,
     dynamic_align_edit, remove_water, hlsvd, truncate_fid,
-    leftshift, t1, verbose, overwrite, report, config.
+    leftshift, t1, verbose, conjugate, overwrite, report, config.
     """
 
     asrt.assertIsNiftiMRS(data, reference)
@@ -187,7 +193,7 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
         'remove_water' : 'remove-water',
         'truncate_fid' : 'truncate-fid',
     }
-    
+
     valmap = {
         'noaverage'          : wutils.SHOW_IF_TRUE,
         'noalign'            : wutils.SHOW_IF_TRUE,
@@ -196,6 +202,7 @@ def fsl_mrs_preproc_edit(data, reference, output, **kwargs):
         'remove-water'       : wutils.SHOW_IF_TRUE,
         'hlsvd'              : wutils.SHOW_IF_TRUE,
         'verbose'            : wutils.SHOW_IF_TRUE,
+        'conjugate'          : wutils.SHOW_IF_TRUE,
         'overwrite'          : wutils.SHOW_IF_TRUE,
         'report'             : wutils.SHOW_IF_TRUE,
     }
@@ -292,7 +299,7 @@ def fsl_dynmrs(data, basis, output, dyn_config, time_variables, **kwargs):
         'spatial_mask'      : 'spatial-mask',
         'spatial_index'     : 'spatial-index',
     }
-    
+
     valmap = {
         'lorentzian'         : wutils.SHOW_IF_TRUE,
         'free_shift'         : wutils.SHOW_IF_TRUE,
