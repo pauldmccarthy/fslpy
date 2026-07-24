@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.29.1 (Friday 24th July 2026)
+------------------------------
+
+
+Changed
+^^^^^^^
+
+* Minor changes to ``fsl_mrs`` wrapper functions for backwards compatibility
+  (:mr:`507`).
+
+
 3.29.0 (Thursday 23rd July 2026)
 --------------------------------
 
