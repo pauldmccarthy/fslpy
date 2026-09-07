@@ -10,6 +10,7 @@
    fsl.scripts.fsl_convert_x5
    fsl.scripts.fsl_ents
    fsl.scripts.fslchfiletype
+   fsl.scripts.fslchpixdim
    fsl.scripts.imcp
    fsl.scripts.imglob
    fsl.scripts.imln
