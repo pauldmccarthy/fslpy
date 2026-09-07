@@ -293,6 +293,15 @@ def test_create_niftiversion():
         assert img.niftiVersion == 2
 
 
+def test_create_large_image():
+
+    # NIFTI1 only supports  axes up to 16384
+    data = np.random.randint(0, 255, (32768, 64, 64), dtype=np.uint8)
+    img  = fslimage.Image(data)
+    assert img.niftiVersion == 2
+    assert img.shape        == (32768, 64, 64)
+
+
 def test_name_dataSource():
     with tempdir():
 
