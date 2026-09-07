@@ -2,6 +2,17 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
+3.29.2 (Under development)
+--------------------------
+
+
+Changed
+^^^^^^^
+
+
+* The :class:`.Image` class will now create a NIfTI2 image if given a data array that exceeds the NIfTI1 dimension limits (:mr:`509`).
+
+
 3.29.1 (Friday 24th July 2026)
 ------------------------------
 
