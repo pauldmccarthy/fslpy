@@ -1361,6 +1361,11 @@ class Image(Nifti):
             elif isinstance(header, nib.analyze.AnalyzeHeader):
                 ctr = nib.analyze.AnalyzeImage
 
+            # Final test - if data shape is too
+            # large for NIfTI1, force NIfTI2.
+            if any(s >= 16384 for s in image.shape):
+                ctr = nib.nifti2.Nifti2Image
+
             nibImage = ctr(image, xform, header=header)
             header   = nibImage.header
 
