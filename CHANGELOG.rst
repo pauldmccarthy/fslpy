@@ -13,6 +13,16 @@ Changed
 * The :class:`.Image` class will now create a NIfTI2 image if given a data array that exceeds the NIfTI1 dimension limits (:mr:`509`).
 
 
+Fixed
+^^^^^
+
+
+* A :class:`.DeformationField` created from a ``numpy`` array, without a
+  ``header`` or ``xform``, now takes its header and affine from the reference
+  image. Previously it was given an identity affine and 1mm pixdims, which
+  caused FSL tools to misplace it when it was saved.
+
+
 3.29.1 (Friday 24th July 2026)
 ------------------------------
 
