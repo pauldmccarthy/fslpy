@@ -13,6 +13,17 @@ Changed
 * The :class:`.Image` class will now create a NIfTI2 image if given a data array that exceeds the NIfTI1 dimension limits (:mr:`509`).
 
 
+Fixed
+^^^^^
+
+
+* The :func:`.fnirt.toFnirt` function no longer sets the
+  ``FSL_FNIRT_DISPLACEMENT_FIELD`` intent code on absolute deformation
+  fields, as FSL tools always interpret fields with that intent as containing
+  relative displacements. Absolute fields are now saved with no intent code,
+  as is done by ``convertwarp --absout``.
+
+
 3.29.1 (Friday 24th July 2026)
 ------------------------------
 

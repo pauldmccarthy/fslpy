@@ -412,7 +412,18 @@ def toFnirt(field):
         field = nonlinear.convertDeformationSpace(
             field, from_='fsl', to='fsl')
 
-        field.header['intent_code'] = constants.FSL_FNIRT_DISPLACEMENT_FIELD
+        # FSL assumes that a field with the
+        # FSL_FNIRT_DISPLACEMENT_FIELD intent
+        # contains relative displacements (see
+        # $FSLDIR/src/fsl-warpfns/fnirt_file_reader.cpp).
+        # Absolute fields are saved with no intent,
+        # as is done by convertwarp --absout.
+        if field.relative:
+            intent = constants.FSL_FNIRT_DISPLACEMENT_FIELD
+        else:
+            intent = constants.NIFTI_INTENT_NONE
+
+        field.header['intent_code'] = intent
 
     return field
 
