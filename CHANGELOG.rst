@@ -22,6 +22,11 @@ Fixed
   fields, as FSL tools always interpret fields with that intent as containing
   relative displacements. Absolute fields are now saved with no intent code,
   as is done by ``convertwarp --absout``.
+* The :func:`.fnirt.readFnirt` function will now load a 4D image with three
+  volumes and no intent code (e.g. the output of ``convertwarp``) as a
+  deformation field, as FSL does, instead of raising an error. Whether it
+  contains absolute or relative values is inferred from the data unless
+  ``defType`` is given.
 
 
 3.29.1 (Friday 24th July 2026)
