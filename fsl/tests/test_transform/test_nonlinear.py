@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import itertools as it
+import os
 import os.path   as op
 
 import numpy   as np
+import pytest
 
 import fsl.data.image           as fslimage
 import fsl.utils.image.resample as resample
@@ -11,6 +13,8 @@ import fsl.utils.image.roi      as roi
 import fsl.transform.affine     as affine
 import fsl.transform.nonlinear  as nonlinear
 import fsl.transform.fnirt      as fnirt
+import fsl.utils.tempdir        as tempdir
+import fsl.wrappers             as fslwrappers
 
 
 datadir = op.join(op.dirname(__file__), 'testdata')
@@ -228,6 +232,80 @@ def test_DeformationField_transform():
     assert np.all(np.isnan(got[0, :]))
     assert np.all(np.isclose(got[1, :], scoords[1, :]))
 
+
+
+def test_DeformationField_no_header():
+
+    # A field created from a bare array, with no header or
+    # xform, has no geometry of its own, so should be placed
+    # on the reference image grid rather than being given an
+    # identity affine.
+    src   = _random_image()
+    ref   = _random_image()
+    data  = np.random.random(list(ref.shape[:3]) + [3])
+    field = nonlinear.DeformationField(data, src, ref, defType='relative')
+    exp   = nonlinear.DeformationField(data, src, ref, defType='relative',
+                                       header=ref.header)
+
+    assert np.all(np.isclose(field.voxToWorldMat, ref.voxToWorldMat))
+    assert np.all(np.isclose(field.pixdim[:3],    ref.pixdim[:3]))
+
+    coords = np.random.random((10, 3)) * ref.shape[:3]
+    coords = affine.transform(coords, ref.getAffine('voxel', 'fsl'))
+    assert np.all(np.isclose(field.transform(coords),
+                             exp  .transform(coords), equal_nan=True))
+
+    with tempdir.tempdir():
+        fnirt.toFnirt(field).save('field')
+        saved = fslimage.Image('field')
+        assert np.all(np.isclose(saved.voxToWorldMat, ref.voxToWorldMat))
+
+    # The field may have a different
+    # resolution to the reference
+    shape = [s // 2 for s in ref.shape[:3]]
+    data  = np.random.random(shape + [3])
+    field = nonlinear.DeformationField(data, src, ref, defType='relative')
+    exp   = affine.concat(ref.voxToWorldMat,
+                          affine.rescale(shape, ref.shape[:3]))
+    assert np.all(np.isclose(field.voxToWorldMat, exp))
+    assert np.all(np.isclose(field.pixdim[:3],
+                             np.linalg.norm(exp[:3, :3], axis=0)))
+
+    # An explicit xform or header is still used
+    xform = affine.compose((2, 3, 4), (5, 6, 7), (0, 0, 0))
+    field = nonlinear.DeformationField(data, src, ref, xform=xform)
+    assert np.all(np.isclose(field.voxToWorldMat, xform))
+    field = nonlinear.DeformationField(data, src, ref, header=src.header)
+    assert np.all(np.isclose(field.voxToWorldMat, src.voxToWorldMat))
+
+
+@pytest.mark.fsltest
+@pytest.mark.skipif(os.environ.get('FSLDIR') is None,
+                    reason='FSLDIR is not set')
+def test_DeformationField_no_header_fsl():
+
+    # FSL should place a field created from a bare array
+    # in the same location as the original field
+    ddir = op.join(datadir, 'nonlinear')
+    src  = fslimage.Image(op.join(ddir, 'src'))
+    ref  = fslimage.Image(op.join(ddir, 'ref'))
+    disp = op.join(ddir, 'displacementfield')
+    rel  = fnirt.readFnirt(disp, src, ref, defType='relative')
+    bare = nonlinear.DeformationField(np.asarray(rel.data), src, ref,
+                                      defType='relative')
+
+    with tempdir.tempdir():
+        fnirt.toFnirt(bare).save('bare')
+        fslwrappers.convertwarp('relout', ref, warp1='bare', relout=True)
+        fslwrappers.applywarp(src, ref, 'awbare', warp='bare', rel=True)
+        fslwrappers.applywarp(src, ref, 'awrel',  warp=disp,   rel=True)
+
+        relout = fslimage.Image('relout').data
+        awbare = fslimage.Image('awbare').data
+        awrel  = fslimage.Image('awrel') .data
+
+    assert np.all(np.isclose(relout, rel.data, atol=1e-3))
+    assert np.all(np.isclose(awbare, awrel))
 
 def test_CoefficientField_displacements():
 
