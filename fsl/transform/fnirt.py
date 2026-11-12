@@ -280,6 +280,9 @@ def readFnirt(fname, src, ref, defType=None, intent=None, **kwargs):
                    :attr:`.constants.FSL_FNIRT_DISPLACEMENT_FIELD`. If not
                    provided, the intent is read from the image header.
 
+    A 4D image with three volumes and no intent code (e.g. the output of
+    ``convertwarp``) is loaded as a deformation field, as is done by FSL.
+
     All other arguments are ultimately passed through to
     :meth:`.Image.__init__`.
     """
@@ -303,6 +306,18 @@ def readFnirt(fname, src, ref, defType=None, intent=None, **kwargs):
               constants.FSL_QUADRATIC_SPLINE_COEFFICIENTS,
               constants.FSL_TOPUP_CUBIC_SPLINE_COEFFICIENTS,
               constants.FSL_TOPUP_QUADRATIC_SPLINE_COEFFICIENTS)
+
+    # FSL tools such as convertwarp save
+    # deformation fields without an intent.
+    # FSL reads these as deformation fields,
+    # and uses the same heuristic as
+    # nonlinear.detectDeformationType to
+    # decide whether they are absolute or
+    # relative, unless told otherwise (see
+    # $FSLDIR/src/fsl-warpfns/fnirt_file_reader.cpp).
+    isfield = img.ndim == 4 and img.shape[3] == 3
+    if intent == constants.NIFTI_INTENT_NONE and isfield:
+        intent = constants.FSL_FNIRT_DISPLACEMENT_FIELD
 
     if intent in disps:
         return _readFnirtDeformationField(fname, img, src, ref, defType,
