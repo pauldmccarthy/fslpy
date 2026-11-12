@@ -29,7 +29,8 @@ Fixed
   ``defType`` is given.
 * A :class:`.DeformationField` created from a ``numpy`` array, without a
   ``header`` or ``xform``, now takes its header and affine from the reference
-  image. Previously it was given an identity affine and 1mm pixdims, which
+  image, and a ``ValueError`` is raised if the array and reference shapes
+  differ. Previously it was given an identity affine and 1mm pixdims, which
   caused FSL tools to misplace it when it was saved.
 
 
