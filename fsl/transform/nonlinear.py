@@ -185,6 +185,9 @@ class DeformationField(NonLinearTransform):
 
         :arg ref:     Optional. If not provided, it is assumed that the
                       reference is defined in the same space as ``image``.
+                      If ``image`` is a ``numpy`` array, and neither a
+                      ``header`` nor an ``xform`` are provided, the field
+                      takes its header and affine from ``ref``.
 
         :arg defType: Either ``'absolute'`` or ``'relative'``, indicating
                       the type of this displacement field. If not provided,
@@ -194,6 +197,18 @@ class DeformationField(NonLinearTransform):
         All other arguments are passed through to
         :meth:`NonLinearTransform.__init__`.
         """
+
+        # A field created from a numpy array, with no
+        # header or xform, has no geometry of its own
+        # (Image would give it an identity affine and
+        # 1mm pixdims), so we assume that it is
+        # aligned with the reference image.
+        if ref is not None                  and \
+           isinstance(image, np.ndarray)    and \
+           kwargs.get('header') is None     and \
+           kwargs.get('xform')  is None:
+            kwargs['header'] = ref.header
+            kwargs['xform']  = _refAffine(image.shape, ref)
 
         if ref is None:
             ref = self
@@ -212,17 +227,7 @@ class DeformationField(NonLinearTransform):
         # qform and, if necessary, construct a new
         # affine from the reference image.
         if self.getXFormCode() == fslconstants.NIFTI_XFORM_UNKNOWN:
-            xform = self.ref.voxToWorldMat
-
-            # It is possible for a displacement field
-            # to have different resolution to its
-            # reference space - they just have to be
-            # aligned in the world coordinate system.
-            if self.shape[:3] != self.ref.shape[:3]:
-                rescale = affine.rescale(self.shape[:3], self.ref.shape[:3])
-                xform   = affine.concat(xform, rescale)
-
-            self.voxToWorldMat = xform
+            self.voxToWorldMat = _refAffine(self.shape, self.ref)
 
         self.__defType = defType
 
@@ -322,6 +327,24 @@ class DeformationField(NonLinearTransform):
         outcoords[voxmask] = disps
 
         return outcoords.reshape(outshape)
+
+
+def _refAffine(shape, ref):
+    """Used by :class:`DeformationField`. Returns a voxel-to-world affine
+    for a deformation field of the given ``shape`` which is aligned with
+    the reference image ``ref``.
+    """
+    xform = ref.voxToWorldMat
+
+    # It is possible for a displacement field
+    # to have different resolution to its
+    # reference space - they just have to be
+    # aligned in the world coordinate system.
+    if tuple(shape[:3]) != tuple(ref.shape[:3]):
+        rescale = affine.rescale(shape[:3], ref.shape[:3])
+        xform   = affine.concat(xform, rescale)
+
+    return xform
 
 
 class CoefficientField(NonLinearTransform):
