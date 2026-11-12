@@ -27,6 +27,10 @@ Fixed
   deformation field, as FSL does, instead of raising an error. Whether it
   contains absolute or relative values is inferred from the data unless
   ``defType`` is given.
+* A :class:`.DeformationField` created from a ``numpy`` array, without a
+  ``header`` or ``xform``, now takes its header and affine from the reference
+  image. Previously it was given an identity affine and 1mm pixdims, which
+  caused FSL tools to misplace it when it was saved.
 
 
 3.29.1 (Friday 24th July 2026)
