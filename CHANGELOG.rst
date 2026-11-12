@@ -13,6 +13,17 @@ Changed
 * The :class:`.Image` class will now create a NIfTI2 image if given a data array that exceeds the NIfTI1 dimension limits (:mr:`509`).
 
 
+Fixed
+^^^^^
+
+
+* The :func:`.fnirt.readFnirt` function will now load a 4D image with three
+  volumes and no intent code (e.g. the output of ``convertwarp``) as a
+  deformation field, as FSL does, instead of raising an error. Whether it
+  contains absolute or relative values is inferred from the data unless
+  ``defType`` is given.
+
+
 3.29.1 (Friday 24th July 2026)
 ------------------------------
 
