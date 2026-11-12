@@ -260,16 +260,17 @@ def test_DeformationField_no_header():
         saved = fslimage.Image('field')
         assert np.all(np.isclose(saved.voxToWorldMat, ref.voxToWorldMat))
 
-    # The field may have a different
-    # resolution to the reference
-    shape = [s // 2 for s in ref.shape[:3]]
-    data  = np.random.random(shape + [3])
-    field = nonlinear.DeformationField(data, src, ref, defType='relative')
-    exp   = affine.concat(ref.voxToWorldMat,
-                          affine.rescale(shape, ref.shape[:3]))
-    assert np.all(np.isclose(field.voxToWorldMat, exp))
-    assert np.all(np.isclose(field.pixdim[:3],
-                             np.linalg.norm(exp[:3, :3], axis=0)))
+    # A bare array with a different shape to the
+    # reference cannot be placed without a header
+    shape = tuple(int(s) // 2 for s in ref.shape[:3])
+    data  = np.random.random(shape + (3,))
+    msg   = (r'Deformation field shape \({}\) does not match reference '
+             r'image shape \({}\)'.format(
+                 ', '.join(str(s) for s in shape),
+                 ', '.join(str(s) for s in ref.shape[:3])))
+    with pytest.raises(ValueError, match=msg) as e:
+        nonlinear.DeformationField(data, src, ref, defType='relative')
+    assert 'pass a header or an Image' in str(e.value)
 
     # An explicit xform or header is still used
     xform = affine.compose((2, 3, 4), (5, 6, 7), (0, 0, 0))
