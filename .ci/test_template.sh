@@ -22,8 +22,9 @@ if [ "$TEST_STYLE"x != "x" ]; then exit 0;                                      
 # If FSL_ATLAS_DIR isn't set, the data
 # isn't copied, and the relevant tests
 # are skipped.
-export FSLDIR=/fsl/
-mkdir -p $FSLDIR/data/
+export FSLDIR=/test.env/
+. ${FSLDIR}/etc/fslconf/fsl.sh
+mkdir -p ${FSLDIR}/data/
 if [[ -n "${FSL_ATLAS_DIR}" ]]; then
     rsync -rv "fsldownload:$FSL_ATLAS_DIR" "$FSLDIR/data/atlases/"
 else
