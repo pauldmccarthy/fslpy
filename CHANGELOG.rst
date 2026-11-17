@@ -18,6 +18,8 @@ Fixed
 ^^^^^
 
 
+* The :class:`.FEATImage` class now accepts a relative path for FEAT
+  directories (:mr:`511`).
 * The :func:`.fnirt.toFnirt` function no longer sets the
   ``FSL_FNIRT_DISPLACEMENT_FIELD`` intent code on absolute deformation
   fields. Courtesy of Istvan Huszar (:mr:`510`,

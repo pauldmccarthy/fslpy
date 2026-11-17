@@ -135,7 +135,6 @@ def test_FEATImage_attributes():
             fi = None
 
 
-
 def test_FEATImage_imageAccessors():
 
     for featdir in TEST_ANALYSES.keys():
@@ -176,6 +175,19 @@ def test_FEATImage_imageAccessors():
                     assert fi.getFClusterMask(ft).shape == shape
             del fi
             fi = None
+
+
+
+
+# fsl/fslpy!511
+def test_FEATImage_chdir():
+
+    featdir  = op.relpath(op.join(datadir, '1stlevel_realdata.feat'), os.getcwd())
+    fi       = featimage.FEATImage(featdir)
+
+    with tests.testdir():
+
+        assert op.exists(fi.getFEATDir())
 
 
 def test_FEATImage_nostats():

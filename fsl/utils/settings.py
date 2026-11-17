@@ -191,21 +191,21 @@ class Settings(object):
         there is no setting called ``name``.
         """
 
-        log.debug('Reading {}/{}'.format(self.__configID, name))
+        log.debug('Reading %s/%s', self.__configID, name)
         return self.__config.get(name, default)
 
 
     def write(self, name, value):
         """Writes the given ``value`` to the given file ``path``. """
 
-        log.debug('Writing {}/{}: {}'.format(self.__configID, name, value))
+        log.debug('Writing %s/%s: %s', self.__configID, name, value)
         self.__config[name] = value
 
 
     def delete(self, name):
         """Delete the setting with the given ``name``. """
 
-        log.debug('Deleting {}/{}'.format(self.__configID, name))
+        log.debug('Deleting %s/%s', self.__configID, name)
         self.__config.pop(name, None)
 
 
@@ -317,7 +317,7 @@ class Settings(object):
     def clear(self):
         """Delete all configuration settings and files. """
 
-        log.debug('Clearing all settings in {}'.format(self.__configID))
+        log.debug('Clearing all settings in %s', self.__configID)
 
         self.__config = {}
 
@@ -364,7 +364,7 @@ class Settings(object):
 
         # On all other platforms, use $HOME/.fslpy/
         else:
-            cfgdir = op.join(homedir, '.{}'.format(cid))
+            cfgdir = op.join(homedir, f'.{cid}')
 
         # Try and create the config directory
         # tree if it does not exist
@@ -373,9 +373,8 @@ class Settings(object):
                 os.makedirs(cfgdir)
             except OSError:
                 log.warning(
-                    'Unable to create {} configuration '
-                    'directory: {}'.format(cid, cfgdir),
-                    exc_info=True)
+                    'Unable to create %s configuration directory: %s',
+                    cid, cfgdir, exc_info=True)
                 cfgdir = None
 
         # If dir creation failed, use a temporary
@@ -384,7 +383,7 @@ class Settings(object):
             cfgdir = tempfile.mkdtemp()
             atexit.register(shutil.rmtree, cfgdir, ignore_errors=True)
 
-        log.debug('{} configuration directory: {}'.format(cid, cfgdir))
+        log.debug('%s configuration directory: %s', cid, cfgdir)
 
         return cfgdir
 
@@ -396,16 +395,15 @@ class Settings(object):
 
         configFile = op.join(self.__configDir, 'config.pkl')
 
-        log.debug('Reading {} configuration from: {}'.format(
-            self.__configID, configFile))
+        log.debug('Reading %s configuration from: %s',
+                  self.__configID, configFile)
 
         try:
             with open(configFile, 'rb') as f:
                 return pickle.load(f)
         except (IOError, pickle.UnpicklingError, EOFError):
-            log.debug('Unable to load stored {} configuration file '
-                      '{}'.format(self.__configID, configFile),
-                      exc_info=True)
+            log.debug('Unable to load stored %s configuration file %s',
+                      self.__configID, configFile, exc_info=True)
             return {}
 
 
@@ -415,13 +413,13 @@ class Settings(object):
         config     = self.__config
         configFile = op.join(self.__configDir, 'config.pkl')
 
-        log.debug('Writing {} configuration to: {}'.format(
-            self.__configID, configFile))
+        log.debug('Writing %s configuration to: %s',
+                  self.__configID, configFile)
 
         try:
             with open(configFile, 'wb') as f:
                 pickle.dump(config, f, protocol=2)
         except (IOError, pickle.PicklingError, EOFError, FileNotFoundError):
-            log.warning('Unable to save {} configuration file '
-                        '{}'.format(self.__configID, configFile),
-                        exc_info=True)
+            if log:
+                log.warning('Unable to save %s configuration file %s',
+                            self.__configID, configFile, exc_info=True)

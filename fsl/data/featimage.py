@@ -66,8 +66,8 @@ class FEATImage(fslimage.Image):
             raise ValueError(f'{path} does not appear to be '
                              'data from a FEAT analysis')
 
-        featDir     = op.dirname(path)
-        settings    = featanalysis.loadSettings( featDir)
+        featDir  = op.abspath(op.dirname(path))
+        settings = featanalysis.loadSettings( featDir)
 
         if featanalysis.hasStats(featDir):
             design      = featanalysis.loadDesign(   featDir, settings)
