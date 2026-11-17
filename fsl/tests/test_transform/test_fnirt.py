@@ -5,6 +5,7 @@
 # Author: Paul McCarthy <pauldmccarthy@gmail.com>
 #
 
+import os
 import os.path as op
 import itertools as it
 
@@ -19,6 +20,7 @@ import fsl.data.constants      as constants
 import fsl.transform.affine    as affine
 import fsl.transform.nonlinear as nonlinear
 import fsl.transform.fnirt     as fnirt
+import fsl.wrappers            as fslwrappers
 
 from fsl.tests.test_transform.test_nonlinear import _random_affine_field
 
@@ -73,8 +75,10 @@ def test_readFnirt_defType_intent():
     with tempdir.tempdir():
         img.to_filename('field.nii.gz')
 
-        with pytest.raises(ValueError):
-            fnirt.readFnirt('field', src, ref)
+        # A 4D, 3-volume image with no intent
+        # is read as a deformation field
+        field = fnirt.readFnirt('field', src, ref)
+        assert isinstance(field, nonlinear.DeformationField)
 
         field = fnirt.readFnirt(
             'field', src, ref,
@@ -85,6 +89,78 @@ def test_readFnirt_defType_intent():
             'field', src, ref,
             intent=constants.FSL_FNIRT_DISPLACEMENT_FIELD)
         assert isinstance(field, nonlinear.DeformationField)
+
+
+def test_readFnirt_intent_none():
+
+    # FSL tools such as convertwarp save deformation fields with no
+    # intent code. FSL reads any 4D, 3-volume image with an intent it
+    # does not recognise as a deformation field, and decides whether
+    # it is absolute or relative from the data unless told otherwise.
+    src     = fslimage.Image(op.join(datadir, 'src'))
+    ref     = fslimage.Image(op.join(datadir, 'ref'))
+    rel     = fnirt.readFnirt(op.join(datadir, 'displacementfield'),
+                              src, ref, defType='relative')
+    absdata = nonlinear.convertDeformationType(rel, 'absolute')
+
+    def save(data, fname):
+        img = nib.Nifti1Image(data, None, rel.header)
+        img.header['intent_code'] = constants.NIFTI_INTENT_NONE
+        img.to_filename(fname)
+
+    with tempdir.tempdir():
+        save(rel.data, 'rel.nii.gz')
+        save(absdata,  'abs.nii.gz')
+        save(rel.data[..., 0], 'notafield.nii.gz')
+
+        gotrel = fnirt.readFnirt('rel', src, ref)
+        gotabs = fnirt.readFnirt('abs', src, ref)
+
+        assert isinstance(gotrel, nonlinear.DeformationField)
+        assert isinstance(gotabs, nonlinear.DeformationField)
+        assert gotrel.deformationType == 'relative'
+        assert gotabs.deformationType == 'absolute'
+        assert np.all(np.isclose(gotrel.data, rel.data))
+        assert np.all(np.isclose(gotabs.data, absdata, atol=1e-4))
+
+        # The caller can override the guess
+        got = fnirt.readFnirt('abs', src, ref, defType='relative')
+        assert got.deformationType == 'relative'
+
+        with pytest.raises(ValueError):
+            fnirt.readFnirt('notafield', src, ref)
+
+
+@pytest.mark.fsltest
+@pytest.mark.skipif(os.environ.get('FSLDIR') is None,
+                    reason='FSLDIR is not set')
+def test_readFnirt_convertwarp_output():
+
+    # readFnirt should open the output of convertwarp, which has
+    # no intent code, whether it contains absolute or relative warps
+    src  = fslimage.Image(op.join(datadir, 'src'))
+    ref  = fslimage.Image(op.join(datadir, 'ref'))
+    disp = op.join(datadir, 'displacementfield')
+    rel  = fnirt.readFnirt(disp, src, ref, defType='relative')
+
+    with tempdir.tempdir():
+        fslwrappers.convertwarp('relout', ref, warp1=disp, relout=True)
+        fslwrappers.convertwarp('absout', ref, warp1=disp, absout=True)
+
+        assert nib.load('relout.nii.gz').header['intent_code'] == 0
+        assert nib.load('absout.nii.gz').header['intent_code'] == 0
+
+        relout = fnirt.readFnirt('relout', src, ref)
+        absout = fnirt.readFnirt('absout', src, ref)
+
+        assert relout.deformationType == 'relative'
+        assert absout.deformationType == 'absolute'
+
+        tol = dict(atol=1e-3)
+        assert np.all(np.isclose(relout.data, rel.data, **tol))
+        assert np.all(np.isclose(
+            nonlinear.convertDeformationType(absout, 'relative'),
+            rel.data, **tol))
 
 
 def test_toFnirt():
@@ -113,6 +189,66 @@ def test_toFnirt():
     coef = fnirt.readFnirt(op.join(datadir, 'coefficientfield'),  src, ref)
     got  = fnirt.toFnirt(coef)
     check(got, coef)
+
+
+def test_toFnirt_intent():
+
+    # FSL reads intent FSL_FNIRT_DISPLACEMENT_FIELD as "relative
+    # displacements", whatever the data contain. Absolute fields must
+    # be saved without an intent, as convertwarp --absout does.
+    src    = fslimage.Image(op.join(datadir, 'src'))
+    ref    = fslimage.Image(op.join(datadir, 'ref'))
+    rel    = fnirt.readFnirt(op.join(datadir, 'displacementfield'),
+                             src, ref, defType='relative')
+    absf   = nonlinear.DeformationField(
+        nonlinear.convertDeformationType(rel, 'absolute'),
+        src=src, ref=ref, header=rel.header, defType='absolute')
+    wfield = nonlinear.convertDeformationSpace(absf, 'world', 'world')
+
+    with tempdir.tempdir():
+        fnirt.toFnirt(rel)   .save('rel')
+        fnirt.toFnirt(absf)  .save('abs')
+        fnirt.toFnirt(wfield).save('wabs')
+
+        rel  = nib.load('rel.nii.gz')
+        absf = nib.load('abs.nii.gz')
+        wabs = nib.load('wabs.nii.gz')
+
+        assert rel .header['intent_code'] == \
+            constants.FSL_FNIRT_DISPLACEMENT_FIELD
+        assert absf.header['intent_code'] == constants.NIFTI_INTENT_NONE
+        assert wabs.header['intent_code'] == constants.NIFTI_INTENT_NONE
+
+
+@pytest.mark.fsltest
+@pytest.mark.skipif(os.environ.get('FSLDIR') is None,
+                    reason='FSLDIR is not set')
+def test_toFnirt_absolute_fsl():
+
+    # FSL should read an absolute field written by toFnirt
+    # as the same transformation as the relative field it
+    # was derived from.
+    src  = fslimage.Image(op.join(datadir, 'src'))
+    ref  = fslimage.Image(op.join(datadir, 'ref'))
+    rel  = fnirt.readFnirt(op.join(datadir, 'displacementfield'),
+                           src, ref, defType='relative')
+    absf = nonlinear.DeformationField(
+        nonlinear.convertDeformationType(rel, 'absolute'),
+        src=src, ref=ref, header=rel.header, defType='absolute')
+
+    with tempdir.tempdir():
+        fnirt.toFnirt(absf).save('abs')
+        fslwrappers.convertwarp('relout', ref, warp1='abs', relout=True)
+        fslwrappers.applywarp(src, ref, 'awabs', warp='abs')
+        fslwrappers.applywarp(src, ref, 'awrel', rel=True,
+                              warp=op.join(datadir, 'displacementfield'))
+
+        relout = fslimage.Image('relout').data
+        awabs  = fslimage.Image('awabs') .data
+        awrel  = fslimage.Image('awrel') .data
+
+    assert np.all(np.isclose(relout, rel.data, atol=1e-3))
+    assert np.all(np.isclose(awabs, awrel, atol=1e-3 * np.ptp(awrel)))
 
 
 def test_fromFnirt():

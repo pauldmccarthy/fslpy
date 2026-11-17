@@ -2,7 +2,7 @@ This document contains the ``fslpy`` release history in reverse chronological
 order.
 
 
-3.29.2 (Under development)
+3.30.0 (Under development)
 --------------------------
 
 
@@ -10,7 +10,27 @@ Changed
 ^^^^^^^
 
 
-* The :class:`.Image` class will now create a NIfTI2 image if given a data array that exceeds the NIfTI1 dimension limits (:mr:`509`).
+* The :class:`.Image` class will now create a NIfTI2 image if given a data
+  array that exceeds the NIfTI1 dimension limits (:mr:`509`).
+
+
+Fixed
+^^^^^
+
+
+* The :func:`.fnirt.toFnirt` function no longer sets the
+  ``FSL_FNIRT_DISPLACEMENT_FIELD`` intent code on absolute deformation
+  fields. Courtesy of Istvan Huszar (:mr:`510`,
+  `GitHub PR <https://github.com/pauldmccarthy/fslpy/pull/22>`_).
+* The :func:`.fnirt.readFnirt` function will now load a 4D image with three
+  volumes and no intent code, instead of raising an error. Courtesy of Istvan
+  Huszar (:mr:`510`, `GitHub PR
+  <https://github.com/pauldmccarthy/fslpy/pull/23>`_).
+* A :class:`.DeformationField` created from a ``numpy`` array, without a
+  ``header`` or ``xform``, now takes its header and affine from the reference
+  image, and a ``ValueError`` is raised if the array and reference shapes
+  differ. Courtesy of Istvan Huszar
+  (:mr:`510`, `GitHub PR <https://github.com/pauldmccarthy/fslpy/pull/24>`_).
 
 
 3.29.1 (Friday 24th July 2026)
