@@ -12,6 +12,7 @@ Changed
 
 * The :class:`.Image` class will now create a NIfTI2 image if given a data
   array that exceeds the NIfTI1 dimension limits (:mr:`509`).
+* Adjustment to allow :class:`.Image` instances to be pickled (:mr:`512`).
 
 
 Fixed
