@@ -38,6 +38,7 @@ class _Listener:
     store references to callback functions.
     """
 
+
     def __init__(self, name, callback, topic, runOnIdle):
 
         self.name = name
@@ -109,7 +110,22 @@ class Notifier:
     .. note:: The ``Notifier`` class stores ``weakref`` references to
               registered callback functions, using the
               :class:`.WeakFunctionRef` class.
+
+    When a ``Notifier`` instance is pickled, any registered listeners are
+    *not* saved - the unpickled instance will have no registered listeners.
     """
+
+
+    def __getstate__(self):
+        """Returns the state of this ``Notifier`` for pickling. Any
+        registered listeners are cleared from the state.
+        """
+        state = self.__dict__.copy()
+
+        state['_Notifier__listeners'] = collections.defaultdict(dict)
+        state['_Notifier__enabled']   = {}
+
+        return state
 
 
     def __new__(cls, *args, **kwargs):
@@ -126,7 +142,7 @@ class Notifier:
         # dictionary, with the inner
         # dictionaries ordered by
         # insertion time.
-        new.__listeners = collections.defaultdict(collections.OrderedDict)
+        new.__listeners = collections.defaultdict(dict)
 
         # Notification can be enabled on a per-
         # topic basis. This dictionary contains

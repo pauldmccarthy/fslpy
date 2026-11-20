@@ -9,6 +9,7 @@
 
 import              os
 import              json
+import              pickle
 import os.path   as op
 import itertools as it
 
@@ -1700,3 +1701,23 @@ def test_strval():
             i.to_filename('image.nii')
             i = fslimage.Image('image.nii')
             assert i.strval('aux_file') == expect
+
+
+def test_Image_pickle():
+    with tempdir():
+        make_image('image.nii', dims=(10, 10, 10), pixdims=(1, 1, 1))
+
+        img = fslimage.Image('image.nii')
+
+        pickled   = pickle.dumps(img)
+        unpickled = pickle.loads(pickled)
+
+        assert img.dataSource == unpickled.dataSource
+        assert np.all(img[:] == unpickled[:])
+
+        # test after data has been loaded
+        pickled   = pickle.dumps(img)
+        unpickled = pickle.loads(pickled)
+
+        assert img.dataSource == unpickled.dataSource
+        assert np.all(img[:] == unpickled[:])
